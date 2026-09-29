@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>早押しクイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<!-- Firebaseの設定は教室ダービーと共用(1つ上のフォルダの firebase-config.js) -->
+<script src="../firebase-config.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --stage:#15245a; --panel:#1e3275; --panel2:#284190; --line:#3a55ad;
+  --ink:#f5f7ff; --soft:#a9b5df;
+  --lamp:#ffd21f; --lamp-ink:#2a1f00;
+  --maru:#ff4b4b; --batsu:#3d8bff; --ok:#3ddc84;
+  --f-disp:"Dela Gothic One","Hiragino Sans","Meiryo",sans-serif;
+  --f-body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Meiryo",sans-serif;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--stage);color:var(--ink);font-family:var(--f-body);font-weight:700;-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:disabled{cursor:default;opacity:.35}
+:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+[hidden]{display:none!important}
+.btn{border:2px solid var(--line);background:var(--panel2);border-radius:10px;padding:10px 18px;font-weight:900}
+.btn:hover:not(:disabled){border-color:var(--soft)}
+.btn.main{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}
+input[type=text],input[type=password],textarea{background:#0f1a44;border:2px solid var(--line);border-radius:10px;padding:10px 12px;font-size:1.1rem;width:100%}
+textarea{resize:vertical;line-height:1.7;font-weight:500}
+
+/* 入口・ログイン */
+.gate{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-in{width:100%;max-width:520px;display:flex;flex-direction:column;gap:14px}
+.gate h1{font-family:var(--f-disp);font-weight:400;font-size:clamp(2.6rem,9vw,4rem);line-height:1.1;margin:0 0 6px;color:var(--lamp)}
+.gate p{margin:0;line-height:1.8;color:var(--soft);font-weight:500}
+.gate .box{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.gate .box h2{margin:0;font-size:1.05rem}
+.gate a.btn{text-decoration:none;text-align:center}
+.row{display:flex;gap:8px}
+.err{color:#ff8c8c;min-height:1.4em;margin:0}
+
+/* 先生の画面 */
+.host{height:100%;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:14px;padding:10px 20px;background:#0f1a44;flex-wrap:wrap}
+.logo{font-family:var(--f-disp);font-weight:400;font-size:1.7rem;margin:0;color:var(--lamp);white-space:nowrap}
+.roombtn{display:flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 16px;font-size:1.05rem}
+.roombtn b{font-family:var(--f-disp);font-weight:400;font-size:1.5rem;letter-spacing:.08em}
+.dot{width:12px;height:12px;border-radius:50%;background:#777}
+.dot.on{background:var(--ok)} .dot.off{background:var(--maru)}
+.count{color:var(--soft);white-space:nowrap}
+.spacer{flex:1}
+.seg{display:flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:8px 16px;font-weight:900}
+.seg button.on{background:var(--ink);color:var(--stage)}
+.tbtn{border:2px solid var(--line);background:transparent;border-radius:10px;padding:8px 14px;font-weight:900}
+.banner{background:var(--maru);color:#fff;padding:8px 20px;font-weight:900}
+.banner.info{background:var(--panel2);color:var(--ink)}
+.hmain{flex:1;min-height:0;display:grid;grid-template-columns:1fr minmax(260px,22%);gap:16px;padding:16px 20px}
+.stage{min-height:0;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.qhead{display:flex;align-items:baseline;gap:18px}
+.qno{font-family:var(--f-disp);font-weight:400;font-size:clamp(1.8rem,3vw,2.8rem)}
+.qno small{font-family:var(--f-body);font-size:.5em;color:var(--soft);margin-left:.3em}
+.phase{color:var(--soft);font-size:1.1rem}
+.qtext{background:var(--panel);border-radius:16px;padding:22px 28px;font-size:clamp(1.8rem,3.4vw,3.2rem);line-height:1.5;font-weight:900;min-height:3.4em;display:flex;align-items:center}
+.qtext.idle{font-size:clamp(1.1rem,1.8vw,1.6rem);color:var(--soft);font-weight:700}
+.answer{display:flex;align-items:center;gap:18px;border:3px solid var(--maru);border-radius:14px;padding:10px 24px}
+.answer span{color:var(--maru);font-size:1.3rem;white-space:nowrap}
+.answer b{font-size:clamp(1.6rem,3vw,2.7rem);line-height:1.3}
+/* 解答者のランプ(この画面の主役) */
+.lamp{border-radius:16px;padding:14px 26px;display:flex;align-items:center;gap:22px;min-height:96px;border:3px dashed var(--line);color:var(--soft);font-size:1.3rem}
+.lamp.on{background:var(--lamp);color:var(--lamp-ink);border:3px solid #fff3b0;box-shadow:0 0 0 6px rgba(255,210,31,.25),0 0 60px rgba(255,210,31,.55)}
+.lamp.on span{font-size:1.2rem}
+.lamp b{font-size:clamp(2.2rem,4.4vw,4rem);line-height:1.1;font-weight:900}
+.lamp.maru{background:transparent;border:3px solid var(--maru);color:var(--ink)}
+.lamp.maru i{font-style:normal;color:var(--maru);font-size:4rem;line-height:1}
+.lamp.maru span{color:var(--maru);font-size:1.6rem}
+@media (prefers-reduced-motion:no-preference){ .lamp.on{animation:pop .35s ease-out} }
+@keyframes pop{from{transform:scale(.94)}to{transform:none}}
+.queue{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.queue li{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto auto 5em;align-items:center;gap:14px;background:var(--panel);border-radius:10px;padding:8px 16px;font-size:clamp(1.1rem,1.6vw,1.45rem)}
+.queue .rk{font-family:var(--f-disp);font-weight:400;color:var(--soft)}
+.queue .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue .df{color:var(--soft);font-variant-numeric:tabular-nums}
+.queue em{font-style:normal;font-size:.75em;color:var(--lamp);border:1px solid var(--lamp);border-radius:999px;padding:1px 8px}
+.queue .st{text-align:right;font-weight:900}
+.queue li.cur{outline:3px solid var(--lamp)} .queue li.cur .st{color:var(--lamp)}
+.queue li.x{opacity:.5} .queue li.x .st{color:var(--batsu)}
+.queue li.o .st{color:var(--maru)}
+.tally{font-size:1.3rem;color:var(--soft)} .tally b{color:var(--ink);font-size:1.6rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.card{position:relative;text-align:left;border:3px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:4px;min-height:84px}
+.card:disabled{opacity:1;cursor:default}
+.card .nm{font-size:.95rem;color:var(--soft)}
+.card .tx{font-size:clamp(1.2rem,1.8vw,1.7rem);font-weight:900;word-break:break-all}
+.card .tx.hid{color:var(--soft);font-size:1rem}
+.card.maru{border-color:var(--maru)}
+.card i{position:absolute;right:10px;top:4px;font-style:normal;color:var(--maru);font-size:2.2rem;line-height:1}
+.hint{color:var(--soft);font-weight:500;margin:0}
+.board{background:#0f1a44;border-radius:16px;padding:12px 14px;overflow:auto;min-height:0}
+.board h2{margin:0 0 8px;font-size:1rem;color:var(--soft)}
+.board ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.board li{display:grid;grid-template-columns:2em minmax(0,1fr) auto 1.8em;align-items:center;gap:8px;font-size:clamp(1rem,1.3vw,1.25rem);padding:4px 6px;border-radius:8px}
+.board li.hot{background:var(--lamp);color:var(--lamp-ink)}
+.board li.off .nm{opacity:.45}
+.board .rk{color:var(--soft);font-size:.85em}
+.board li.hot .rk{color:inherit}
+.board .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board .pt{font-family:var(--f-disp);font-weight:400}
+.kick{border:0;background:transparent;color:var(--soft);font-size:1rem;padding:2px;border-radius:6px;opacity:.6}
+.kick:hover{opacity:1;background:var(--panel2)}
+.ctrl{display:flex;gap:10px;padding:10px 20px 14px;flex-wrap:wrap;justify-content:center;background:#0f1a44}
+.ctrl button{border:2px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 18px;font-weight:900;font-size:1.15rem;display:flex;align-items:center;gap:10px}
+.ctrl kbd{font-family:var(--f-body);font-size:.75rem;border:1px solid currentColor;border-radius:5px;padding:0 6px;opacity:.7}
+.ctrl .go{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}
+.ctrl .ok{background:var(--maru);border-color:var(--maru);color:#fff}
+.ctrl .ng{background:var(--batsu);border-color:var(--batsu);color:#fff}
+
+.modal{position:fixed;inset:0;background:rgba(5,10,30,.7);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.mcard{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 28px;width:100%;max-width:760px;max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.mcard h2{margin:0;font-size:1.5rem}
+.qrbox{display:flex;gap:28px;align-items:center;flex-wrap:wrap;justify-content:center}
+#qr{background:#fff;padding:14px;border-radius:12px;line-height:0}
+.qrcode{font-family:var(--f-disp);font-weight:400;font-size:clamp(3rem,8vw,5rem);letter-spacing:.1em;color:var(--lamp);line-height:1}
+.url{color:var(--soft);font-weight:500;word-break:break-all}
+.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.note{color:var(--soft);font-weight:500;line-height:1.7;margin:0}
+.danger{border-color:var(--maru)!important;color:#ffb3b3}
+.rank{list-style:none;margin:0;padding:0}
+.rank li{display:grid;grid-template-columns:3em 1fr auto;gap:14px;align-items:baseline;padding:8px 6px;border-bottom:1px solid var(--line);font-size:1.6rem}
+.rank li:first-child{color:var(--lamp)}
+.rank b{font-family:var(--f-disp);font-weight:400}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--stage);padding:10px 20px;border-radius:999px;font-weight:900;z-index:60;max-width:90%}
+
+/* 学生の画面 */
+.stu{min-height:100%;display:flex;flex-direction:column}
+.s-top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0f1a44;flex-wrap:wrap}
+.s-top .me{font-size:1.3rem}
+.s-top .pts{font-family:var(--f-disp);font-weight:400;font-size:1.3rem;color:var(--lamp)}
+.s-top .sp{flex:1}
+.s-top button{border:2px solid var(--line);background:transparent;border-radius:8px;padding:6px 12px;font-size:.9rem}
+.s-off{background:var(--maru);color:#fff;padding:6px 16px;text-align:center}
+.s-q{padding:14px 18px 0}
+.s-q .no{color:var(--soft)}
+.s-q p{margin:4px 0 0;font-size:clamp(1.2rem,3.4vw,1.8rem);line-height:1.5}
+.s-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
+.s-big{font-size:clamp(1.6rem,6vw,3rem);line-height:1.3;margin:0}
+.s-sub{color:var(--soft);font-size:1.1rem;margin:0;font-weight:500;line-height:1.7}
+.buzzer{width:min(70vw,52vh,420px);aspect-ratio:1;border-radius:50%;border:12px solid #ffd6d6;background:radial-gradient(circle at 38% 32%,#ff7a7a,#e2231a 55%,#a50f0a);color:#fff;font-family:var(--f-disp);font-weight:400;font-size:clamp(2.4rem,9vw,4.4rem);box-shadow:0 14px 0 #6d0905,0 20px 40px rgba(0,0,0,.4);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.buzzer:active{transform:translateY(10px);box-shadow:0 4px 0 #6d0905,0 8px 20px rgba(0,0,0,.4)}
+.s-body.turn{background:var(--lamp);color:var(--lamp-ink)}
+.s-body.turn .s-sub{color:var(--lamp-ink)}
+.s-body.maru .mk{color:var(--maru)} .s-body.batsu .mk{color:var(--batsu)}
+.mk{font-size:clamp(5rem,22vw,10rem);line-height:1;font-family:var(--f-disp);font-weight:400}
+.s-ansbox{width:100%;max-width:560px;display:flex;flex-direction:column;gap:10px}
+.s-ansbox input{font-size:1.4rem;text-align:center}
+.s-ansbox .btn{font-size:1.3rem;padding:14px}
+.s-answer{padding:10px 18px 16px;text-align:center;border-top:3px solid var(--maru)}
+.s-answer span{color:var(--maru);margin-right:10px}
+.s-answer b{font-size:1.5rem}
+.s-join label{font-size:1rem;color:var(--soft)}
+.s-join input{font-size:1.5rem;text-align:center}
+.s-join .btn{font-size:1.3rem;padding:14px}
+.msg{background:var(--panel2);border-radius:10px;padding:10px 14px;color:var(--ink)!important}
+
+@media (max-width:900px){
+  .hmain{grid-template-columns:1fr}
+  .host{height:auto;min-height:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- 入口(URLに何もついていないとき) -->
+<section id="landing" class="gate" hidden>
+  <div class="gate-in">
+    <h1>早押しクイズ</h1>
+    <div class="box">
+      <h2>学生の人</h2>
+      <p>先生の画面に出ているルーム番号を入れてください。QRコードを読み取った場合は、この画面は出ません。</p>
+      <div class="row"><input type="text" id="roomIn" maxlength="8" autocomplete="off" placeholder="例:K7MQ2" style="text-transform:uppercase"><button id="roomGo" class="btn main">入る</button></div>
+    </div>
+    <div class="box">
+      <h2>先生</h2>
+      <a class="btn main" href="?host">先生の画面を開く</a>
+      <a class="btn" href="?host&amp;local=1">お試し(このPCだけで動きを確認する)</a>
+    </div>
+  </div>
+</section>
+
+<!-- 先生のログイン -->
+<section id="login" class="gate" hidden>
+  <div class="gate-in">
+    <h1>早押しクイズ</h1>
+    <p>先生用の画面です。パスワードを入れてください。</p>
+    <input type="password" id="pwIn" autocomplete="current-password">
+    <p id="pwErr" class="err"></p>
+    <button id="pwGo" class="btn main">はじめる</button>
+  </div>
+</section>
+
+<!-- 先生の画面(プロジェクター) -->
+<section id="host" class="host" hidden>
+  <header class="bar">
+    <h1 class="logo">早押しクイズ</h1>
+    <button class="roombtn" data-act="qr" title="QRコードを出す"><span id="hDot" class="dot"></span>ルーム <b id="hRoom"></b></button>
+    <span id="hCount" class="count"></span>
+    <span class="spacer"></span>
+    <div class="seg" id="hMode"><button data-act="mode" data-mode="buzz">早押し</button><button data-act="mode" data-mode="all">全員回答</button></div>
+    <button class="tbtn" data-act="rank">ランキング</button>
+    <button class="tbtn" data-act="settings">設定</button>
+  </header>
+  <div id="hBanner" class="banner" hidden></div>
+  <main class="hmain">
+    <section class="stage">
+      <div class="qhead"><span id="hNo" class="qno"></span><span id="hPhase" class="phase"></span></div>
+      <div id="hQ" class="qtext"></div>
+      <div id="hA" class="answer" hidden></div>
+      <div id="hLamp" class="lamp" hidden></div>
+      <div id="hList"></div>
+    </section>
+    <aside class="board"><h2>得点</h2><ol id="hScores"></ol></aside>
+  </main>
+  <footer id="hCtrl" class="ctrl"></footer>
+</section>
+
+<!-- 学生の画面(iPad) -->
+<section id="stu" class="stu" hidden></section>
+
+<div id="qrModal" class="modal" hidden>
+  <div class="mcard">
+    <h2>iPadのカメラでQRコードを読み取ってください</h2>
+    <div class="qrbox"><div id="qr"></div><div><p class="note">ルーム番号</p><div id="qrCode" class="qrcode"></div></div></div>
+    <p id="qrUrl" class="url"></p>
+    <div class="btns"><button id="qrTab" class="btn" hidden>学生の画面を新しいタブで開く</button><button data-act="close" class="btn main">閉じる</button></div>
+  </div>
+</div>
+
+<div id="setModal" class="modal" hidden>
+  <div class="mcard">
+    <h2>設定</h2>
+    <p class="note">問題は1行に1問、「問題｜答え」の形で入れます。Excelで A列に問題、B列に答えを入れて、2列まとめてコピーして貼り付けてもかまいません。</p>
+    <textarea id="qIn" rows="12"></textarea>
+    <p id="qInfo" class="note"></p>
+    <div class="btns"><button data-act="close" class="btn">キャンセル</button><button id="qSave" class="btn main">問題を保存する</button></div>
+    <hr style="border:0;border-top:1px solid var(--line);width:100%">
+    <p class="note">「得点をリセット」は参加者はそのままで得点だけを0にします。「参加者を全員削除」は、次のクラスで使う前に押してください。iPadは名前の入力画面に戻ります。</p>
+    <div class="btns"><button id="resetScore" class="btn danger">得点をリセット</button><button id="clearAll" class="btn danger">参加者を全員削除</button></div>
+  </div>
+</div>
+
+<div id="rankModal" class="modal" hidden>
+  <div class="mcard">
+    <h2>ランキング</h2>
+    <ol id="rankList" class="rank"></ol>
+    <div class="btns"><button data-act="close" class="btn main">閉じる</button></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ============ 設定 ============ */
+const HOST_PASSWORD="sensei";   // 先生の画面のパスワード(好きなものに変えてください)
+const NAME_MAX=8;               // ニックネームの最大文字数
+const NEAR_MS=50;               // この差(ミリ秒)以内なら「ほぼ同時」と表示
+const FB_VER="10.12.2";
+
+/* ============ 共通 ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const QS=new URLSearchParams(location.search);
+const LOCAL=QS.has('local');
+const CODE_CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const rid=n=>Array.from({length:n},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('');
+const normName=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,'');
+function show(id){ ['landing','login','host','stu'].forEach(k=>$('#'+k).hidden=k!==id); }
+let toastT=null;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3200); }
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
+
+/* ============ 通信(Firebase と お試し用を同じ形にする) ============ */
+async function firebaseBackend(){
+  const cfg=window.FIREBASE_CONFIG;
+  if(!cfg||!cfg.databaseURL) throw new Error('firebase-config.js が見つからないか、databaseURL が入っていません。quiz フォルダを教室ダービーと同じリポジトリの中に置いてください。');
+  try{
+    await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-database-compat.js`);
+  }catch(e){ throw new Error('Firebaseにつながりませんでした。インターネットの接続を確認してください。'); }
+  if(!firebase.apps.length) firebase.initializeApp(cfg);
+  const db=firebase.database(), info=db.ref('.info/connected');
+  return {
+    set:(p,v)=>db.ref(p).set(v),
+    remove:p=>db.ref(p).remove(),
+    on:(p,cb)=>{ const r=db.ref(p), f=s=>cb(s.val()); r.on('value',f,e=>console.warn(p,e)); return ()=>r.off('value',f); },
+    presence:p=>{ const r=db.ref(p), f=s=>{ if(s.val()){ r.onDisconnect().remove(); r.set(true); } }; info.on('value',f);
+      return ()=>{ info.off('value',f); r.onDisconnect().cancel(); r.remove(); }; },
+    connected:cb=>{ const f=s=>cb(!!s.val()); info.on('value',f); return ()=>info.off('value',f); },
+    now:()=>firebase.database.ServerValue.TIMESTAMP
+  };
+}
+// お試し用:localStorage を共有のデータベースに見立てる(同じPCの別タブどうしで動く)
+function localBackend(){
+  const KEY='quiz.local.db', subs=[];
+  const read=()=>{ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } };
+  const segs=p=>p.split('/').filter(Boolean);
+  const getAt=(o,p)=>{ for(const k of segs(p)){ if(o==null||typeof o!=='object') return null; o=o[k]; } return o===undefined?null:o; };
+  const notify=()=>{ const root=read(); subs.forEach(s=>{ const j=JSON.stringify(getAt(root,s.p)); if(j!==s.last){ s.last=j; s.cb(JSON.parse(j)); } }); };
+  const write=(p,v)=>{ const root=read(), s=segs(p); let o=root;
+    for(let i=0;i<s.length-1;i++){ if(typeof o[s[i]]!=='object'||o[s[i]]===null) o[s[i]]={}; o=o[s[i]]; }
+    if(v==null) delete o[s[s.length-1]]; else o[s[s.length-1]]=JSON.parse(JSON.stringify(v));
+    localStorage.setItem(KEY,JSON.stringify(root)); notify(); };
+  addEventListener('storage',e=>{ if(e.key===KEY) notify(); });
+  return {
+    set:(p,v)=>{ write(p,v); return Promise.resolve(); },
+    remove:p=>{ write(p,null); return Promise.resolve(); },
+    on:(p,cb)=>{ const s={p,cb,last:undefined}; subs.push(s);
+      setTimeout(()=>{ if(s.last===undefined){ s.last=JSON.stringify(getAt(read(),p)); cb(JSON.parse(s.last)); } });
+      return ()=>{ const i=subs.indexOf(s); if(i>=0) subs.splice(i,1); }; },
+    presence:p=>{ write(p,true); const f=()=>write(p,null); addEventListener('pagehide',f); return ()=>{ removeEventListener('pagehide',f); f(); }; },
+    connected:cb=>{ cb(true); return ()=>{}; },
+    now:()=>Date.now()
+  };
+}
+let be=null;
+
+/* ============ 効果音(先生の画面だけ) ============ */
+let actx=null;
+function tone(f,d,type='sine',vol=.2,when=0){
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime+when, o=actx.createOscillator(), g=actx.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+d+.02); }catch(e){}
+}
+const SND={
+  buzz(){ tone(1175,.12,'square',.09); tone(1568,.4,'square',.09,.12); },
+  ok(){ [0,.42].forEach(w=>{ tone(1319,.2,'sine',.3,w); tone(1047,.32,'sine',.3,w+.18); }); },
+  ng(){ tone(130,.8,'sawtooth',.16); tone(138,.8,'sawtooth',.12); }
+};
+
+/* ============ 先生の画面 ============ */
+const HKEY='quiz.host'+(LOCAL?'.local':''), QKEY='quiz.questions';
+const SAMPLE=[
+  {q:'貸借対照表のことを英語の略で何という?',a:'B/S'},
+  {q:'簿記で、借方は左と右のどちら?',a:'左'},
+  {q:'商品を売って、代金をあとで受け取る約束をした。このときの勘定科目は?',a:'売掛金'},
+  {q:'手紙の頭語「拝啓」に対応する結語は?',a:'敬具'},
+  {q:'日本の消費税の標準税率は何%?',a:'10%'}
+];
+let H=null, QL=[], base='', unsubQ=[], lastPush='';
+const hp={players:{},presence:{},buzz:{},answers:{},conn:false};
+function loadH(){ let h=null; try{ h=JSON.parse(localStorage.getItem(HKEY)); }catch(e){}
+  return Object.assign({room:null,mode:'buzz',qi:0,qn:0,phase:'idle',ans:null,wrong:[],right:null,showAns:false,scores:{},mark:{},kicked:{},epoch:1},h||{}); }
+function loadQ(){ try{ const q=JSON.parse(localStorage.getItem(QKEY)); if(Array.isArray(q)) return q; }catch(e){} return SAMPLE.slice(); }
+function banner(m,info){ const b=$('#hBanner'); b.textContent=m; b.className='banner'+(info?' info':''); b.hidden=!m; }
+
+async function hostStart(){
+  H=loadH(); QL=loadQ();
+  if(!H.room) H.room=rid(5);
+  H.qi=Math.max(0,Math.min(H.qi,QL.length-1));
+  show('host'); renderHost();
+  try{ be=LOCAL?localBackend():await firebaseBackend(); }
+  catch(e){ banner(e.message); return; }
+  if(LOCAL) banner('お試しモードです。このPCの中だけで動きます。QRコードの画面から、学生の画面を別のタブで開けます。',true);
+  base=`quiz/${H.room}`;
+  be.connected(c=>{ hp.conn=c; renderHost(); });
+  be.on(base+'/players',v=>{ hp.players=v||{}; autoAssign(); refresh(); });
+  be.on(base+'/presence',v=>{ hp.presence=v||{}; renderHost(); });
+  subQ(); save();
+  if(!sessionStorage.getItem('quiz.qrShown')){ sessionStorage.setItem('quiz.qrShown','1'); openQR(); }
+}
+// いまの問題の「押した記録」と「回答」を見張る
+function subQ(){
+  unsubQ.forEach(f=>f()); hp.buzz={}; hp.answers={};
+  unsubQ=[
+    be.on(`${base}/buzz/${H.qn}`,v=>{ hp.buzz=v||{}; autoAssign(); refresh(); }),
+    be.on(`${base}/answers/${H.qn}`,v=>{ hp.answers=v||{}; renderHost(); })
+  ];
+}
+function refresh(){ pushState(); renderHost(); }
+function save(){ try{ localStorage.setItem(HKEY,JSON.stringify(H)); }catch(e){} refresh(); }
+// 押した順(Firebaseのサーバーに届いた時刻順)
+function order(){
+  return Object.entries(hp.buzz).filter(([p])=>hp.players[p]&&!H.kicked[p])
+    .map(([pid,o])=>({pid,t:+(o&&o.t)||0})).sort((a,b)=>a.t-b.t||(a.pid<b.pid?-1:1));
+}
+// 解答権がだれにもなければ、押した順で次の人に渡す
+function autoAssign(){
+  if(!H||H.mode!=='buzz'||H.phase!=='open'||H.ans) return;
+  const f=order().find(o=>!H.wrong.includes(o.pid));
+  if(f){ H.ans=f.pid; SND.buzz(); save(); }
+}
+function pushState(){
+  if(!be||!base) return;
+  const q=QL[H.qi]||{q:'',a:''};
+  const st={epoch:H.epoch,mode:H.mode,qn:H.qn,no:H.qi+1,total:QL.length,phase:H.phase,
+    q:H.phase==='idle'?'':q.q, a:H.showAns?(q.a||''):'', ans:H.ans||'', right:H.right||'', wrong:H.wrong,
+    order:order().map(o=>o.pid), scores:H.scores, mark:H.mark, kicked:H.kicked};
+  const j=JSON.stringify(st); if(j===lastPush) return; lastPush=j;
+  be.set(base+'/state',st).catch(()=>{ lastPush=''; banner('データベースに書き込めません。Firebaseのルールに「quiz」を追加して「公開」したか確認してください。'); });
+}
+const nm=p=>(hp.players[p]&&hp.players[p].name)||'(退室した人)';
+
+/* --- 先生の操作 --- */
+function openQ(){
+  if(!QL.length) return toast('問題がありません。「設定」で問題を入れてください。');
+  be.remove(`${base}/buzz`); be.remove(`${base}/answers`);
+  H.qn++; Object.assign(H,{phase:'open',ans:null,wrong:[],right:null,showAns:false,mark:{}});
+  subQ(); save();
+}
+function correct(){
+  if(H.mode!=='buzz'||H.phase!=='open'||!H.ans) return;
+  H.scores[H.ans]=(H.scores[H.ans]||0)+1; H.right=H.ans; H.phase='done'; H.showAns=true;
+  SND.ok(); save();
+}
+function wrongA(){
+  if(H.mode!=='buzz'||H.phase!=='open'||!H.ans) return;
+  H.wrong.push(H.ans); H.ans=null; SND.ng(); save();
+  setTimeout(autoAssign,700);          // ブザーのあと、次に押していた人へ
+}
+function closeAll(){ if(H.mode==='all'&&H.phase==='open'){ H.phase='closed'; save(); } }
+function reveal(){
+  if(H.phase==='idle') return;
+  H.showAns=!H.showAns;
+  if(H.showAns&&H.phase==='open') H.phase=H.mode==='buzz'?'done':'closed';
+  save();
+}
+function move(d){
+  const n=H.qi+d; if(n<0||n>=QL.length) return;
+  H.qi=n; Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}}); save();
+}
+function enter(){
+  if(H.phase==='idle') openQ();
+  else if(H.phase==='open'&&H.mode==='all') closeAll();
+  else if(H.phase==='done'||H.phase==='closed'){ if(H.qi<QL.length-1){ move(1); openQ(); } else toast('最後の問題です。'); }
+}
+function toggleMark(p){
+  if(H.mode!=='all'||H.phase!=='closed') return;
+  if(H.mark[p]){ delete H.mark[p]; H.scores[p]=(H.scores[p]||0)-1; }
+  else { H.mark[p]=true; H.scores[p]=(H.scores[p]||0)+1; SND.ok(); }
+  save();
+}
+function setMode(m){ if(H.phase==='open'||H.mode===m) return; H.mode=m; Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}}); save(); }
+function kick(p){
+  if(!confirm(`「${nm(p)}」を退室させますか?\nそのiPadは名前の入力画面に戻り、得点は消えます。`)) return;
+  be.remove(`${base}/players/${p}`); be.remove(`${base}/presence/${p}`);
+  delete H.scores[p]; delete H.mark[p]; H.kicked[p]=true;
+  if(H.ans===p) H.ans=null;
+  save(); autoAssign();
+}
+
+/* --- 先生の画面の描画 --- */
+function renderHost(){
+  if(!H) return;
+  $('#hRoom').textContent=H.room;
+  $('#hDot').className='dot '+(be?(hp.conn?'on':'off'):'');
+  const ids=Object.keys(hp.players), online=ids.filter(p=>hp.presence[p]).length;
+  $('#hCount').textContent=`参加 ${ids.length}人`+(online<ids.length?`(接続中 ${online}人)`:'');
+  document.querySelectorAll('#hMode button').forEach(b=>{ b.classList.toggle('on',b.dataset.mode===H.mode); b.disabled=H.phase==='open'&&b.dataset.mode!==H.mode; });
+  const q=QL[H.qi];
+  $('#hNo').innerHTML=QL.length?`第${H.qi+1}問<small>/ ${QL.length}</small>`:'問題がありません';
+  $('#hPhase').textContent={idle:'出題前',open:H.mode==='buzz'?'早押し受付中':'回答受付中',done:'この問題は終わりました',closed:'締め切りました'}[H.phase];
+  const qt=$('#hQ');
+  qt.classList.toggle('idle',H.phase==='idle');
+  qt.innerHTML=H.phase==='idle'?(QL.length?'Enterキー(または「出題する」)で問題を出します':'「設定」で問題を入れてください'):esc(q.q);
+  $('#hA').hidden=!H.showAns||!q;
+  if(q) $('#hA').innerHTML=`<span>答え</span><b>${esc(q.a||'(答えが入っていません)')}</b>`;
+  const lamp=$('#hLamp'), list=$('#hList');
+  if(H.mode==='buzz'){
+    const o=order(), t0=o.length?o[0].t:0;
+    lamp.hidden=H.phase==='idle';
+    if(H.right){ lamp.className='lamp maru'; lamp.innerHTML=`<i>○</i><b>${esc(nm(H.right))}</b><span>正解!</span>`; }
+    else if(H.ans){ lamp.className='lamp on'; lamp.innerHTML=`<span>解答者</span><b>${esc(nm(H.ans))}</b>`; }
+    else if(H.phase==='open'){ lamp.className='lamp'; lamp.textContent=H.wrong.length?'解答権があいています。わかった人は押してください':'早押しボタンを押してください'; }
+    else { lamp.className='lamp'; lamp.textContent='正解者はいませんでした'; }
+    list.innerHTML=o.length?`<ol class="queue">${o.map((x,k)=>{
+      const d=x.t-t0, cls=H.right===x.pid?'o':H.wrong.includes(x.pid)?'x':H.ans===x.pid?'cur':'';
+      const st=cls==='o'?'○ 正解':cls==='x'?'× 不正解':cls==='cur'?'解答中':'';
+      return `<li class="${cls}"><span class="rk">${k+1}</span><span class="nm">${esc(nm(x.pid))}</span><span class="df">${k?'+'+(d/1000).toFixed(3)+'秒':''}</span>${k&&d<=NEAR_MS?'<em>ほぼ同時</em>':'<span></span>'}<span class="st">${st}</span></li>`;
+    }).join('')}</ol>`:(H.phase==='open'?'<p class="hint">まだだれも押していません。</p>':'');
+  } else {
+    lamp.hidden=true;
+    const ans=Object.entries(hp.answers).filter(([p,v])=>hp.players[p]&&v&&v.text);
+    if(H.phase==='idle'){ list.innerHTML=''; }
+    else {
+      const open=H.phase==='open';
+      ans.sort((a,b)=>normName(a[1].text).localeCompare(normName(b[1].text),'ja')||a[1].t-b[1].t);   // 同じ答えが並ぶように
+      const cards=ans.map(([p,v])=>`<button class="card${H.mark[p]?' maru':''}" data-act="mark" data-pid="${p}" ${open?'disabled':''}>
+        <span class="nm">${esc(nm(p))}</span><span class="tx${open?' hid':''}">${open?'回答しました':esc(v.text)}</span>${H.mark[p]?'<i>○</i>':''}</button>`).join('');
+      list.innerHTML=`<p class="tally">回答 <b>${ans.length}</b> / ${ids.length}人${open?'':'  ─ 正解のカードをタップすると○(もう一度タップで取り消し)'}</p><div class="cards">${cards}</div>`;
+    }
+  }
+  // 得点
+  const ps=ids.map(p=>({p,s:H.scores[p]||0,n:nm(p)})).sort((a,b)=>b.s-a.s||a.n.localeCompare(b.n,'ja'));
+  let rk=0;
+  $('#hScores').innerHTML=ps.length?ps.map((x,k)=>{ if(k===0||x.s!==ps[k-1].s) rk=k+1;
+    return `<li class="${hp.presence[x.p]?'':'off'} ${H.ans===x.p&&H.phase==='open'?'hot':''}"><span class="rk">${rk}位</span><span class="nm">${esc(x.n)}</span><b class="pt">${x.s}</b><button class="kick" data-act="kick" data-pid="${x.p}" title="退室させる" aria-label="${esc(x.n)}を退室させる">×</button></li>`; }).join('')
+    :'<li style="display:block;color:var(--soft);font-weight:500">QRコードを読み取ると、ここに名前が並びます。</li>';
+  // 操作ボタン
+  const last=H.qi>=QL.length-1, B=[];
+  B.push(['prev','前の問題','←','',H.qi>0]);
+  if(H.phase==='idle') B.push(['open','出題する','Enter','go',QL.length>0]);
+  else if(H.phase==='open'&&H.mode==='all') B.push(['close','締め切って公開','Enter','go',true]);
+  else B.push(['next2','次の問題を出す','Enter','go',H.phase!=='open'&&!last]);
+  if(H.mode==='buzz'){ const can=H.phase==='open'&&!!H.ans; B.push(['ok','○ 正解','O','ok',can],['ng','× 不正解','X','ng',can]); }
+  B.push(['reveal',H.showAns?'答えを隠す':'答えを出す','A','',H.phase!=='idle']);
+  B.push(['next','次の問題','→','',!last]);
+  $('#hCtrl').innerHTML=B.map(([a,l,k,c,en])=>`<button data-act="${a}" class="${c}" ${en?'':'disabled'}>${l}<kbd>${k}</kbd></button>`).join('');
+}
+
+/* --- モーダル --- */
+function openQR(){
+  const url=location.origin+location.pathname+'?room='+H.room+(LOCAL?'&local=1':'');
+  $('#qrCode').textContent=H.room; $('#qrUrl').textContent=url; $('#qrTab').hidden=!LOCAL;
+  $('#qrTab').onclick=()=>window.open(url,'_blank');
+  $('#qrModal').hidden=false;
+  const box=$('#qr'); box.innerHTML='';
+  const draw=()=>{ box.innerHTML=''; new QRCode(box,{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M}); };
+  if(window.QRCode) draw();
+  else loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js').then(draw).catch(()=>{ box.style.display='none'; });
+}
+function openSettings(){
+  $('#qIn').value=QL.map(x=>x.a?`${x.q}|${x.a}`:x.q).join('\n'); qInfo(); $('#setModal').hidden=false;
+}
+function parseQ(t){
+  return t.split(/\r?\n/).map(l=>{
+    let q=l, a='';
+    const m=l.match(/\t|｜|\|/);
+    if(m){ q=l.slice(0,m.index); a=l.slice(m.index+1).split('\t')[0]; }
+    return {q:q.trim().replace(/^"|"$/g,''),a:a.trim().replace(/^"|"$/g,'')};
+  }).filter(x=>x.q);
+}
+function qInfo(){ const L=parseQ($('#qIn').value), na=L.filter(x=>!x.a).length;
+  $('#qInfo').textContent=`${L.length}問`+(na?`(そのうち ${na}問は答えが入っていません)`:''); }
+function openRank(){
+  const ps=Object.keys(hp.players).map(p=>({s:H.scores[p]||0,n:nm(p)})).sort((a,b)=>b.s-a.s);
+  let rk=0;
+  $('#rankList').innerHTML=ps.slice(0,10).map((x,k)=>{ if(k===0||x.s!==ps[k-1].s) rk=k+1; return `<li><b>${rk}位</b><span>${esc(x.n)}</span><b>${x.s}点</b></li>`; }).join('')||'<li>まだ参加者がいません</li>';
+  $('#rankModal').hidden=false;
+}
+const anyModal=()=>!$('#qrModal').hidden||!$('#setModal').hidden||!$('#rankModal').hidden;
+
+$('#host').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b||!H) return;
+  const a=b.dataset.act;
+  if(b.tagName==='BUTTON') b.blur();   // Enterキーでボタンが二重に押されないように
+  if(a==='qr') openQR(); else if(a==='settings') openSettings(); else if(a==='rank') openRank();
+  else if(a==='mode') setMode(b.dataset.mode);
+  else if(!be) return;
+  else if(a==='open') openQ(); else if(a==='close') closeAll(); else if(a==='next2') enter();
+  else if(a==='ok') correct(); else if(a==='ng') wrongA(); else if(a==='reveal') reveal();
+  else if(a==='prev') move(-1); else if(a==='next') move(1);
+  else if(a==='mark') toggleMark(b.dataset.pid); else if(a==='kick') kick(b.dataset.pid);
+});
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{
+  if(e.target===m||e.target.closest('[data-act="close"]')) m.hidden=true;
+}));
+$('#qIn').addEventListener('input',qInfo);
+$('#qSave').onclick=()=>{
+  QL=parseQ($('#qIn').value);
+  try{ localStorage.setItem(QKEY,JSON.stringify(QL)); }catch(e){}
+  H.qi=Math.max(0,Math.min(H.qi,QL.length-1));
+  if(H.phase!=='idle') Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}});
+  $('#setModal').hidden=true; toast(`${QL.length}問を保存しました`); save();
+};
+$('#resetScore').onclick=()=>{ if(!confirm('全員の得点を0にしますか?')) return; H.scores={}; H.mark={}; save(); toast('得点をリセットしました'); };
+$('#clearAll').onclick=()=>{
+  if(!be||!confirm('参加者を全員削除しますか?\n得点も消え、iPadは名前の入力画面に戻ります。')) return;
+  ['players','presence','buzz','answers'].forEach(k=>be.remove(`${base}/${k}`));
+  Object.assign(H,{scores:{},mark:{},kicked:{},epoch:H.epoch+1,phase:'idle',ans:null,wrong:[],right:null,showAns:false});
+  $('#setModal').hidden=true; save(); toast('参加者を全員削除しました');
+};
+addEventListener('keydown',e=>{
+  if(!H||$('#host').hidden||!be) return;
+  if(anyModal()){ if(e.key==='Escape') document.querySelectorAll('.modal').forEach(m=>m.hidden=true); return; }
+  const tg=e.target.tagName; if(tg==='INPUT'||tg==='TEXTAREA') return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  const k=e.key.toLowerCase();
+  const act={enter:enter,o:correct,x:wrongA,a:reveal,arrowleft:()=>move(-1),pageup:()=>move(-1),arrowright:()=>move(1),pagedown:()=>move(1)}[k];
+  if(act){ e.preventDefault(); act(); }
+});
+
+/* ============ 学生の画面 ============ */
+const SS=LOCAL?sessionStorage:localStorage;   // お試しではタブごとに別の人になる
+let P=null;
+const sk=k=>`quiz.${k}.${P.room}`;
+function newPid(){ const p=rid(10); SS.setItem(sk('pid'),p); return p; }
+async function stuStart(room){
+  P={room,base:`quiz/${room}`,st:null,players:{},joined:false,msg:'',ferr:'',renaming:false,busy:false,pressed:{},myAns:{},dev:rid(6),conn:true,tried:false,lastHtml:''};
+  P.pid=SS.getItem(sk('pid'))||newPid();
+  show('stu'); renderStu();
+  try{ be=LOCAL?localBackend():await firebaseBackend(); }
+  catch(e){ P.fatal=e.message; renderStu(); return; }
+  be.connected(c=>{ P.conn=c; renderStu(); });
+  be.on(P.base+'/players',v=>{
+    P.players=v||{};
+    if(P.joined&&!P.players[P.pid]) leave('先生が参加者を整理しました。名前を入れて、もう一度参加してください。');
+    renderStu();
+  });
+  be.on(P.base+'/state',st=>{ P.st=st; onState(); renderStu(); });
+  setTimeout(()=>{ if(!P.st){ P.notFound=true; renderStu(); } },6000);
+}
+function onState(){
+  const st=P.st; if(!st) return;
+  if(st.kicked&&st.kicked[P.pid]){ leave('先生がこの名前を退室にしました。別の名前で入り直してください。',true); }
+  const ep=SS.getItem(sk('ep'));
+  if(ep&&+ep!==st.epoch){ SS.removeItem(sk('name')); SS.removeItem(sk('ep')); if(P.joined) leave('新しいクラスが始まりました。名前を入れてください。'); }
+  if(!P.joined&&!P.tried){ P.tried=true; const n=SS.getItem(sk('name')); if(n) join(n,true); }
+  const ak=st.qn+'/'+P.pid;
+  if(ak!==P.ansKey){ P.ansKey=ak; if(P.unAns) P.unAns();
+    const qn=st.qn; P.unAns=be.on(`${P.base}/answers/${qn}/${P.pid}`,v=>{ P.myAns[qn]=v&&v.text||''; renderStu(); }); }
+}
+async function join(raw,auto){
+  const name=String(raw||'').trim().replace(/\s+/g,' ');
+  const fail=m=>{ P.ferr=m; P.draft=name; renderStu(); };
+  if(!name) return fail('名前を入れてください。');
+  if(Array.from(name).length>NAME_MAX) return fail(`名前は${NAME_MAX}文字までにしてください。`);
+  const key=normName(name);
+  if(Object.entries(P.players).some(([p,o])=>p!==P.pid&&o&&normName(o.name)===key))
+    return fail(`「${name}」はほかの人が使っています。別の名前にしてください。`);
+  P.busy=true; P.ferr=''; renderStu();
+  try{
+    if(P.joined) await be.set(`${P.base}/players/${P.pid}/name`,name);
+    else await be.set(`${P.base}/players/${P.pid}`,{name,t:be.now()});
+    SS.setItem(sk('name'),name); SS.setItem(sk('ep'),String(P.st?P.st.epoch:1));
+    Object.assign(P,{name,joined:true,renaming:false,msg:'',draft:''});
+    if(!P.pres) P.pres=be.presence(`${P.base}/presence/${P.pid}/${P.dev}`);
+  }catch(e){ P.ferr='送信できませんでした。Wi-Fiを確認して、もう一度押してください。'; }
+  P.busy=false; renderStu();
+}
+function leave(msg,np){
+  P.joined=false; P.renaming=false; P.msg=msg; P.tried=true;
+  if(P.pres){ P.pres(); P.pres=null; }
+  SS.removeItem(sk('name')); SS.removeItem(sk('ep'));
+  if(np) P.pid=newPid();
+}
+function canBuzz(){ const st=P.st; return !!st&&P.joined&&st.mode==='buzz'&&st.phase==='open'&&!P.pressed[st.qn]&&!(st.order||[]).includes(P.pid); }
+function buzz(){
+  if(!canBuzz()) return;
+  const qn=P.st.qn; P.pressed[qn]=true; renderStu();
+  be.set(`${P.base}/buzz/${qn}/${P.pid}`,{t:be.now()}).catch(()=>{ P.pressed[qn]=false; toast('送信できませんでした。もう一度押してください。'); renderStu(); });
+}
+function sendAns(){
+  const st=P.st, inp=$('#stuIn'); if(!st||st.mode!=='all'||st.phase!=='open'||!inp) return;
+  const text=inp.value.trim(); if(!text) return toast('答えを入れてください。');
+  const qn=st.qn;
+  be.set(`${P.base}/answers/${qn}/${P.pid}`,{text,t:be.now()}).then(()=>{ inp.blur(); toast('送信しました'); },()=>toast('送信できませんでした。もう一度押してください。'));
+}
+function renderStu(){
+  if(!P) return;
+  const st=P.st;
+  let h;
+  if(P.fatal) h=`<div class="gate"><div class="gate-in"><h1>早押しクイズ</h1><p class="msg">${esc(P.fatal)}</p></div></div>`;
+  else if(!st) h=`<div class="gate"><div class="gate-in"><h1>早押しクイズ</h1><p>${P.notFound?`ルーム「${esc(P.room)}」が見つかりません。先生の画面のQRコードを、もう一度読み取ってください。`:'つないでいます…'}</p></div></div>`;
+  else if(!P.joined||P.renaming) h=joinHtml();
+  else h=mainHtml();
+  if(!P.conn) h=`<div class="s-off">通信が切れています。Wi-Fiを確認してください。</div>`+h;
+  if(h===P.lastHtml) return;
+  // 入力中の文字が消えないように、同じ欄なら中身とカーソルを引き継ぐ
+  const el=$('#stu'), old=el.querySelector('#stuIn');
+  const keep=old?{k:old.dataset.k,v:old.value,f:document.activeElement===old,s:old.selectionStart,e:old.selectionEnd}:null;
+  el.innerHTML=h; P.lastHtml=h;
+  const ni=el.querySelector('#stuIn');
+  if(ni&&keep&&keep.k===ni.dataset.k){ ni.value=keep.v; if(keep.f){ ni.focus(); try{ ni.setSelectionRange(keep.s,keep.e); }catch(e){} } }
+}
+function joinHtml(){
+  const v=P.draft||(P.renaming?P.name:SS.getItem(sk('name')))||'';
+  return `<div class="gate s-join"><div class="gate-in">
+    <h1>早押しクイズ</h1><p>ルーム ${esc(P.room)}</p>
+    ${P.msg?`<p class="msg">${esc(P.msg)}</p>`:''}
+    <label for="stuIn">ニックネーム(${NAME_MAX}文字まで)</label>
+    <input type="text" id="stuIn" data-k="name" maxlength="${NAME_MAX*2}" autocomplete="off" enterkeyhint="done" value="${esc(v)}" placeholder="例:ボキマスター">
+    <p class="err">${esc(P.ferr)}</p>
+    <button class="btn main" data-sact="join" ${P.busy?'disabled':''}>${P.renaming?'この名前に変える':'参加する'}</button>
+    ${P.renaming?'<button class="btn" data-sact="cancel">やめる</button>':''}
+    <p>名前は先生の画面(プロジェクター)に表示されます。本名や学籍番号は入れないでください。</p>
+  </div></div>`;
+}
+function mainHtml(){
+  const st=P.st, me=P.pid, sc=st.scores||{}, ids=Object.keys(P.players), my=sc[me]||0;
+  const rk=1+ids.filter(p=>(sc[p]||0)>my).length;
+  const top=`<header class="s-top"><b class="me">${esc(P.name)}</b><span class="pts">${my}点</span><span style="color:var(--soft)">${rk}位 / ${ids.length}人</span><span class="sp"></span><button data-sact="rename">名前を変える</button></header>`;
+  const q=st.phase!=='idle'&&st.q?`<div class="s-q"><span class="no">第${st.no}問</span><p>${esc(st.q)}</p></div>`:'';
+  const ansBar=st.a?`<div class="s-answer"><span>答え</span><b>${esc(st.a)}</b></div>`:'';
+  let cls='', body;
+  const wrong=st.wrong||[], ord=st.order||[];
+  if(st.phase==='idle') body=`<p class="s-big">先生が問題を出すのを<br>待っています</p><p class="s-sub">${st.mode==='buzz'?'早押しモードです。問題が出たら、わかった瞬間にボタンを押そう。':'全員回答モードです。問題が出たら、答えを入れて送信しよう。'}</p>`;
+  else if(st.mode==='buzz'){
+    const pos=ord.indexOf(me);
+    if(st.right===me){ cls='maru'; body=`<div class="mk">○</div><p class="s-big">正解! +1点</p>`; }
+    else if(st.ans===me){ cls='turn'; body=`<p class="s-big">あなたの番です!</p><p class="s-sub">大きな声で答えを言ってください</p>`; }
+    else if(wrong.includes(me)){ cls='batsu'; body=`<div class="mk">×</div><p class="s-big">不正解</p><p class="s-sub">この問題ではもう押せません</p>`; }
+    else if(st.phase!=='open'){ const r=st.right?P.players[st.right]:null; body=`<p class="s-big">${r?esc(r.name)+'さんが正解しました':'この問題は終わりました'}</p><p class="s-sub">次の問題を待っています</p>`; }
+    else if(pos>=0||P.pressed[st.qn]){ body=`<p class="s-big">押しました!${pos>=0?`<br>${pos+1}番目`:''}</p><p class="s-sub">${st.ans?'前の人がまちがえると、順番が回ってきます':'先生の判定を待っています'}</p>`; }
+    else body=`<button class="buzzer" data-sact="buzz" aria-label="早押しボタン">押す!</button>`;
+  } else {
+    const mine=P.myAns[st.qn]||'', ok=(st.mark||{})[me];
+    if(st.phase==='open') body=`<div class="s-ansbox"><input type="text" id="stuIn" data-k="ans${st.qn}" maxlength="40" autocomplete="off" enterkeyhint="send" placeholder="答えを入れる" value="${esc(mine)}">
+      <button class="btn main" data-sact="send">${mine?'送り直す':'送信する'}</button>
+      <p class="s-sub">${mine?`送信済み:「${esc(mine)}」<br>締め切りまでは送り直せます`:'まだ送信していません'}</p></div>`;
+    else if(ok){ cls='maru'; body=`<div class="mk">○</div><p class="s-big">正解! +1点</p><p class="s-sub">あなたの答え:「${esc(mine)}」</p>`; }
+    else body=`<p class="s-big">締め切りました</p><p class="s-sub">${mine?`あなたの答え:「${esc(mine)}」`:'この問題は回答しませんでした'}</p>`;
+  }
+  return top+q+`<div class="s-body ${cls}">${body}</div>`+ansBar;
+}
+// 早押しは指が触れた瞬間に送る(click より速い)
+$('#stu').addEventListener('pointerdown',e=>{ if(e.target.closest('[data-sact="buzz"]')){ e.preventDefault(); buzz(); } });
+$('#stu').addEventListener('click',e=>{
+  const b=e.target.closest('[data-sact]'); if(!b||!P) return;
+  const a=b.dataset.sact, inp=$('#stuIn');
+  if(a==='join') join(inp?inp.value:'');
+  else if(a==='rename'){ P.renaming=true; P.ferr=''; P.draft=''; renderStu(); }
+  else if(a==='cancel'){ P.renaming=false; P.ferr=''; P.draft=''; renderStu(); }
+  else if(a==='send') sendAns();
+});
+$('#stu').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.isComposing||e.target.id!=='stuIn') return;
+  e.preventDefault();
+  if(e.target.dataset.k==='name') join(e.target.value); else sendAns();
+});
+
+/* ============ 入口 ============ */
+$('#pwGo').onclick=()=>{
+  if($('#pwIn').value===HOST_PASSWORD){ sessionStorage.setItem('quiz.auth','1'); hostStart(); }
+  else $('#pwErr').textContent='パスワードが違います。';
+};
+$('#pwIn').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing) $('#pwGo').click(); });
+$('#roomGo').onclick=()=>{ const c=$('#roomIn').value.toUpperCase().replace(/[^A-Z0-9]/g,''); if(c) location.search='?room='+c; };
+$('#roomIn').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing) $('#roomGo').click(); });
+
+const roomQ=(QS.get('room')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+if(QS.has('host')){ if(sessionStorage.getItem('quiz.auth')==='1') hostStart(); else { show('login'); $('#pwIn').focus(); } }
+else if(roomQ) stuStart(roomQ);
+else show('landing');
+</script>
+</body>
+</html>
