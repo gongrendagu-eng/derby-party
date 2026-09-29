@@ -76,6 +76,7 @@ textarea{resize:vertical;line-height:1.6}
 table.paper{width:100%;border-collapse:collapse;font-family:var(--f-paper)}
 .paper th{font-family:var(--f-body);font-size:.78rem;font-weight:800;color:var(--paper);background:var(--ink);padding:5px 6px;border-right:1px solid var(--paper);white-space:nowrap;position:sticky;top:0;z-index:1}
 .paper td{padding:4px 8px;border-bottom:1px solid var(--rule);border-right:1px solid var(--line);font-size:clamp(.95rem,1.35vw,1.2rem);white-space:nowrap}
+.paper.many td{padding-top:1px;padding-bottom:1px}
 .paper td.mk{font-size:clamp(1.3rem,2vw,1.8rem);text-align:center;width:2.2em;font-weight:800;line-height:1}
 .mk.m0{color:var(--win)} .mk.m1{color:#2b5fd6} .mk.m2{color:var(--ink)} .mk.m3{color:var(--soft)} .mk.m4{color:var(--soft)}
 .paper td.nm{font-weight:800;font-size:clamp(1.1rem,1.75vw,1.55rem)}
@@ -153,7 +154,14 @@ button:disabled{cursor:default}
 .tk.hit{background:var(--gold);color:#1e1a14;border-color:var(--gold)}
 .tk-sum{margin-left:auto;font-size:.9em}
 .free-row{display:flex;gap:8px;align-items:center}
-.free-row .free{flex:1}
+.free-row [data-amt]{border:1px solid var(--line);background:transparent;border-radius:6px;padding:3px 8px;font-size:.8rem;font-weight:800}
+.free-row [data-amt].on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.free-row input{flex:1;min-width:3em;border:2px solid var(--line);border-radius:6px;padding:3px 8px;font-size:1rem;font-weight:800;background:var(--bg);text-align:right}
+.free-row input.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--gold)}
+.game.betting .free-row [data-amt]{font-size:clamp(.9rem,1.1vw,1.15rem);padding:clamp(4px,.35vw,8px) 10px;border-radius:8px}
+.game.betting .free-row input{font-size:clamp(.95rem,1.2vw,1.3rem)}
+.hs button sup{font-size:.55em;margin-left:1px}
+.opt button{white-space:nowrap}
 .add{border:2px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:8px;padding:3px 14px;font-weight:800;white-space:nowrap}
 .game.betting .add{font-size:clamp(.95rem,1.2vw,1.25rem);padding:clamp(3px,.35vw,8px) 16px}
 .racing .free-row{display:none}
@@ -265,18 +273,26 @@ button:disabled{cursor:default}
 .a-paper tr.on{outline:2px solid var(--gl);outline-offset:-2px}
 .a-paper tr.mark{outline:2px solid var(--pk);outline-offset:-2px}
 .a-paper .axis{background:var(--pk);color:#fff;font-size:11px;padding:0 6px;border-radius:999px;margin-right:6px;font-family:var(--arc)}
-.a-sub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.a-sub{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:10px}
 .a-grade{font-family:var(--arc);font-size:13px;color:#fff;padding:0 7px;border-radius:4px;background:#6f6555}
 .a-grade.G1{background:#1f4fb4}.a-grade.G2{background:#c8102e}.a-grade.G3{background:#1f8a43}
 .a-panel{background:var(--pnl);border:2px solid var(--edge);border-radius:10px;padding:10px}
 .a-panel h3{margin:0 0 8px;font-family:var(--arc);font-weight:400;font-size:15px;color:var(--cy);display:flex;justify-content:space-between;align-items:baseline}
 .a-panel h3 small{font-family:var(--dot);font-size:12px;color:#9aa4d6}
 .a-grid{display:grid;gap:3px}
-.a-grid>*{height:34px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.a-grid>*{height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;min-width:0;overflow:hidden}
+.a-grid.small>*{font-size:11px;height:28px}
 .a-grid .hd{font-family:var(--arc);font-size:14px}
 .a-grid button{background:#050505;color:var(--led);border:1px solid #2a3060;padding:0}
 .a-grid button.on{background:var(--pk);color:#fff;box-shadow:0 0 12px rgba(255,61,139,.9);border-color:#fff}
 .a-grid.dim button:not(.on){opacity:.55}
+.a-pops{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:4px}
+.a-pops button{background:#050505;border:1px solid #2a3060;border-radius:5px;color:#eef1ff;font-size:14px;padding:5px 6px;display:flex;justify-content:space-between;gap:6px}
+.a-pops button b{color:var(--led);font-weight:400}
+.a-pops button.on{background:var(--pk);border-color:#fff}
+.a-pops button.on b{color:#fff}
+.a-chosen{margin-top:8px;font-size:13px;color:#cfd5f5;line-height:1.5}
+.a-chosen button{background:transparent;border:1px solid #5a66a8;border-radius:5px;color:#aab3e6;font-size:12px;padding:1px 8px}
 .a-help{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:13px;color:#cfd5f5}
 .a-help button{font-family:var(--arc);font-size:13px;background:var(--pk);color:#fff;border:0;border-radius:999px;padding:5px 12px}
 .a-hint{margin:8px 0 0;font-size:12px;color:#9aa4d6;line-height:1.5}
@@ -289,18 +305,18 @@ button:disabled{cursor:default}
 .a-list .none{color:#8d96c8;background:transparent;border:0}
 .a-sum{margin-top:6px;text-align:right;font-size:14px;color:var(--chrome)}
 /* 操作パネル */
-.a-ctrl{position:sticky;bottom:0;z-index:6;background:linear-gradient(#232a55,#10142e);border-top:4px solid var(--chrome);display:flex;align-items:center;gap:14px;padding:10px 16px;flex-wrap:wrap}
-.a-types{display:flex;flex-direction:column;gap:6px}
-.a-pill{font-family:var(--arc);font-size:16px;width:96px;height:34px;border-radius:999px;border:2px solid #56609a;background:#1a2048;color:#aab3e6}
+.a-ctrl{position:sticky;bottom:0;z-index:6;background:linear-gradient(#232a55,#10142e);border-top:4px solid var(--chrome);display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap}
+.a-types{display:grid;grid-template-columns:repeat(4,auto);gap:5px}
+.a-pill{font-family:var(--arc);font-size:13px;width:70px;height:32px;border-radius:999px;border:2px solid #56609a;background:#1a2048;color:#aab3e6}
 .a-pill.on{background:var(--cy);color:#062030;border-color:#fff;box-shadow:0 0 14px rgba(57,224,255,.9)}
 .a-chips{display:flex;gap:8px}
-.a-chip{width:74px;height:74px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.4) 0,transparent 42%),#c02c64;border:5px dashed #ffd1e3;font-family:var(--arc);font-size:15px;color:#fff;transition:transform .08s}
+.a-chip{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.4) 0,transparent 42%),#c02c64;border:5px dashed #ffd1e3;font-family:var(--arc);font-size:15px;color:#fff;transition:transform .08s}
 .a-chip.c100{background-color:#2456c9;border-color:#cfe0ff}
 .a-chip.c1000{background-color:#1f8a4c;border-color:#c9ffd9}
 .a-chip:active,.a-pill:active,.a-sbtn:active{transform:scale(.93)}
 .a-small{display:flex;flex-direction:column;gap:6px}
 .a-sbtn{font-family:var(--arc);font-size:14px;width:78px;height:36px;border-radius:8px;background:#2a315e;border:2px solid #5a66a8;color:#dfe4ff}
-.a-led{display:flex;flex-direction:column;gap:3px;min-width:220px;flex:1}
+.a-led{display:flex;flex-direction:column;gap:3px;min-width:170px;flex:1}
 .a-led small{font-size:13px;color:var(--chrome)}
 .a-led .led{font-size:32px}
 .a-led .what{font-size:14px;color:var(--pk);text-shadow:0 0 6px rgba(255,61,139,.6);min-height:1.3em}
@@ -308,7 +324,7 @@ button:disabled{cursor:default}
 .a-go small{font-size:12px;font-family:var(--dot);text-shadow:none}
 .a-go:active{transform:scale(.94)}
 .a-go.off{filter:grayscale(.75) brightness(.7);box-shadow:0 0 0 4px #333}
-.a-done{width:104px;height:104px;border-radius:18px;background:linear-gradient(#3dff8c,#12944a);border:4px solid #eafff1;color:#06301a;font-family:var(--arc);font-size:22px;line-height:1.1;box-shadow:0 0 16px rgba(61,255,140,.6);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.a-done{width:92px;height:100px;border-radius:18px;background:linear-gradient(#3dff8c,#12944a);border:4px solid #eafff1;color:#06301a;font-family:var(--arc);font-size:22px;line-height:1.1;box-shadow:0 0 16px rgba(61,255,140,.6);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .a-done small{font-family:var(--dot);font-size:11px;margin-top:4px}
 .a-done:active{transform:scale(.94)}
 .a-fixed{flex:1;display:flex;flex-direction:column;gap:4px;padding:18px 10px}
@@ -338,7 +354,7 @@ button:disabled{cursor:default}
 .a-res h1{margin:10px 0 0;font-family:var(--arc);font-weight:400;font-size:clamp(70px,12vw,120px);line-height:1.1;color:var(--gl);text-shadow:0 0 30px rgba(255,207,58,.9),6px 6px 0 #b3261e;transform:rotate(-4deg)}
 .a-res h1.miss{color:#9aa4d6;text-shadow:none;transform:none;font-size:clamp(48px,8vw,72px)}
 .a-res .pay{font-size:clamp(40px,7vw,64px);color:var(--led);text-shadow:0 0 14px rgba(255,177,58,1)}
-.a-pay b{width:3em;color:var(--cy);font-weight:400}
+.a-pay b{width:4em;color:var(--cy);font-weight:400}
 .a-res .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;max-width:1100px;margin:16px auto 0;text-align:left}
 .a-res .wait{color:#9aa4d6;margin-top:14px}
 .a-coins{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:15}
@@ -368,7 +384,9 @@ button:disabled{cursor:default}
   <div class="rules">
     <b>単勝</b>…選んだ馬が<b>1着</b>なら当たり。配当は高め。<br>
     <b>複勝</b>…選んだ馬が<b>3着以内</b>なら当たり。当たりやすいけど配当は低め。<br>
-    <b>馬連</b>…2頭を選び、その2頭が<b>1着と2着</b>なら当たり(順番は関係なし)。当てるのは難しいけど配当は高め。<br>
+    <b>ワイド</b>…2頭を選び、2頭とも<b>3着以内</b>なら当たり。<br>
+    <b>馬連</b>…2頭を選び、その2頭が<b>1着と2着</b>なら当たり(順番は関係なし)。<b>馬単</b>は1着→2着の<b>順番どおり</b>。<br>
+    <b>3連複</b>…3頭を選び、その3頭が<b>1〜3着</b>なら当たり(順番は関係なし)。<b>3連単</b>は1着→2着→3着の<b>順番どおり</b>。難しいほど配当は高くなります。<br>
     金額は100円単位。1レースに何枚でも買えます(単勝と馬連をいっしょに、馬連の流しやBOXも)。<br>
     当たると「賭けたお金 × オッズ」がもらえます。<br>
     距離によって有利な馬が変わります。短い距離は「逃げ・先行」、長い距離は「差し・追込」の馬が有利。記者の短評もヒントにしよう!
@@ -387,7 +405,7 @@ button:disabled{cursor:default}
           <option value="3000">芝3000m(長距離)</option>
         </select>
       </label>
-      <label>出走する馬の数<select id="f-horses"><option>6</option><option>7</option><option>8</option></select></label>
+      <label>出走する馬の数<select id="f-horses"><option value="grade">グレードで決める(OP 6頭・G3/G2 8頭・G1 10頭)</option><option>6</option><option>7</option><option>8</option><option>10</option></select></label>
       <label>最初の所持金(円)<input type="number" id="f-money" min="1000" step="1000"></label>
     </div>
   </fieldset>
@@ -508,6 +526,10 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 /* 枠の色(1白 2黒 3赤 4青 5黄 6緑 7橙 8桃) */
 const WAKU=[['#ffffff','#1e1a14'],['#222222','#ffffff'],['#d62b2b','#ffffff'],['#2b5fd6','#ffffff'],['#f2c200','#1e1a14'],['#1f9d4a','#ffffff'],['#f07d1a','#1e1a14'],['#f28bb8','#1e1a14']];
+function wakuIdx(no,n){ if(n<=8) return no-1; const extra=n-8; let c=0;
+  for(let f=0;f<8;f++){ c+=f>=8-extra?2:1; if(no<=c) return f; } return 7; }
+const curH=()=>S&&S.H?S.H:(P.st&&P.st.horses?P.st.horses.length:8);
+const wk=no=>WAKU[wakuIdx(no,curH())];
 // 簿記・ビジネスにちなんだ馬名
 const PUN=['カリカタスター','カシカタダッシュ','ウリカケキング','ゲンカショウキャク','ボキイチバン','シサンゴウケイ','リュウドウヒリツ','テガタハイシ',
   'ゼイコミスプリント','キマツセイリ','シワケノテンサイ','ゲンキンスイトウ','ソンエキブンキテン','ジュンシサンオー','ザイムショヒョウ','ツキジメダッシュ',
@@ -547,7 +569,7 @@ function raceName(last){
 const rTitle=()=>`${S.rn.no?'第'+S.rn.no+'回 ':''}${S.rn.name}`;
 const WRITERS=['本紙','A記者','B記者','C記者'];
 
-const DEF={races:3,dist:'random',horses:'8',money:10000,groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ',net:'off'};
+const DEF={races:3,dist:'random',horses:'grade',money:10000,groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ',net:'off'};
 function loadCfg(){try{const s=localStorage.getItem('keiba2.cfg');if(s)return Object.assign({},DEF,JSON.parse(s));}catch(e){}return{...DEF};}
 function saveCfg(c){try{localStorage.setItem('keiba2.cfg',JSON.stringify(c));}catch(e){}}
 function fillForm(c){$('#f-races').value=c.races;$('#f-dist').value=c.dist;$('#f-horses').value=c.horses;$('#f-money').value=c.money;$('#f-groups').value=c.groups;$('#f-places').value=c.places;$('#f-net').value=c.net||'off';netNote();}
@@ -607,16 +629,37 @@ function stepRun(run,t){
 }
 const orderOf=run=>run.map((r,i)=>({i,t:r.fin,x:r.x})).sort((a,b)=>(a.t??1e9)-(b.t??1e9)||b.x-a.x).map(o=>o.i);
 
-// 馬連の組み合わせのキー("3-5" のように小さい番号が先)
-const qnKey=(a,b)=>Math.min(a,b)+'-'+Math.max(a,b);
+/* ---------- 馬券の種類 ---------- */
+// k:選ぶ頭数、ord:順番どおりに当てる券種、rate:払戻率(JRAと同じくらい)、min/max:オッズの下限・上限
+const BT={win:{name:'単勝',s:'単',k:1,rate:.8,min:1.1,max:199.9},plc:{name:'複勝',s:'複',k:1,rate:.8,min:1.0,max:49.9},
+  wd:{name:'ワイド',s:'ワ',k:2,rate:.775,min:1.0,max:499.9,desc:'2頭とも3着以内'},qn:{name:'馬連',s:'連',k:2,rate:.775,min:1.1,max:999.9,desc:'1着と2着(順番は関係なし)'},
+  ex:{name:'馬単',s:'馬単',k:2,ord:true,rate:.75,min:1.1,max:1999.9,desc:'1着→2着をその順番で'},t3f:{name:'3連複',s:'3複',k:3,rate:.75,min:1.1,max:4999.9,desc:'1〜3着の3頭(順番は関係なし)'},
+  t3:{name:'3連単',s:'3単',k:3,ord:true,rate:.725,min:1.1,max:29999.9,desc:'1着→2着→3着をその順番で'}};
+const BTK=Object.keys(BT), COMBO=BTK.slice(2);
+const sk=a=>[...a].sort((x,y)=>x-y).join('-');
+const qnKey=(a,b)=>sk([a,b]);
+const tkKey=t=>BT[t.type].ord?t.hs.join('-'):sk(t.hs);
+const keyText=(type,k)=>k.split('-').join(BT[type].ord?'→':'-');
+// 当たりの判定(o:着順の馬番)
+function tkHit(t,o){ const h=t.hs, top3=o.slice(0,3);
+  switch(t.type){ case 'win': return h[0]===o[0]; case 'plc': return top3.includes(h[0]);
+    case 'wd': return h.every(x=>top3.includes(x)); case 'qn': return sk(h)===sk(o.slice(0,2));
+    case 'ex': return h[0]===o[0]&&h[1]===o[1]; case 't3f': return sk(h)===sk(top3);
+    case 't3': return h[0]===o[0]&&h[1]===o[1]&&h[2]===o[2]; }
+  return false; }
+// 当たりの買い目の一覧(払い戻しの表示用)
+function winKeys(o){ const [a,b,c]=o; return {wd:[sk([a,b]),sk([a,c]),sk([b,c])],qn:[sk([a,b])],ex:[a+'-'+b],t3f:[sk([a,b,c])],t3:[a+'-'+b+'-'+c]}; }
 function calcOdds(){
-  // 馬連は組み合わせが多いので、1,200回だと数字がブレる。3,000回に増やしている
-  const N=3000, win=S.horses.map(()=>0), top3=S.horses.map(()=>0), qn={};
+  // 3,000回シミュレーションして、各馬券が当たる確率を数える
+  const N=3000, H=S.H, win=Array(H).fill(0), top3=Array(H).fill(0), cnt={}; COMBO.forEach(k=>cnt[k]={});
+  const inc=(k,key)=>{ cnt[k][key]=(cnt[k][key]||0)+1; };
   for(let n=0;n<N;n++){
     const run=newRun(); let t=0;
     while(run.some(r=>r.fin===null)){ stepRun(run,t); t++; }
-    const o=orderOf(run); win[o[0]]++; o.slice(0,3).forEach(i=>top3[i]++);
-    const k=qnKey(o[0]+1,o[1]+1); qn[k]=(qn[k]||0)+1;
+    const o=orderOf(run), [a,b,c]=o.slice(0,3).map(i=>i+1);
+    win[o[0]]++; o.slice(0,3).forEach(i=>top3[i]++);
+    inc('qn',sk([a,b])); inc('ex',a+'-'+b); inc('t3f',sk([a,b,c])); inc('t3',a+'-'+b+'-'+c);
+    inc('wd',sk([a,b])); inc('wd',sk([a,c])); inc('wd',sk([b,c]));
   }
   S.horses.forEach((h,i)=>{
     h.pw=win[i]/N;
@@ -625,13 +668,24 @@ function calcOdds(){
     h.plc=Math.min(49.9,Math.max(1.0,Math.round(0.8/p3*10)/10));
   });
   [...S.horses].sort((a,b)=>a.win-b.win).forEach((h,k)=>h.pop=k+1);
-  // 馬連オッズ = 0.775 ÷ その2頭が1・2着になる確率(JRAの馬連の払戻率77.5%)
-  S.qn={};
-  for(let a=1;a<=S.H;a++) for(let b=a+1;b<=S.H;b++){
-    const k=a+'-'+b, p=Math.max((qn[k]||0)/N,0.0008);
-    S.qn[k]=Math.min(999.9,Math.max(1.1,Math.round(0.775/p*10)/10));
-  }
+  // 組み合わせの馬券は数が多く、回数だけだとブレるので、勝率から計算した見込み(Harville式)を少し混ぜる
+  const p=S.horses.map(h=>Math.max(h.pw,0.003)), ps=p.reduce((s,x)=>s+x,0), q=n=>p[n-1]/ps;
+  const ex2=(i,j)=>q(i)*q(j)/(1-q(i)), tri=(i,j,k)=>ex2(i,j)*q(k)/Math.max(0.02,1-q(i)-q(j));
+  const pr={}; COMBO.forEach(k=>pr[k]={});
+  const add=(k,key,v)=>{ pr[k][key]=(pr[k][key]||0)+v; };
+  for(let i=1;i<=H;i++) for(let j=1;j<=H;j++){ if(i===j) continue;
+    add('ex',i+'-'+j,ex2(i,j)); add('qn',sk([i,j]),ex2(i,j));
+    for(let k=1;k<=H;k++){ if(k===i||k===j) continue; const v=tri(i,j,k);
+      add('t3',i+'-'+j+'-'+k,v); add('t3f',sk([i,j,k]),v); add('wd',sk([i,j]),v); add('wd',sk([i,k]),v); add('wd',sk([j,k]),v); } }
+  // 回数が少ない組み合わせほど見込みの値を重く使う(c=0 なら見込みだけ、c が多ければ回数どおり)
+  S.odds={};
+  COMBO.forEach(type=>{ const b=BT[type]; S.odds[type]={};
+    Object.keys(pr[type]).forEach(key=>{ const v=pr[type][key], c=cnt[type][key]||0, w=c/(c+10);
+      const pp=w*c/N+(1-w)*v;
+      S.odds[type][key]=Math.min(b.max,Math.max(b.min,Math.round(b.rate/pp*10)/10)); }); });
+  S.qn=S.odds.qn;
 }
+
 // 記者の予想印(本当の強さ+記者ごとのカン)
 function makeMarks(){
   S.horses.forEach(h=>h.marks=WRITERS.map(()=>''));
@@ -669,7 +723,7 @@ async function start(){
   if(c.net==='firebase'&&!fbReady()) return err('firebase-config.js がまだ設定されていません。手順書の「Firebaseの準備」を見てください。');
   err(''); saveCfg(c);
   S={cfg:c,races:c.races,race:1,H:+c.horses,places:p,phase:'bet',
-     groups:g.map(name=>({name,money:c.money,tickets:[],draft:{type:'win',h:null,h2:null,amt:1000},staked:0,result:null}))};
+     groups:g.map(name=>({name,money:c.money,tickets:[],draft:{type:'win',hs:[],amt:1000},staked:0,result:null}))};
   const sb=$('#startBtn'), reset=()=>{ sb.disabled=false; sb.textContent='ゲームをはじめる'; };
   sb.disabled=true;
   if(c.net!=='off'){
@@ -686,51 +740,46 @@ async function start(){
 function setupRace(){
   S.dist=S.cfg.dist==='random'?pick([1200,1600,2000,2400,3000]):+S.cfg.dist;
   S.rn=raceName(S.race===S.races);
+  S.H=S.cfg.horses==='grade'?{OP:6,G3:8,G2:8,G1:10}[S.rn.grade]:+S.cfg.horses;
   S.step=S.dist/((6.5+S.dist/450)*60);          // 1200m≈9秒、3000m≈13秒
   const names=namePool();
   S.horses=names.map((name,i)=>makeHorse(i+1,name,S.dist));
   calcOdds(); makeMarks();
   S.horses.forEach(h=>h.comment=makeComment(h));
   S.phase='bet'; S.order=null;
-  S.groups.forEach(g=>{g.tickets=[];g.draft.h=null;g.draft.h2=null;g.result=null;g.staked=0;g.src=null;g.done=false;});
+  S.groups.forEach(g=>{g.tickets=[];g.draft.hs=[];g.result=null;g.staked=0;g.src=null;g.done=false;});
 }
 /* ---------- 馬券(1班が1レースに何枚でも買える) ---------- */
-// 馬券1枚 = {type:'win'|'plc'|'qn', h, h2(馬連のみ), amt(100円単位)}
-const betReady=b=>b.h!=null&&(b.type!=='qn'||b.h2!=null);
-// 先生の画面で馬を選ぶ(馬連は2頭まで。3頭目を選ぶと古いほうが外れる)
-function pickHorse(b,n){
-  if(b.type!=='qn'){ b.h=b.h===n?null:n; b.h2=null; return; }
-  if(b.h===n){ b.h=b.h2??null; b.h2=null; }
-  else if(b.h2===n) b.h2=null;
-  else if(b.h==null) b.h=n;
-  else if(b.h2==null) b.h2=n;
-  else { b.h=b.h2; b.h2=n; }
-}
-function setType(b,t){ b.type=t; if(t!=='qn') b.h2=null; }
-const picked=(b,n)=>b.h===n||(b.type==='qn'&&b.h2===n);
-const numTag=no=>{const [bg,fg]=WAKU[no-1];return `<span class="num" style="background:${bg};color:${fg}">${no}</span>`;};
+// 馬券1枚 = {type, hs:[馬番…](馬単・3連単は1着→2着→3着の順), amt(100円単位)}
+const need=t=>BT[t].k;
+const betReady=d=>d.hs.length===need(d.type);
+// 馬を選ぶ(決まった頭数まで。多すぎると最初に選んだ馬が外れる)
+function pickHorse(d,n){ const i=d.hs.indexOf(n); if(i>=0){ d.hs.splice(i,1); return; } d.hs.push(n); while(d.hs.length>need(d.type)) d.hs.shift(); }
+function setType(d,t){ d.type=t; while(d.hs.length>need(t)) d.hs.pop(); }
+const picked=(d,n)=>d.hs.includes(n);
+const numTag=no=>{const [bg,fg]=wk(no);return `<span class="num" style="background:${bg};color:${fg}">${no}</span>`;};
 const tkTotal=ts=>(ts||[]).reduce((s,t)=>s+t.amt,0);
-const tkHas=(t,n)=>t.h===n||(t.type==='qn'&&t.h2===n);
-const tkSame=(a,b)=>a.type===b.type&&(a.type==='qn'?qnKey(a.h,a.h2)===qnKey(b.h,b.h2):a.h===b.h);
-const tkOdds=t=>t.type==='qn'?S.qn[qnKey(t.h,t.h2)]:t.type==='plc'?S.horses[t.h-1].plc:S.horses[t.h-1].win;
+const tkHas=(t,n)=>t.hs.includes(n);
+const tkSame=(a,b)=>a.type===b.type&&tkKey(a)===tkKey(b);
+const oddsOf=(odds,horses,t)=>t.type==='win'?horses[t.hs[0]-1].win:t.type==='plc'?horses[t.hs[0]-1].plc:((odds||{})[t.type]||{})[tkKey(t)]||0;
+const tkOdds=t=>oddsOf(S.odds,S.horses,t);
 const remain=g=>g.money-tkTotal(g.tickets);
 // 馬券を足す(同じ買い目なら金額をまとめる)
-function addTicket(list,t){ const s=list.find(x=>tkSame(x,t)); if(s) s.amt+=t.amt; else list.push({...t}); }
+function addTicket(list,t){ const s=list.find(x=>tkSame(x,t)); if(s){ s.amt+=t.amt; return; }
+  list.push({type:t.type,hs:BT[t.type].ord?[...t.hs]:[...t.hs].sort((a,b)=>a-b),amt:t.amt}); }
 // 届いた馬券を確かめる(おかしなものは捨て、所持金を超える分は受け付けない)
 function cleanTickets(arr,money,H){
   const out=[]; let sum=0; const ok=n=>Number.isInteger(n)&&n>=1&&n<=H;
-  (Array.isArray(arr)?arr:Object.values(arr||{})).slice(0,60).forEach(t=>{
-    if(!t) return;
-    const type=['win','plc','qn'].includes(t.type)?t.type:null, amt=Math.floor((+t.amt||0)/100)*100;
-    if(!type||!ok(t.h)||amt<100) return;
-    if(type==='qn'&&(!ok(t.h2)||t.h2===t.h)) return;
+  (Array.isArray(arr)?arr:Object.values(arr||{})).slice(0,150).forEach(t=>{
+    if(!t||!BT[t.type]) return;
+    const hs=(Array.isArray(t.hs)?t.hs:Object.values(t.hs||{})).map(Number), amt=Math.floor((+t.amt||0)/100)*100;
+    if(hs.length!==BT[t.type].k||!hs.every(ok)||new Set(hs).size!==hs.length||amt<100) return;
     if(sum+amt>money) return;
-    const n={type,h:t.h,amt}; if(type==='qn') n.h2=t.h2;
-    addTicket(out,n); sum+=amt;
+    addTicket(out,{type:t.type,hs,amt}); sum+=amt;
   });
   return out;
 }
-const tkLabel=t=>t.type==='qn'?`連${numTag(Math.min(t.h,t.h2))}${numTag(Math.max(t.h,t.h2))}`:`${t.type==='plc'?'複':'単'}${numTag(t.h)}`;
+const tkLabel=t=>`${BT[t.type].s}${t.hs.map(numTag).join(BT[t.type].ord?'→':'')}`;
 
 function render(){
   $('#raceNo').innerHTML=`第${S.race}レース<small>/ ${S.races}</small>`;
@@ -751,14 +800,14 @@ function render(){
 function renderPaper(){
   let h='<tr><th>馬番</th>'+WRITERS.map(w=>`<th>${w}</th>`).join('')+'<th>馬名</th><th>毛色</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>買った班</th></tr>';
   S.horses.forEach(ho=>{
-    const who=S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,ho.no)).map(t=>({win:'単',plc:'複',qn:'連'}[t.type])))];
+    const who=S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,ho.no)).map(t=>BT[t.type].s))];
       return ty.length?`<span class="bettor">${esc(g.name)} ${ty.join('')}</span>`:''; }).join('');
     const mk=ho.marks.map(m=>`<td class="mk m${MARKS.indexOf(m)}">${m}</td>`).join('');
     h+=`<tr class="${ho.pop===1?'pop1':''}"><td>${numTag(ho.no)}</td>${mk}<td class="nm">${esc(ho.name)}</td><td>${ho.coat[0]}</td><td>${ho.style}</td>
       <td class="cm">${ho.comment}</td><td class="pop">${ho.pop}</td><td class="odds w">${ho.win.toFixed(1)}</td><td class="odds">${ho.plc.toFixed(1)}</td><td><div class="bettors">${who}</div></td></tr>`;
   });
-  $('#paper').innerHTML=h;
-  const top=Object.entries(S.qn).sort((a,b)=>a[1]-b[1]).slice(0,5);
+  $('#paper').innerHTML=h; $('#paper').classList.toggle('many',S.H>8);
+  const top=Object.entries(S.odds.qn).sort((a,b)=>a[1]-b[1]).slice(0,5);
   $('#qnTop').innerHTML='<em>馬連の人気</em>'+top.map(([k,o])=>`<span><b>${k}</b> <span class="o">${o.toFixed(1)}</span></span>`).join('');
 }
 const doneHTML=g=>S.phase==='bet'&&g.done?'<span class="dev on" style="background:#c8102e;border-color:#c8102e">✅ 確定</span>':'';
@@ -776,6 +825,10 @@ function betHTML(g,i){
   if(g.money<100&&bet) return '<span class="none">所持金が足りないため見送り</span>';
   if(!g.tickets.length) return `<span class="none">${bet?'まだ買っていません(見送り)':'見送り'}</span>`;
   const res=g.result&&g.result.tk;
+  if(g.tickets.length>6){
+    const by={}; g.tickets.forEach((t,k)=>{ const b=by[t.type]||(by[t.type]={n:0,amt:0,pay:0}); b.n++; b.amt+=t.amt; if(res&&res[k]) b.pay+=res[k].pay; });
+    return `${NET&&g.src==='pad'&&bet?'<span title="iPadから投票">📱</span>':''}${BTK.filter(t=>by[t]).map(t=>`<span class="tk${by[t].pay?' hit':''}">${BT[t].name} ${by[t].n}点 ${by[t].pay?'+'+yen(by[t].pay):yen(by[t].amt)}${bet?`<button class="x" data-g="${i}" data-deltype="${t}" aria-label="${BT[t].name}をすべて取り消す">×</button>`:''}</span>`).join('')}<b class="tk-sum">計${yen(tkTotal(g.tickets))}</b>`;
+  }
   const chips=g.tickets.map((t,k)=>{ const r=res&&res[k];
     return `<span class="tk${r&&r.hit?' hit':''}">${tkLabel(t)} ${r&&r.hit?'+'+yen(r.pay):yen(t.amt)}${bet?`<button class="x" data-g="${i}" data-del="${k}" aria-label="この馬券を取り消す">×</button>`:''}</span>`; }).join('');
   return `${NET&&g.src==='pad'&&bet?'<span title="iPadから投票">📱</span>':''}${chips}<b class="tk-sum">計${yen(tkTotal(g.tickets))}</b>`;
@@ -788,9 +841,11 @@ function renderGroups(){
   $('#groups').style.gridTemplateColumns=cols?`repeat(${cols},minmax(0,1fr))`:'';
   $('#groups').innerHTML=S.groups.map((g,i)=>{
     const broke=g.money<100&&S.phase==='bet', off=dis||broke?'disabled':'', d=g.draft;
-    const hb=S.horses.map(ho=>{const [bg,fg]=WAKU[ho.no-1];return `<button data-g="${i}" data-h="${ho.no}" class="${picked(d,ho.no)?'on':''}" style="background:${bg};color:${fg}" ${off}>${ho.no}</button>`;}).join('');
-    const ob=[['type','win','単勝'],['type','plc','複勝'],['type','qn','馬連'],['amt',1000,'1000'],['amt',3000,'3000'],['amt',5000,'5000'],['amt','all','全額']]
-      .map(([k,v,l])=>`<button data-g="${i}" data-${k}="${v}" class="${String(d[k])===String(v)?'on':''}" ${off}>${l}</button>`).join('');
+    const ord=BT[d.type].ord;
+    const hb=S.horses.map(ho=>{const [bg,fg]=wk(ho.no), k=d.hs.indexOf(ho.no);return `<button data-g="${i}" data-h="${ho.no}" class="${k>=0?'on':''}" style="background:${bg};color:${fg}" ${off}>${ho.no}${ord&&k>=0?`<sup>${k+1}着</sup>`:''}</button>`;}).join('');
+    const ob=BTK.map(v=>`<button data-g="${i}" data-type="${v}" class="${d.type===v?'on':''}" ${off}>${BT[v].name}</button>`).join('');
+    const am=[1000,3000,5000,'all'].map(v=>`<button data-g="${i}" data-amt="${v}" class="${String(d.amt)===String(v)?'on':''}" ${off}>${v==='all'?'全額':v}</button>`).join('');
+    const addL=betReady(d)?`+追加 ${BT[d.type].s}${d.hs.join(ord?'→':'-')}`:`+追加${BT[d.type].k>1?`(${BT[d.type].k}頭)`:''}`;
     const custom=d.amt>0&&![1000,3000,5000].includes(d.amt);
     let badge='';
     if(g.result) badge=g.result.hit?`<span class="res-badge hit">的中!+${yen(g.result.pay)}</span>`:`<span class="res-badge miss">${g.result.none?'見送り':'はずれ'}</span>`;
@@ -799,7 +854,7 @@ function renderGroups(){
       <div class="g-bet" id="bet${i}">${betHTML(g,i)}</div>
       <div class="hs" style="grid-template-columns:repeat(${S.H},1fr)">${hb}</div>
       <div class="opt">${ob}</div>
-      <div class="free-row"><label class="free">金額(100円単位)<input type="number" inputmode="numeric" min="100" step="100" data-g="${i}" class="${custom?'on':''}" value="${custom?d.amt:''}" placeholder="例:2500" ${off}>円</label><button class="add" data-g="${i}" data-add="1" ${off}>+ 追加</button></div></div>`;
+      <div class="free-row">${am}<input type="number" inputmode="numeric" min="100" step="100" data-g="${i}" class="${custom?'on':''}" value="${custom?d.amt:''}" placeholder="自由(100円単位)" ${off}><button class="add" data-g="${i}" data-add="1" ${off}>${addL}</button></div></div>`;
   }).join('');
 }
 
@@ -875,7 +930,7 @@ function drawCourse(c,cs){
 }
 // 横向きの馬(右向き)を描く
 function drawHorse(c,x,y,u,dir,ang,ph,h){
-  const [coatName,coat,dark]=h.coat, [silk,silkFg]=WAKU[h.no-1];
+  const [coatName,coat,dark]=h.coat, [silk,silkFg]=wk(h.no);
   c.save(); c.translate(x,y); c.rotate(ang); c.scale(dir,1);
   c.lineCap='round';
   // 脚
@@ -928,7 +983,7 @@ function drawRace(run){
   drawGate(c);
   // 馬番の丸
   c.textAlign='center'; c.textBaseline='middle';
-  items.forEach(o=>{ const [bg,fg]=WAKU[o.h.no-1], rr=Math.max(10,u*0.24), bx=o.x, by=o.y-u*1.05;
+  items.forEach(o=>{ const [bg,fg]=wk(o.h.no), rr=Math.max(10,u*0.24), bx=o.x, by=o.y-u*1.05;
     c.fillStyle=bg; c.strokeStyle='rgba(0,0,0,.55)'; c.lineWidth=2; c.beginPath(); c.arc(bx,by,rr,0,Math.PI*2); c.fill(); c.stroke();
     c.fillStyle=fg; c.font=`900 ${rr*1.2}px ${cs('--f-body')}`; c.fillText(o.h.no,bx,by+1);
     if(run[o.i].place&&!hidePlace(o.i)){ c.fillStyle=run[o.i].place===1?cs('--gold'):'#fff'; c.font=`900 ${rr*1.1}px ${cs('--f-body')}`; c.strokeStyle='rgba(0,0,0,.7)'; c.lineWidth=3;
@@ -986,7 +1041,7 @@ function drawStraight(run,c,cs){
   S.horses.map((h,i)=>({h,i,y:top+laneH*((run[i].lane??i/Math.max(1,S.H-1))*(S.H-1)+0.62)})).sort((a,b)=>a.y-b.y).forEach(({h,i,y})=>{
     const r=run[i], nose=X(r.x), hx=nose-u*0.78;
     drawHorse(c,hx,y-u*0.22,u,1,0,r.ph,h);
-    const [bg,fg]=WAKU[h.no-1], rr=Math.max(11,Math.min(laneH*0.36,22)), bx=hx-u*0.62, by=y-u*0.35;
+    const [bg,fg]=wk(h.no), rr=Math.max(11,Math.min(laneH*0.36,22)), bx=hx-u*0.62, by=y-u*0.35;
     c.fillStyle=bg; c.strokeStyle='rgba(0,0,0,.6)'; c.lineWidth=2; c.beginPath(); c.arc(bx,by,rr,0,Math.PI*2); c.fill(); c.stroke();
     c.fillStyle=fg; c.font=`900 ${rr*1.2}px ${cs('--f-body')}`; c.fillText(h.no,bx,by+1);
     if(r.place&&!hidePlace(i)){ c.font=`900 ${rr*1.3}px ${cs('--f-body')}`; c.strokeStyle='rgba(0,0,0,.75)'; c.lineWidth=4; c.fillStyle=r.place===1?cs('--gold'):'#fff';
@@ -1004,7 +1059,7 @@ function drawMini(run,c,cs){
   const ox=x0+mw/2-G.cx*sx, oy=y0+mh/2-G.cy*sx;
   c.save(); c.translate(ox,oy); c.scale(sx,sx);
   c.strokeStyle='rgba(255,255,255,.8)'; c.lineWidth=G.tw*0.5; stadiumOn(c,G.R+G.tw/2); c.stroke();
-  S.horses.forEach((h,i)=>{ const p=pt(toS(run[i].x),G.tw*0.5); c.fillStyle=WAKU[h.no-1][0]; c.beginPath(); c.arc(p.x,p.y,G.tw*0.28,0,Math.PI*2); c.fill(); });
+  S.horses.forEach((h,i)=>{ const p=pt(toS(run[i].x),G.tw*0.5); c.fillStyle=wk(h.no)[0]; c.beginPath(); c.arc(p.x,p.y,G.tw*0.28,0,Math.PI*2); c.fill(); });
   c.restore();
 }
 function stadiumOn(c,r){ const {cx,cy,Sx}=G;
@@ -1020,7 +1075,8 @@ function renderOrder(run){
   }).join('');
 }
 /* ---------- レースの演出(ゲート・勝負どころ・写真判定・歓声) ---------- */
-const SLOW=1.5;            // 直線に入るまでの再生の遅さ(1.5倍ゆっくり。計算は変えないのでオッズは同じ)
+const SLOW=3.0;            // 直線に入るまでの再生の遅さ(3倍ゆっくり。計算は変えないのでオッズは同じ)
+const STRAIGHT_SEC=11;     // 残り600mから1着が決まるまでの秒数(スローモーション)
 const PHOTO=0.3*2.4;       // 1着と2着の差がこれ以内(0.3馬身)なら写真判定
 const hidePlace=i=>S.photo&&!S.photo.revealed&&(i===S.photo.a||i===S.photo.b);
 const marginName=m=>{ const b=m/2.4; return b<0.1?'ハナ':b<0.2?'アタマ':'クビ'; };
@@ -1113,7 +1169,7 @@ function drawFx(c,cs){
     if(e>2) fx.cut=null;
     else {
       const sc=e<0.15?1.4-0.4*e/0.15:1, al=e>1.7?Math.max(0,1-(e-1.7)/0.3):1;
-      const w=Math.min(560,W*0.6), h=Math.max(64,Math.min(100,R*1.5)), [bg,fg]=WAKU[fx.cut.no-1];
+      const w=Math.min(560,W*0.6), h=Math.max(64,Math.min(100,R*1.5)), [bg,fg]=wk(fx.cut.no);
       c.save(); c.globalAlpha=al; c.translate(W/2,cy); c.scale(sc,sc);
       c.fillStyle='rgba(20,20,24,.88)'; c.beginPath(); c.roundRect?c.roundRect(-w/2,-h/2,w,h,14):c.rect(-w/2,-h/2,w,h); c.fill();
       c.fillStyle=bg; c.strokeStyle='rgba(255,255,255,.8)'; c.lineWidth=3; c.beginPath(); c.arc(-w/2+h*0.55,0,h*0.36,0,Math.PI*2); c.fill(); c.stroke();
@@ -1182,7 +1238,7 @@ function afterRace(run,win){
 // ウイニングラン中の表示(画面の上に勝ち馬と当たった班)
 function drawWin(c,cs){
   if(!S.win) return;
-  const {W}=G, h=S.horses[S.win.i], [bg,fg]=WAKU[h.no-1];
+  const {W}=G, h=S.horses[S.win.i], [bg,fg]=wk(h.no);
   const hits=S.groups.filter(g=>g.result&&g.result.hit);
   const bh=150, w=Math.min(W-24,900), x=W/2-w/2, y=10;
   c.save(); c.fillStyle='rgba(20,20,24,.85)'; c.fillRect(x,y,w,bh);
@@ -1235,11 +1291,11 @@ function runRace(){
       if(S!==me) return;
       acc+=Math.min(100,now-prev); prev=now;
       // 直線まではゆっくり、最後の直線はスローモーション(1着が決まるまで)
-      const TICK=(S.cam&&!finished)?16.6/0.45:16.6*SLOW;
+      const TICK=(S.cam&&!finished)?Math.max(16.6/0.45,STRAIGHT_SEC*1000/(600/S.step)):16.6*SLOW;
       while(acc>=TICK){
         acc-=TICK; stepRun(run,t); t++; updateLanes(run,t);
         // ゴールした馬は止まらずに駆け抜け、少しずつ速度を落とす
-        run.forEach(r=>{ if(r.fin!==null){ r.post=Math.max(S.step*0.45,(r.post??r.v)*0.99); r.x+=r.post; } r.ph+=(r.fin===null?r.v:r.post)/S.step*0.42*(16.6/TICK); });
+        run.forEach(r=>{ if(r.fin!==null){ r.post=Math.max(S.step*0.45,(r.post??r.v)*0.99); r.x+=r.post; } r.ph+=(r.fin===null?r.v:r.post)/S.step*0.42*Math.sqrt(16.6/TICK); });
         const ord=orderOf(run), lead=ord[0], L=run[lead], rem=D-L.x;
         // ゴール
         const fins=ord.filter(i=>run[i].fin!==null);
@@ -1307,17 +1363,17 @@ function runRace(){
 }
 function finish(order){
   S.order=order;
-  const top3=order.slice(0,3).map(i=>i+1), first=order[0]+1, qk=qnKey(order[0]+1,order[1]+1);
+  const o=order.map(i=>i+1), first=o[0], top3=o.slice(0,3);
   S.groups.forEach(g=>{
     if(!g.tickets.length){ g.result={hit:false,none:true,pay:0,tk:[]}; return; }
-    const tk=g.tickets.map(t=>{ const hit=t.type==='win'?t.h===first:t.type==='plc'?top3.includes(t.h):qnKey(t.h,t.h2)===qk;
-      return {hit,pay:hit?Math.round(t.amt*tkOdds(t)):0}; });
+    const tk=g.tickets.map(t=>{ const hit=tkHit(t,o); return {hit,pay:hit?Math.round(t.amt*tkOdds(t)):0}; });
     const pay=tk.reduce((s,r)=>s+r.pay,0);
     g.money+=pay; g.result={hit:pay>0,pay,tk};
   });
-  const h1=S.horses[first-1], mg=S.photo?`(${marginName(S.photo.gap)}差)`:'';
-  $('#pay').innerHTML=`<span>1着 ${numTag(first)} ${esc(h1.name)}${mg}</span><span>単勝 ${first}番 ${h1.win.toFixed(1)}倍</span>`
-    +`<span>複勝 ${top3.map(n=>`${n}番 ${S.horses[n-1].plc.toFixed(1)}倍`).join(' / ')}</span><span>馬連 ${qk} ${S.qn[qk].toFixed(1)}倍</span>`;
+  const h1=S.horses[first-1], mg=S.photo?`(${marginName(S.photo.gap)}差)`:'', wkeys=winKeys(o);
+  $('#pay').innerHTML=`<span>1着 ${numTag(first)} ${esc(h1.name)}${mg}</span><span>単勝 ${first} ${h1.win.toFixed(1)}倍</span>`
+    +`<span>複勝 ${top3.map(n=>`${n} ${S.horses[n-1].plc.toFixed(1)}倍`).join(' / ')}</span>`
+    +COMBO.map(t=>`<span>${BT[t].name} ${wkeys[t].map(k=>`${keyText(t,k)} ${S.odds[t][k].toFixed(1)}倍`).join(' / ')}</span>`).join('');
   $('#pay').hidden=false;
   S.phase='result';
   if(S.groups.some(g=>g.result.hit)) fanfare();
@@ -1362,12 +1418,12 @@ $('#groups').addEventListener('click',e=>{
   const b=e.target.closest('button[data-g]'); if(!b||S.phase!=='bet') return;
   const i=+b.dataset.g, g=S.groups[i], d=g.draft;
   if(b.dataset.del!==undefined){ g.tickets.splice(+b.dataset.del,1); render(); sendBets(i); return; }
+  if(b.dataset.deltype){ if(!confirm(`${g.name}の${BT[b.dataset.deltype].name}をすべて取り消しますか?`)) return; g.tickets=g.tickets.filter(t=>t.type!==b.dataset.deltype); render(); sendBets(i); return; }
   if(b.dataset.add){
-    if(!betReady(d)) return toast(d.type==='qn'?'馬連は馬を2頭選んでください':'馬を選んでください');
+    if(!betReady(d)) return toast(`${BT[d.type].name}は馬を${BT[d.type].k}頭選んでください`);
     if(d.amt<100) return toast('金額を選んでください(100円以上)');
     if(d.amt>remain(g)) return toast(`${g.name}の残りは${yen(remain(g))}です`);
-    const t={type:d.type,h:d.h,amt:d.amt}; if(d.type==='qn') t.h2=d.h2;
-    addTicket(g.tickets,t); d.h=null; d.h2=null; render(); sendBets(i); return;
+    addTicket(g.tickets,{type:d.type,hs:[...d.hs],amt:d.amt}); d.hs=[]; render(); sendBets(i); return;
   }
   if(b.dataset.h) pickHorse(d,+b.dataset.h);
   if(b.dataset.type) setType(d,b.dataset.type);
@@ -1469,10 +1525,11 @@ function pushState(){
   const st={phase:S.phase,race:S.race,races:S.races,dist:S.dist,H:S.H,
     rn:S.rn,
     horses:S.horses.map(h=>({no:h.no,name:h.name,coat:h.coat[0],style:h.style,comment:h.comment,marks:h.marks,pop:h.pop,win:h.win,plc:h.plc,
-      by:S.phase==='bet'?S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,h.no)).map(t=>({win:'単',plc:'複',qn:'連'}[t.type])))]; return ty.length?g.name+' '+ty.join(''):''; }).filter(Boolean):[]})), qn:S.qn,
+      by:S.phase==='bet'?S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,h.no)).map(t=>BT[t.type].s))]; return ty.length?g.name+' '+ty.join(''):''; }).filter(Boolean):[]})),
     groups:S.groups.map(g=>({name:g.name,money:g.money,staked:g.staked||0,
       tickets:S.phase!=='bet'?g.tickets:null,result:S.phase==='bet'?null:g.result})),
     order:S.order?S.order.map(i=>i+1):null, final:S.phase==='end'?finalRank():null};
+  if(NET.oddsRace!==S.race){ NET.oddsRace=S.race; NET.be.set(NET.base+'/odds',{race:S.race,...S.odds}).catch(netErr); }
   const j=JSON.stringify(st); if(j===NET.last) return; NET.last=j;
   NET.be.set(NET.base+'/state',st).catch(netErr);
 }
@@ -1504,7 +1561,7 @@ function updateCards(){
   if(S.phase!=='bet'||cards.length!==S.groups.length){ renderGroups(); return; }
   S.groups.forEach((g,i)=>{
     document.querySelectorAll(`#groups button[data-g="${i}"]`).forEach(b=>{
-      if(b.dataset.del!==undefined||b.dataset.add) return;
+      if(b.dataset.del!==undefined||b.dataset.deltype||b.dataset.add) return;
       const d=g.draft, on=b.dataset.h?picked(d,+b.dataset.h):b.dataset.type?d.type===b.dataset.type:String(d.amt)===b.dataset.amt;
       b.classList.toggle('on',on); });
     const inp=document.querySelector(`#groups input[data-g="${i}"]`);
@@ -1529,7 +1586,7 @@ async function showQR(){
 /* ---------- 班のiPad(メダルゲーム風) ---------- */
 // mode:買い方、selH:選んだ馬(馬連では流し・BOX用の印)、selQ:選んだ馬連のマス、unit:1点の金額
 const P={be:null,room:'',base:'',kind:'firebase',gi:null,dev:'',st:undefined,my:null,pres:{},live:null,
-  mode:'win',selH:[],selQ:[],unit:0,sending:false,race:null,had:false,offMy:null,offPres:null,shownRes:null,tickerKey:''};
+  mode:'win',selH:[],selQ:[],unit:0,odds:null,sending:false,race:null,had:false,offMy:null,offPres:null,shownRes:null,tickerKey:''};
 function devId(){ const r='d'+Math.random().toString(36).slice(2,10); try{ let d=localStorage.getItem('keiba.dev'); if(!d){ d=r; localStorage.setItem('keiba.dev',d); } return d; }catch(e){ return r; } }
 const joinForm=()=>`<div class="joinbox"><span>参加コード</span><input id="joinCode" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例:K7RMP"><button id="joinGo" class="btn primary">班として参加する</button></div>`;
 function padMsg(t,m){ $('#padSlip').hidden=true; $('#padMain').innerHTML=`<div class="a-msg"><h2>${t}</h2><p>${m}</p></div>`; }
@@ -1542,6 +1599,7 @@ async function padStart(room,kind){
   catch(e){ padMsg('つながりません','インターネットにつながっているか確認して、ページを読み込み直してください。'); return; }
   P.be.connected(ok=>{ $('#padNet').hidden=ok; });
   P.be.on(P.base+'/presence',v=>{ P.pres={}; if(v) Object.keys(v).forEach(k=>{ P.pres[k]=Object.keys(v[k]||{}).filter(d=>d!==P.dev).length; }); if(P.gi===null) padRender(); });
+  P.be.on(P.base+'/odds',v=>{ P.odds=v; if(P.st&&P.gi!==null) padRender(); });
   P.be.on(P.base+'/live',v=>{ P.live=v; if(P.st&&P.st.phase==='race'&&P.gi!==null) padLive(); });
   P.be.on(P.base+'/state',onPadState);
 }
@@ -1562,15 +1620,15 @@ function padJoin(gi){
   padRender();
 }
 function padLeave(){ if(P.offPres){P.offPres();P.offPres=null;} if(P.offMy){P.offMy();P.offMy=null;} P.gi=null; P.my=null; }
-const typeName=t=>t==='plc'?'複勝':t==='qn'?'馬連':'単勝';
-const aNum=no=>{const [bg,fg]=WAKU[no-1];return `<span class="a-num" style="background:${bg};color:${fg}">${no}</span>`;};
-const padOdds=(st,t)=>t.type==='qn'?st.qn[qnKey(t.h,t.h2)]:t.type==='plc'?st.horses[t.h-1].plc:st.horses[t.h-1].win;
-const tkName=t=>t.type==='qn'?`馬連 ${aNum(Math.min(t.h,t.h2))}${aNum(Math.max(t.h,t.h2))}`:`${typeName(t.type)} ${aNum(t.h)}`;
+const typeName=t=>BT[t].name;
+const aNum=no=>{const [bg,fg]=wk(no);return `<span class="a-num" style="background:${bg};color:${fg}">${no}</span>`;};
+const padOdds=(st,t)=>oddsOf(P.odds,st.horses,t);
+const tkName=t=>`${BT[t.type].name} ${t.hs.map(aNum).join(BT[t.type].ord?'→':'')}`;
 function myTickets(){ const st=P.st, g=st.groups[P.gi]; return P.my?cleanTickets(P.my.tickets,g.money,st.horses.length):[]; }
 // いま選んでいる買い目(1点ずつ)
 function padPoints(){
-  if(P.mode==='qn') return P.selQ.map(k=>{ const [a,b]=k.split('-').map(Number); return {type:'qn',h:a,h2:b}; });
-  return P.selH.map(h=>({type:P.mode,h}));
+  if(BT[P.mode].k>1) return P.selQ.map(k=>({type:P.mode,hs:k.split('-').map(Number)}));
+  return P.selH.map(h=>({type:P.mode,hs:[h]}));
 }
 function padTicker(st){
   const tk=$('#padTicker'), key=st.phase+st.race;
@@ -1613,10 +1671,10 @@ function padRender(){
     const head=r.hit?`<h1>的中!!</h1><div class="pay" id="payCount" data-to="${r.pay}">+${yen(first?0:r.pay)}</div>`:`<h1 class="miss">${r.none?'見送り':'残念…'}</h1>`;
     const od=st.order||[], all=od.map((no,k)=>`<li class="${k<3?'hit':''}"><span class="ps">${k+1}着</span>${aNum(no)}<span>${esc(st.horses[no-1].name)}</span><span class="am" style="color:#9aa4d6">${st.horses[no-1].pop}番人気</span></li>`).join('');
     let pay='';
-    if(od.length>=3){ const w=st.horses[od[0]-1], qk=qnKey(od[0],od[1]);
+    if(od.length>=3){ const w=st.horses[od[0]-1], wkeys=winKeys(od), O=P.odds||{};
       pay=`<ul class="a-list a-pay"><li><b>単勝</b>${aNum(od[0])}<span class="am">${w.win.toFixed(1)}倍</span></li>
         ${od.slice(0,3).map((no,k)=>`<li><b>${k?'':'複勝'}</b>${aNum(no)}<span class="am">${st.horses[no-1].plc.toFixed(1)}倍</span></li>`).join('')}
-        <li><b>馬連</b>${aNum(Math.min(od[0],od[1]))}${aNum(Math.max(od[0],od[1]))}<span class="am">${st.qn[qk].toFixed(1)}倍</span></li></ul>
+        ${COMBO.map(t=>wkeys[t].map((k,j)=>`<li><b>${j?'':BT[t].name}</b>${k.split('-').map(x=>aNum(+x)).join(BT[t].ord?'→':'')}<span class="am">${((O[t]||{})[k]||0).toFixed(1)}倍</span></li>`).join('')).join('')}</ul>
         <p class="a-hint">100円が「100円 × 倍率」になります</p>`; }
     m.innerHTML=`<div class="a-res">${head}<div class="cols"><div class="a-panel"><h3>${esc(g.name)}の馬券</h3>${tkList(st,g.tickets||[],r.tk,false)}</div>
       <div class="a-panel"><h3>着順</h3><ul class="a-list">${all}</ul></div><div class="a-panel"><h3>払い戻し(オッズ)</h3>${pay}</div></div>
@@ -1639,46 +1697,75 @@ function tkList(st,list,res,del){
 function padBet(st,g){
   const m=$('#padMain');
   if(g.money<100){ padMsg('見送り','所持金が足りないため、このレースは賭けられません。前のスクリーンで応援しよう!'); return; }
-  const qn=P.mode==='qn', mine=myTickets(), H=st.horses.length;
+  if(!P.odds||P.odds.race!==st.race){ padMsg('オッズを受信中…','少し待ってください'); return; }
+  const bt=BT[P.mode], multi=bt.k>1, mine=myTickets(), H=st.horses.length, fixed=P.my&&P.my.done;
   const rows=st.horses.map(h=>{
-    const on=P.selH.includes(h.no), cls=on?(qn?'mark':'on'):'';
-    const mk=[0,1,2,3].map(k=>{ const x=(h.marks||[])[k]||''; return `<td class="mk m${MARKS.indexOf(x)}">${x}</td>`; }).join('');
+    const k=P.selH.indexOf(h.no), cls=k>=0?(multi?'mark':'on'):'';
+    const mk=[0,1,2,3].map(j=>{ const x=(h.marks||[])[j]||''; return `<td class="mk m${MARKS.indexOf(x)}">${x}</td>`; }).join('');
     const by=(h.by||[]).map(x=>`<span>${esc(x)}</span>`).join('');
-    return `<tr class="${cls}${h.pop===1?' p1':''}" data-horse="${h.no}"><td><span class="n" style="background:${WAKU[h.no-1][0]};color:${WAKU[h.no-1][1]}">${h.no}</span></td>${mk}
-      <td class="nm">${qn&&P.selH[0]===h.no?'<span class="axis">軸</span>':''}${esc(h.name)}</td><td>${esc(h.coat||'')}</td><td>${esc(h.style)}</td><td class="cm">${esc(h.comment||'')}</td>
+    return `<tr class="${cls}${h.pop===1?' p1':''}" data-horse="${h.no}"><td><span class="n" style="background:${wk(h.no)[0]};color:${wk(h.no)[1]}">${h.no}</span></td>${mk}
+      <td class="nm">${multi&&k>=0?`<span class="axis">${k+1}</span>`:''}${esc(h.name)}</td><td>${esc(h.coat||'')}</td><td>${esc(h.style)}</td><td class="cm">${esc(h.comment||'')}</td>
       <td class="pop">${h.pop}</td><td class="od">${h.win.toFixed(1)}</td><td class="pl">${h.plc.toFixed(1)}</td><td class="by">${by}</td></tr>`; }).join('');
-  let grid=`<div class="a-grid ${qn?'':'dim'}" style="grid-template-columns:26px repeat(${H-1},1fr)"><span></span>`;
-  for(let b=2;b<=H;b++) grid+=`<span class="hd" style="background:${WAKU[b-1][0]};color:${WAKU[b-1][1]}">${b}</span>`;
-  for(let a=1;a<H;a++){ grid+=`<span class="hd" style="background:${WAKU[a-1][0]};color:${WAKU[a-1][1]}">${a}</span>`;
-    for(let b=2;b<=H;b++){ if(b<=a){ grid+='<span></span>'; continue; } const k=a+'-'+b; grid+=`<button data-q="${k}" class="${qn&&P.selQ.includes(k)?'on':''}">${st.qn[k].toFixed(1)}</button>`; } }
-  grid+='</div>';
-  const n=P.selH.length;
-  const help=!qn?'<p class="a-hint">マスをタッチすると馬連になります。</p>'
-    :n>=2?`<div class="a-help">選んだ馬で<button data-flow>流し(軸${P.selH[0]}) ${n-1}点</button><button data-box>BOX ${n*(n-1)/2}点</button></div>`
-    :'<p class="a-hint">出馬表の馬を2頭以上タッチすると「流し」「BOX」でまとめて選べます(最初の馬が軸)。</p>';
-  const fixed=P.my&&P.my.done;
+  let side;
+  if(!multi){
+    side=`<h3>組み合わせの馬券<small>下の買い方ボタンで選べます</small></h3><ul class="a-list">${COMBO.map(t=>`<li><b style="color:var(--cy);font-weight:400;width:4.5em">${BT[t].name}</b><span>${BT[t].desc}</span></li>`).join('')}</ul>`;
+  } else {
+    const O=P.odds[P.mode]||{};
+    let pick='';
+    if(bt.k===2){
+      // 2頭の券種はマス目(馬単は 行=1着・列=2着)
+      const cols=bt.ord?H:H-1;
+      pick=`<div class="a-grid${cols>7?' small':''}" style="grid-template-columns:28px repeat(${cols},minmax(0,1fr))"><span class="hd" style="font-size:10px">${bt.ord?'1着':''}</span>`;
+      for(let b=bt.ord?1:2;b<=H;b++) pick+=`<span class="hd" style="background:${wk(b)[0]};color:${wk(b)[1]}">${b}</span>`;
+      for(let a=1;a<=(bt.ord?H:H-1);a++){ pick+=`<span class="hd" style="background:${wk(a)[0]};color:${wk(a)[1]}">${a}</span>`;
+        for(let b=bt.ord?1:2;b<=H;b++){ if(bt.ord?a===b:b<=a){ pick+='<span></span>'; continue; }
+          const key=bt.ord?a+'-'+b:a+'-'+b; pick+=`<button data-q="${key}" class="${P.selQ.includes(key)?'on':''}">${(O[key]||0).toFixed(1)}</button>`; } }
+      pick+='</div>';
+    } else {
+      // 3頭の券種は人気の組み合わせを並べる
+      const top=Object.entries(O).sort((a,b)=>a[1]-b[1]).slice(0,12);
+      pick=`<p class="a-hint" style="margin:0 0 6px">人気の組み合わせ(タッチで選ぶ)</p><div class="a-pops">${top.map(([k,o])=>`<button data-q="${k}" class="${P.selQ.includes(k)?'on':''}">${keyText(P.mode,k)}<b>${o.toFixed(1)}</b></button>`).join('')}</div>`;
+    }
+    const n=P.selH.length, cnt=kind=>makeKeys(kind).length, btn=[];
+    if(n===bt.k) btn.push(`<button data-mk="one">${bt.ord?'この順で':'この組で'}1点</button>`);
+    if(n>bt.k||(n===bt.k&&bt.ord&&bt.k>1)) btn.push(`<button data-mk="box">BOX ${cnt('box')}点</button>`);
+    if(n>bt.k) btn.push(`<button data-mk="flow">流し(軸${P.selH[0]}${bt.ord?'が1着':''}) ${cnt('flow')}点</button>`);
+    const help=btn.length?`<div class="a-help">選んだ馬で ${btn.join('')}</div>`
+      :`<p class="a-hint">出馬表の馬を${bt.k}頭以上タッチすると「BOX」「流し」でまとめて選べます(1番目にタッチした馬が軸)。${bt.ord?'タッチした順が着順になります。':''}</p>`;
+    const chosen=P.selQ.length?`<div class="a-chosen">選んだ買い目 ${P.selQ.length}点:${P.selQ.slice(0,12).map(k=>keyText(P.mode,k)).join('、')}${P.selQ.length>12?' …':''} <button data-qclear>クリア</button></div>`:'';
+    side=`<h3>${bt.name}<small>${bt.desc}</small></h3>${pick}${help}${chosen}`;
+  }
   m.innerHTML=`<div class="a-paperwrap${fixed?' fixed':''}"><table class="a-paper"><tr><th>馬番</th><th>本紙</th><th>A記者</th><th>B記者</th><th>C記者</th><th>馬名</th><th>毛色</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>買った班</th></tr>${rows}</table></div>
-    <div class="a-sub">
-    <div class="a-panel"><h3>馬連オッズ<small>マスをタッチで選ぶ</small></h3>${grid}${help}</div>
+    <div class="a-sub"><div class="a-panel">${side}</div>
     <div class="a-panel"><h3>買った馬券${P.my&&P.my.dev==='teacher'?'<small>先生のPCで入力</small>':''}</h3>${tkList(st,mine,null,!fixed)}</div></div>`;
   const slip=$('#padSlip'); slip.hidden=false;
-  slip.innerHTML=`<div class="a-types">${[['win','単勝'],['plc','複勝'],['qn','馬連']].map(([v,l])=>`<button class="a-pill ${P.mode===v?'on':''}" data-mode="${v}">${l}</button>`).join('')}</div>
+  if(fixed){
+    slip.innerHTML=`<div class="a-fixed"><b>✅ 投票を確定しました!</b><span>前のスクリーンでレースが始まるのを待とう</span></div><button class="a-sbtn" data-undo style="width:auto;padding:0 16px">修正する</button>`;
+    return;
+  }
+  slip.innerHTML=`<div class="a-types">${BTK.map(v=>`<button class="a-pill ${P.mode===v?'on':''}" data-mode="${v}">${BT[v].name}</button>`).join('')}</div>
     <div class="a-chips">${[100,1000,5000].map(v=>`<button class="a-chip c${v}" data-chip="${v}">+${v}</button>`).join('')}</div>
     <div class="a-small"><button class="a-sbtn" data-all>全額</button><button class="a-sbtn" data-clear>クリア</button></div>
     <div class="a-led"><small>1点の金額</small><div class="led" id="unitLed"></div><div class="what" id="unitWhat"></div></div>
     <button class="a-go" id="goBtn" data-bet>BET<small id="goSub"></small></button>
     <button class="a-done" data-done>投票<br>確定<small>これで完了</small></button>`;
-  if(P.my&&P.my.done){
-    slip.innerHTML=`<div class="a-fixed"><b>✅ 投票を確定しました!</b><span>前のスクリーンでレースが始まるのを待とう</span></div><button class="a-sbtn" data-undo style="width:auto;padding:0 16px">修正する</button>`;
-    return;
-  }
   padCtrl();
+}
+// 選んだ馬から買い目を作る(one:1点、box:BOX、flow:1番目の馬を軸に流し)
+function combos(a,k){ const out=[]; const r=(s,c)=>{ if(c.length===k){ out.push(c); return; } for(let i=s;i<a.length;i++) r(i+1,[...c,a[i]]); }; r(0,[]); return out; }
+function perms(a,k){ const out=[]; const r=c=>{ if(c.length===k){ out.push(c); return; } a.forEach(x=>{ if(!c.includes(x)) r([...c,x]); }); }; r([]); return out; }
+function makeKeys(kind){
+  const bt=BT[P.mode], hs=P.selH; let sets=[];
+  if(kind==='one') sets=[hs.slice(0,bt.k)];
+  else if(kind==='box') sets=bt.ord?perms(hs,bt.k):combos(hs,bt.k);
+  else { const ax=hs[0], rest=hs.slice(1); sets=(bt.ord?perms(rest,bt.k-1):combos(rest,bt.k-1)).map(c=>[ax,...c]); }
+  return sets.map(x=>bt.ord?x.join('-'):sk(x));
 }
 // 操作パネルの表示(金額・点数・BETボタン)
 function padCtrl(){
   const st=P.st, g=st.groups[P.gi], pts=padPoints(), n=pts.length, total=n*P.unit, left=g.money-tkTotal(myTickets());
   const best=n?Math.max(...pts.map(t=>padOdds(st,t)))*P.unit:0;
-  const why=!n?(P.mode==='qn'?'馬連のマスか、出馬表の馬を選んでください':'出馬表の馬をタッチして選んでください')
+  const bt=BT[P.mode], why=!n?(bt.k>1?`${bt.name}は出馬表の馬を選んで「BOX」などを押すか、${bt.k===2?'マス':'人気の組み合わせ'}をタッチしてください`:'出馬表の馬をタッチして選んでください')
     :P.unit<100?'チップで金額を決めてください':total>left?`のこりが足りません(${n}点で${yen(total)})`:'';
   $('#unitLed').textContent=yen(P.unit);
   $('#unitWhat').textContent=why||`${n}点 × ${yen(P.unit)} = ${yen(total)}  当たれば最大 ${yen(Math.round(best))}`;
@@ -1705,7 +1792,7 @@ function padSendList(list,done,fixed){
 function padLive(){
   const box=$('#liveBox'); if(!box) return;
   const st=P.st, g=st.groups[P.gi], lv=P.live, mine=new Set();
-  (g.tickets||[]).forEach(t=>{ mine.add(t.h); if(t.h2) mine.add(t.h2); });
+  (g.tickets||[]).forEach(t=>(t.hs||[]).forEach(x=>mine.add(x)));
   if(!lv||lv.race!==st.race||!lv.order){ $('#liveRem').textContent='ゲートイン…スタートを待っています'; box.innerHTML=''; return; }
   $('#liveRem').textContent=lv.fin?'ゴール!':lv.gate?'ゲートイン…':`残り ${Math.ceil(lv.rem/50)*50}m`;
   box.innerHTML=lv.order.map((no,k)=>{ const ph=lv.photo&&k<2;
@@ -1736,13 +1823,12 @@ $('#pad').addEventListener('click',e=>{
     if(!confirm(n?`${n}枚の馬券(合計${yen(tkTotal(myTickets()))})で確定しますか?`:'馬券を買わずに確定します(このレースは見送り)。いいですか?')) return;
     padSendList(myTickets(),()=>{ P.selH=[]; P.selQ=[]; },true); return; }
   if(d.horse){ const n=+d.horse, i=P.selH.indexOf(n); if(i>=0) P.selH.splice(i,1); else P.selH.push(n); padRender(); }
-  else if(d.q){ if(P.mode!=='qn'){ P.mode='qn'; P.selH=[]; } const i=P.selQ.indexOf(d.q); if(i>=0) P.selQ.splice(i,1); else P.selQ.push(d.q); padRender(); }
-  else if(d.mode){ const was=P.mode; P.mode=d.mode; if((was==='qn')!==(d.mode==='qn')) P.selH=[]; padRender(); }
-  else if(d.flow!==undefined||d.box!==undefined){
-    const hs=P.selH, add=k=>{ if(!P.selQ.includes(k)) P.selQ.push(k); };
-    if(d.flow!==undefined) hs.slice(1).forEach(x=>add(qnKey(hs[0],x)));
-    else hs.forEach((a,i)=>hs.slice(i+1).forEach(b=>add(qnKey(a,b))));
-    P.selH=[]; padRender(); }
+  else if(d.q){ const i=P.selQ.indexOf(d.q); if(i>=0) P.selQ.splice(i,1); else P.selQ.push(d.q); padRender(); }
+  else if(d.mode){ const was=BT[P.mode].k, now=BT[d.mode].k; if(P.mode!==d.mode&&(was>1||now>1)){ P.selH=[]; P.selQ=[]; } P.mode=d.mode; padRender(); }
+  else if(d.mk){ const keys=makeKeys(d.mk).filter(k=>!P.selQ.includes(k));
+    if(P.selQ.length+keys.length>120){ toast('一度に選べるのは120点までです'); return; }
+    P.selQ.push(...keys); P.selH=[]; padRender(); }
+  else if(d.qclear!==undefined){ P.selQ=[]; padRender(); }
   else if(d.chip){ P.unit+=+d.chip; padCtrl(); }
   else if(d.all!==undefined){ const g=P.st.groups[P.gi], n=Math.max(1,padPoints().length); P.unit=Math.max(0,Math.floor((g.money-tkTotal(myTickets()))/n/100)*100); padCtrl(); }
   else if(d.clear!==undefined){ P.unit=0; P.selH=[]; P.selQ=[]; padRender(); }
