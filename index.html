@@ -181,6 +181,19 @@ button:disabled{cursor:default}
 .rank li.clean{background:var(--hl)}
 .tie{color:var(--accent);font-weight:800;text-align:center}
 .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.oddscard{max-width:1100px}
+.otabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.otabs button{border:2px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 14px;font-weight:800;font-size:1.05rem}
+.otabs button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.obody{overflow:auto;max-height:65vh}
+.otab{border-collapse:collapse;font-weight:800;font-size:1.05rem}
+.otab th,.otab td{border:1px solid var(--line);padding:4px 8px;text-align:right;min-width:3.6em}
+.otab th{background:var(--bg);text-align:center}
+.otab td.x{background:var(--line)}
+.olist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.olist div{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-weight:800;font-size:1.1rem}
+.olist .num{width:1.5em;height:1.5em;font-size:.85em}
+.olist b{color:var(--win)}
 .ask{font-size:1.15rem;line-height:1.7;margin:0 0 18px}
 
 /* ---------- iPad連携(先生の画面) ---------- */
@@ -431,6 +444,7 @@ button:disabled{cursor:default}
   </fieldset>
   <p id="err" class="err" role="alert"></p>
   <button id="startBtn" class="btn primary big">ゲームをはじめる</button>
+  <p class="note">版:<span id="verNo"></span>(iPadと先生のPCで同じ版が必要です。更新したあとは両方でページを再読み込みしてください)</p>
   <div class="setup-join">
     <p>班のiPadで開いた人は、先生の画面の参加コードを入れてください。</p>
     <div class="joinbox"><span>参加コード</span><input id="joinCode" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例:K7RMP"><button id="joinGo" class="btn primary">班として参加する</button></div>
@@ -447,6 +461,7 @@ button:disabled{cursor:default}
     <div class="tools">
       <button id="roomBtn" class="btn room" hidden><span class="dot"></span>参加コード <b id="roomCode"></b></button>
       <button id="soundBtn" class="btn" aria-label="音のオンオフ">🔊</button>
+      <button id="oddsBtn" class="btn">オッズ表</button>
       <button id="themeBtn" class="btn">昼/ナイター</button>
       <button id="quitBtn" class="btn">設定にもどる</button>
     </div>
@@ -507,6 +522,13 @@ button:disabled{cursor:default}
 </div>
 <div id="toast" class="toast" hidden></div>
 
+<div id="oddsModal" class="modal" hidden>
+  <div class="mcard oddscard">
+    <div class="otabs" id="oddsTabs"></div>
+    <div id="oddsBody" class="obody"></div>
+    <div class="btns"><button id="oddsClose" class="btn primary">閉じる</button></div>
+  </div>
+</div>
 <div id="askModal" class="modal" hidden>
   <div class="mcard">
     <p id="askMsg" class="ask"></p>
@@ -615,7 +637,7 @@ function stepRun(run,t){
     r.f=r.f*0.97+gauss()*0.01; r.f=Math.max(-0.06,Math.min(0.06,r.f));
     const p=r.x/D, rm=D-r.x, w=1.22*(p<0.55?0.3:0.3+(p-0.55)/0.45*2.3);
     let dev=w*(ABIL*h.s+h.cond+r.d+aptBonus(h.apt,dc))+r.f;
-    if(rm>r.sp){ dev+=CRUISE[h.style]*1600/D; r.state='cruise'; }
+    if(rm>r.sp){ dev+=CRUISE[h.style]*1600/D*(p<0.25?1.7:0.45); r.state='cruise'; }   // 位置取りはスタート直後に大きく(道中で隊列ができる)
     else {
       const run2=r.sp-rm;
       dev+=CRUISE[h.style]*0.3*1600/D+h.kick*Math.min(1,run2/120);
@@ -867,35 +889,36 @@ function layout(){
   cv.width=Math.max(1,box.width*dpr); cv.height=Math.max(1,box.height*dpr);
   const W=box.width, H=box.height;
   const pad=Math.max(12,Math.min(W,H)*0.04);
-  const tw=Math.max(70,Math.min(H*0.32,W*0.15));         // 走路の幅
+  const tw=Math.max(60,Math.min(H*0.24,W*0.12));         // 走路の幅(細めにしてコーナーを大きく)
   const u=Math.max(24,Math.min(tw*0.38,64));              // 馬の大きさ
   const top=u*1.35+6;                                     // 上側は馬番の丸が切れないよう余白を多めに
   const R=Math.max(30,(H-top-pad)/2-tw);                  // 内ラチの半径
   const Sx=Math.max(40,W-pad*2-2*(R+tw));                 // 直線の長さ
-  const P=2*Sx+2*Math.PI*R;
+  const P=2*Sx+2*Math.PI*(R+tw/2);   // 1周の長さは走路の真ん中で測る
   G={W,H,dpr,pad,tw,u,R,Sx,P,cx:W/2,cy:top+tw+R,goal:0.78*Sx};
   G.goal=fitGoal();
 }
 // スタート地点がコーナーにならないように、ゴールの位置(直線の62〜90%)を選ぶ
 function fitGoal(){
-  const {Sx,R,P}=G; if(!S||!S.dist) return 0.78*Sx;
+  const {Sx,P}=G, C=Math.PI*(G.R+G.tw/2); if(!S||!S.dist) return 0.78*Sx;
   const m=G.u*1.3, back=(S.dist%LAP)*P/LAP;
-  const straight=v=>{ v=((v%P)+P)%P; return (v>m&&v<Sx-m)||(v>Sx+Math.PI*R+m&&v<2*Sx+Math.PI*R-m); };
+  const straight=v=>{ v=((v%P)+P)%P; return (v>m&&v<Sx-m)||(v>Sx+C+m&&v<2*Sx+C-m); };
   for(const f of [0.78,0.74,0.82,0.7,0.86,0.66,0.9,0.62]) if(straight(f*Sx-back)) return f*Sx;
   return 0.78*Sx;
 }
-// s: 内ラチ上の位置(0=下の直線の左端、反時計回り)、off: 内ラチからの距離
+// s: コース上の位置(0=下の直線の左端、反時計回り。コーナーは走路の真ん中の長さで測る)、off: 内ラチからの距離
+// コーナーはどのレーンも同じ角度で回るので、外の馬だけ極端に速く見えることがない
 function pt(s,off){
-  const {Sx,R,cx,cy,P}=G; s=((s%P)+P)%P; const r=R+off;
+  const {Sx,R,cx,cy,P,tw}=G, Rm=R+tw/2, C=Math.PI*Rm; s=((s%P)+P)%P; const r=R+off;
   if(s<Sx) return {x:cx-Sx/2+s,y:cy+r,a:0};
   s-=Sx;
-  if(s<Math.PI*R){ const th=Math.PI/2-s/R; return {x:cx+Sx/2+r*Math.cos(th),y:cy+r*Math.sin(th),a:th-Math.PI/2}; }
-  s-=Math.PI*R;
+  if(s<C){ const th=Math.PI/2-s/Rm; return {x:cx+Sx/2+r*Math.cos(th),y:cy+r*Math.sin(th),a:th-Math.PI/2}; }
+  s-=C;
   if(s<Sx) return {x:cx+Sx/2-s,y:cy-r,a:Math.PI};
   s-=Sx;
-  const th=-Math.PI/2-s/R; return {x:cx-Sx/2+r*Math.cos(th),y:cy+r*Math.sin(th),a:th-Math.PI/2};
+  const th=-Math.PI/2-s/Rm; return {x:cx-Sx/2+r*Math.cos(th),y:cy+r*Math.sin(th),a:th-Math.PI/2};
 }
-function segOf(s){ const {Sx,R,P}=G; s=((s%P)+P)%P; if(s<Sx) return 'home'; s-=Sx; if(s<Math.PI*R) return 'c12'; s-=Math.PI*R; if(s<Sx) return 'back'; return 'c34'; }
+function segOf(s){ const {Sx,P}=G, C=Math.PI*(G.R+G.tw/2); s=((s%P)+P)%P; if(s<Sx) return 'home'; s-=Sx; if(s<C) return 'c12'; s-=C; if(s<Sx) return 'back'; return 'c34'; }
 const toS=m=>G.goal-(S.dist-m)*G.P/LAP;   // 走った距離m → コース上の位置
 
 function stadium(r){ const {cx,cy,Sx}=G, c=$('#cv').getContext('2d');
@@ -1075,8 +1098,9 @@ function renderOrder(run){
   }).join('');
 }
 /* ---------- レースの演出(ゲート・勝負どころ・写真判定・歓声) ---------- */
-const SLOW=3.0;            // 直線に入るまでの再生の遅さ(3倍ゆっくり。計算は変えないのでオッズは同じ)
-const STRAIGHT_SEC=11;     // 残り600mから1着が決まるまでの秒数(スローモーション)
+const SLOW=4.0;            // 直線に入るまでの再生の遅さ(4倍ゆっくり。計算は変えないのでオッズは同じ)
+const STRAIGHT_SEC=14;     // 残り600mから1着が決まるまでの秒数(スローモーション)
+const STRETCH=6;           // 道中は馬どうしの前後の差をこの倍率で見せる(残り950〜650mで元にもどす)
 const PHOTO=0.3*2.4;       // 1着と2着の差がこれ以内(0.3馬身)なら写真判定
 const hidePlace=i=>S.photo&&!S.photo.revealed&&(i===S.photo.a||i===S.photo.b);
 const marginName=m=>{ const b=m/2.4; return b<0.1?'ハナ':b<0.2?'アタマ':'クビ'; };
@@ -1195,25 +1219,36 @@ function drawPhoto(c,cs){
 }
 
 function say(t){ $('#caster').textContent=t; }
+// 楕円コースでは馬が実際より大きく描かれるので、道中は前後の差を STRETCH 倍にして隊列を見せる。
+// 順番は変わらない(先頭からの差を広げるだけ)。残り950〜650mで少しずつ元の差にもどし、直線カメラでは実際の差で描く
+function spreadK(rem){ return rem>=950?STRETCH:rem<=650?1:1+(STRETCH-1)*(rem-650)/300; }
+function stretchRun(list){
+  const L=Math.max(...list.map(r=>r.x)), K=spreadK(S.dist-L);
+  if(K>1) list.forEach(r=>{ r.x=L-(L-r.x)*K; });
+  return list;
+}
 // 馬の左右の位置(0=内ラチ、1=外)。見た目だけで、勝ち負けの計算には影響しない
-const LANE_BASE={逃げ:0.04,先行:0.22,差し:0.42,追込:0.58};
+// 基本は内ラチ沿い。前に馬がいて詰まると外に出し、スパートした後ろの馬は外から追い込む
+const LANE_BASE={逃げ:0.02,先行:0.1,差し:0.16,追込:0.12};
 function updateLanes(run,t){
   const n=S.H, ord=orderOf(run), rk={}; ord.forEach((i,k)=>rk[i]=k);
+  const L=Math.max(...run.map(r=>r.x)), K=spreadK(S.dist-L), dx=r=>L-(L-r.x)*K;
+  const len=S.cam?4:G.u*1.2*LAP/G.P;       // 馬1頭の長さ(表示上のm)
   run.forEach((r,i)=>{
     if(r.lane==null) r.lane=i/Math.max(1,n-1);
+    if(r.base==null) r.base=LANE_BASE[S.horses[i].style]+Math.random()*0.12;
     r.pl=r.lane;
     let tg=r.lane;
-    if(t>40&&r.fin===null){
-      tg=LANE_BASE[S.horses[i].style];
-      if(r.state==='spurt'||r.state==='fade'){ if(S.horses[i].mak) tg=0.95; else if(rk[i]>=2) tg=Math.min(1,tg+0.32); }
-      // すぐ前に同じくらいのレーンの馬がいたら、外に持ち出して追い抜く
-      run.forEach((o,j)=>{ if(i===j) return; const dx=o.x-r.x, dl=o.lane-r.lane;
-        if(dx>0&&dx<3.5&&Math.abs(dl)<0.15) tg=Math.max(tg,o.lane+0.2);
-        if(Math.abs(dx)<2.4&&Math.abs(dl)<0.1) tg+=(dl<=0?0.05:-0.05); });
+    if(t>30&&r.fin===null){
+      tg=r.base;
+      if(r.state==='spurt'||r.state==='fade'){ if(S.horses[i].mak) tg=0.8; else if(rk[i]>=2) tg=Math.min(1,tg+0.25); }
+      run.forEach((o,j)=>{ if(i===j||o.fin!==null) return; const d=dx(o)-dx(r), dl=o.lane-r.lane;
+        if(d>0&&d<len*1.1&&Math.abs(dl)<0.16) tg=Math.max(tg,o.lane+0.18);      // 前が詰まったら外へ
+        if(Math.abs(d)<len*0.7&&Math.abs(dl)<0.12) tg+=(dl<=0?0.07:-0.07); });  // 横に並んだら少し離れる
     }
     r.tg=Math.max(0,Math.min(1,tg));
   });
-  run.forEach(r=>{ r.lane+=Math.max(-0.006,Math.min(0.006,r.tg-r.lane)); });
+  run.forEach(r=>{ r.lane+=Math.max(-0.008,Math.min(0.008,r.tg-r.lane)); });
 }
 // ゴール後:直線で駆け抜けて減速 → 楕円コースで勝ち馬のウイニングラン(「次のレースへ」を押すまで)
 function afterRace(run,win){
@@ -1343,7 +1378,7 @@ function runRace(){
         $('#rem').textContent=rem>0?`残り${Math.ceil(rem/50)*50}m`:'';
       }
       const al=Math.min(1,acc/TICK);
-      drawRace(run.map(r=>({...r, x:r.px==null?r.x:r.px+(r.x-r.px)*al, ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al})));
+      drawRace(stretchRun(run.map(r=>({...r, x:r.px==null?r.x:r.px+(r.x-r.px)*al, ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
       if(t%6===0||finished) renderOrder(run);
       if(NET&&now-lastLive>600){ lastLive=now; sendLive(run); }
       if(run.every(r=>r.fin!==null)){
@@ -1436,6 +1471,27 @@ $('#groups').addEventListener('input',e=>{
   inp.classList.add('on');
   inp.closest('.g').querySelectorAll('button[data-amt]').forEach(b=>b.classList.remove('on'));
 });
+// オッズ表(組み合わせの馬券)
+let oddsTab='qn';
+function showOdds(){
+  if(!S||!S.odds) return;
+  $('#oddsTabs').innerHTML=COMBO.map(t=>`<button data-ot="${t}" class="${oddsTab===t?'on':''}">${BT[t].name}</button>`).join('')+`<span style="align-self:center;color:var(--soft)">${BT[oddsTab].desc}</span>`;
+  const O=S.odds[oddsTab], b=BT[oddsTab], H=S.H;
+  let h='';
+  if(b.k===2){
+    h=`<table class="otab"><tr><th>${b.ord?'1着＼2着':''}</th>${Array.from({length:H},(_,j)=>`<th>${numTag(j+1)}</th>`).join('')}</tr>`;
+    for(let a=1;a<=H;a++){ h+=`<tr><th>${numTag(a)}</th>`;
+      for(let c=1;c<=H;c++){ const k=b.ord?a+'-'+c:sk([a,c]); h+=(a===c||(!b.ord&&c<a))?'<td class="x"></td>':`<td>${O[k].toFixed(1)}</td>`; } h+='</tr>'; }
+    h+='</table>';
+  } else {
+    h='<p style="margin:0 0 8px;color:var(--soft)">人気順(上位60点)</p><div class="olist">'+Object.entries(O).sort((x,y)=>x[1]-y[1]).slice(0,60)
+      .map(([k,o])=>`<div><span>${k.split('-').map(x=>numTag(+x)).join(b.ord?'→':'')}</span><b>${o.toFixed(1)}</b></div>`).join('')+'</div>';
+  }
+  $('#oddsBody').innerHTML=h; $('#oddsModal').hidden=false;
+}
+$('#oddsBtn').onclick=showOdds;
+$('#oddsTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-ot]'); if(b){ oddsTab=b.dataset.ot; showOdds(); } });
+$('#oddsClose').onclick=()=>$('#oddsModal').hidden=true;
 $('#closeEnd').onclick=()=>$('#endModal').hidden=true;
 $('#againBtn').onclick=()=>{$('#endModal').hidden=true;back();};
 $('#quitBtn').onclick=()=>ask('設定画面にもどりますか?いまのゲームは終了します。','もどる',back);
@@ -1453,6 +1509,7 @@ addEventListener('resize',()=>{ if(S&&S.phase!=='bet'&&S.lastRun){ layout(); dra
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
+const APP_VER=8;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -1522,7 +1579,7 @@ function updateRoomBadge(){
 // iPadに見せる情報(本当の実力などは送らない)
 function pushState(){
   if(!NET||!S||!S.horses) return;
-  const st={phase:S.phase,race:S.race,races:S.races,dist:S.dist,H:S.H,
+  const st={ver:APP_VER,phase:S.phase,race:S.race,races:S.races,dist:S.dist,H:S.H,
     rn:S.rn,
     horses:S.horses.map(h=>({no:h.no,name:h.name,coat:h.coat[0],style:h.style,comment:h.comment,marks:h.marks,pop:h.pop,win:h.win,plc:h.plc,
       by:S.phase==='bet'?S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,h.no)).map(t=>BT[t.type].s))]; return ty.length?g.name+' '+ty.join(''):''; }).filter(Boolean):[]})),
@@ -1606,6 +1663,12 @@ async function padStart(room,kind){
 function savedJoin(){ try{ return JSON.parse(localStorage.getItem('keiba.join.'+P.room)); }catch(e){ return null; } }
 function onPadState(st){
   P.st=st;
+  if(st&&st.ver!==APP_VER){
+    // 版が違う:iPadが古ければ自動で読み込み直す。先生のPCが古ければ知らせる
+    if((st.ver||0)>APP_VER){ try{ if(sessionStorage.getItem('keiba.reload')!==String(st.ver)){ sessionStorage.setItem('keiba.reload',String(st.ver)); location.reload(); return; } }catch(e){} }
+    padMsg('先生のPCの画面を更新してください',(st.ver||0)<APP_VER?'先生のPCのページが古い版のままです。先生のPCでページを再読み込み(Ctrl+Shift+R)してから、もう一度ゲームを始めてください。':'このiPadのページが古い版です。ページを再読み込みしてください。');
+    return;
+  }
   if(st&&st.groups&&P.gi===null){ const sj=savedJoin(); if(sj&&st.groups[sj.gi]&&st.groups[sj.gi].name===sj.name){ padJoin(sj.gi); return; } }
   if(st&&st.race!==P.race){ P.race=st.race; P.selH=[]; P.selQ=[]; P.mode='win'; }
   if(P.my&&st&&P.my.race!==st.race) P.my=null;
@@ -1697,7 +1760,7 @@ function tkList(st,list,res,del){
 function padBet(st,g){
   const m=$('#padMain');
   if(g.money<100){ padMsg('見送り','所持金が足りないため、このレースは賭けられません。前のスクリーンで応援しよう!'); return; }
-  if(!P.odds||P.odds.race!==st.race){ padMsg('オッズを受信中…','少し待ってください'); return; }
+  if(!P.odds||P.odds.race!==st.race){ padMsg('オッズを受信中…','しばらくたっても変わらないときは、先生のPCでページを再読み込み(Ctrl+Shift+R)してから、ゲームを始め直してください。'); return; }
   const bt=BT[P.mode], multi=bt.k>1, mine=myTickets(), H=st.horses.length, fixed=P.my&&P.my.done;
   const rows=st.horses.map(h=>{
     const k=P.selH.indexOf(h.no), cls=k>=0?(multi?'mark':'on'):'';
@@ -1855,6 +1918,7 @@ function netNote(){
   n.textContent=msg; n.classList.toggle('warn',v==='firebase'&&!fbReady());
 }
 $('#f-net').addEventListener('change',netNote);
+$('#verNo').textContent=APP_VER;
 $('#roomBtn').onclick=showQR;
 $('#qrClose').onclick=()=>$('#qrModal').hidden=true;
 try{const t=localStorage.getItem('keiba.theme'); if(t) document.documentElement.dataset.theme=t;}catch(e){}
