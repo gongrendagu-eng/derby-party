@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e1116">
+<title>先生の画面</title>
+<style>
+:root{
+  box-sizing:border-box;
+  --bg:#0e1116; --ink:#eef2f7; --soft:#8d98a8; --acc:#4da3ff;
+  font-family:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;
+}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-text-size-adjust:100%}
+#stage{position:fixed;inset:0;overflow:hidden}
+#wrap{position:absolute;left:0;top:0;transform-origin:0 0;visibility:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+#wrap.on{visibility:visible}
+#frame{display:block;border:0;background:#fff;pointer-events:none}
+#shield{position:absolute;inset:0}
+/* 待ち画面・参加画面 */
+.panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+.panel[hidden]{display:none}
+.box{max-width:520px;width:100%}
+.box h1{font-size:26px;margin:0 0 10px}
+.box p{color:var(--soft);margin:6px 0;line-height:1.6}
+.spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,.12);border-top-color:var(--acc);margin:0 auto 18px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.code{font:800 40px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.14em;color:var(--ink);margin-top:14px}
+#joinForm{display:flex;gap:10px;justify-content:center;margin-top:20px}
+#joinInput{width:220px;font:800 34px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;text-align:center;
+  padding:12px;border-radius:12px;border:2px solid #3a4454;background:#171c24;color:var(--ink)}
+#joinForm button{font:700 20px/1 inherit;font-family:inherit;padding:0 22px;border-radius:12px;border:0;background:var(--acc);color:#fff}
+/* 待ちの帯(画面を表示中に配信が止まったとき) */
+#bar{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:5;
+  background:rgba(0,0,0,.75);color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;white-space:nowrap}
+#bar[hidden]{display:none}
+#tip{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5;background:rgba(0,0,0,.7);color:#fff;
+  border-radius:999px;padding:7px 14px;font-size:13px;transition:opacity .6s;pointer-events:none}
+#tip.fade{opacity:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="wrap"><iframe id="frame" title="先生の画面" scrolling="no" tabindex="-1" aria-hidden="true"></iframe><div id="shield"></div></div>
+</div>
+
+<div id="wait" class="panel" hidden>
+  <div class="box">
+    <div class="spin"></div>
+    <h1 id="waitTitle">先生の画面を待っています…</h1>
+    <p id="waitText">先生が「iPadに映す」を押すと、ここに表示されます。</p>
+    <div class="code" id="waitCode"></div>
+  </div>
+</div>
+
+<div id="join" class="panel" hidden>
+  <div class="box">
+    <h1>📺 先生の画面を見る</h1>
+    <p>先生の画面に出ている参加コードを入れてください。</p>
+    <form id="joinForm" autocomplete="off">
+      <input id="joinInput" maxlength="8" inputmode="latin" autocapitalize="characters" spellcheck="false" placeholder="ABCDE">
+      <button type="submit">見る</button>
+    </form>
+  </div>
+</div>
+
+<div id="bar" hidden></div>
+<div id="tip" class="fade"></div>
+
+<script>
+(function(){
+'use strict';
+var FB_VER='10.12.2';
+var PAKO_URL='https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js';
+var $=function(s){return document.querySelector(s);};
+var frame=$('#frame'), wrap=$('#wrap');
+var code=(new URLSearchParams(location.search).get('r')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+var db=null, ref=null;
+var headKey=null, docReady=false, cur=null, lastHtml=null, lastScroll={}, W=0, H=0, hasFrame=false, hostOn=false;
+
+/* ---------- 読み込み ---------- */
+function load(src){return new Promise(function(ok,ng){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=function(){ng(new Error(src));};document.head.appendChild(s);});}
+function loadConfig(){
+  if(window.FIREBASE_CONFIG) return Promise.resolve();
+  return load('firebase-config.js').catch(function(){}).then(function(){
+    if(window.FIREBASE_CONFIG) return; return load('../firebase-config.js');
+  });
+}
+function connect(){
+  return Promise.all([
+    loadConfig().then(function(){
+      if(window.firebase&&window.firebase.database) return;
+      return load('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-app-compat.js')
+        .then(function(){return load('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-database-compat.js');});
+    }),
+    window.pako?null:load(PAKO_URL)
+  ]).then(function(){
+    if(!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+    db=firebase.database();
+  });
+}
+function unb64(s){var bin=atob(s),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+function unpack(o){ if(!o) return ''; return o.z? window.pako.inflate(unb64(o.d),{to:'string'}) : (o.d||''); }
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* ---------- 画面の組み立て ---------- */
+function buildDoc(head){
+  var d=frame.contentDocument;
+  var base=head.base?'<base href="'+esc(head.base)+'">':'';
+  d.open();
+  d.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'+base+unpack(head)+
+    '<style>html,body{overflow:hidden!important;-webkit-text-size-adjust:100%}*{-webkit-user-select:none;user-select:none}</style>'+
+    '</head><body></body></html>');
+  d.close();
+  document.title=(head.title||'先生の画面')+'(見るだけ)';
+  docReady=true; lastHtml=null; lastScroll={};
+  if(cur) apply(cur);
+}
+function setAttrs(el,list){
+  list=list||[];
+  var want={};
+  list.forEach(function(p){want[p[0]]=p[1];});
+  for(var i=el.attributes.length-1;i>=0;i--){var n=el.attributes[i].name; if(!(n in want)) el.removeAttribute(n);}
+  for(var k in want){ if(el.getAttribute(k)!==want[k]) el.setAttribute(k,want[k]); }
+}
+// 変わったところだけ書き換える(アニメーションが途中で止まらないように)
+function morph(a,b){
+  var doc=a.ownerDocument, ak=Array.prototype.slice.call(a.childNodes), bk=b.childNodes;
+  for(var i=0;i<bk.length;i++){
+    var x=ak[i], y=bk[i];
+    if(!x){ a.appendChild(doc.importNode(y,true)); continue; }
+    if(x.nodeType!==y.nodeType||(x.nodeType===1&&x.tagName!==y.tagName)){ a.replaceChild(doc.importNode(y,true),x); continue; }
+    if(x.nodeType===1){ setAttrs(x,Array.prototype.map.call(y.attributes,function(t){return[t.name,t.value];})); morph(x,y); }
+    else if(x.nodeValue!==y.nodeValue) x.nodeValue=y.nodeValue;
+  }
+  for(var j=ak.length-1;j>=bk.length;j--) a.removeChild(ak[j]);
+}
+function nodeAt(d,path){
+  if(path==='') return d.scrollingElement||d.documentElement;
+  var el=d.body, ps=path.split('.');
+  for(var i=0;i<ps.length&&el;i++) el=el.children[+ps[i]];
+  return el||null;
+}
+function apply(f){
+  cur=f;
+  if(!docReady) return;
+  var d=frame.contentDocument;
+  if(f.w!==W||f.h!==H){ W=f.w; H=f.h; frame.style.width=W+'px'; frame.style.height=H+'px'; wrap.style.width=W+'px'; wrap.style.height=H+'px'; fit(); }
+  var html=unpack(f);
+  if(html!==lastHtml){
+    var t=d.createElement('template'); t.innerHTML=html;
+    morph(d.body,t.content); lastHtml=html;
+  }
+  setAttrs(d.documentElement,f.ha); setAttrs(d.body,f.ba);
+  var now={};
+  (f.sc||[]).forEach(function(s){ now[s[0]]=1; var el=nodeAt(d,s[0]); if(el){ el.scrollTop=s[1]; el.scrollLeft=s[2]; } });
+  Object.keys(lastScroll).forEach(function(p){ if(!now[p]){ var el=nodeAt(d,p); if(el){ el.scrollTop=0; el.scrollLeft=0; } } });
+  lastScroll=now;
+  wrap.classList.add('on');
+}
+function fit(){
+  if(!W||!H) return;
+  var vw=document.documentElement.clientWidth, vh=document.documentElement.clientHeight;
+  var s=Math.min(vw/W,vh/H);
+  wrap.style.transform='translate('+Math.round((vw-W*s)/2)+'px,'+Math.round((vh-H*s)/2)+'px) scale('+s+')';
+  var portrait=vh>vw&&W>H;
+  if(portrait) tip('iPadを横向きにすると大きく見えます');
+}
+var tipT=null;
+function tip(msg){
+  var el=$('#tip'); el.textContent=msg; el.classList.remove('fade');
+  clearTimeout(tipT); tipT=setTimeout(function(){el.classList.add('fade');},4000);
+}
+window.addEventListener('resize',fit);
+window.addEventListener('orientationchange',function(){setTimeout(fit,300);});
+
+/* ---------- 状態の表示 ---------- */
+function status(){
+  var showing=hasFrame&&docReady;
+  $('#wait').hidden=showing||!code;
+  $('#waitCode').textContent=code;
+  if(!showing){ wrap.classList.remove('on'); }
+  $('#bar').hidden=true;
+  if(!hasFrame&&lastHtml!==null){
+    // いったん表示したあとで止まった → 最後の画面は残して帯だけ出す
+    $('#wait').hidden=true; wrap.classList.add('on');
+    $('#bar').hidden=false; $('#bar').textContent='⏸ 先生の配信が止まっています(再開すると自動で表示されます)';
+  }
+}
+
+/* ---------- 開始 ---------- */
+function watch(){
+  status();
+  connect().then(function(){
+    ref=db.ref('rooms/'+code+'/mv');
+    ref.child('head').on('value',function(s){
+      var h=s.val();
+      if(!h) return;
+      var key=h.d+'|'+h.base;
+      if(key===headKey) return;
+      headKey=key; buildDoc(h); status();
+    });
+    ref.child('frame').on('value',function(s){
+      var f=s.val();
+      hasFrame=!!f;
+      if(f) apply(f);
+      status();
+    });
+    ref.child('host').on('value',function(s){ hostOn=!!s.val(); });
+    // 見ている台数を先生に知らせる
+    var id=Math.random().toString(36).slice(2,10);
+    db.ref('.info/connected').on('value',function(s){
+      if(s.val()!==true) return;
+      var me=ref.child('viewers/'+id);
+      me.onDisconnect().remove(); me.set(true);
+    });
+  }).catch(function(e){
+    $('#wait').hidden=false;
+    $('#waitTitle').textContent='つながりませんでした';
+    $('#waitText').textContent='インターネットにつながっているか確かめて、ページを読み込み直してください。('+(e&&e.message?e.message:e)+')';
+  });
+}
+
+// iPadからは操作できない(タップ・キーはすべて無視)
+['click','dblclick','contextmenu','keydown','keyup','keypress'].forEach(function(t){
+  document.addEventListener(t,function(e){ if(e.target&&e.target.closest&&e.target.closest('#joinForm')) return; e.preventDefault(); e.stopPropagation(); },true);
+});
+
+if(/^[A-Z0-9]{4,8}$/.test(code)) watch();
+else{
+  $('#join').hidden=false;
+  $('#joinForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var c=$('#joinInput').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(!/^[A-Z0-9]{4,8}$/.test(c)){ $('#joinInput').focus(); return; }
+    location.search='?r='+c;
+  });
+  setTimeout(function(){$('#joinInput').focus();},100);
+}
+})();
+</script>
+</body>
+</html>

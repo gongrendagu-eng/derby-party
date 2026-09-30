@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>マス推理ゲーム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  /* ホワイトボード */
+  --bg:#eef1f3; --board:#ffffff; --ink:#1d3557; --ink-soft:#5f7189; --line:#cfd8e0;
+  --tile:#dfe8f0; --tile-edge:#b3c3d2; --tile-hover:#cddcea;
+  --safe:#f8fafb; --safe-ink:#a3b2c1; --mine:#c8354f; --mine-bg:#fbe1e6;
+  --accent:#d99400; --accent-ink:#1d3557; --panel:#ffffff; --new:#fff4d1;
+  --f-hand:"Klee One","UD デジタル 教科書体 N-R","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-round:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16322a; --board:#1f4237; --ink:#f4f0e3; --ink-soft:#b3c4b6; --line:#3b6253;
+    --tile:#2c5a4a; --tile-edge:#173228; --tile-hover:#386d59;
+    --safe:#23483c; --safe-ink:#6d9282; --mine:#ff9aac; --mine-bg:#5b2e3a;
+    --accent:#f3d36c; --accent-ink:#16322a; --panel:#1f4237; --new:#3a5a3a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16322a; --board:#1f4237; --ink:#f4f0e3; --ink-soft:#b3c4b6; --line:#3b6253;
+  --tile:#2c5a4a; --tile-edge:#173228; --tile-hover:#386d59;
+  --safe:#23483c; --safe-ink:#6d9282; --mine:#ff9aac; --mine-bg:#5b2e3a;
+  --accent:#f3d36c; --accent-ink:#16322a; --panel:#1f4237; --new:#3a5a3a;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-round);font-weight:500;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- 設定画面 ---------- */
+.setup{max-width:760px;margin:0 auto;padding:32px 20px 48px;height:100%;overflow:auto}
+.setup h1{font-family:var(--f-hand);font-weight:600;font-size:clamp(2rem,5vw,3rem);margin:0 0 .3em;letter-spacing:.04em}
+.setup h1 #titleIcon{display:inline-block;transform:rotate(-8deg);margin-right:.15em}
+.lead{font-family:var(--f-hand);font-size:1.15rem;line-height:1.8;color:var(--ink-soft);margin:0 0 28px;max-width:40em}
+fieldset{border:2px solid var(--line);border-radius:14px;padding:16px 18px 18px;margin:0 0 18px;background:var(--panel)}
+legend{font-family:var(--f-hand);font-weight:600;font-size:1.15rem;padding:0 8px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:.92rem;color:var(--ink-soft)}
+label.check{flex-direction:row;align-items:center;gap:10px;margin-top:14px;color:var(--ink)}
+input[type=number],select,textarea{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 10px;font-size:1.05rem;color:var(--ink)}
+textarea{resize:vertical;line-height:1.6}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.density{margin:12px 0 0;font-size:.95rem}
+.err{color:var(--mine);font-weight:800;min-height:1.4em;margin:6px 0 10px}
+.btn{border:2px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px;font-weight:800;font-size:.95rem}
+.btn:hover:not(:disabled){border-color:var(--ink-soft)}
+.btn:disabled{opacity:.4;cursor:default}
+.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.primary:hover:not(:disabled){filter:brightness(1.06);border-color:var(--accent)}
+.big{font-size:1.25rem;padding:12px 28px;border-radius:12px}
+
+/* ---------- ゲーム画面 ---------- */
+.game{height:100%;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.turn{display:flex;align-items:baseline;gap:12px;min-width:12em}
+.turn-lab{font-size:.95rem;color:var(--ink-soft)}
+.turn-name{font-family:var(--f-hand);font-weight:600;font-size:clamp(1.8rem,3.6vw,2.8rem);line-height:1.1}
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.chip{padding:4px 10px;border-radius:999px;border:2px solid var(--line);font-size:.9rem;white-space:nowrap}
+.chip.cur{border-color:var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:800}
+.chip.out{border-color:var(--mine);color:var(--mine);background:var(--mine-bg)}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.remain{font-weight:800;margin-right:6px;white-space:nowrap}
+.remain b{color:var(--mine);font-size:1.3em}
+
+.main{flex:1;min-height:0;display:flex;gap:18px;padding:14px 18px 18px}
+.board-wrap{flex:1;min-width:0;display:flex;justify-content:center;align-items:flex-start;overflow:auto}
+.board{
+  --cols:10;--rows:8;
+  container-type:inline-size;
+  display:grid;grid-template-columns:1.1fr repeat(var(--cols),1fr);gap:4px;
+  width:min(100%, calc((100vh - 150px) * (var(--cols) + 1.1) / (var(--rows) + 1.1)));
+  width:min(100%, calc((100dvh - 150px) * (var(--cols) + 1.1) / (var(--rows) + 1.1)));
+  background:var(--board);padding:10px;border-radius:14px;border:2px solid var(--line)
+}
+.head{display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink-soft);
+  font-size:calc(100cqw / (var(--cols) + 1.1) * .42)}
+.cell{position:relative;aspect-ratio:1;border:0;border-radius:8px;background:var(--tile);
+  box-shadow:inset 0 -4px 0 var(--tile-edge);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0;overflow:hidden;transition:background .12s}
+.cell:hover:not(:disabled){background:var(--tile-hover)}
+.cell .lab{font-size:calc(100cqw / (var(--cols) + 1.1) * .24);color:var(--ink-soft);font-weight:800;opacity:.75}
+.cell.sel{background:var(--accent);box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)}
+.cell.sel .lab{color:var(--accent-ink);opacity:1;font-size:calc(100cqw / (var(--cols) + 1.1) * .34)}
+.cell.safe{background:var(--safe);box-shadow:inset 0 0 0 2px var(--line);cursor:default;animation:pop .25s ease-out}
+.cell.safe .lab{color:var(--safe-ink);opacity:.8}
+.cell .num{font-size:calc(100cqw / (var(--cols) + 1.1) * .48);font-weight:800;line-height:1;color:var(--ink)}
+.cell.mine{background:var(--mine-bg);box-shadow:inset 0 0 0 3px var(--mine);cursor:default}
+.cell .broom{font-size:calc(100cqw / (var(--cols) + 1.1) * .42);line-height:1.1}
+.cell .place{font-size:calc(100cqw / (var(--cols) + 1.1) * .17);color:var(--mine);font-weight:800;line-height:1.1;padding:0 2px;text-align:center;word-break:break-all}
+.chip.done{border-color:var(--accent);color:var(--ink-soft);background:var(--new)}
+.cell.mine.pt{background:var(--new);box-shadow:inset 0 0 0 3px var(--accent)}
+.cell.mine.pt .place{color:var(--ink)}
+.hit-card.pt{border-color:var(--accent)}
+.hit-card.pt .hit-title{color:var(--accent)}
+.roulette.land.pt{border-color:var(--accent);color:var(--ink);background:var(--new)}
+.results .pts{font-family:var(--f-round);font-weight:800}
+.results.pt .pl{color:var(--ink)}
+.results li.top .pl{color:var(--accent)}
+.cell.ghost{background:var(--mine-bg);box-shadow:none;outline:2px dashed var(--mine);outline-offset:-4px}
+.cell:disabled{cursor:default}
+@keyframes pop{0%{transform:scale(.85)}100%{transform:scale(1)}}
+.shake{animation:shake .45s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+.hints{width:min(380px,34vw);display:flex;flex-direction:column;min-height:0;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.hints-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.hints h2{font-family:var(--f-hand);font-weight:600;font-size:1.6rem;margin:0}
+.next{font-size:.9rem;color:var(--ink-soft);margin:4px 0 10px}
+.hint-list{list-style:none;margin:0;padding:0;overflow:auto;flex:1;display:flex;flex-direction:column;gap:10px}
+.hint{font-family:var(--f-hand);font-weight:600;font-size:clamp(1.05rem,1.55vw,1.4rem);line-height:1.55;padding:10px 12px;border-radius:10px;border:2px solid var(--line)}
+.hint .no{display:block;font-family:var(--f-round);font-size:.72rem;color:var(--ink-soft);font-weight:800;margin-bottom:2px}
+.hint b{font-family:var(--f-round);font-weight:800;color:var(--mine);font-size:1.15em;padding:0 .1em}
+.hint.new{background:var(--new);border-color:var(--accent)}
+.hint.new{animation:slidein .4s ease-out}
+@keyframes slidein{from{transform:translateX(16px);opacity:0}to{transform:none;opacity:1}}
+.empty{color:var(--ink-soft);font-size:.95rem}
+
+.confirm{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;background:var(--panel);border:3px solid var(--accent);border-radius:14px;
+  padding:10px 14px 10px 20px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:20;font-size:1.2rem;white-space:nowrap}
+.confirm b{font-size:1.6rem}
+
+/* ---------- モーダル ---------- */
+.modal{position:fixed;inset:0;background:rgba(10,20,15,.6);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal-card{background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:28px 36px;text-align:center;max-width:620px;width:100%;max-height:90%;overflow:auto}
+.hit-card{border-color:var(--mine)}
+.hit-cell{font-weight:800;font-size:1.3rem;color:var(--ink-soft)}
+.hit-title{font-family:var(--f-hand);font-weight:600;font-size:clamp(2.4rem,6vw,4rem);color:var(--mine);margin:.1em 0}
+.hit-group{font-family:var(--f-hand);font-weight:600;font-size:1.6rem;margin:0 0 14px}
+.roulette{font-family:var(--f-hand);font-weight:600;font-size:clamp(2rem,5vw,3.2rem);border:3px dashed var(--line);border-radius:14px;padding:14px;margin:0 0 20px;min-height:1.8em}
+.roulette.land{border-style:solid;border-color:var(--mine);color:var(--mine);background:var(--mine-bg)}
+.end-title{font-family:var(--f-hand);font-weight:600;font-size:2.4rem;margin:0 0 16px}
+.results{list-style:none;padding:0;margin:0 0 22px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.results li{display:flex;justify-content:space-between;gap:16px;font-size:1.35rem;border-bottom:2px solid var(--line);padding:6px 4px}
+.results .pl{font-family:var(--f-hand);font-weight:600;color:var(--mine)}
+.safe-note{color:var(--ink-soft);margin:0 0 20px}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ask-msg{font-size:1.2rem;line-height:1.7;margin:0 0 20px}
+
+@media (max-width:900px){
+  .main{flex-direction:column}
+  .hints{width:100%;max-height:40vh}
+  .board{width:100%}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- 設定画面 -->
+<section id="setup" class="setup">
+  <h1><span id="titleIcon">🧹</span><span id="titleText">掃除マス推理ゲーム</span></h1>
+  <p class="lead" id="lead"></p>
+
+  <fieldset>
+    <legend>遊び方</legend>
+    <div class="row">
+      <label>モード
+        <select id="f-mode">
+          <option value="clean">当てたら掃除(掃除当番決め)</option>
+          <option value="point">当てたら得点(得点ゲーム)</option>
+        </select>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>盤面</legend>
+    <div class="row">
+      <label>列の数(横 A〜)<input type="number" id="f-cols" min="4" max="15"></label>
+      <label>行の数(縦 1〜)<input type="number" id="f-rows" min="4" max="12"></label>
+      <label><span><span class="wordL">掃除マス</span>の数</span><input type="number" id="f-mines" min="1"></label>
+    </div>
+    <p id="density" class="density"></p>
+  </fieldset>
+
+  <fieldset>
+    <legend id="grpLegend">班と掃除場所</legend>
+    <div class="row">
+      <label>班の名前(1行に1つ)<textarea id="f-groups" rows="7"></textarea></label>
+      <label id="placesL">掃除場所(1行に1つ/この数だけ当番が決まる)<textarea id="f-places" rows="7"></textarea></label>
+      <label id="pointsL" hidden>当たりの得点(1行に1つ/当てるたびにこの中からルーレットで決定)<textarea id="f-points" rows="7"></textarea></label>
+    </div>
+    <label class="check" id="onceL" hidden><input type="checkbox" id="f-once"><span>1回当たりを引いた班は抜ける(それ以降は順番が回ってこない)</span></label>
+    <label class="check"><input type="checkbox" id="f-rand">最初の班をランダムに決める(オフなら上から順番)</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>ヒント</legend>
+    <div class="row">
+      <label>最初に出すヒントの数<input type="number" id="f-init" min="0" max="10"></label>
+      <label>ヒントが増えるタイミング
+        <select id="f-auto">
+          <option value="turn">1手ごと</option>
+          <option value="round">全班が1回ずつ開けたら</option>
+          <option value="manual">ボタンを押したときだけ</option>
+        </select>
+      </label>
+    </div>
+    <label class="check"><input type="checkbox" id="f-num"><span>開けたマスに「まわり8マスの<span class="wordL">掃除マス</span>の数」を表示する(マインスイーパー風)</span></label>
+  </fieldset>
+
+  <p id="err" class="err" role="alert"></p>
+  <button id="startBtn" class="btn primary big">ゲームをはじめる</button>
+</section>
+
+<!-- ゲーム画面 -->
+<section id="game" class="game" hidden>
+  <header class="bar">
+    <div class="turn"><span class="turn-lab">いまの番</span><span id="turnName" class="turn-name"></span></div>
+    <div id="chips" class="chips"></div>
+    <div class="tools">
+      <span id="remain" class="remain"></span>
+      <button id="hintBtn" class="btn primary">ヒントを出す</button>
+      <button id="undoBtn" class="btn">1手もどす</button>
+      <button id="soundBtn" class="btn" aria-label="音のオンオフ">🔊</button>
+      <button id="themeBtn" class="btn">黒板/白板</button>
+      <button id="endBtn" class="btn">終了</button>
+    </div>
+  </header>
+  <div class="main">
+    <div class="board-wrap"><div id="board" class="board"></div></div>
+    <aside class="hints">
+      <div class="hints-top"><h2>ヒント</h2><span id="hintCount" class="next"></span></div>
+      <p id="nextHint" class="next"></p>
+      <ol id="hintList" class="hint-list"></ol>
+    </aside>
+  </div>
+  <div id="confirm" class="confirm" hidden>
+    <span><b id="confLab"></b> を開けますか?</span>
+    <button id="confYes" class="btn primary">開ける</button>
+    <button id="confNo" class="btn">やめる</button>
+  </div>
+</section>
+
+<!-- 掃除マスを開けたとき -->
+<div id="hitModal" class="modal" hidden>
+  <div class="modal-card hit-card">
+    <div id="hitCell" class="hit-cell"></div>
+    <div class="hit-title" id="hitTitle">🧹 掃除マス!</div>
+    <p id="hitGroup" class="hit-group"></p>
+    <div id="roulette" class="roulette"></div>
+    <button id="hitClose" class="btn primary big" disabled>つづける</button>
+  </div>
+</div>
+
+<!-- 結果 -->
+<div id="endModal" class="modal" hidden>
+  <div class="modal-card">
+    <h2 class="end-title" id="endTitle">掃除当番 決定!</h2>
+    <ul id="results" class="results"></ul>
+    <p id="safeNote" class="safe-note"></p>
+    <div class="btns">
+      <button id="showAnsBtn" class="btn">盤面の答えを見る</button>
+      <button id="newGameBtn" class="btn primary">設定にもどる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 確認ダイアログ -->
+<div id="askModal" class="modal" hidden>
+  <div class="modal-card">
+    <p id="askMsg" class="ask-msg"></p>
+    <div class="btns">
+      <button id="askNo" class="btn">キャンセル</button>
+      <button id="askYes" class="btn primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+let S = null, hist = [], sel = null, cells = [], soundOn = true, keyBuf = '';
+
+/* ---------- 設定 ---------- */
+const DEF = { mode:"clean", points:"100\n50", once:true, cols:10, rows:8, mines:16, groups:"1班\n2班\n3班\n4班\n5班\n6班", places:"教室\n廊下・トイレ", rand:true, init:3, auto:"round", num:false };
+function loadCfg(){ try{ const s = localStorage.getItem('soujiMasu.cfg'); if (s) return Object.assign({}, DEF, JSON.parse(s)); }catch(e){} return {...DEF}; }
+function saveCfg(c){ try{ localStorage.setItem('soujiMasu.cfg', JSON.stringify(c)); }catch(e){} }
+function lines(t){ return t.split('\n').map(s=>s.trim()).filter(Boolean); }
+
+function fillForm(c){
+  $('#f-cols').value=c.cols; $('#f-rows').value=c.rows; $('#f-mines').value=c.mines;
+  $('#f-groups').value=c.groups; $('#f-places').value=c.places; $('#f-rand').checked=c.rand;
+  $('#f-init').value=c.init; $('#f-auto').value=c.auto; $('#f-num').checked=c.num;
+  $('#f-mode').value=c.mode; $('#f-points').value=c.points; $('#f-once').checked=c.once;
+  updMode(); updDensity();
+}
+function readForm(){
+  return { cols:+$('#f-cols').value, rows:+$('#f-rows').value, mines:+$('#f-mines').value,
+    groups:$('#f-groups').value, places:$('#f-places').value, rand:$('#f-rand').checked,
+    init:+$('#f-init').value, auto:$('#f-auto').value, num:$('#f-num').checked,
+    mode:$('#f-mode').value, points:$('#f-points').value, once:$('#f-once').checked };
+}
+function updDensity(){
+  const c=readForm(), n=c.cols*c.rows;
+  if (n>0 && c.mines>0) $('#density').textContent = `全${n}マス中、${wordOf(c.mode)}${c.mines}個(約${Math.round(c.mines/n*100)}%)。15〜25%くらいがおすすめです。`;
+}
+['#f-cols','#f-rows','#f-mines'].forEach(id=>$(id).addEventListener('input',updDensity));
+const wordOf=m=>m==='point'?'当たりマス':'掃除マス';
+const iconOf=m=>m==='point'?'⭐':'🧹';
+function parsePoints(t){ return lines(t).map(x=>x.replace(/[点+＋\s]/g,'').replace('－','-').replace('ー','-')).filter(x=>/^-?\d+$/.test(x)).map(Number); }
+function updMode(){
+  const m=$('#f-mode').value, pt=m==='point';
+  $('#titleIcon').textContent=iconOf(m);
+  $('#titleText').textContent=pt?'当たりマス推理ゲーム':'掃除マス推理ゲーム';
+  $('#lead').textContent=pt?'ヒントを手がかりに、当たりマスを探してマスを開けていきます。当たりマスを開けた班に得点が入ります。合計得点を競いましょう。'
+    :'ヒントを手がかりに、掃除マスをよけてマスを開けていきます。掃除マスを開けてしまった班が、その掃除の担当です。';
+  document.querySelectorAll('.wordL').forEach(e=>e.textContent=wordOf(m));
+  $('#grpLegend').textContent=pt?'班と得点':'班と掃除場所';
+  $('#placesL').hidden=pt; $('#pointsL').hidden=!pt; $('#onceL').hidden=!pt;
+  updDensity();
+}
+$('#f-mode').addEventListener('change',updMode);
+
+function validate(c){
+  const g=lines(c.groups), p=lines(c.places), n=c.cols*c.rows;
+  if (!(c.cols>=4&&c.cols<=15)) return '列の数は4〜15にしてください。';
+  if (!(c.rows>=4&&c.rows<=12)) return '行の数は4〜12にしてください。';
+  if (g.length<1) return '班の名前を1つ以上入力してください。';
+  if (c.mode==='point'){
+    if (parsePoints(c.points).length<1) return '当たりの得点を数字で1つ以上入力してください(例:100)。';
+    if (!(c.mines>=1)) return '当たりマスは1個以上にしてください。';
+    if (c.mines>Math.floor(n*0.6)) return `当たりマスが多すぎます。${Math.floor(n*0.6)}個以下にしてください。`;
+    if (!(c.init>=0&&c.init<=10)) return '最初のヒントは0〜10にしてください。';
+    return '';
+  }
+  if (p.length<1) return '掃除場所を1つ以上入力してください。';
+  if (p.length>g.length) return `掃除場所(${p.length}つ)が班の数(${g.length}つ)より多くなっています。`;
+  if (!(c.mines>=p.length)) return `掃除マスは掃除場所の数(${p.length})以上にしてください。`;
+  if (c.mines>Math.floor(n*0.6)) return `掃除マスが多すぎます。${Math.floor(n*0.6)}個以下にしてください。`;
+  if (!(c.init>=0&&c.init<=10)) return '最初のヒントは0〜10にしてください。';
+  return '';
+}
+
+/* ---------- ヒント作成 ---------- */
+function genHints(R,C,mine,W,pt){
+  const L=c=>LETTERS[c], idx=(r,c)=>r*C+c, lab=i=>L(i%C)+(Math.floor(i/C)+1);
+  const cnt=pred=>{let n=0;for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(pred(r,c)&&mine[idx(r,c)])n++;return n;};
+  const N=v=>`<b>${v}</b>`;
+  const H=[], add=(t,tier,cell=null)=>H.push({t,tier,cell});
+  const nz=(n,where)=> n===0 ? `${where}には${W}が1つもない` : `${where}には${W}が${N(n)}個ある`;
+
+  // 列・行
+  for(let c=0;c<C;c++) add(nz(cnt((r,cc)=>cc===c), `${L(c)}列`),2);
+  for(let r=0;r<R;r++) add(nz(cnt((rr)=>rr===r), `${r+1}行目`),2);
+
+  // 4つのエリア
+  const cm=Math.ceil(C/2), rm=Math.ceil(R/2);
+  [['左上',0,rm,0,cm],['右上',0,rm,cm,C],['左下',rm,R,0,cm],['右下',rm,R,cm,C]].forEach(([nm,r0,r1,c0,c1])=>{
+    const n=cnt((r,c)=>r>=r0&&r<r1&&c>=c0&&c<c1);
+    add(nz(n, `${nm}のエリア(${L(c0)}〜${L(c1-1)}列・${r0+1}〜${r1}行目)`),1);
+  });
+
+  // 左右・上下の比較
+  const lf=cnt((r,c)=>c<cm), rt=cnt((r,c)=>c>=cm);
+  const lfN=`左半分(${L(0)}〜${L(cm-1)}列)`, rtN=`右半分(${L(cm)}〜${L(C-1)}列)`;
+  add(lf===rt?`${lfN}と${rtN}の${W}の数は同じ`: lf>rt?`${lfN}の方が${rtN}より${W}が多い`:`${rtN}の方が${lfN}より${W}が多い`,1);
+  const tp=cnt(r=>r<rm), bt=cnt(r=>r>=rm);
+  const tpN=`上半分(1〜${rm}行目)`, btN=`下半分(${rm+1}〜${R}行目)`;
+  add(tp===bt?`${tpN}と${btN}の${W}の数は同じ`: tp>bt?`${tpN}の方が${btN}より${W}が多い`:`${btN}の方が${tpN}より${W}が多い`,1);
+
+  // 四隅・外周・偶数行・1つおきの列
+  add(nz(cnt((r,c)=>(r===0||r===R-1)&&(c===0||c===C-1)), '四隅の4マス'),1);
+  add(nz(cnt((r,c)=>r===0||r===R-1||c===0||c===C-1), 'いちばん外側のマス(外周)'),1);
+  add(nz(cnt(r=>r%2===1), '偶数行(2・4・6…行目)'),1);
+  const oddCols=[...Array(C).keys()].filter(c=>c%2===0).map(L);
+  add(nz(cnt((r,c)=>c%2===0), `${oddCols.slice(0,3).join('・')}…列(1つおきの列)`),1);
+
+  // となり合い
+  let pairs=0;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){ if(!mine[idx(r,c)])continue;
+    if(c+1<C&&mine[idx(r,c+1)])pairs++; if(r+1<R&&mine[idx(r+1,c)])pairs++; }
+  add(pairs===0?`${W}どうしが縦や横でとなり合っているところはない`:`縦か横でとなり合っている${W}のペアが${N(pairs)}組ある`,1);
+
+  // ${W}がない行・列の数
+  let er=0; for(let r=0;r<R;r++) if(cnt(rr=>rr===r)===0) er++;
+  let ec=0; for(let c=0;c<C;c++) if(cnt((r,cc)=>cc===c)===0) ec++;
+  add(er===0?`${W}が1つもない行はない`:`${W}が1つもない行が${N(er)}本ある`,1);
+  add(ec===0?`${W}が1つもない列はない`:`${W}が1つもない列が${N(ec)}本ある`,1);
+
+  // いちばん多い列・行(1つに決まるときだけ)
+  const colC=[...Array(C).keys()].map(c=>cnt((r,cc)=>cc===c)), mc=Math.max(...colC);
+  if(colC.filter(v=>v===mc).length===1) add(`${W}がいちばん多い列は${N(L(colC.indexOf(mc)))}列`,1);
+  const rowC=[...Array(R).keys()].map(r=>cnt(rr=>rr===r)), mr=Math.max(...rowC);
+  if(rowC.filter(v=>v===mr).length===1) add(`${W}がいちばん多い行は${N(rowC.indexOf(mr)+1)}行目`,1);
+
+  // まわり8マス
+  const inner=[]; for(let r=1;r<R-1;r++)for(let c=1;c<C-1;c++) inner.push(idx(r,c));
+  shuffle(inner).slice(0,Math.min(12,inner.length)).forEach(i=>{
+    const r=Math.floor(i/C), c=i%C; let n=0;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){ if(!dr&&!dc)continue; if(mine[idx(r+dr,c+dc)])n++; }
+    add(`${lab(i)}のまわり8マスには${W}が${N(n)}個ある(${lab(i)}自身はふくまない)`,2);
+  });
+
+  // ラッキーヒント
+  const safes=[]; for(let i=0;i<R*C;i++) if(!mine[i]) safes.push(i);
+  shuffle(safes).slice(0,3).forEach(i=>add(pt?`🍀 ラッキーヒント:${N(lab(i))}はハズレのマス`:`🍀 ラッキーヒント:${N(lab(i))}は安全なマス`,2,i));
+
+  // 大まかなヒントほど先に出やすく並べる
+  H.forEach(h=>h.k=Math.random()+h.tier*0.45);
+  H.sort((a,b)=>a.k-b.k);
+  return H.map(({t,cell})=>({t,cell}));
+}
+
+/* ---------- 音 ---------- */
+let actx=null;
+function tone(f,d,type='sine',vol=.15,when=0){
+  if(!soundOn) return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime+when, o=actx.createOscillator(), g=actx.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+d+.02);
+  }catch(e){}
+}
+const sfx={
+  safe(){tone(880,.1);tone(1320,.14,'sine',.12,.07);},
+  hint(){tone(660,.12,'triangle',.18);tone(990,.18,'triangle',.15,.1);},
+  mine(){tone(140,.7,'sawtooth',.22);tone(70,.9,'square',.14,.05);},
+  tick(){tone(1400,.03,'square',.04);},
+  land(){tone(523,.15,'triangle',.2);tone(659,.15,'triangle',.2,.12);tone(784,.35,'triangle',.2,.24);}
+};
+
+/* ---------- ゲーム開始 ---------- */
+function start(){
+  const c=readForm(), e=validate(c);
+  if(e){ $('#err').textContent=e; return; }
+  $('#err').textContent=''; saveCfg(c);
+  const R=c.rows, C=c.cols, n=R*C;
+  const mine=Array(n).fill(false);
+  shuffle([...Array(n).keys()]).slice(0,c.mines).forEach(i=>mine[i]=true);
+  const groups=lines(c.groups);
+  const pt=c.mode==='point', W=wordOf(c.mode);
+  S={ mode:c.mode, pt, W, once:c.once, icon:iconOf(c.mode), points:parsePoints(c.points), scores:groups.map(()=>0),
+      R,C,mine, open:Array(n).fill(null), groups, placesLeft:lines(c.places), total:c.mines,
+      assigned:[], alive:groups.map((_,i)=>i), turnPos:c.rand?Math.floor(Math.random()*groups.length):0,
+      hints:genHints(R,C,mine,W,pt), shown:0, since:0, auto:c.auto, showNum:c.num, over:false, revealAll:false };
+  S.shown=Math.min(c.init,S.hints.length);
+  hist=[]; sel=null;
+  $('#setup').hidden=true; $('#game').hidden=false;
+  buildBoard(); renderAll();
+}
+
+function buildBoard(){
+  const b=$('#board'); b.innerHTML='';
+  b.style.setProperty('--cols',S.C); b.style.setProperty('--rows',S.R);
+  const mk=(cls,txt)=>{const d=document.createElement('div');d.className=cls;d.textContent=txt;b.appendChild(d);};
+  mk('head','');
+  for(let c=0;c<S.C;c++) mk('head',LETTERS[c]);
+  for(let r=0;r<S.R;r++){
+    mk('head',r+1);
+    for(let c=0;c<S.C;c++){
+      const i=r*S.C+c, bt=document.createElement('button');
+      bt.className='cell'; bt.dataset.i=i; bt.setAttribute('aria-label',lab(i));
+      b.appendChild(bt);
+    }
+  }
+  cells=[...b.querySelectorAll('.cell')];
+}
+const lab=i=>LETTERS[i%S.C]+(Math.floor(i/S.C)+1);
+function around(i){
+  const r=Math.floor(i/S.C), c=i%S.C; let n=0;
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+    if(!dr&&!dc)continue; const rr=r+dr, cc=c+dc;
+    if(rr>=0&&rr<S.R&&cc>=0&&cc<S.C&&S.mine[rr*S.C+cc]) n++;
+  }
+  return n;
+}
+
+/* ---------- 描画 ---------- */
+function renderAll(){ renderTop(); renderCells(); renderHints(); }
+function renderTop(){
+  const cur=S.over?null:S.alive[S.turnPos];
+  $('#turnName').textContent=S.over?'おしまい':S.groups[cur];
+  $('#chips').innerHTML=S.groups.map((nm,gi)=>{
+    if(S.pt){ const pend=S.pending&&S.pending.g===gi, sc=S.scores[gi]-(pend?S.pending.val:0), done=S.once&&!pend&&!S.alive.includes(gi);
+      return `<span class="chip${gi===cur?' cur':''}${done?' done':''}">${esc(nm)} ${sc}点${done?' 抜け':''}</span>`; }
+    const a=S.assigned.find(x=>x.g===gi);
+    if(a) return `<span class="chip out">${esc(nm)}:${esc(a.place)}</span>`;
+    return `<span class="chip${gi===cur?' cur':''}">${esc(nm)}</span>`;
+  }).join('');
+  const left=S.mine.filter((m,i)=>m&&!S.open[i]).length;
+  $('#remain').innerHTML=`${S.W} 残り <b>${left}</b> / ${S.total}`;
+  $('#undoBtn').disabled=hist.length===0;
+  $('#hintBtn').disabled=S.over||S.shown>=S.hints.length;
+}
+function renderCells(){
+  cells.forEach((el,i)=>{
+    const o=S.open[i];
+    el.className='cell'; el.disabled=false;
+    if(!o){
+      if(S.revealAll&&S.mine[i]){ el.classList.add('ghost'); el.innerHTML=`<span class="broom">${S.icon}</span><span class="lab">${lab(i)}</span>`; }
+      else el.innerHTML=`<span class="lab">${lab(i)}</span>`;
+      if(sel===i) el.classList.add('sel');
+      if(S.over) el.disabled=true;
+    } else if(!o.mine){
+      el.classList.add('safe'); el.disabled=true;
+      el.innerHTML=S.showNum?`<span class="num">${around(i)||'·'}</span><span class="lab">${lab(i)}</span>`:`<span class="lab">${lab(i)}</span>`;
+    } else {
+      el.classList.add('mine'); el.disabled=true;
+      if(S.pt&&S.pending&&S.pending.i===i){ el.classList.add('pt'); el.innerHTML=`<span class="broom">⭐</span><span class="place">?</span>`; }
+      else if(S.pt){ el.classList.add('pt'); el.innerHTML=`<span class="broom">⭐</span><span class="place">${esc(S.groups[o.g])}<br>${o.pts>0?'+':''}${o.pts}点</span>`; }
+      else el.innerHTML=`<span class="broom">🧹</span><span class="place">${esc(S.groups[o.g])}<br>${esc(o.place)}</span>`;
+    }
+  });
+}
+function renderHints(){
+  const ul=$('#hintList'); let h='';
+  for(let k=S.shown-1;k>=0;k--) h+=`<li class="hint${k===S.shown-1&&S.justHinted?' new':''}"><span class="no">ヒント ${k+1}</span>${S.hints[k].t}</li>`;
+  ul.innerHTML=h||'<li class="empty">まだヒントはありません。</li>';
+  S.justHinted=false;
+  $('#hintCount').textContent=`${S.shown} / ${S.hints.length}`;
+  let nx='';
+  if(S.shown>=S.hints.length) nx='ヒントはすべて出ました。';
+  else if(S.auto==='turn') nx='1手ごとにヒントが1つ増えます。';
+  else if(S.auto==='round') nx=`あと ${Math.max(1,S.alive.length-S.since)} 手で次のヒント`;
+  else nx='「ヒントを出す」で次のヒントが出ます。';
+  $('#nextHint').textContent=S.over?'':nx;
+}
+
+/* ---------- 操作 ---------- */
+function pushHist(){ const c={...S}; hist.push(JSON.stringify(c)); if(hist.length>200) hist.shift(); }
+
+function revealHint(silent){
+  // すでに開いたマスのラッキーヒントは飛ばす
+  while(S.shown<S.hints.length && S.hints[S.shown].cell!=null && S.open[S.hints[S.shown].cell]) S.hints.splice(S.shown,1);
+  if(S.shown>=S.hints.length) return;
+  S.shown++; S.since=0; S.justHinted=true;
+  if(!silent) sfx.hint();
+}
+function autoHint(){
+  if(S.auto==='turn'&&S.since>=1) revealHint();
+  else if(S.auto==='round'&&S.since>=S.alive.length) revealHint();
+}
+
+function select(i){
+  sel=i; $('#confLab').textContent=lab(i); $('#confirm').hidden=false;
+  renderCells();
+}
+function unselect(){ sel=null; keyBuf=''; $('#confirm').hidden=true; if(S) renderCells(); }
+
+function openCell(i){
+  if(!S||S.over||S.open[i]) return;
+  pushHist(); unselect();
+  const g=S.alive[S.turnPos];
+  if(!S.mine[i]){
+    S.open[i]={g,mine:false};
+    S.turnPos=(S.turnPos+1)%S.alive.length;
+    S.since++; sfx.safe(); autoHint(); renderAll();
+    return;
+  }
+  if(S.pt){
+    // 当たりマス:得点をルーレットで決定。班は抜けずに続行
+    const pool=S.points.map(v=>(v>0?'+':'')+v+'点');
+    const val=S.points[Math.floor(Math.random()*S.points.length)];
+    S.open[i]={g,mine:true,pts:val};
+    S.scores[g]+=val; S.pending={i,g,val};
+    if(S.once){
+      // 当てた班は抜ける
+      S.alive.splice(S.turnPos,1);
+      if(S.turnPos>=S.alive.length) S.turnPos=0;
+    } else S.turnPos=(S.turnPos+1)%S.alive.length;
+    S.since++; if(S.alive.length) autoHint();
+    if(S.alive.length===0||S.mine.every((m,k)=>!m||S.open[k])) S.over=true;
+    sfx.land();
+    renderAll(); showHit(i,g,(val>0?'+':'')+val+'点',pool);
+    return;
+  }
+  // 掃除マス
+  const pool=[...S.placesLeft];
+  const pi=Math.floor(Math.random()*S.placesLeft.length), place=S.placesLeft[pi];
+  S.placesLeft.splice(pi,1);
+  S.open[i]={g,mine:true,place};
+  S.assigned.push({g,place,cell:i});
+  S.alive.splice(S.turnPos,1);
+  if(S.turnPos>=S.alive.length) S.turnPos=0;
+  if(S.placesLeft.length===0||S.alive.length===0) S.over=true;
+  sfx.mine();
+  const b=$('#board'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+  renderAll(); showHit(i,g,place,pool);
+}
+
+let spinTimer=null;
+function showHit(i,g,place,pool){
+  $('#hitCell').textContent=`${lab(i)} を開けたら…`;
+  $('#hitGroup').textContent=S.pt?`${S.groups[g]} が当たりを見つけた!得点は…`:`${S.groups[g]} に決定!担当は…`;
+  $('#hitTitle').textContent=S.pt?'⭐ 当たりマス!':'🧹 掃除マス!';
+  document.querySelector('.hit-card').classList.toggle('pt',S.pt);
+  const rl=$('#roulette'); rl.classList.remove('land'); rl.classList.toggle('pt',S.pt); rl.textContent='?';
+  const btn=$('#hitClose'); btn.disabled=true; btn.textContent=S.over?'結果を見る':'つづける';
+  $('#hitModal').hidden=false;
+  let k=Math.floor(Math.random()*pool.length);
+  const steps=pool.length>1?24:8;
+  let n=0;
+  const tick=()=>{
+    rl.textContent=pool[k%pool.length]; k++; n++; sfx.tick();
+    if(n<steps) spinTimer=setTimeout(tick,50+n*n*0.9);
+    else spinTimer=setTimeout(()=>{ rl.textContent=place; rl.classList.add('land'); sfx.land(); btn.disabled=false; btn.focus(); },320);
+  };
+  clearTimeout(spinTimer);
+  spinTimer=setTimeout(tick,500);
+}
+function closeHit(){
+  if($('#hitClose').disabled) return;
+  $('#hitModal').hidden=true;
+  if(S.pending){ S.pending=null; renderAll(); }
+  if(S.over) showEnd();
+}
+function showEnd(){
+  $('#endTitle').textContent=S.pt?'結果発表':'掃除当番 決定!';
+  $('#results').classList.toggle('pt',S.pt);
+  if(S.pt){
+    const ord=S.groups.map((nm,gi)=>({nm,s:S.scores[gi],n:S.open.filter(o=>o&&o.mine&&o.g===gi).length})).sort((a,b)=>b.s-a.s);
+    let rk=0;
+    $('#results').innerHTML=ord.map((o,idx)=>{ if(idx===0||o.s!==ord[idx-1].s) rk=idx+1;
+      return `<li class="${rk===1?'top':''}"><span>${rk}位 ${esc(o.nm)}</span><span class="pl"><span class="pts">${o.s}点</span>(当たり${o.n}個)</span></li>`; }).join('');
+    const left=S.mine.filter((m,i)=>m&&!S.open[i]).length;
+    $('#safeNote').textContent=left?`まだ見つかっていない当たりマスが${left}個あります。`:'当たりマスをすべて見つけました!';
+    $('#endModal').hidden=false; renderAll(); return;
+  }
+  $('#results').innerHTML=S.assigned.length
+    ? S.assigned.map(a=>`<li><span>${esc(S.groups[a.g])}</span><span class="pl">${esc(a.place)}</span></li>`).join('')
+    : '<li><span>まだ決まっていません</span></li>';
+  const safeGroups=S.groups.filter((_,gi)=>!S.assigned.find(a=>a.g===gi));
+  $('#safeNote').textContent=safeGroups.length?`セーフ:${safeGroups.join('、')}`:'';
+  $('#endModal').hidden=false;
+  renderAll();
+}
+
+let askCb=null;
+function ask(msg,ok,cb){ $('#askMsg').textContent=msg; $('#askYes').textContent=ok; askCb=cb; $('#askModal').hidden=false; $('#askYes').focus(); }
+$('#askYes').onclick=()=>{ $('#askModal').hidden=true; const f=askCb; askCb=null; if(f) f(); };
+$('#askNo').onclick=()=>{ $('#askModal').hidden=true; askCb=null; };
+
+/* ---------- イベント ---------- */
+$('#startBtn').onclick=start;
+$('#board').addEventListener('click',e=>{
+  const t=e.target.closest('.cell'); if(!t||!S||S.over) return;
+  const i=+t.dataset.i; if(S.open[i]) return;
+  if(sel===i) openCell(i); else select(i);
+});
+$('#confYes').onclick=()=>{ if(sel!=null) openCell(sel); };
+$('#confNo').onclick=unselect;
+$('#hintBtn').onclick=()=>{ if(!S||S.over||S.shown>=S.hints.length) return; pushHist(); revealHint(); renderAll(); };
+$('#undoBtn').onclick=()=>{
+  if(!hist.length) return;
+  clearTimeout(spinTimer);
+  S=JSON.parse(hist.pop()); S.justHinted=false; S.pending=null;
+  $('#hitModal').hidden=true; $('#endModal').hidden=true; unselect(); renderAll();
+};
+$('#hitClose').onclick=closeHit;
+$('#showAnsBtn').onclick=()=>{ S.revealAll=true; $('#endModal').hidden=true; renderAll(); };
+$('#newGameBtn').onclick=()=>{ $('#endModal').hidden=true; backToSetup(); };
+$('#endBtn').onclick=()=>{
+  if(S.over){ showEnd(); return; }
+  ask(`ゲームを終了して、${S.W}の場所をすべて表示しますか?`,'終了して答えを見る',()=>{
+    pushHist(); S.over=true; S.revealAll=true; unselect(); showEnd();
+  });
+};
+function backToSetup(){ clearTimeout(spinTimer); unselect(); S=null; $('#game').hidden=true; $('#setup').hidden=false; fillForm(loadCfg()); }
+$('#soundBtn').onclick=()=>{ soundOn=!soundOn; $('#soundBtn').textContent=soundOn?'🔊':'🔇'; };
+function applyTheme(t){ if(t) document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme; }
+$('#themeBtn').onclick=()=>{
+  const cur=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const nx=cur==='dark'?'light':'dark'; applyTheme(nx);
+  try{ localStorage.setItem('soujiMasu.theme',nx); }catch(e){}
+};
+
+// キーボード:「e5」と打つとE5を選択、Enterで開ける、Escでやめる
+document.addEventListener('keydown',e=>{
+  if(!$('#askModal').hidden){ if(e.key==='Escape') $('#askNo').click(); return; }
+  if(!$('#hitModal').hidden){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); closeHit(); } return; }
+  if(!S||S.over||$('#game').hidden||!$('#endModal').hidden) return;
+  if(e.target.closest('input,textarea,select')) return;
+  if(e.key==='Escape'){ unselect(); return; }
+  if(e.key==='Enter'){ if(sel!=null){ e.preventDefault(); openCell(sel); } return; }
+  const k=e.key.toUpperCase();
+  if(/^[A-Z]$/.test(k)){ keyBuf=k; return; }
+  if(/^[0-9]$/.test(k)&&keyBuf){
+    keyBuf+=k;
+    const c=LETTERS.indexOf(keyBuf[0]), r=parseInt(keyBuf.slice(1),10)-1;
+    if(c>=0&&c<S.C&&r>=0&&r<S.R){ const i=r*S.C+c; if(!S.open[i]) select(i); }
+  }
+});
+
+// 初期化
+try{ const t=localStorage.getItem('soujiMasu.theme'); if(t) applyTheme(t); }catch(e){}
+fillForm(loadCfg());
+</script>
+<!-- iPad配信(先生の画面をiPadに映す)。mirror.js を同じ場所に置く -->
+<script src="mirror.js"></script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ヌメロン 数当て推理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#e9eef2; --panel:#ffffff; --ink:#14212b; --soft:#5d6f7d; --line:#cdd7df;
+  --lcd:#dfe9d8; --lcd-ink:#1e3a1e; --hit:#e0492a; --blow:#1c8fd6; --ok:#1f9d55; --ok-bg:#dff5e8;
+  --cur:#ffd84d; --key:#f4f7f9;
+  --f-dot:"DotGothic16","MS Gothic",monospace;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1117; --panel:#141c24; --ink:#e8eef3; --soft:#8b9aa7; --line:#26323d;
+    --lcd:#0f2415; --lcd-ink:#7dff9a; --hit:#ff7052; --blow:#53b8ff; --ok:#4fd58a; --ok-bg:#12301f;
+    --cur:#ffd84d; --key:#1b2530;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1117; --panel:#141c24; --ink:#e8eef3; --soft:#8b9aa7; --line:#26323d;
+  --lcd:#0f2415; --lcd-ink:#7dff9a; --hit:#ff7052; --blow:#53b8ff; --ok:#4fd58a; --ok-bg:#12301f;
+  --cur:#ffd84d; --key:#1b2530;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-variant-numeric:tabular-nums}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--cur);outline-offset:2px}
+[hidden]{display:none!important}
+.h{color:var(--hit);font-weight:700} .b{color:var(--blow);font-weight:700}
+
+.setup{max-width:720px;margin:0 auto;padding:32px 20px 48px;height:100%;overflow:auto}
+.setup h1{font-family:var(--f-dot);font-weight:400;font-size:clamp(2.4rem,6vw,3.6rem);margin:0 0 .2em;letter-spacing:.06em}
+.lead{line-height:1.9;margin:0 0 18px}
+.rules{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px 18px;margin:0 0 18px;line-height:1.9}
+.ex{font-family:var(--f-dot);font-size:1.1rem}
+fieldset{border:2px solid var(--line);border-radius:12px;background:var(--panel);padding:14px 18px 18px;margin:0 0 16px}
+legend{font-weight:700;padding:0 6px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:.9rem;color:var(--soft)}
+select,textarea{background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:8px 10px;font-size:1.05rem}
+textarea{resize:vertical;line-height:1.6}
+.err{color:var(--hit);font-weight:700;min-height:1.4em}
+.btn{border:2px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 14px;font-weight:700}
+.btn:hover:not(:disabled){border-color:var(--soft)}
+.btn:disabled{opacity:.35;cursor:default}
+.primary{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.big{font-size:1.25rem;padding:12px 28px}
+
+.game{height:100%;display:grid;grid-template-columns:minmax(320px,400px) 1fr;gap:18px;padding:16px 20px}
+.left{display:flex;flex-direction:column;gap:12px;min-height:0}
+.turnbox{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.round{color:var(--soft);font-weight:700}
+.who{font-size:clamp(2rem,4vw,3rem);font-weight:700;line-height:1.2}
+.lcd{background:var(--lcd);border-radius:12px;padding:14px;display:flex;justify-content:center;gap:10px;margin-top:10px}
+.slot{width:clamp(54px,5.5vw,76px);aspect-ratio:3/4;border-bottom:4px solid var(--lcd-ink);display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-dot);font-size:clamp(2.6rem,4.6vw,3.8rem);color:var(--lcd-ink)}
+.slot.next{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{border-color:transparent}}
+.last{min-height:2.2em;margin-top:10px;font-size:1.35rem;text-align:center}
+.last .dg{font-family:var(--f-dot);font-size:1.3em;letter-spacing:.12em}
+.last.win{color:var(--ok);font-weight:700}
+.pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pad button{font-family:var(--f-dot);font-size:clamp(1.6rem,2.6vw,2.2rem);padding:10px 0;border-radius:10px;border:2px solid var(--line);background:var(--key)}
+.pad button:disabled{opacity:.25;cursor:default}
+.pad .wide{grid-column:span 2;font-family:var(--f-body);font-size:1.15rem;font-weight:700}
+.pad .go{grid-column:span 3;background:var(--ink);color:var(--panel);border-color:var(--ink);font-family:var(--f-body);font-size:1.3rem;font-weight:700}
+.tip{font-size:.9rem;color:var(--soft);line-height:1.7}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+
+.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;align-content:start;overflow:auto;min-height:0}
+.gb{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;min-height:0;max-height:48vh}
+.gb.cur{border-color:var(--cur);box-shadow:0 0 0 3px var(--cur)}
+.gb.solved{background:var(--ok-bg);border-color:var(--ok)}
+.gb-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.gb-name{font-weight:700;font-size:1.3rem}
+.gb-st{font-size:.85rem;color:var(--soft);font-weight:700}
+.gb.solved .gb-st{color:var(--ok)}
+.hl{list-style:none;margin:0;padding:0;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.hl li{display:grid;grid-template-columns:1.8em 1fr auto;align-items:center;gap:6px;padding:3px 2px;border-bottom:1px dashed var(--line)}
+.hl .no{color:var(--soft);font-size:.8rem}
+.hl .dg{font-family:var(--f-dot);font-size:1.5rem;letter-spacing:.14em}
+.hl .rs{font-size:1rem;white-space:nowrap}
+.hl li.win .dg{color:var(--ok)}
+.empty{color:var(--soft);font-size:.9rem}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.card{background:var(--panel);border-radius:16px;padding:26px 32px;max-width:680px;width:100%;max-height:90%;overflow:auto;border:2px solid var(--line)}
+.card h2{font-family:var(--f-dot);font-weight:400;font-size:2.4rem;margin:0 0 16px;text-align:center}
+.res{list-style:none;padding:0;margin:0 0 18px}
+.res li{display:grid;grid-template-columns:3em 1fr auto auto auto;gap:12px;align-items:baseline;padding:8px 6px;border-bottom:1px solid var(--line);font-size:1.2rem}
+.res .sc{font-family:var(--f-dot);color:var(--soft)}
+.res .cl{color:var(--hit);font-weight:700;min-width:5em;text-align:right}
+.res li.clean{background:color-mix(in srgb,var(--hit) 14%,transparent)}
+.tie{color:var(--hit);font-weight:700;text-align:center}
+.note{color:var(--soft);text-align:center;font-size:.9rem}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ask{font-size:1.15rem;line-height:1.7;margin:0 0 18px}
+
+
+.boards.mode-shared{display:flex}
+.shared{display:flex;flex-direction:column;gap:12px;min-height:0;flex:1}
+.sh-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px}
+.sh-q{font-family:var(--f-dot);font-size:1.6rem;margin-right:6px}
+.chip{padding:4px 12px;border-radius:999px;border:2px solid var(--line);font-weight:700}
+.chip.cur{background:var(--cur);border-color:var(--cur);color:#14212b}
+.chip.out{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.sh-log{flex:1;min-height:0;overflow:auto;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px}
+.sh-list{list-style:none;margin:0;padding:0;columns:2 340px;column-gap:24px}
+.sh-list li{break-inside:avoid;display:grid;grid-template-columns:2em 4.5em 1fr auto;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px dashed var(--line);font-size:1.15rem}
+.sh-list .no{color:var(--soft);font-size:.85rem}
+.sh-list .nm{font-weight:700}
+.sh-list .dg{font-family:var(--f-dot);font-size:1.8rem;letter-spacing:.14em}
+.sh-list li.win .dg{color:var(--ok)}
+.sh-past{font-size:.95rem;color:var(--soft);display:flex;gap:14px;flex-wrap:wrap}
+.sh-past .dg{font-family:var(--f-dot);font-size:1.15rem;color:var(--ink)}
+.mode-note{font-size:.88rem;color:var(--soft);line-height:1.7;margin:8px 0 0}
+@media (max-width:900px){ .game{grid-template-columns:1fr;height:auto;min-height:100%} .gb{max-height:none} }
+@media (prefers-reduced-motion: reduce){ .slot.next{animation:none} }
+</style>
+</head>
+<body>
+
+<section id="setup" class="setup">
+  <h1>ヌメロン</h1>
+  <p class="lead">パソコンがこっそり決めた数字を、ヒントを手がかりに当てる推理ゲームです。先に当てた班から勝ち抜け。最後まで残った班が掃除当番です。</p>
+  <div class="rules">
+    数字は<b>0〜9の重ならない数字</b>でできています(例:<span class="ex">0 7 3</span>)。<br>
+    予想を言うと、答えとくらべて次の2つが表示されます。<br>
+    <span class="h">ヒット</span>…数字も場所も合っている数 / <span class="b">ブロー</span>…数字は合っているが場所がちがう数<br>
+    例:答え <span class="ex">5 2 8</span> に「<span class="ex">2 4 8</span>」→ 8は場所も合っているので<span class="h">1ヒット</span>、2は場所ちがいで<span class="b">1ブロー</span>
+  </div>
+  <fieldset>
+    <legend>設定</legend>
+    <div class="row">
+      <label>遊び方
+        <select id="f-mode"><option value="shared">みんなで1つの数字を当てる</option><option value="each">班ごとに別々の数字を当てる</option></select>
+      </label>
+      <label>けた数
+        <select id="f-digits"><option value="3">3けた(おすすめ)</option><option value="4">4けた(むずかしい)</option></select>
+      </label>
+    </div>
+    <p class="mode-note"><b>みんなで1つの数字</b>…全班が同じ数字に挑戦し、ほかの班のヒントも使えます。当てた班から抜けて、新しい数字で続行。最後まで残った班が掃除です。<br>
+    <b>班ごとに別々の数字</b>…班ごとに答えがちがうので、自分の班のヒントだけで推理します。少ない回数で当てた班から勝ち。</p>
+  </fieldset>
+  <fieldset>
+    <legend>班と掃除場所</legend>
+    <div class="row">
+      <label>班の名前(1行に1つ・この順番で回ります)<textarea id="f-groups" rows="7"></textarea></label>
+      <label>掃除場所(最後まで残った班から順に担当)<textarea id="f-places" rows="7"></textarea></label>
+    </div>
+  </fieldset>
+  <p id="err" class="err" role="alert"></p>
+  <button id="startBtn" class="btn primary big">ゲームをはじめる</button>
+</section>
+
+<section id="game" class="game" hidden>
+  <div class="left">
+    <div class="turnbox">
+      <div id="round" class="round"></div>
+      <div id="who" class="who"></div>
+      <div id="lcd" class="lcd"></div>
+      <div id="last" class="last"></div>
+    </div>
+    <div class="pad" id="pad"></div>
+    <p class="tip"><span class="h">ヒット</span>=数字も場所も合っている/<span class="b">ブロー</span>=数字だけ合っている。キーボードの数字キー・BackSpace・Enterでも入力できます。</p>
+    <div class="tools">
+      <button id="undoBtn" class="btn">1つもどす</button>
+      <button id="endBtn" class="btn">終了して結果を見る</button>
+      <button id="soundBtn" class="btn" aria-label="音のオンオフ">🔊</button>
+      <button id="themeBtn" class="btn">表示切替</button>
+      <button id="quitBtn" class="btn">設定にもどる</button>
+    </div>
+  </div>
+  <div id="boards" class="boards"></div>
+</section>
+
+<div id="endModal" class="modal" hidden>
+  <div class="card">
+    <h2>結果発表</h2>
+    <ul id="res" class="res"></ul>
+    <p id="tie" class="tie" hidden></p>
+    <p class="note" id="endNote">同じラウンドでクリアした班は同じ順位です。まだクリアしていない班は、いちばん惜しかった予想(ヒットの多さ→ブローの多さ)で順位をつけています。</p>
+    <div class="btns">
+      <button id="closeEnd" class="btn">盤面を見る</button>
+      <button id="againBtn" class="btn primary">設定にもどる</button>
+    </div>
+  </div>
+</div>
+
+<div id="askModal" class="modal" hidden>
+  <div class="card">
+    <p id="askMsg" class="ask"></p>
+    <div class="btns"><button id="askNo" class="btn">キャンセル</button><button id="askYes" class="btn primary">OK</button></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lines=t=>t.split('\n').map(s=>s.trim()).filter(Boolean);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const sp=s=>s.split('').join(' ');
+const newSecret=D=>shuffle([...'0123456789']).slice(0,D).join('');
+
+const DEF={mode:'shared',digits:'3',groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ'};
+function loadCfg(){try{const s=localStorage.getItem('numeron.cfg');if(s)return Object.assign({},DEF,JSON.parse(s));}catch(e){}return{...DEF};}
+function saveCfg(c){try{localStorage.setItem('numeron.cfg',JSON.stringify(c));}catch(e){}}
+function fillForm(c){$('#f-mode').value=c.mode;$('#f-digits').value=c.digits;$('#f-groups').value=c.groups;$('#f-places').value=c.places;}
+
+let S=null, hist=[], buf='', soundOn=true, actx=null;
+function tone(f,d,type='sine',vol=.15,when=0){
+  if(!soundOn) return;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime+when,o=actx.createOscillator(),g=actx.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
+}
+
+function start(){
+  const c={mode:$('#f-mode').value,digits:$('#f-digits').value,groups:$('#f-groups').value,places:$('#f-places').value};
+  const g=lines(c.groups),p=lines(c.places);
+  if(g.length<2) return $('#err').textContent='班は2つ以上入力してください。';
+  if(p.length<1) return $('#err').textContent='掃除場所を1つ以上入力してください。';
+  if(p.length>=g.length) return $('#err').textContent='掃除場所は班の数より少なくしてください。';
+  $('#err').textContent=''; saveCfg(c);
+  const D=+c.digits;
+  S={mode:c.mode,D,places:p,round:1,pos:0,last:null,over:false,
+     groups:g.map(name=>({name,secret:newSecret(D),guesses:[],solved:null,exitNo:null})),
+     order:g.map((_,i)=>i)};
+  if(S.mode==='shared'){
+    S.q=1; S.secret=newSecret(D); S.log=[]; S.past=[]; S.exits=0;
+    S.order=g.map((_,i)=>i);
+  }
+  hist=[]; buf='';
+  $('#setup').hidden=true; $('#game').hidden=false;
+  buildPad(); render();
+}
+const cur=()=>S.order[S.pos];
+const alive=()=>S.groups.map((_,i)=>i).filter(i=>S.groups[i].exitNo===null);
+function judge(secret,guess){let h=0,b=0;for(let i=0;i<guess.length;i++){if(secret[i]===guess[i])h++;else if(secret.includes(guess[i]))b++;}return{h,b};}
+
+function buildPad(){
+  const keys=['1','2','3','4','5','6','7','8','9','0'];
+  $('#pad').innerHTML=keys.map(k=>`<button data-k="${k}">${k}</button>`).join('')+
+    `<button class="wide" data-k="del">1字消す</button><button class="go" data-k="ok">決定</button>`;
+}
+function render(){
+  if(S.over){ $('#round').textContent='ゲーム終了'; $('#who').textContent='おつかれさま!'; }
+  else {
+    $('#round').textContent=S.mode==='shared'?`第${S.q}問(残り${alive().length}班)`:`第${S.round}ラウンド`;
+    $('#who').textContent=S.groups[cur()].name+' の予想';
+  }
+  $('#lcd').innerHTML=Array.from({length:S.D},(_,i)=>`<div class="slot${i===buf.length&&!S.over?' next':''}">${buf[i]||''}</div>`).join('');
+  const L=$('#last');
+  if(S.last){
+    const g=S.groups[S.last.g];
+    L.className='last'+(S.last.win?' win':'');
+    L.innerHTML=S.last.win?`${esc(g.name)}「<span class="dg">${sp(S.last.guess)}</span>」<br>正解!${S.mode==='shared'?'勝ち抜け!':`${g.guesses.length}回目でクリア!`}`
+      :`${esc(g.name)}「<span class="dg">${sp(S.last.guess)}</span>」→ <span class="h">${S.last.h}ヒット</span> <span class="b">${S.last.b}ブロー</span>`;
+  } else { L.className='last'; L.textContent=''; }
+  document.querySelectorAll('#pad button').forEach(b=>{
+    const k=b.dataset.k;
+    if(S.over) b.disabled=true;
+    else if(k==='ok') b.disabled=buf.length!==S.D;
+    else if(k==='del') b.disabled=buf.length===0;
+    else b.disabled=buf.includes(k)||buf.length>=S.D;
+  });
+  $('#undoBtn').disabled=hist.length===0;
+  $('#boards').classList.toggle('mode-shared',S.mode==='shared');
+  if(S.mode==='shared') renderShared(); else renderEach();
+}
+function renderEach(){
+  $('#boards').innerHTML=S.groups.map((g,i)=>{
+    const isCur=!S.over&&i===cur();
+    const st=g.solved?`${g.guesses.length}回でクリア!`:S.over?'未クリア':'挑戦中';
+    const rows=g.guesses.map((q,n)=>{
+      const win=q.h===S.D;
+      return `<li class="${win?'win':''}"><span class="no">${n+1}</span><span class="dg">${sp(q.g)}</span><span class="rs">${win?'正解!':`<span class="h">${q.h}H</span> <span class="b">${q.b}B</span>`}</span></li>`;
+    }).join('');
+    const sec=S.over?` 答え ${g.secret}`:'';
+    return `<div class="gb${isCur?' cur':''}${g.solved?' solved':''}">
+      <div class="gb-head"><span class="gb-name">${esc(g.name)}</span><span class="gb-st">${st}${sec}</span></div>
+      <ul class="hl" id="hl${i}">${rows||'<li class="empty">まだ予想していません</li>'}</ul></div>`;
+  }).join('');
+  S.groups.forEach((_,i)=>{const el=$('#hl'+i); if(el) el.scrollTop=el.scrollHeight;});
+}
+function renderShared(){
+  const chips=S.groups.map((g,i)=>{
+    if(g.exitNo!==null) return `<span class="chip out">${esc(g.name)} 抜け${g.exitNo}番目</span>`;
+    return `<span class="chip${!S.over&&i===cur()?' cur':''}">${esc(g.name)}</span>`;
+  }).join('');
+  const rows=S.log.map((q,n)=>{
+    const win=q.h===S.D;
+    return `<li class="${win?'win':''}"><span class="no">${n+1}</span><span class="nm">${esc(S.groups[q.gi].name)}</span><span class="dg">${sp(q.g)}</span><span class="rs">${win?'正解!':`<span class="h">${q.h}H</span> <span class="b">${q.b}B</span>`}</span></li>`;
+  }).join('');
+  const past=S.past.map(p=>`<span>第${p.q}問 <span class="dg">${p.secret}</span> → ${esc(S.groups[p.gi].name)}が${p.n}回目で正解</span>`).join('');
+  $('#boards').innerHTML=`<div class="shared">
+    <div class="sh-top"><span class="sh-q">第${S.q}問</span>${chips}</div>
+    <div class="sh-log" id="shlog"><ul class="sh-list">${rows||'<li class="empty">まだ予想していません。どの班の結果もヒントになります。</li>'}</ul></div>
+    ${past?`<div class="sh-past">${past}</div>`:''}
+  </div>`;
+  const el=$('#shlog'); if(el) el.scrollTop=el.scrollHeight;
+}
+
+function press(k){
+  if(!S||S.over) return;
+  if(k==='del'){ buf=buf.slice(0,-1); render(); return; }
+  if(k==='ok'){ submit(); return; }
+  if(buf.length<S.D&&!buf.includes(k)){ buf+=k; tone(1000,.04,'square',.05); render(); }
+}
+function sfx(r,win){
+  if(win){ tone(523,.15,'triangle',.2);tone(659,.15,'triangle',.2,.13);tone(784,.15,'triangle',.2,.26);tone(1047,.35,'triangle',.2,.39); return; }
+  for(let k=0;k<r.h;k++) tone(880,.1,'sine',.15,k*.14);
+  for(let k=0;k<r.b;k++) tone(520,.1,'sine',.13,(r.h+k)*.14);
+  if(!r.h&&!r.b) tone(200,.2,'triangle',.12);
+}
+function submit(){
+  if(buf.length!==S.D) return;
+  hist.push(JSON.stringify(S)); if(hist.length>300) hist.shift();
+  if(S.mode==='shared') submitShared(); else submitEach();
+}
+function submitEach(){
+  const gi=cur(), g=S.groups[gi], r=judge(g.secret,buf);
+  g.guesses.push({g:buf,h:r.h,b:r.b});
+  const win=r.h===S.D;
+  if(win) g.solved=S.round;
+  sfx(r,win);
+  S.last={g:gi,guess:buf,h:r.h,b:r.b,win}; buf=''; S.pos++;
+  if(S.pos>=S.order.length){
+    const left=S.groups.map((x,i)=>i).filter(i=>!S.groups[i].solved);
+    if(left.length<=S.places.length){ S.over=true; render(); setTimeout(showEnd,win?1200:600); return; }
+    S.round++; S.pos=0; S.order=left;
+  }
+  render();
+}
+function submitShared(){
+  const gi=cur(), r=judge(S.secret,buf), win=r.h===S.D;
+  S.log.push({gi,g:buf,h:r.h,b:r.b});
+  sfx(r,win);
+  S.last={g:gi,guess:buf,h:r.h,b:r.b,win}; buf='';
+  if(win){
+    S.exits++; S.groups[gi].exitNo=S.exits;
+    S.past.push({q:S.q,secret:S.secret,gi,n:S.log.length});
+    const left=alive();
+    if(left.length<=1){ S.over=true; render(); setTimeout(showEnd,1400); return; }
+    // 新しい数字。最初に予想する班を1つずつずらす
+    S.q++; S.secret=newSecret(S.D); S.log=[];
+    const sh=(S.q-1)%left.length;
+    S.order=left.slice(sh).concat(left.slice(0,sh)); S.pos=0;
+  } else {
+    S.pos=(S.pos+1)%S.order.length;
+  }
+  render();
+}
+
+function best(g){let m=-1,bh=0,bb=0;g.guesses.forEach(q=>{const v=q.h*10+q.b;if(v>m){m=v;bh=q.h;bb=q.b;}});return{v:m,h:bh,b:bb};}
+function key(gi){
+  const g=S.groups[gi];
+  if(S.mode==='shared') return g.exitNo!==null?[0,g.exitNo]:[1,0];
+  return g.solved?[0,g.guesses.length]:[1,-best(g).v];
+}
+function cmp(a,b){const x=key(a),y=key(b);return x[0]-y[0]||x[1]-y[1];}
+function ranking(){return [...S.groups.keys()].sort(cmp);}
+function showEnd(){
+  const ord=ranking(), n=ord.length, k=S.places.length;
+  const rankNo=[]; ord.forEach((gi,idx)=>{ rankNo[idx]= idx>0&&cmp(gi,ord[idx-1])===0 ? rankNo[idx-1] : idx+1; });
+  $('#res').innerHTML=ord.map((gi,idx)=>{
+    const g=S.groups[gi], fb=n-1-idx, cl=fb<k?S.places[fb]:'';
+    let detail, sec='';
+    if(S.mode==='shared'){
+      const p=S.past.find(x=>x.gi===gi);
+      detail=p?`第${p.q}問で正解(抜け${g.exitNo}番目)`:'最後まで残った';
+    } else {
+      const bt=best(g);
+      detail=g.solved?`${g.guesses.length}回でクリア`:(g.guesses.length?`未クリア(最高 ${bt.h}H${bt.b}B)`:'未クリア');
+      sec=g.secret;
+    }
+    return `<li class="${cl?'clean':''}"><span>${rankNo[idx]}位</span><span>${esc(g.name)}</span><span>${detail}</span><span class="sc">${sec}</span><span class="cl">${esc(cl)}</span></li>`;
+  }).join('');
+  const b=n-k, tie=$('#tie');
+  if(cmp(ord[b-1],ord[b])===0){ tie.hidden=false; tie.textContent=`${S.groups[ord[b-1]].name}と${S.groups[ord[b]].name}が同じ成績です。じゃんけんで決めましょう。`; }
+  else tie.hidden=true;
+  $('#endNote').textContent=S.mode==='shared'
+    ?(S.secret&&!S.past.find(p=>p.q===S.q)?`最後の問題の答えは ${S.secret} でした。`:'')
+    :'同じラウンドでクリアした班は同じ順位です。まだクリアしていない班は、いちばん惜しかった予想(ヒットの多さ→ブローの多さ)で順位をつけています。';
+  $('#endModal').hidden=false;
+}
+
+let askCb=null;
+function ask(m,ok,cb){$('#askMsg').textContent=m;$('#askYes').textContent=ok;askCb=cb;$('#askModal').hidden=false;}
+$('#askYes').onclick=()=>{$('#askModal').hidden=true;const f=askCb;askCb=null;if(f)f();};
+$('#askNo').onclick=()=>{$('#askModal').hidden=true;askCb=null;};
+
+$('#startBtn').onclick=start;
+$('#pad').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.blur();press(b.dataset.k);});
+$('#undoBtn').onclick=()=>{ if(!hist.length) return; S=JSON.parse(hist.pop()); buf=''; $('#endModal').hidden=true; render(); };
+$('#endBtn').onclick=()=>{
+  if(S.over){ showEnd(); return; }
+  const m=S.mode==='shared'?'ここでゲームを終了して結果を見ますか?(まだ残っている班は同じ順位になります)':'ここでゲームを終了して結果を見ますか?(ラウンドの途中で終わると、まだ予想していない班が1回少なくなります)';
+  ask(m,'終了して結果を見る',()=>{ hist.push(JSON.stringify(S)); S.over=true; buf=''; render(); showEnd(); });
+};
+$('#soundBtn').onclick=()=>{soundOn=!soundOn;$('#soundBtn').textContent=soundOn?'🔊':'🔇';};
+$('#closeEnd').onclick=()=>$('#endModal').hidden=true;
+$('#againBtn').onclick=()=>{$('#endModal').hidden=true;back();};
+$('#quitBtn').onclick=()=>ask('設定画面にもどりますか?いまのゲームは終了します。','もどる',back);
+function back(){S=null;$('#game').hidden=true;$('#setup').hidden=false;fillForm(loadCfg());}
+$('#themeBtn').onclick=()=>{
+  const c=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const nx=c==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx;
+  try{localStorage.setItem('numeron.theme',nx);}catch(e){}
+};
+document.addEventListener('keydown',e=>{
+  if(!S||$('#game').hidden||!$('#endModal').hidden||!$('#askModal').hidden) return;
+  if(/^[0-9]$/.test(e.key)) press(e.key);
+  else if(e.key==='Backspace'){ e.preventDefault(); press('del'); }
+  else if(e.key==='Enter'){ e.preventDefault(); press('ok'); }
+});
+try{const t=localStorage.getItem('numeron.theme'); if(t) document.documentElement.dataset.theme=t;}catch(e){}
+fillForm(loadCfg());
+</script>
+<!-- iPad配信(先生の画面をiPadに映す)。mirror.js を同じ場所に置く -->
+<script src="mirror.js"></script>
+</body>
+</html>
