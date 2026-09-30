@@ -1591,11 +1591,18 @@ addEventListener('resize',()=>{ if(S&&S.phase!=='bet'&&S.lastRun){ layout(); dra
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=10;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=11;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
 const withTimeout=(p,ms,msg)=>Promise.race([p,new Promise((_,ng)=>setTimeout(()=>ng(new Error(msg)),ms))]);
+// Firebaseと同じく、null・空の配列・空のオブジェクトは保存しない
+function fbClean(v){
+  if(v===null||v===undefined) return null;
+  if(Array.isArray(v)){ const a=v.map(fbClean); if(a.every(x=>x===null)) return null; return a; }
+  if(typeof v==='object'){ const o={}; Object.keys(v).forEach(k=>{ const x=fbClean(v[k]); if(x!==null) o[k]=x; }); return Object.keys(o).length?o:null; }
+  return v;
+}
 function localBackend(){
   const KEY='keiba.localdb', subs=new Set();
   const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};}};
@@ -1603,7 +1610,7 @@ function localBackend(){
   const notify=()=>{const t=read(); subs.forEach(s=>{const v=get(t,s.path), j=JSON.stringify(v); if(j!==s.last){s.last=j; s.cb(clone(v));}});};
   const write=(path,val)=>{const t=read(), ks=path.split('/'); let o=t;
     ks.slice(0,-1).forEach(k=>{ if(typeof o[k]!=='object'||o[k]===null) o[k]={}; o=o[k]; });
-    const k=ks[ks.length-1]; if(val==null) delete o[k]; else o[k]=clone(val);
+    const k=ks[ks.length-1], cv=fbClean(clone(val)); if(cv==null) delete o[k]; else o[k]=cv;
     try{localStorage.setItem(KEY,JSON.stringify(t));}catch(e){} notify(); };
   addEventListener('storage',e=>{ if(e.key===KEY) notify(); });
   return {kind:'local',
@@ -1763,6 +1770,8 @@ async function padStart(room,kind){
 }
 function savedJoin(){ try{ return JSON.parse(localStorage.getItem('keiba.join.'+P.room)); }catch(e){ return null; } }
 function onPadState(st){
+  // Firebaseは空の配列を保存しないので、参加者がまだ0人だと groups が届かない。空として扱う
+  if(st&&st.phase){ st.groups=st.groups||[]; st.horses=st.horses||[]; }
   P.st=st;
   if(st&&st.ver!==APP_VER){
     // 版が違う:iPadが古ければ自動で読み込み直す。先生のPCが古ければ知らせる
@@ -1812,7 +1821,7 @@ function padTicker(st){
 function padRender(){
   const st=P.st, m=$('#padMain'), who=$('#padWho');
   if(st===undefined) return;
-  if(!st||!st.groups){
+  if(!st||!st.phase){
     who.innerHTML=''; $('#padRace').textContent=''; $('#padSlip').hidden=true; $('#padTicker').hidden=true; P.tickerKey='';
     m.innerHTML=P.had?`<div class="a-msg"><h2>ゲーム終了</h2><p>先生が設定画面にもどりました。新しいゲームの参加コードを入れてください。</p>${joinForm()}</div>`
       :`<div class="a-msg"><h2>部屋が見つかりません</h2><p>参加コード「${esc(P.room)}」のゲームはありません。先生の画面に出ている参加コードを入れてください。</p>${joinForm()}</div>`;
