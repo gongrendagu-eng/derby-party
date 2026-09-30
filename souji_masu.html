@@ -153,6 +153,13 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .ask-msg{font-size:1.2rem;line-height:1.7;margin:0 0 20px}
 
+/* iPad配信:iPadの「ヒント」タブで大きく表示するとき */
+#mvx-panel .hints{width:auto;max-height:none;border:0;background:none;padding:0}
+#mvx-panel .hints h2{font-size:2.2rem}
+#mvx-panel .hint-list{overflow:visible;gap:14px;margin-top:10px}
+#mvx-panel .hint{font-size:clamp(1.35rem,3.1vw,2.1rem);padding:14px 18px}
+#mvx-panel .hint .no{font-size:.95rem}
+#mvx-panel .next{font-size:1.1rem}
 @media (max-width:900px){
   .main{flex-direction:column}
   .hints{width:100%;max-height:40vh}
@@ -238,7 +245,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
   </header>
   <div class="main">
     <div class="board-wrap"><div id="board" class="board"></div></div>
-    <aside class="hints">
+    <aside class="hints" data-mv-tab="💡 ヒント">
       <div class="hints-top"><h2>ヒント</h2><span id="hintCount" class="next"></span></div>
       <p id="nextHint" class="next"></p>
       <ol id="hintList" class="hint-list"></ol>

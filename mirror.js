@@ -12,7 +12,7 @@
   if (window.__MV_LOADED) return;
   window.__MV_LOADED = true;
 
-  var MV_VER = '1.0';
+  var MV_VER = '1.1';
   var FB_VER = '10.12.2';
   var PAKO_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js';
   var QR_URL = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
@@ -117,14 +117,14 @@
   function scrolls() {
     var out = [];
     var se = document.scrollingElement || document.documentElement;
-    if (se.scrollTop || se.scrollLeft) out.push(['', Math.round(se.scrollTop), Math.round(se.scrollLeft)]);
+    if (se.scrollTop || se.scrollLeft) out.push(['', Math.round(se.scrollTop), Math.round(se.scrollLeft), se.scrollHeight - se.clientHeight, se.scrollWidth - se.clientWidth]);
     var all = document.body.querySelectorAll('*');
     for (var i = 0; i < all.length; i++) {
       var el = all[i];
       if (!(el.scrollTop || el.scrollLeft)) continue;
       if (el.closest('[id^="mv-"]')) continue;
       var p = pathOf(el);
-      if (p !== null) out.push([p, Math.round(el.scrollTop), Math.round(el.scrollLeft)]);
+      if (p !== null) out.push([p, Math.round(el.scrollTop), Math.round(el.scrollLeft), el.scrollHeight - el.clientHeight, el.scrollWidth - el.clientWidth]);
     }
     return out;
   }

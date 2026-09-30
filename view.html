@@ -13,11 +13,23 @@
   font-family:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;
 }
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-text-size-adjust:100%}
-#stage{position:fixed;inset:0;overflow:hidden}
+#stage{position:fixed;left:0;right:0;top:0;bottom:var(--bar);overflow:hidden}
+:root{--bar:calc(46px + env(safe-area-inset-bottom,0px))}
+/* 下のバー(iPadの人が自分で切り替えられるのはここだけ) */
+#ctl{position:fixed;left:0;right:0;bottom:0;height:var(--bar);padding:0 10px env(safe-area-inset-bottom,0px);display:flex;align-items:center;gap:8px;
+  background:#161b23;border-top:1px solid #2a3240;z-index:10;font-size:14px}
+#ctl[hidden]{display:none}
+#ctl .me{color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.seg{display:flex;background:#0e1116;border:1px solid #2f3947;border-radius:10px;padding:3px;gap:2px;flex:none}
+.seg button{font:700 14px/1 inherit;font-family:inherit;color:#aab5c4;background:none;border:0;border-radius:7px;padding:8px 12px;position:relative;white-space:nowrap}
+.seg button.on{background:#2d6cdf;color:#fff}
+.seg button .dot{position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#ffcc33;box-shadow:0 0 6px #ffcc33}
+#tabs[hidden]{display:none}
 #wrap{position:absolute;left:0;top:0;transform-origin:0 0;visibility:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
 #wrap.on{visibility:visible}
 #frame{display:block;border:0;background:#fff;pointer-events:none}
 #shield{position:absolute;inset:0}
+#shield[hidden]{display:none}
 /* 待ち画面・参加画面 */
 .panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
 .panel[hidden]{display:none}
@@ -35,7 +47,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 #bar{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:5;
   background:rgba(0,0,0,.75);color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;white-space:nowrap}
 #bar[hidden]{display:none}
-#tip{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5;background:rgba(0,0,0,.7);color:#fff;
+#tip{position:fixed;right:10px;bottom:calc(var(--bar) + 10px);z-index:5;background:rgba(0,0,0,.7);color:#fff;
   border-radius:999px;padding:7px 14px;font-size:13px;transition:opacity .6s;pointer-events:none}
 #tip.fade{opacity:0}
 </style>
@@ -66,6 +78,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 </div>
 
 <div id="bar" hidden></div>
+<div id="ctl" hidden>
+  <span class="me" id="me">👀 先生の画面(見るだけ)</span>
+  <div class="seg" id="tabs" hidden></div>
+  <div class="seg" id="sizes">
+    <button type="button" data-m="fit">iPadに合わせる</button>
+    <button type="button" data-m="same">先生と同じ</button>
+  </div>
+</div>
 <div id="tip" class="fade"></div>
 
 <script>
@@ -73,11 +93,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hi
 'use strict';
 var FB_VER='10.12.2';
 var PAKO_URL='https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js';
+var MINW=960;   // 「iPadに合わせる」でも、これより狭いときは縮小して表示する(PC向けの配置をくずさないため)
 var $=function(s){return document.querySelector(s);};
 var frame=$('#frame'), wrap=$('#wrap');
 var code=(new URLSearchParams(location.search).get('r')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 var db=null, ref=null;
-var headKey=null, docReady=false, cur=null, lastHtml=null, lastScroll={}, W=0, H=0, hasFrame=false, hostOn=false;
+var headKey=null, docReady=false, cur=null, lastHtml=null, lastSc=[], lastScPaths={}, W=0, H=0, LW=0, LH=0, hasFrame=false;
+var mode='fit', tab='', tabSeen={}, modalWas=false;
+try{ mode=localStorage.getItem('mv.view.mode')==='same'?'same':'fit'; }catch(e){}
 
 /* ---------- 読み込み ---------- */
 function load(src){return new Promise(function(ok,ng){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=function(){ng(new Error(src));};document.head.appendChild(s);});}
@@ -105,16 +128,22 @@ function unpack(o){ if(!o) return ''; return o.z? window.pako.inflate(unb64(o.d)
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
 /* ---------- 画面の組み立て ---------- */
+var PANEL_CSS='#mvx-panel{position:fixed;inset:0;z-index:2147483000;overflow:auto;background:var(--bg,#fff);color:var(--ink,#111);padding:24px 28px 40px}'+
+  '#mvx-panel[hidden]{display:none}#mvx-panel .mvx-in{max-width:980px;margin:0 auto}';
 function buildDoc(head){
   var d=frame.contentDocument;
   var base=head.base?'<base href="'+esc(head.base)+'">':'';
   d.open();
   d.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'+base+unpack(head)+
-    '<style>html,body{overflow:hidden!important;-webkit-text-size-adjust:100%}*{-webkit-user-select:none;user-select:none}</style>'+
+    '<style>html,body{overflow:hidden!important;-webkit-text-size-adjust:100%}*{-webkit-user-select:none;user-select:none}'+PANEL_CSS+'</style>'+
     '</head><body></body></html>');
   d.close();
+  var panel=d.createElement('div'); panel.id='mvx-panel'; panel.hidden=true;
+  panel.innerHTML='<div class="mvx-in"></div>';
+  d.documentElement.appendChild(panel);     // body の外に置く(画面の更新で消されないように)
   document.title=(head.title||'先生の画面')+'(見るだけ)';
-  docReady=true; lastHtml=null; lastScroll={};
+  $('#me').textContent='👀 '+(head.title||'先生の画面')+'(見るだけ)';
+  docReady=true; lastHtml=null; lastScPaths={}; tab=''; tabSeen={};
   if(cur) apply(cur);
 }
 function setAttrs(el,list){
@@ -142,30 +171,55 @@ function nodeAt(d,path){
   for(var i=0;i<ps.length&&el;i++) el=el.children[+ps[i]];
   return el||null;
 }
+// スクロール位置は「どのくらい下まで進んでいるか」の割合で合わせる(画面の大きさが違っても同じ所が見える)
+function applyScroll(){
+  if(!docReady) return;
+  var d=frame.contentDocument, now={};
+  lastSc.forEach(function(s){
+    now[s[0]]=1; var el=nodeAt(d,s[0]); if(!el) return;
+    var mt=el.scrollHeight-el.clientHeight, ml=el.scrollWidth-el.clientWidth;
+    el.scrollTop = s.length>3 ? (s[3]>0 ? Math.round(s[1]/s[3]*mt) : 0) : s[1];
+    el.scrollLeft= s.length>4 ? (s[4]>0 ? Math.round(s[2]/s[4]*ml) : 0) : s[2];
+  });
+  Object.keys(lastScPaths).forEach(function(p){ if(!now[p]){ var el=nodeAt(d,p); if(el){ el.scrollTop=0; el.scrollLeft=0; } } });
+  lastScPaths=now;
+}
 function apply(f){
   cur=f;
   if(!docReady) return;
   var d=frame.contentDocument;
-  if(f.w!==W||f.h!==H){ W=f.w; H=f.h; frame.style.width=W+'px'; frame.style.height=H+'px'; wrap.style.width=W+'px'; wrap.style.height=H+'px'; fit(); }
+  if(f.w!==W||f.h!==H){ W=f.w; H=f.h; fit(); }
   var html=unpack(f);
   if(html!==lastHtml){
     var t=d.createElement('template'); t.innerHTML=html;
     morph(d.body,t.content); lastHtml=html;
   }
   setAttrs(d.documentElement,f.ha); setAttrs(d.body,f.ba);
-  var now={};
-  (f.sc||[]).forEach(function(s){ now[s[0]]=1; var el=nodeAt(d,s[0]); if(el){ el.scrollTop=s[1]; el.scrollLeft=s[2]; } });
-  Object.keys(lastScroll).forEach(function(p){ if(!now[p]){ var el=nodeAt(d,p); if(el){ el.scrollTop=0; el.scrollLeft=0; } } });
-  lastScroll=now;
+  lastSc=f.sc||[]; applyScroll();
+  // ルーレットや結果発表などのウィンドウが開いたら、画面タブにもどす
+  var modalOn=Array.prototype.some.call(d.body.querySelectorAll('.modal'),function(m){return m.getClientRects().length>0;});
+  if(modalOn&&!modalWas&&tab) tab='';
+  modalWas=modalOn;
+  updTabs();
   wrap.classList.add('on');
 }
+
+/* ---------- 表示の大きさ ---------- */
 function fit(){
   if(!W||!H) return;
-  var vw=document.documentElement.clientWidth, vh=document.documentElement.clientHeight;
-  var s=Math.min(vw/W,vh/H);
-  wrap.style.transform='translate('+Math.round((vw-W*s)/2)+'px,'+Math.round((vh-H*s)/2)+'px) scale('+s+')';
-  var portrait=vh>vw&&W>H;
-  if(portrait) tip('iPadを横向きにすると大きく見えます');
+  var st=$('#stage'), vw=st.clientWidth, vh=st.clientHeight, s;
+  if(mode==='same'){ LW=W; LH=H; s=Math.min(vw/W,vh/H); }
+  else{ s=vw<MINW? vw/MINW : 1; LW=Math.round(vw/s); LH=Math.round(vh/s); }
+  frame.style.width=LW+'px'; frame.style.height=LH+'px';
+  wrap.style.width=LW+'px'; wrap.style.height=LH+'px';
+  wrap.style.transform='translate('+Math.round((vw-LW*s)/2)+'px,'+Math.round((vh-LH*s)/2)+'px) scale('+s+')';
+  if(mode==='same'&&vh>vw&&W>H) tip('iPadを横向きにすると大きく見えます');
+  requestAnimationFrame(applyScroll);
+}
+function setMode(m){
+  mode=m; try{localStorage.setItem('mv.view.mode',m);}catch(e){}
+  Array.prototype.forEach.call(document.querySelectorAll('#sizes button'),function(b){b.classList.toggle('on',b.dataset.m===m);});
+  fit();
 }
 var tipT=null;
 function tip(msg){
@@ -175,11 +229,49 @@ function tip(msg){
 window.addEventListener('resize',fit);
 window.addEventListener('orientationchange',function(){setTimeout(fit,300);});
 
+/* ---------- タブ(ゲーム側が data-mv-tab を付けた部分を大きく表示) ---------- */
+function updTabs(){
+  var d=frame.contentDocument, box=$('#tabs');
+  var els=Array.prototype.slice.call(d.body.querySelectorAll('[data-mv-tab]')).filter(function(e){ return e.getClientRects().length>0; });
+  if(tab && !els.some(function(e){return e.dataset.mvTab===tab;})) tab='';
+  var names=els.map(function(e){return e.dataset.mvTab;});
+  var key=names.join('|');
+  if(box.dataset.key!==key){
+    box.dataset.key=key;
+    box.innerHTML=names.length?'<button type="button" data-t="">🖥 画面</button>'+names.map(function(n){return '<button type="button" data-t="'+esc(n)+'">'+esc(n)+'</button>';}).join(''):'';
+  }
+  box.hidden=!names.length;
+  // 中身が変わったタブに印を付ける(見ていないときだけ)
+  els.forEach(function(e){
+    var n=e.dataset.mvTab, txt=e.textContent;
+    if(tabSeen[n]===undefined) tabSeen[n]=txt;
+    if(tab===n) tabSeen[n]=txt;
+    var btn=box.querySelector('button[data-t="'+CSS.escape(n)+'"]');
+    if(btn){ var has=tabSeen[n]!==txt, dot=btn.querySelector('.dot');
+      if(has&&!dot){ dot=document.createElement('span'); dot.className='dot'; btn.appendChild(dot); }
+      if(!has&&dot) dot.remove(); }
+  });
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.toggle('on',b.dataset.t===tab);});
+  var panel=d.getElementById('mvx-panel');
+  if(!panel) return;
+  var src=tab&&els.filter(function(e){return e.dataset.mvTab===tab;})[0];
+  var touch=!!src;   // タブを見ているときだけ指でスクロールできるようにする(中身は写しなので操作はできない)
+  frame.style.pointerEvents=touch?'auto':'none'; $('#shield').hidden=touch;
+  if(!src){ panel.hidden=true; return; }
+  var c=src.cloneNode(true);
+  c.removeAttribute('id'); Array.prototype.forEach.call(c.querySelectorAll('[id]'),function(x){x.removeAttribute('id');});
+  var inner=panel.firstChild, html=c.outerHTML;
+  if(inner.dataset.html!==html){ inner.innerHTML=html; inner.dataset.html=html; }
+  panel.hidden=false;
+}
+function setTab(t){ tab=t; var p=frame.contentDocument&&frame.contentDocument.getElementById('mvx-panel'); if(p) p.scrollTop=0; updTabs(); }
+
 /* ---------- 状態の表示 ---------- */
 function status(){
   var showing=hasFrame&&docReady;
   $('#wait').hidden=showing||!code;
   $('#waitCode').textContent=code;
+  $('#ctl').hidden=!(docReady&&(hasFrame||lastHtml!==null));
   if(!showing){ wrap.classList.remove('on'); }
   $('#bar').hidden=true;
   if(!hasFrame&&lastHtml!==null){
@@ -187,6 +279,7 @@ function status(){
     $('#wait').hidden=true; wrap.classList.add('on');
     $('#bar').hidden=false; $('#bar').textContent='⏸ 先生の配信が止まっています(再開すると自動で表示されます)';
   }
+  fit();
 }
 
 /* ---------- 開始 ---------- */
@@ -207,7 +300,6 @@ function watch(){
       if(f) apply(f);
       status();
     });
-    ref.child('host').on('value',function(s){ hostOn=!!s.val(); });
     // 見ている台数を先生に知らせる
     var id=Math.random().toString(36).slice(2,10);
     db.ref('.info/connected').on('value',function(s){
@@ -222,10 +314,13 @@ function watch(){
   });
 }
 
-// iPadからは操作できない(タップ・キーはすべて無視)
+// 先生の画面はさわれない。iPadで操作できるのは下のバーだけ
 ['click','dblclick','contextmenu','keydown','keyup','keypress'].forEach(function(t){
-  document.addEventListener(t,function(e){ if(e.target&&e.target.closest&&e.target.closest('#joinForm')) return; e.preventDefault(); e.stopPropagation(); },true);
+  document.addEventListener(t,function(e){ if(e.target&&e.target.closest&&e.target.closest('#joinForm,#ctl')) return; e.preventDefault(); e.stopPropagation(); },true);
 });
+$('#sizes').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setMode(b.dataset.m); });
+$('#tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setTab(b.dataset.t); });
+setMode(mode);
 
 if(/^[A-Z0-9]{4,8}$/.test(code)) watch();
 else{
