@@ -280,10 +280,14 @@
   /* ---------- 先生の画面のボタンとQR ---------- */
   var CSS = '' +
     '#mv-ui{all:initial;font-family:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif}' +
-    '#mv-btn{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:2147483000;display:flex;align-items:center;gap:6px;' +
+    '#mv-bar{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:2147483000;display:flex;gap:8px}' +
+    '#mv-btn{display:flex;align-items:center;gap:6px;' +
     'font:700 13px/1 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;color:#fff;background:rgba(20,24,32,.78);border:1px solid rgba(255,255,255,.25);' +
     'border-radius:999px;padding:7px 12px;cursor:pointer;opacity:.55;transition:opacity .2s,transform .2s;box-shadow:0 2px 10px rgba(0,0,0,.25)}' +
-    '#mv-btn:hover{opacity:1;transform:translateY(-1px)}' +
+    '#mv-btn:hover,#mv-home:hover{opacity:1;transform:translateY(-1px)}' +
+    '#mv-home{display:flex;align-items:center;' +
+    'font:700 13px/1 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;color:#fff;background:rgba(20,24,32,.78);border:1px solid rgba(255,255,255,.25);' +
+    'border-radius:999px;padding:7px 12px;cursor:pointer;opacity:.55;transition:opacity .2s,transform .2s;box-shadow:0 2px 10px rgba(0,0,0,.25);text-decoration:none}' +
     '#mv-btn.on{opacity:.9;background:rgba(10,90,60,.88)}' +
     '#mv-btn .dot{width:8px;height:8px;border-radius:50%;background:#777}' +
     '#mv-btn.on .dot{background:#5dff9c;box-shadow:0 0 8px #5dff9c;animation:mvp 1.6s infinite}' +
@@ -312,8 +316,9 @@
     var st = document.createElement('style'); st.id = 'mv-style'; st.textContent = CSS;
     document.head.appendChild(st);
     ui = document.createElement('div'); ui.id = 'mv-ui';
-    ui.innerHTML =
-      '<button id="mv-btn" type="button" tabindex="-1" title="生徒のiPadにこの画面を映します"><span class="dot"></span><span id="mv-lbl">📱 iPadに映す</span></button>' +
+    var showHome = !window.MV_IS_MENU;
+    ui.innerHTML = '<div id="mv-bar">' + (showHome ? '<a id="mv-home" href="' + BASE + 'menu.html" tabindex="-1" title="ゲームメニューにもどる">🏠 メニュー</a>' : '') +
+      '<button id="mv-btn" type="button" tabindex="-1" title="生徒のiPadにこの画面を映します"><span class="dot"></span><span id="mv-lbl">📱 iPadに映す</span></button></div>' +
       '<div id="mv-modal" hidden><div id="mv-card" role="dialog" aria-modal="true">' +
       '<h2>📱 iPadでこの画面を見る</h2>' +
       '<div class="row"><div id="mv-qr"></div><div style="flex:1;min-width:240px">' +
@@ -328,6 +333,14 @@
       '</div></div>';
     document.body.appendChild(ui);
     btn = ui.querySelector('#mv-btn'); modal = ui.querySelector('#mv-modal');
+    var home = ui.querySelector('#mv-home');
+    if (home) {
+      home.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      home.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!confirm('ゲームメニューにもどりますか?\nいま遊んでいるゲームは終了します。')) e.preventDefault();
+      });
+    }
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });   // フォーカスを奪わない(スペースキーの誤作動防止)
     btn.addEventListener('click', function (e) {
       e.stopPropagation(); btn.blur();

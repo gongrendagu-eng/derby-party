@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゲームメニュー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Klee+One:wght@600&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --wall:#2e3b52; --wall2:#27334a; --ink:#f4f6fa; --soft:#a9b5c8; --line:rgba(255,255,255,.12);
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
+  --f-disp:"Dela Gothic One","BIZ UDPGothic","Hiragino Sans",sans-serif;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;height:100%}
+body{background:var(--wall);background-image:linear-gradient(var(--wall2) 1px,transparent 1px);background-size:100% 64px;
+  color:var(--ink);font-family:var(--f-body);display:flex;flex-direction:column}
+header{padding:3.2vh 4vw 1.6vh;display:flex;align-items:baseline;gap:24px;flex-wrap:wrap}
+h1{font-family:var(--f-disp);font-weight:400;font-size:clamp(34px,5.2vw,76px);line-height:1;margin:0;letter-spacing:.02em}
+header p{margin:0;color:var(--soft);font-size:clamp(14px,1.4vw,20px)}
+main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:2.2vw;padding:1vh 4vw 5vh}
+.g{position:relative;display:grid;grid-template-columns:38% 1fr;align-items:stretch;border-radius:22px;overflow:hidden;
+  text-decoration:none;color:inherit;min-height:150px;transition:transform .15s,box-shadow .15s;box-shadow:0 6px 0 rgba(0,0,0,.28)}
+.g:hover,.g:focus-visible{transform:translateY(-4px);box-shadow:0 10px 0 rgba(0,0,0,.28)}
+.g:focus-visible{outline:4px solid #ffd54a;outline-offset:4px}
+.g:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+.art{display:flex;align-items:center;justify-content:center;position:relative}
+.txt{padding:clamp(14px,2.2vw,32px);display:flex;flex-direction:column;justify-content:center;gap:.6em}
+.txt h2{margin:0;font-size:clamp(24px,2.9vw,46px);line-height:1.1;font-weight:400}
+.txt p{margin:0;font-size:clamp(13px,1.25vw,19px);line-height:1.55;max-width:26em}
+.tag{align-self:flex-start;font-size:clamp(11px,.95vw,15px);font-weight:700;padding:.3em .8em;border-radius:999px}
+.key{position:absolute;right:14px;top:12px;font:700 clamp(12px,1vw,16px)/1 var(--f-body);opacity:.55;border:1.5px solid currentColor;border-radius:6px;padding:4px 7px}
+
+/* マス推理:黒板 */
+.masu{background:#f7f3e6;color:#1f3b2c}
+.masu .art{background:#2f5241}
+.masu h2{font-family:"Klee One",serif;font-weight:600}
+.masu .tag{background:#2f5241;color:#eaf3ea}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:62%}
+.grid i{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22)}
+.grid i.o{background:rgba(255,255,255,.05)}
+.grid i.s{background:#f2b705;border-color:#f2b705;display:flex;align-items:center;justify-content:center;color:#2f5241;font-style:normal;font-size:clamp(12px,1.5vw,24px)}
+
+/* チキンダイス:ゲームショー */
+.dice{background:#fff4e2;color:#3a2413}
+.dice .art{background:#e8452c}
+.dice h2{font-family:var(--f-disp)}
+.dice .tag{background:#e8452c;color:#fff}
+.die{width:48%;aspect-ratio:1;background:#fbf6ee;border-radius:18%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  padding:11%;gap:5%;box-shadow:0 6px 0 #9c3322;transform:rotate(-8deg)}
+.die b{border-radius:50%;background:#2a1a0f}
+.die b.n{background:none}
+
+/* ヌメロン:液晶 */
+.num{background:#e5ecdf;color:#1d2a1b}
+.num .art{background:#20281e}
+.num h2{font-family:"DotGothic16",monospace}
+.num .tag{background:#20281e;color:#b7f28a}
+.lcd{font:clamp(34px,4.6vw,72px)/1 "DotGothic16",monospace;color:#b7f28a;letter-spacing:.14em;text-shadow:0 0 12px rgba(183,242,138,.45);
+  background:#2a3527;padding:.18em .3em .18em .44em;border-radius:8px;border:2px solid #3f4d3b}
+.lcd small{display:block;font-size:.32em;letter-spacing:.05em;margin-top:.5em;text-align:center}
+.lcd .h{color:#ff7a6b}.lcd .bl{color:#7ab8ff}
+
+/* 教室ダービー:メダルゲーム */
+.derby{background:#1d1530;color:#f6efff}
+.derby .art{background:radial-gradient(circle at 50% 45%,#3b2566,#150e24 70%)}
+.derby h2{font-family:var(--f-disp)}
+.derby .tag{background:#ffcc33;color:#1d1530}
+.gate{display:flex;gap:6px}
+.gate span{font:clamp(20px,2.6vw,40px)/1 var(--f-disp);width:1.35em;height:1.7em;display:flex;align-items:center;justify-content:center;border-radius:6px;color:#111}
+
+footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,16px);text-align:right}
+
+@media (max-width:760px){ main{grid-template-columns:1fr} .g{grid-template-columns:32% 1fr} }
+@media (prefers-reduced-motion:reduce){ .g{transition:none} }
+</style>
+</head>
+<body>
+<header>
+  <h1>今日のゲーム</h1>
+  <p>遊ぶゲームを選んでください。キーボードの 1〜4 でも選べます。</p>
+</header>
+
+<main id="list">
+  <a class="g masu" href="souji_masu.html" data-k="1">
+    <div class="art" aria-hidden="true"><div class="grid">
+      <i></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="s">★</i><i class="o"></i><i class="o"></i><i></i><i></i><i></i>
+    </div></div>
+    <div class="txt"><h2>マス推理ゲーム</h2><p>ヒントを手がかりに、盤面に隠れたマスを当てる。掃除当番決めにも得点ゲームにも。</p><span class="tag">iPadに映せる</span></div>
+    <span class="key">1</span>
+  </a>
+  <a class="g dice" href="chicken_dice.html" data-k="2">
+    <div class="art" aria-hidden="true"><div class="die"><b></b><b class="n"></b><b></b><b></b><b class="n"></b><b></b><b></b><b class="n"></b><b></b></div></div>
+    <div class="txt"><h2>チキンダイス</h2><p>振るほど点が増えるが、1が出たらゼロ。どこでやめるかの度胸試し。</p><span class="tag">iPadに映せる</span></div>
+    <span class="key">2</span>
+  </a>
+  <a class="g num" href="numeron.html" data-k="3">
+    <div class="art" aria-hidden="true"><div class="lcd">073<small><span class="h">1H</span> <span class="bl">1B</span></small></div></div>
+    <div class="txt"><h2>ヌメロン</h2><p>ヒットとブローを手がかりに、隠された数字を当てる推理ゲーム。</p><span class="tag">iPadに映せる</span></div>
+    <span class="key">3</span>
+  </a>
+  <a class="g derby" href="index.html" data-k="4">
+    <div class="art" aria-hidden="true"><div class="gate">
+      <span style="background:#fff">1</span><span style="background:#222;color:#fff">2</span><span style="background:#e3342f;color:#fff">3</span><span style="background:#2f6fe3;color:#fff">4</span>
+    </div></div>
+    <div class="txt"><h2>教室ダービー</h2><p>班ごとに馬券を買って、所持金を競う競馬ゲーム。</p><span class="tag">iPadで投票</span></div>
+    <span class="key">4</span>
+  </a>
+</main>
+
+<footer>教室ダービーは独自のiPad投票を使うため、開いている間は「iPadに映す」の配信が止まります。メニューにもどると自動で再開します。</footer>
+
+<script>
+window.MV_IS_MENU = true;
+document.addEventListener('keydown', function (e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  var a = document.querySelector('.g[data-k="' + e.key + '"]');
+  if (a) { e.preventDefault(); location.href = a.getAttribute('href'); }
+});
+</script>
+<script src="mirror.js"></script>
+</body>
+</html>
