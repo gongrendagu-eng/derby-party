@@ -197,6 +197,13 @@ button:disabled{cursor:default}
 .ask{font-size:1.15rem;line-height:1.7;margin:0 0 18px}
 
 /* ---------- iPad連携(先生の画面) ---------- */
+.setup .chk,#setup .chk{flex-direction:row;justify-content:flex-start;align-items:center;gap:8px;margin-top:14px;font-weight:800;cursor:pointer}
+.chk input{width:20px;height:20px}
+.perbox{margin-top:10px}
+.perlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-bottom:10px}
+.setup .perlist label,#setup .perlist label{flex-direction:row;display:flex;align-items:center;gap:8px;font-weight:800;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg)}
+.perlist span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perlist input{width:7.5em;text-align:right;font-weight:800;font-size:1.05rem;padding:4px 6px;border:2px solid var(--line);border-radius:6px;background:var(--paper)}
 .note{font-size:.92rem;color:var(--soft);line-height:1.7;margin:10px 0 0}
 .note.warn{color:var(--accent);font-weight:800}
 .joinbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:18px}
@@ -428,6 +435,12 @@ button:disabled{cursor:default}
       <label>班の名前(1行に1つ)<textarea id="f-groups" rows="7"></textarea></label>
       <label>掃除場所(所持金が少ない班から順に担当)<textarea id="f-places" rows="7"></textarea></label>
     </div>
+    <label class="chk"><input type="checkbox" id="f-per"> 班ごとに最初の所持金を変える</label>
+    <div id="perBox" class="perbox" hidden>
+      <div id="perList" class="perlist"></div>
+      <button type="button" id="perSame" class="btn">全班を「最初の所持金」の金額にそろえる</button>
+      <p class="note">100円単位です。班の名前を変えると、この欄も自動で変わります。</p>
+    </div>
   </fieldset>
   <fieldset>
     <legend>馬券の入力</legend>
@@ -594,7 +607,15 @@ const WRITERS=['本紙','A記者','B記者','C記者'];
 const DEF={races:3,dist:'random',horses:'grade',money:10000,groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ',net:'off'};
 function loadCfg(){try{const s=localStorage.getItem('keiba2.cfg');if(s)return Object.assign({},DEF,JSON.parse(s));}catch(e){}return{...DEF};}
 function saveCfg(c){try{localStorage.setItem('keiba2.cfg',JSON.stringify(c));}catch(e){}}
-function fillForm(c){$('#f-races').value=c.races;$('#f-dist').value=c.dist;$('#f-horses').value=c.horses;$('#f-money').value=c.money;$('#f-groups').value=c.groups;$('#f-places').value=c.places;$('#f-net').value=c.net||'off';netNote();}
+// 班ごとの所持金の欄(班の名前の数だけ並べる。入力した金額は班の名前で覚えておく)
+let perMoney={};
+function renderPer(){
+  const box=$('#perBox'); box.hidden=!$('#f-per').checked; if(box.hidden) return;
+  const base=+$('#f-money').value||10000;
+  $('#perList').querySelectorAll('input').forEach(inp=>{ perMoney[inp.dataset.name]=+inp.value; });
+  $('#perList').innerHTML=lines($('#f-groups').value).map(n=>`<label><span>${esc(n)}</span><input type="number" min="100" step="100" data-name="${esc(n)}" value="${perMoney[n]??base}">円</label>`).join('');
+}
+function fillForm(c){$('#f-races').value=c.races;$('#f-dist').value=c.dist;$('#f-horses').value=c.horses;$('#f-money').value=c.money;$('#f-groups').value=c.groups;$('#f-places').value=c.places;perMoney=c.perMoney||{}; $('#f-per').checked=!!c.usePer; renderPer(); $('#f-net').value=c.net||'off';netNote();}
 
 let S=null, raf=null, soundOn=true, actx=null;
 function tone(f,d,type='sine',vol=.15,when=0){
@@ -736,16 +757,20 @@ function makeComment(h){
 async function start(){
   const c={races:+$('#f-races').value,dist:$('#f-dist').value,horses:$('#f-horses').value,money:+$('#f-money').value,groups:$('#f-groups').value,places:$('#f-places').value,net:$('#f-net').value};
   const g=lines(c.groups),p=lines(c.places);
+  renderPer(); c.usePer=$('#f-per').checked; c.perMoney={...perMoney};
+  $('#perList').querySelectorAll('input').forEach(inp=>{ c.perMoney[inp.dataset.name]=Math.floor((+inp.value||0)/100)*100; });
+  const startMoney=name=>c.usePer?(c.perMoney[name]??c.money):c.money;
   const err=m=>{$('#err').textContent=m;};
   if(!(c.races>=1&&c.races<=10)) return err('レース数は1〜10にしてください。');
   if(!(c.money>=1000)) return err('最初の所持金は1000円以上にしてください。');
   if(g.length<2) return err('班は2つ以上入力してください。');
+  if(c.usePer&&g.some(n=>!(startMoney(n)>=100))) return err('班ごとの所持金は100円以上にしてください。');
   if(p.length<1) return err('掃除場所を1つ以上入力してください。');
   if(p.length>=g.length) return err('掃除場所は班の数より少なくしてください。');
   if(c.net==='firebase'&&!fbReady()) return err('firebase-config.js がまだ設定されていません。手順書の「Firebaseの準備」を見てください。');
   err(''); saveCfg(c);
   S={cfg:c,races:c.races,race:1,H:+c.horses,places:p,phase:'bet',
-     groups:g.map(name=>({name,money:c.money,tickets:[],draft:{type:'win',hs:[],amt:1000},staked:0,result:null}))};
+     groups:g.map(name=>({name,money:startMoney(name),tickets:[],draft:{type:'win',hs:[],amt:1000},staked:0,result:null}))};
   const sb=$('#startBtn'), reset=()=>{ sb.disabled=false; sb.textContent='ゲームをはじめる'; };
   sb.disabled=true;
   if(c.net!=='off'){
@@ -1509,7 +1534,7 @@ addEventListener('resize',()=>{ if(S&&S.phase!=='bet'&&S.lastRun){ layout(); dra
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=8;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=9;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -1918,6 +1943,10 @@ function netNote(){
   n.textContent=msg; n.classList.toggle('warn',v==='firebase'&&!fbReady());
 }
 $('#f-net').addEventListener('change',netNote);
+$('#f-per').addEventListener('change',renderPer);
+$('#perList').addEventListener('change',e=>{ const i=e.target; if(i.dataset.name!==undefined) i.value=Math.max(100,Math.floor((+i.value||0)/100)*100); });
+$('#f-groups').addEventListener('input',renderPer);
+$('#perSame').onclick=()=>{ const base=Math.floor((+$('#f-money').value||0)/100)*100; $('#perList').querySelectorAll('input').forEach(inp=>inp.value=base); };
 $('#verNo').textContent=APP_VER;
 $('#roomBtn').onclick=showQR;
 $('#qrClose').onclick=()=>$('#qrModal').hidden=true;
