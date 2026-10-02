@@ -175,12 +175,13 @@ button:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
 .stage .info{font-family:var(--disp);font-size:clamp(18px,2.6vw,26px);display:grid;gap:8px}
 .stage .info .pz{color:var(--pink);font-size:1.4em}
 .stage .info i{display:inline-block;width:.9em;height:.9em;border-radius:50%;background:var(--hc);vertical-align:-.1em;box-shadow:0 0 0 3px #fff;margin-right:6px}
-.handwrap{flex:1;overflow-y:auto;background:rgba(0,0,0,.25);border-radius:16px;padding:22px 10px 12px}
+.handwrap{flex:1;overflow-y:auto;background:rgba(0,0,0,.25);border-radius:16px;padding:34px 10px 12px}
 .hnd{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .hnd .card{--cw:clamp(66px,9.6vw,104px);transition:transform .15s,opacity .15s}
 .hnd .card.dim{opacity:.38;filter:saturate(.5)}
 .hnd .card.sel{transform:translateY(-16px);box-shadow:0 0 0 4px var(--gold),0 14px 22px rgba(0,0,0,.5)}
 .hnd .card.new::after{content:"NEW";position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--cy);color:#001;font-family:var(--dot);font-size:13px;padding:1px 7px;border-radius:99px}
+.hnd .card[data-o]::before{content:attr(data-o);position:absolute;top:-12px;right:-8px;z-index:2;width:28px;height:28px;border-radius:50%;background:var(--gold);color:#241800;font:16px/28px var(--disp);text-align:center}
 .hnd .card.drew{box-shadow:0 0 0 4px var(--cy),0 0 18px var(--cy)}
 .bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .pb{border:0;border-radius:14px;padding:16px 22px;font-family:var(--disp);font-size:clamp(18px,2.8vw,26px);min-width:150px;background:#2f3a84;color:#fff;box-shadow:0 5px 0 #161c4a}
@@ -232,6 +233,8 @@ button:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
         <select id="fHand"><option value="5">5枚(短め)</option><option value="6">6枚</option><option value="7">7枚(ふつう)</option><option value="8">8枚</option></select>
         <label class="t" style="margin-top:14px">ルール</label>
         <label class="opt"><input type="checkbox" id="fStack"><span>+2・+4 を重ねて次の班に回せる</span></label>
+        <label class="t" for="fMulti" style="margin-top:14px">まとめて出す(2枚出し)</label>
+        <select id="fMulti"><option value="num">同じ数字なら、色がちがっても何枚でも出せる</option><option value="all">同じ数字・記号(スキップ・+2など)なら何枚でも出せる</option><option value="off">1枚ずつしか出せない</option></select>
       </div>
       <div>
         <label class="t">終わり方</label>
@@ -247,6 +250,7 @@ button:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
       場のカードと<b>同じ色</b>か<b>同じ数字・記号</b>のカードを1枚出せます。出せないとき(出したくないとき)は1枚引き、引いたカードが出せればそのまま出せます。<br>
       ⊘ スキップ:次の班をとばす / ⇄ リバース:回る向きが逆になる(2班だけのときはスキップと同じ) / +2:次の班が2枚引いて休み / 4色 ワイルド:好きな色に変えられる / +4:好きな色に変えて、次の班が4枚引いて休み<br>
       残り2枚で出すときは、iPadの「ラストワン!」を押してから出します。言い忘れたまま1枚になると、ほかの班のiPadに「言ってない!」ボタンが出て、先に押されると2枚引きます(押される前に自分で「ラストワン!」を押せばセーフ)。<br>
+      まとめて出す:同じ数字のカードは、色がちがっても何枚でもまとめて出せます(最初の1枚が出せるカードであること)。最後に置いたカードの色が場の色になります。<br>
       点数:数字はその数、⊘⇄+2は20点、ワイルド・+4は50点。
     </details>
     <div class="err" id="setupErr"></div>
@@ -307,7 +311,7 @@ button:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
 /* =====================================================================
    ラストワン  — 先生のPCが親機、各班のiPadが子機(手札を表示)
    ===================================================================== */
-const APP_VER = 1;          // 更新するたびに1つ上げる
+const APP_VER = 3;          // 更新するたびに1つ上げる
 const FB_VER = '10.12.2';
 const Q = new URLSearchParams(location.search);
 const IS_PAD = Q.has('room');
@@ -334,6 +338,8 @@ const CARDS = (() => {
 const VORD = ['0','1','2','3','4','5','6','7','8','9','s','r','d2','w','w4'];
 const isNum = v => /^\d$/.test(v);
 const pts = id => { const v=CARDS[id].v; return isNum(v) ? +v : (v==='w'||v==='w4') ? 50 : 20; };
+// まとめて出せるカードか(mm: num=数字だけ / all=数字と記号 / off=なし)
+const canMulti = (v, mm) => mm==='all' || (mm==='num' && isNum(v));
 const VNAME = {s:'スキップ', r:'リバース', d2:'+2', w:'ワイルド', w4:'+4'};
 const cardName = id => { const c=CARDS[id]; return c.c==='w' ? VNAME[c.v] : CNAME[c.c]+'の'+(isNum(c.v)?c.v:VNAME[c.v]); };
 const SVG_S = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="3.4"/><path d="M6.2 17.8L17.8 6.2" stroke="#fff" stroke-width="3.4"/></svg>';
@@ -422,13 +428,13 @@ function presCount(pres, gi, net){
    先生のPC(親機)
    ===================================================================== */
 let NET=null, ROOM='', CFG=null, H=null, PRES=null, unsub=[], lastJ={}, soundOn=true;
-const DEF = {names:'1班\n2班\n3班\n4班\n5班\n6班', places:'教室\n廊下・トイレ', hand:7, stack:true, end:'one', net:'firebase'};
+const DEF = {names:'1班\n2班\n3班\n4班\n5班\n6班', places:'教室\n廊下・トイレ', hand:7, stack:true, mm:'num', end:'one', net:'firebase'};
 
 function show(id){ ['setup','lobby','table','pad'].forEach(s => $('#'+s).hidden = (s!==id)); }
 
 function initHost(){
   const c = Object.assign({}, DEF, ls('lastone.cfg')||{});
-  $('#fNames').value = c.names; $('#fPlaces').value = c.places; $('#fHand').value = c.hand; $('#fStack').checked = !!c.stack;
+  $('#fNames').value = c.names; $('#fPlaces').value = c.places; $('#fHand').value = c.hand; $('#fStack').checked = !!c.stack; $('#fMulti').value = ['num','all','off'].includes(c.mm) ? c.mm : 'num';
   document.querySelector(`input[name=fEnd][value=${c.end}]`).checked = true;
   document.querySelector(`input[name=fNet][value=${c.net}]`).checked = true;
   $('#heroFan').innerHTML = [ 9, 36, 62, 107 ].map(i=>cardHTML(i)).join('');
@@ -449,7 +455,7 @@ function initHost(){
 function readCfg(){
   const names = $('#fNames').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const places = $('#fPlaces').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const c = { names:$('#fNames').value, places:$('#fPlaces').value, hand:+$('#fHand').value, stack:$('#fStack').checked,
+  const c = { names:$('#fNames').value, places:$('#fPlaces').value, hand:+$('#fHand').value, stack:$('#fStack').checked, mm:$('#fMulti').value,
     end:document.querySelector('input[name=fEnd]:checked').value, net:document.querySelector('input[name=fNet]:checked').value };
   ls('lastone.cfg', c);
   if(names.length<2 || names.length>8) return {err:'班は2〜8班にしてください。'};
@@ -558,34 +564,48 @@ function onAct(gi, a){
     if(H.unsaid===gi){ H.unsaid=-1; g.last=true; fx('last', `${g.name} ラストワン!`); } else return;
   } else {
     if(gi!==H.turn || a.tid!==H.tid || g.out) return;
-    if(a.t==='play'){ if(!doPlay(gi, a.id, a.col, !!a.last)) return; }
+    if(a.t==='play'){ if(!doPlay(gi, a.ids!=null ? (Array.isArray(a.ids)?a.ids:Object.values(a.ids)) : a.id, a.col, !!a.last)) return; }
     else if(a.t==='draw'){ if(!doDraw(gi)) return; }
     else if(a.t==='pass'){ if(H.drew==null) return; doPass(gi); }
     else return;
   }
   commit();
 }
-function doPlay(gi, id, col, decl){
+function doPlay(gi, ids, col, decl){
   const g = H.groups[gi];
-  const hi = g.hand.indexOf(id);
-  if(hi<0 || !canPlay(id, view())) return false;
-  const c = CARDS[id];
+  if(!Array.isArray(ids)) ids = [ids];
+  ids = ids.map(Number);
+  if(!ids.length || new Set(ids).size!==ids.length) return false;
+  if(ids.some(id => g.hand.indexOf(id)<0)) return false;
+  if(!canPlay(ids[0], view())) return false;
+  const c = CARDS[ids[0]];
+  if(ids.length>1){
+    if(!canMulti(c.v, H.cfg.mm || 'num') || H.drew!=null) return false;
+    if(ids.some(id => CARDS[id].v!==c.v)) return false;
+  }
   if(c.c==='w' && !COLORS.includes(col)) return false;
+  const k = ids.length, lastC = CARDS[ids[k-1]];
   H.unsaid = -1;
-  g.hand.splice(hi,1); H.pile.push(id); H.color = c.c==='w' ? col : c.c; H.drew = null; H.tid++;
-  H.hist.push({g:gi, id, col:H.color}); if(H.hist.length>6) H.hist.shift();
-  fx('play', `${g.name}:${cardName(id)}${c.c==='w'?'(→'+CNAME[col]+')':''}`);
+  for(const id of ids){ g.hand.splice(g.hand.indexOf(id),1); H.pile.push(id); }
+  H.color = c.c==='w' ? col : lastC.c; H.drew = null; H.tid++;
+  for(const id of ids) H.hist.push({g:gi, id, col:H.color});
+  while(H.hist.length>6) H.hist.shift();
+  fx('play', `${g.name}:${k>1 ? (c.c==='w'?VNAME[c.v]:(isNum(c.v)?c.v:VNAME[c.v]))+' ×'+k : cardName(ids[0])}${c.c==='w'?'(→'+CNAME[col]+')':''}`);
+  if(k>1) fx('multi', `${k}枚出し!`);
   if(g.hand.length===1){ if(decl){ g.last=true; fx('last', `${g.name} ラストワン!`); } else { g.last=false; H.unsaid=gi; } }
   const out = g.hand.length===0;
   if(out){ g.out=true; g.rank=++H.outN; g.last=false; fx('out', `${g.name} あがり!`); }
+  const act = active()+(out?1:0);
   let skip = 1;
-  if(c.v==='s'){ skip=2; fx('s','スキップ!'); }
-  else if(c.v==='r'){ const act=active()+(out?1:0); H.dir*=-1; if(act<=2) skip=2; fx('r','リバース!'); }
+  const xk = k>1 ? '×'+k : '';
+  if(c.v==='s'){ skip = 1 + Math.min(k, act-1); fx('s','スキップ'+xk+'!'); }
+  else if(c.v==='r'){ if(k%2) H.dir*=-1; if(act<=2) skip=2; fx('r','リバース'+xk+'!'); }
   else if(c.v==='d2' || c.v==='w4'){
-    const n = c.v==='d2'?2:4;
+    const n = (c.v==='d2'?2:4)*k;
     if(H.cfg.stack){ H.pending+=n; H.pendT=c.v; fx(c.v, `+${n}!`+(H.pending>n?`(合計+${H.pending})`:'')); }
-    else { const nx=nextActive(gi,1); const k=drawN(nx,n); skip=2; fx(c.v, `+${n}! ${H.groups[nx].name}は${k}枚引いて休み`); }
+    else { const nx=nextActive(gi,1); const got=drawN(nx,n); skip=2; fx(c.v, `+${n}! ${H.groups[nx].name}は${got}枚引いて休み`); }
   }
+  else if(isNum(c.v) && k>1 && lastC.c!==c.c) fx('col', `${CNAME[H.color]}に変更!`);
   if(c.c==='w') fx('col', `${CNAME[col]}に変更!`);
   if(out && (H.cfg.end==='one' || active()<=1)){
     if(H.pending>0){ const nx=nextActive(gi,1); drawN(nx,H.pending); H.pending=0; H.pendT=''; }
@@ -644,7 +664,7 @@ function pushState(){
   const st = { v:APP_VER, gid:H.gid, phase:H.phase, seq:H.seq, tid:H.tid, names:H.groups.map(g=>g.name),
     groups:H.groups.map(g=>({n:g.name, c:g.hand.length, out:g.out, rank:g.rank, last:g.last})),
     top:H.pile[H.pile.length-1], color:H.color, turn:H.turn, dir:H.dir, pending:H.pending, pendT:H.pendT,
-    unsaid:H.unsaid, stack:!!H.cfg.stack, deck:H.deck.length, fx:H.fx, hist:H.hist,
+    unsaid:H.unsaid, stack:!!H.cfg.stack, mm:H.cfg.mm || 'num', deck:H.deck.length, fx:H.fx, hist:H.hist,
     res:H.res ? {order:H.res.order, tie:H.res.tie} : null,
     reveal:H.phase==='end' ? H.groups.map(g=>g.hand) : null };
   NET.set('state', JSON.parse(JSON.stringify(st)));
@@ -713,7 +733,7 @@ function renderEnd(){
   $('#endSetup').onclick = () => { closeRoom(); lsDel('lastone.save'); $('#endModal').hidden=true; show('setup'); $('#resumeBtn').hidden=true; };
   $('#endAgain').onclick = () => { $('#endModal').hidden=true; newGame(); };
 }
-const TELOP = {s:'#ffc83d', r:'#3fe0ff', d2:'#ff4f8b', w4:'#ff4f8b', col:'#fff', last:'#ff4f8b', catch:'#ff3b30', out:'#ffc83d', win:'#ffc83d', start:'#fff'};
+const TELOP = {multi:'#3fe0ff', s:'#ffc83d', r:'#3fe0ff', d2:'#ff4f8b', w4:'#ff4f8b', col:'#fff', last:'#ff4f8b', catch:'#ff3b30', out:'#ffc83d', win:'#ffc83d', start:'#fff'};
 function playFx(){
   if(!H.fx || H.fx.id===prevFx) return; prevFx = H.fx.id;
   const big = H.fx.items.filter(x=>TELOP[x.k]);
@@ -749,7 +769,7 @@ function sfx(k){
 // お試しモードは同じPCの別タブを別の班にするため、班と端末IDをタブごと(sessionStorage)に覚える
 function ps(k, v){ if(Q.get('local')!=='1') return ls(k, v); try{ if(v===undefined){ const x=sessionStorage.getItem(k); return x==null?null:JSON.parse(x); } sessionStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } }
 function psDel(k){ if(Q.get('local')!=='1') return lsDel(k); try{ sessionStorage.removeItem(k); }catch(e){} }
-const PD = { code:'', net:null, g:-1, st:null, hd:{h:[], d:null}, pres:null, sel:null, decl:false, busy:false, busyT:0, n:Date.now(), newIds:new Set(), prevHand:null, lastFx:0, flashT:0, unh:null, unp:null };
+const PD = { code:'', net:null, g:-1, st:null, hd:{h:[], d:null}, pres:null, sel:[], decl:false, busy:false, busyT:0, n:Date.now(), newIds:new Set(), prevHand:null, lastFx:0, flashT:0, unh:null, unp:null };
 async function initPad(){
   show('pad');
   PD.code = (Q.get('room')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -773,17 +793,17 @@ function onPadState(st){
   }
   const prevSeq = PD.st && PD.st.seq;
   const prevFxId = PD.st && PD.st.fx ? PD.st.fx.id : 0;
-  if(PD.st && st && PD.st.gid !== st.gid){ PD.sel=null; PD.decl=false; PD.prevHand=null; PD.newIds.clear(); }
+  if(PD.st && st && PD.st.gid !== st.gid){ PD.sel=[]; PD.decl=false; PD.prevHand=null; PD.newIds.clear(); }
   PD.st = st;
   if(st && st.seq !== prevSeq) PD.busy = false;
-  if(st && st.turn !== PD.g) { PD.sel=null; PD.decl=false; }
+  if(st && st.turn !== PD.g) { PD.sel=[]; PD.decl=false; }
   if(st && st.fx && st.fx.id !== prevFxId && prevFxId) { PD.flashT = Date.now(); setTimeout(renderPad, 2600); }
   if(st && PD.g >= (st.names||[]).length) choose(-1);
   renderPad();
 }
 function choose(g, silent){
   if(PD.unh){ PD.unh(); PD.unh=null; } if(PD.unp){ PD.unp(); PD.unp=null; }
-  PD.g = g; PD.hd = {h:[], d:null}; PD.prevHand = null; PD.sel = null;
+  PD.g = g; PD.hd = {h:[], d:null}; PD.prevHand = null; PD.sel = [];
   if(g<0){ psDel('lastone.join.'+PD.code); renderPad(); return; }
   ps('lastone.join.'+PD.code, g);
   const dev = ps('lastone.dev') || (()=>{ const d=code5()+code5(); ps('lastone.dev',d); return d; })();
@@ -795,7 +815,7 @@ function choose(g, silent){
       if(nw.length && nw.length < h.length){ nw.forEach(id=>PD.newIds.add(id)); setTimeout(()=>{ nw.forEach(id=>PD.newIds.delete(id)); renderPad(); }, 3500); }
     }
     PD.prevHand = h; PD.hd = {h, d:(v && v.d!=null) ? v.d : null};
-    if(PD.sel!=null && !h.includes(PD.sel)) PD.sel = null;
+    PD.sel = PD.sel.filter(id => h.includes(id));
     PD.busy = false; renderPad();
   });
   if(!silent) renderPad();
@@ -808,20 +828,31 @@ function send(t, extra={}){
   renderPad();
 }
 function sortHand(h){ const co={r:0,y:1,g:2,b:3,w:4}; return h.slice().sort((a,b)=>{ const A=CARDS[a],B=CARDS[b]; return (co[A.c]-co[B.c]) || (VORD.indexOf(A.v)-VORD.indexOf(B.v)) || a-b; }); }
+// 選べるか:1枚目は出せるカード、2枚目からは1枚目と同じ数字・記号(2枚出し)
+function selectable(id){
+  const st = PD.st;
+  if(!PD.sel.length) return canPlay(id, {top:st.top, color:st.color, pending:st.pending, pendT:st.pendT, drew:PD.hd.d});
+  if(PD.sel.includes(id)) return true;
+  return canMulti(CARDS[PD.sel[0]].v, st.mm) && PD.hd.d==null && CARDS[id].v===CARDS[PD.sel[0]].v;
+}
 function tapCard(id){
   const st = PD.st; if(!st || st.phase!=='play' || st.turn!==PD.g || PD.busy) return;
-  const v = {top:st.top, color:st.color, pending:st.pending, pendT:st.pendT, drew:PD.hd.d};
-  if(!canPlay(id, v)) return;
-  if(PD.sel===id){ playSel(); return; }
-  PD.sel = id; renderPad();
+  const i = PD.sel.indexOf(id);
+  if(i>=0){
+    if(PD.sel.length===1){ playSel(); return; }   // 1枚だけ選んでいるときは、もう一度タッチで出す
+    if(i===0) PD.sel = []; else PD.sel.splice(i,1); // 1枚目をはずすと全部はずれる
+    renderPad(); return;
+  }
+  if(!selectable(id)) return;
+  PD.sel.push(id); renderPad();
 }
 function playSel(col){
-  if(PD.sel==null) return;
-  const c = CARDS[PD.sel];
+  if(!PD.sel.length) return;
+  const c = CARDS[PD.sel[0]];
   if(c.c==='w' && !col){ $('#colorModal').hidden = false; return; }
-  const decl = PD.decl && PD.hd.h.length===2;
-  send('play', {id:PD.sel, col:col||'', last:decl});
-  PD.sel = null; PD.decl = false;
+  const decl = PD.decl && PD.hd.h.length - PD.sel.length === 1;
+  send('play', {ids:PD.sel.slice(), col:col||'', last:decl});
+  PD.sel = []; PD.decl = false;
 }
 function renderPad(){
   const el = $('#pad'); const st = PD.st;
@@ -863,9 +894,10 @@ function renderPad(){
   const others = st.groups.map((o,i)=>`<div class="oc ${i===st.turn?'turn':''} ${i===me?'me':''} ${o.out?'out':''}"><b>${esc(o.n)}</b><span>${o.out?o.rank+'位':o.c}</span>${o.last&&!o.out?'<span class="lt">ラストワン</span>':''}</div>`).join('');
   const hc = CVAR[st.color];
   const cards = hand.map(id => {
-    const ok = myTurn && canPlay(id, v);
-    const cls = [myTurn && !ok ? 'dim':'', PD.sel===id?'sel':'', PD.newIds.has(id)?'new':'', drew===id?'drew':''].join(' ');
-    return cardHTML(id, cls, `data-id="${id}"`);
+    const ok = myTurn && selectable(id);
+    const si = PD.sel.indexOf(id);
+    const cls = [myTurn && !ok ? 'dim':'', si>=0?'sel':'', PD.newIds.has(id)?'new':'', drew===id?'drew':''].join(' ');
+    return cardHTML(id, cls, `data-id="${id}"` + (si>=0 && PD.sel.length>1 ? ` data-o="${si+1}"` : ''));
   }).join('');
   const btns = [];
   if(st.unsaid===me) btns.push(`<button class="pb rescue" data-a="last">ラストワン!</button>`);
@@ -873,11 +905,14 @@ function renderPad(){
   if(myTurn){
     if(drew==null) btns.push(`<button class="pb" data-a="draw" ${PD.busy?'disabled':''}>${st.pending>0?`+${st.pending} を引く`:'1枚引く'}</button>`);
     else btns.push(`<button class="pb" data-a="pass" ${PD.busy?'disabled':''}>パス</button>`);
-    if(hand.length===2 && !g.last) btns.push(`<button class="pb lt ${PD.decl?'on':''}" data-a="decl">${PD.decl?'ラストワン! 宣言中':'ラストワン!'}</button>`);
-    if(PD.sel!=null) btns.push(`<button class="pb go" data-a="play" ${PD.busy?'disabled':''}>このカードを出す</button>`);
+    const willLeft = hand.length - Math.max(PD.sel.length,1);
+    if(willLeft===1 && !g.last) btns.push(`<button class="pb lt ${PD.decl?'on':''}" data-a="decl">${PD.decl?'ラストワン! 宣言中':'ラストワン!'}</button>`);
+    if(PD.sel.length) btns.push(`<button class="pb go" data-a="play" ${PD.busy?'disabled':''}>${PD.sel.length>1?PD.sel.length+'枚まとめて出す':'このカードを出す'}</button>`);
   }
   const pendMsg = myTurn && st.pending>0 ? `<div class="pend-msg">${st.stack?(st.pendT==='d2'?'+2 か +4 を出せば次の班に回せます':'+4 を出せば次の班に回せます'):''}</div>` : '';
-  const hint = myTurn && hand.length===2 && !g.last && !PD.decl ? '<div class="pend-msg">残り2枚!「ラストワン!」を押してから出そう</div>' : '';
+  const left = hand.length - Math.max(PD.sel.length,1);
+  const hint = myTurn && left===1 && !g.last && !PD.decl ? '<div class="pend-msg">出すと残り1枚!「ラストワン!」を押してから出そう</div>'
+    : myTurn && PD.sel.length && canMulti(CARDS[PD.sel[0]].v, st.mm) && PD.hd.d==null && hand.some(id=>!PD.sel.includes(id) && CARDS[id].v===CARDS[PD.sel[0]].v) ? '<div class="pend-msg" style="background:#0f2c3a;border-color:var(--cy);color:#bdefff">同じ数字のカードもタッチすると、まとめて出せます(最後にタッチしたカードの色が場の色)</div>' : '';
   el.innerHTML = `
     <div class="ticker ${flash&&!myTurn?'flash':''}"><span>${esc(tick)}</span><span class="me">${esc(myName)}</span></div>
     <div class="others">${others}</div>
