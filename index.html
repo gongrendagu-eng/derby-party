@@ -1299,21 +1299,24 @@ function drawStraight(run,c,cs){
   const {W,H}=G, D=S.dist, cam=S.cam;
   const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs);
   // カメラ:先頭を右寄りに、後ろの馬まで入るように幅を調整(なめらかに追う)
-  const tv=Math.min(120,Math.max(45,(lead-last)+24)), tr=S.after?lead+14:Math.min(D+14,lead+14);   // ゴール後は駆け抜ける馬群を追う
+  const anyFin=run.some(r=>r.fin!==null);
+  const tv=Math.min(120,Math.max(60,(lead-last)+24)), tr=anyFin?Math.min(lead+14,last+110):Math.min(D+14,lead+14);   // ゴール後は馬群を追う(最後の馬が画面に残る範囲で)
   if(!cam.init){ cam.v=tv; cam.r=tr; cam.init=true; }
-  cam.v+=(tv-cam.v)*0.06; cam.r+=(tr-cam.r)*0.18;
+  cam.v+=(tv-cam.v)*0.04; cam.r+=(tr-cam.r)*0.12;
   const left=cam.r-cam.v, X=m=>(m-left)/cam.v*W;
   const standH=H*0.2, top=standH+H*0.05, bot=H*0.95, laneH=(bot-top)/S.H;
   // スタンドと観客
   c.fillStyle='#39414d'; c.fillRect(0,0,W,standH);
   c.fillStyle='#2a3038'; c.fillRect(0,standH,W,top-standH);
   const cols=['#e6e6e6','#d9534f','#f0ad4e','#5bc0de','#5cb85c','#f7f7f7','#c9a0dc'];
-  const pxm=W/cam.v, gap=2.2;                      // 観客は2.2mおき(カメラと一緒に流れる)
+  const pxm=W/cam.v;
+  // 観客席は遠くにあるので、コースよりゆっくり流す(速く流れるとちらついて見づらいため)
+  const sp=26, far=left*pxm*0.25, base=Math.floor(far/sp), off=far-base*sp;
   for(let row=0;row<4;row++){
     const y=standH*(0.22+row*0.2);
-    for(let m=Math.floor(left/gap)*gap;m<cam.r+gap;m+=gap){
-      const k=Math.round(m/gap)*7+row*13; c.fillStyle=cols[((k%7)+7)%7];
-      c.beginPath(); c.arc(X(m)+(row%2)*pxm*gap/2,y,Math.max(2,Math.min(6,pxm*0.35)),0,Math.PI*2); c.fill();
+    for(let i=-1;i*sp-off<W+sp;i++){
+      const k=(base+i)*7+row*13; c.fillStyle=cols[((k%7)+7)%7];
+      c.beginPath(); c.arc(i*sp-off+(row%2)*sp/2,y,5,0,Math.PI*2); c.fill();
     }
   }
   // 芝(10mごとの刈り目がカメラと一緒に流れる)
@@ -1380,7 +1383,7 @@ function renderOrder(run){
 }
 /* ---------- レースの演出(ゲート・勝負どころ・写真判定・歓声) ---------- */
 const SLOW=4.0;            // 直線に入るまでの再生の遅さ(4倍ゆっくり。計算は変えないのでオッズは同じ)
-const STRAIGHT_SEC=14;     // 残り600mから1着が決まるまでの秒数(スローモーション)
+const STRAIGHT_SEC=16;     // 残り600mから1着が決まるまでの秒数(スローモーション)
 const STRETCH=6;           // 道中は馬どうしの前後の差をこの倍率で見せる(残り950〜650mで元にもどす)
 const PHOTO=0.3*2.4;       // 1着と2着の差がこれ以内(0.3馬身)なら写真判定
 const hidePlace=i=>S.photo&&!S.photo.revealed&&(i===S.photo.a||i===S.photo.b);
@@ -1615,9 +1618,9 @@ function afterRace(run,win){
   const canter=1600/(20*60);          // ウイニングランの速さ(1周約20秒)
   const f=now=>{
     if(S!==me||S.phase==='bet'||S.after!==true) return;
-    const k=Math.min(100,now-prev)/16.6; prev=now;
+    const dt=Math.min(100,now-prev), k=dt/16.6, kt=dt/S.tickS; prev=now;   // kt:直線と同じ速さで進めるための係数
     if(!S.win){
-      run.forEach(r=>{ r.post=Math.max(canter*1.4,(r.post??S.step)*Math.pow(0.985,k)); r.x+=r.post*k; r.ph+=r.post/S.step*0.42*k; r.px=null; r.pph=null; r.pl=null; });
+      run.forEach(r=>{ r.post=r.post??r.v??S.step; r.x+=r.post*kt; r.ph+=r.post/S.step*0.42*Math.sqrt(16.6/S.tickS)*kt; r.px=null; r.pph=null; r.pl=null; });
       if(now-t0>3800){ S.cam=null; S.win={i:win}; S.ocam=null; layout();
         say(`${S.horses[win].no}番 ${S.horses[win].name}、ウイニングラン!スタンドから大きな拍手!`); crowd(0.3,1); setTimeout(()=>{ if(S===me) crowd(0.12,3); },2500); }
     } else {
@@ -1664,6 +1667,7 @@ function sendLive(run,gate){
 
 function runRace(){
   stopTimer();
+  S.tickS=Math.max(16.6/0.45,STRAIGHT_SEC*1000/(600/S.step));   // 直線(とゴール後)の1コマの長さ
   S.groups.forEach(g=>{ g.tickets=g.money>=100?cleanTickets(g.tickets,g.money,S.H):[]; g.staked=tkTotal(g.tickets); g.money-=g.staked; });
   S.phase='race'; render();
   $('#pay').hidden=true; S.cam=null; S.fx={}; S.photo=null; S.gate={open:null}; S.after=false; S.win=null;
@@ -1686,11 +1690,11 @@ function runRace(){
       if(S!==me) return;
       acc+=Math.min(100,now-prev); prev=now;
       // 直線まではゆっくり、最後の直線はスローモーション(1着が決まるまで)
-      const TICK=(S.cam&&!finished)?Math.max(16.6/0.45,STRAIGHT_SEC*1000/(600/S.step)):16.6*SLOW;
+      const TICK=S.cam?S.tickS:16.6*SLOW;
       while(acc>=TICK){
         acc-=TICK; stepRun(run,t); t++; updateLanes(run,t);
         // ゴールした馬は止まらずに駆け抜け、少しずつ速度を落とす
-        run.forEach(r=>{ if(r.fin!==null){ r.post=Math.max(S.step*0.45,(r.post??r.v)*0.99); r.x+=r.post; } r.ph+=(r.fin===null?r.v:r.post)/S.step*0.42*Math.sqrt(16.6/TICK); });
+        run.forEach(r=>{ if(r.fin!==null){ r.post=r.post??r.v; r.x+=r.post; } r.ph+=(r.fin===null?r.v:r.post)/S.step*0.42*Math.sqrt(16.6/TICK); });   // ゴール後も同じ速さで駆け抜ける
         const ord=orderOf(run), lead=ord[0], L=run[lead], rem=D-L.x;
         // ゴール
         const fins=ord.filter(i=>run[i].fin!==null);
@@ -1878,7 +1882,7 @@ addEventListener('resize',()=>{ if(S&&S.phase!=='bet'&&S.lastRun){ layout(); dra
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=16;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=17;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
