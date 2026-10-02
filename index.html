@@ -1115,33 +1115,148 @@ function drawCourse(c,cs){
   c.fillStyle='#fff'; c.font=`900 ${Math.max(12,tw*0.16)}px ${cs('--f-body')}`; c.fillText('ゴール',g1.x,g2.y+16);
 }
 // 横向きの馬(右向き)を描く
-function drawHorse(c,x,y,u,dir,ang,ph,h){
-  const [coatName,coat,dark]=h.coat, [silk,silkFg]=wk(h.no);
+// 横向きの馬:向き(dir)と傾き(ang)をつけて drawHorse2 で描く。push:手綱をしごく強さ(0〜1)、win:ウイニングラン
+function drawHorse(c,x,y,u,dir,ang,ph,h,push=0,win=false){
+  const [silk,silkFg]=wk(h.no);
   c.save(); c.translate(x,y); c.rotate(ang); c.scale(dir,1);
-  c.lineCap='round';
-  // 脚
-  const leg=(lx,off,col)=>{ const sw=Math.sin(ph+off)*0.55; c.strokeStyle=col; c.lineWidth=u*0.07;
-    c.beginPath(); c.moveTo(lx,u*0.1); const kx=lx+Math.sin(sw)*u*0.2, ky=u*0.1+Math.cos(sw)*u*0.2; c.lineTo(kx,ky); c.lineTo(kx+Math.sin(sw*1.6)*u*0.18,ky+u*0.18); c.stroke(); };
-  leg(-u*0.3,Math.PI,dark); leg(u*0.26,0,dark);
-  // しっぽ
-  c.strokeStyle=dark; c.lineWidth=u*0.07; c.beginPath(); c.moveTo(-u*0.42,-u*0.08); c.quadraticCurveTo(-u*0.62,-u*0.02+Math.sin(ph)*u*0.04,-u*0.66,u*0.14); c.stroke();
-  // 胴
-  c.fillStyle=coat; c.beginPath(); c.ellipse(0,0,u*0.45,u*0.19,0,0,Math.PI*2); c.fill();
-  // 首と頭
-  c.beginPath(); c.moveTo(u*0.22,-u*0.12); c.lineTo(u*0.47,-u*0.47); c.lineTo(u*0.6,-u*0.4); c.lineTo(u*0.4,u*0.04); c.closePath(); c.fill();
-  c.save(); c.translate(u*0.64,-u*0.4); c.rotate(0.55); c.beginPath(); c.ellipse(0,0,u*0.16,u*0.075,0,0,Math.PI*2); c.fill(); c.restore();
-  c.fillStyle=dark; c.beginPath(); c.moveTo(u*0.52,-u*0.52); c.lineTo(u*0.55,-u*0.62); c.lineTo(u*0.59,-u*0.5); c.fill();
-  // 手前の脚
-  leg(-u*0.24,Math.PI+0.8,coat); leg(u*0.32,0.8,coat);
-  // ゼッケン(鞍下)
-  c.fillStyle=silk; c.strokeStyle='rgba(0,0,0,.4)'; c.lineWidth=1;
-  c.fillRect(-u*0.2,-u*0.17,u*0.3,u*0.22); c.strokeRect(-u*0.2,-u*0.17,u*0.3,u*0.22);
-  // 騎手
-  c.fillStyle=silk; c.beginPath(); c.ellipse(u*0.03,-u*0.33,u*0.15,u*0.085,-0.35,0,Math.PI*2); c.fill(); c.stroke();
-  c.beginPath(); c.arc(u*0.18,-u*0.45,u*0.075,0,Math.PI*2); c.fill(); c.stroke();
-  c.strokeStyle=silk===('#ffffff')?'#999':silk; c.lineWidth=u*0.05; c.beginPath(); c.moveTo(u*0.1,-u*0.32); c.lineTo(u*0.4,-u*0.3); c.stroke();
+  drawHorse2(c,0,u*0.02,u*0.88,ph,{type:'cool',coat:h.coat[1],mane:h.coat[2],silk,silkFg,no:h.no,push,win,dir});
   c.restore();
 }
+// 馬の絵(右向き。輪郭線つきのイラスト調。'cool'=かっこいい系を使用)。c:canvas, x,y:胴の中心, u:大きさ(胴の長さの目安), ph:脚の位相, o:{coat,mane,silk,silkFg,no,type:'cute'|'cool',push:0〜1}
+function drawHorse2(c,x,y,u,ph,o){
+  const s=u/100, T=o.type==='cool';
+  const ink='#2a1f1a', lw=(T?3.2:4.2);
+  c.save(); c.translate(x,y); c.scale(s,s); c.lineJoin='round'; c.lineCap='round';
+  const bob=Math.sin(ph*2)*(T?1.6:2.4);              // 走ると上下にゆれる
+  c.translate(0,bob);
+  // ---- 形の定義 ----
+  const P={ // 胴・首・頭
+    bodyRx:T?47:40, bodyRy:T?19:26,
+    head:T?{x:62,y:-40,r:13}:{x:56,y:-44,r:21},
+    snout:T?{x:80,y:-31,rx:13,ry:8}:{x:73,y:-32,rx:12,ry:10},
+    legU:T?19:12, legL:T?21:12, legW:T?7.5:11,
+  };
+  // 脚の角度(ギャロップ)
+  const leg=(hx,hy,a1,a2,far)=>{
+    const L1=P.legU, L2=P.legL;
+    const kx=hx+Math.sin(a1)*L1, ky=hy+Math.cos(a1)*L1;
+    const fx=kx+Math.sin(a1+a2)*L2, fy=ky+Math.cos(a1+a2)*L2;
+    const col=far?shade(o.coat,-0.22):o.coat;
+    c.strokeStyle=ink; c.lineWidth=P.legW+lw*2; line(hx,hy,kx,ky); c.lineWidth=P.legW*0.78+lw*2; line(kx,ky,fx,fy);
+    c.strokeStyle=col; c.lineWidth=P.legW; line(hx,hy,kx,ky); c.lineWidth=P.legW*0.78; line(kx,ky,fx,fy);
+    // ひづめ
+    c.fillStyle=ink; c.beginPath(); c.ellipse(fx+1.5,fy+1,P.legW*0.62,P.legW*0.48,a1+a2,0,Math.PI*2); c.fill();
+  };
+  const line=(...p)=>{ c.beginPath(); c.moveTo(p[0],p[1]); for(let i=2;i<p.length;i+=2) c.lineTo(p[i],p[i+1]); c.stroke(); };
+  const g=ph;            // ギャロップの位相
+  const fA=Math.sin(g), fB=Math.sin(g+0.9), bA=Math.sin(g+2.6), bB=Math.sin(g+3.4);
+  const front=(k)=>[0.55+0.75*k, -0.2-0.9*Math.max(0,-k)];   // 前脚:前に伸ばす/たたむ
+  const back=(k)=>[-0.25+0.75*k, 0.15+0.8*Math.max(0,k)];   // 後脚
+  // ---- 奥の脚 ----
+  { const [a,b]=front(fB); leg(T?30:28,8,a,b,true); }
+  { const [a,b]=back(bB); leg(T?-34:-30,6,a,b,true); }
+  // ---- しっぽ ----
+  const tw=Math.sin(g*1.0)*6;
+  const tail=()=>{ c.beginPath(); c.moveTo(-P.bodyRx+4,-10);
+    c.bezierCurveTo(-P.bodyRx-14,-18+tw*0.3,-P.bodyRx-30,-6+tw,-P.bodyRx-(T?44:34),4+tw*1.4);
+    c.bezierCurveTo(-P.bodyRx-26,8+tw,-P.bodyRx-12,2,-P.bodyRx+2,2); c.closePath(); };
+  // ---- 胴+首+頭(輪郭を先に太く描き、上から塗ってつなぎ目を消す) ----
+  const shapes=()=>{
+    c.beginPath(); c.ellipse(0,0,P.bodyRx,P.bodyRy,T?-0.06:-0.04,0,Math.PI*2); c.closePath();
+    // 首
+    c.moveTo(P.bodyRx*0.45,-P.bodyRy*0.75); c.quadraticCurveTo(P.head.x-16,P.head.y-6,P.head.x-4,P.head.y-P.head.r*0.7);
+    c.lineTo(P.head.x+P.head.r*0.6,P.head.y+P.head.r*0.6); c.quadraticCurveTo(P.bodyRx*0.85,-4,P.bodyRx*0.9,6); c.closePath();
+    // 頭・鼻先
+    c.moveTo(P.head.x+P.head.r,P.head.y); c.arc(P.head.x,P.head.y,P.head.r,0,Math.PI*2);
+    c.moveTo(P.snout.x+P.snout.rx,P.snout.y); c.ellipse(P.snout.x,P.snout.y,P.snout.rx,P.snout.ry,0.25,0,Math.PI*2);
+    // 耳
+    const ex=P.head.x-(T?2:4), ey=P.head.y-P.head.r+2;
+    c.moveTo(ex-5,ey+2); c.lineTo(ex-1,ey-(T?13:12)); c.lineTo(ex+5,ey+1); c.closePath();
+  };
+  c.strokeStyle=ink; c.lineWidth=lw*2; tail(); c.stroke(); shapes(); c.stroke();
+  c.fillStyle=o.mane; tail(); c.fill();
+  c.fillStyle=o.coat; shapes(); c.fill('nonzero');
+  // 陰影(お腹側を少し濃く)
+  c.save(); c.beginPath(); c.ellipse(0,0,P.bodyRx,P.bodyRy,-0.04,0,Math.PI*2); c.clip();
+  c.fillStyle=shade(o.coat,-0.14); c.beginPath(); c.ellipse(-2,P.bodyRy*0.95,P.bodyRx*1.1,P.bodyRy*0.6,0,0,Math.PI*2); c.fill();
+  if(T){ c.fillStyle='rgba(255,255,255,.22)'; c.beginPath(); c.ellipse(-6,-P.bodyRy*0.62,P.bodyRx*0.7,3.2,-0.05,0,Math.PI*2); c.fill(); }
+  c.restore();
+  // 鼻先の色
+  c.fillStyle=shade(o.coat,-0.25); c.beginPath(); c.ellipse(P.snout.x+3,P.snout.y+1,P.snout.rx*0.72,P.snout.ry*0.8,0.25,0,Math.PI*2); c.fill();
+  // たてがみ
+  c.fillStyle=o.mane; c.strokeStyle=ink; c.lineWidth=lw*0.6;
+  c.beginPath();
+  const mx0=P.bodyRx*0.42, my0=-P.bodyRy*0.8, mx1=P.head.x-6, my1=P.head.y-P.head.r*0.85;
+  c.moveTo(mx1,my1);
+  const n=T?5:4;
+  for(let i=1;i<=n;i++){ const t=i/n, px=mx1+(mx0-mx1)*t, py=my1+(my0-my1)*t, fl=(T?16:9)+Math.sin(g*2+i)*2;
+    c.quadraticCurveTo(px-fl*0.4,py-fl*0.9,px-fl,py-(T?2:fl*0.3)); c.lineTo(px+1,py+3); }
+  c.lineTo(mx1+4,my1+6); c.closePath(); c.fill(); c.stroke();
+  // 前髪
+  c.beginPath(); c.moveTo(P.head.x+2,P.head.y-P.head.r+3); c.quadraticCurveTo(P.head.x+12,P.head.y-P.head.r+2,P.head.x+(T?13:10),P.head.y-P.head.r+(T?9:11));
+  c.quadraticCurveTo(P.head.x+4,P.head.y-P.head.r+8,P.head.x+2,P.head.y-P.head.r+3); c.fill(); c.stroke();
+  // 目
+  if(T){ c.fillStyle=ink; c.beginPath(); c.ellipse(P.head.x+4,P.head.y-2,3.6,2.3,-0.25,0,Math.PI*2); c.fill();
+    c.fillStyle='#fff'; c.beginPath(); c.arc(P.head.x+5,P.head.y-3,0.9,0,Math.PI*2); c.fill();
+    c.strokeStyle=ink; c.lineWidth=1.6; line(P.head.x-1,P.head.y-6,P.head.x+8,P.head.y-6.5); }
+  else { c.fillStyle=ink; c.beginPath(); c.ellipse(P.head.x+5,P.head.y-3,5,6.4,0,0,Math.PI*2); c.fill();
+    c.fillStyle='#fff'; c.beginPath(); c.arc(P.head.x+6.6,P.head.y-5.6,2.1,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(P.head.x+3.6,P.head.y-0.4,1,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(255,120,140,.45)'; c.beginPath(); c.ellipse(P.head.x+8,P.head.y+7,5,3,0,0,Math.PI*2); c.fill(); }
+  // 鼻の穴・口
+  c.fillStyle=ink; c.beginPath(); c.ellipse(P.snout.x+8,P.snout.y-3,1.6,1.2,0,0,Math.PI*2); c.fill();
+  c.strokeStyle=ink; c.lineWidth=1.6; c.beginPath(); c.moveTo(P.snout.x+2,P.snout.y+6); c.quadraticCurveTo(P.snout.x+8,P.snout.y+8,P.snout.x+11,P.snout.y+5); c.stroke();
+  // 頭絡(顔のベルト)
+  c.strokeStyle='#c8102e'; c.lineWidth=2.6;
+  c.beginPath(); c.moveTo(P.snout.x-7,P.snout.y-P.snout.ry+1); c.quadraticCurveTo(P.snout.x-9,P.snout.y,P.snout.x-5,P.snout.y+P.snout.ry-1); c.stroke();
+  c.beginPath(); c.moveTo(P.head.x-P.head.r*0.6,P.head.y-P.head.r*0.55); c.lineTo(P.snout.x-8,P.snout.y-1); c.stroke();
+  const bit={x:P.snout.x-3,y:P.snout.y+5};
+  // ---- ゼッケン(枠の色+馬番) ----
+  c.fillStyle=o.silk; c.strokeStyle=ink; c.lineWidth=lw*0.8;
+  rr(c,-30,-P.bodyRy+1,30,T?19:22,5); c.fill(); c.stroke();
+  c.fillStyle=o.silkFg; c.font=`900 ${T?13:15}px sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.save(); c.translate(-19,-P.bodyRy+(T?11:12.5)); c.scale(o.dir||1,1); c.fillText(o.no,0,0); c.restore();
+  // ---- 手前の脚 ----
+  { const [a,b]=back(bA); leg(T?-30:-27,8,a,b,false); }
+  { const [a,b]=front(fA); leg(T?34:31,9,a,b,false); }
+  // ---- 騎手 ----
+  const push=o.push||0;
+  const pz=Math.sin(g*2);                       // 手綱をしごくリズム(脚の運びに合わせる)
+  const lean=T?0.18:0.1;
+  const hip={x:-6+pz*push*1.5,y:-P.bodyRy-9+Math.abs(pz)*push*1.5};
+  const sh={x:hip.x+17+push*3+pz*push*3,y:hip.y-(T?7:8)+push*2+pz*push*1.5};   // 肩(しごくと前に低く)
+  const hd={x:sh.x+8+push*1.5,y:sh.y-(T?8:9.5)};
+  const hand={x:(T?34:30)+push*(4+pz*7),y:-P.bodyRy-(T?6:4)+push*(1+pz*2)};
+  const elbow={x:(sh.x+hand.x)/2-2,y:Math.max(sh.y,hand.y)+5-push*pz*3};
+  // 手綱
+  c.strokeStyle='#c8102e'; c.lineWidth=2.4; c.beginPath(); c.moveTo(bit.x,bit.y); c.quadraticCurveTo((bit.x+hand.x)/2,(bit.y+hand.y)/2+5+push*pz*3,hand.x,hand.y); c.stroke();
+  // 脚(ブーツ)
+  const knee={x:hip.x+14,y:hip.y+6}, foot={x:hip.x+7,y:hip.y+15};
+  c.strokeStyle=ink; c.lineWidth=(T?7:8)+lw*2; line(hip.x,hip.y,knee.x,knee.y,foot.x,foot.y);
+  c.strokeStyle='#f4f1e8'; c.lineWidth=T?7:8; line(hip.x,hip.y,knee.x,knee.y);
+  c.strokeStyle='#2b2b2b'; line(knee.x,knee.y,foot.x,foot.y);
+  // 胴(勝負服)
+  c.strokeStyle=ink; c.lineWidth=(T?11:13)+lw*2; line(hip.x,hip.y,sh.x,sh.y);
+  c.strokeStyle=o.silk; c.lineWidth=T?11:13; line(hip.x,hip.y,sh.x,sh.y);
+  // 腕
+  c.strokeStyle=ink; c.lineWidth=6+lw*2; line(sh.x,sh.y,elbow.x,elbow.y,hand.x,hand.y);
+  c.strokeStyle=o.sleeve||o.silk; c.lineWidth=6; line(sh.x,sh.y,elbow.x,elbow.y,hand.x,hand.y);
+  c.fillStyle='#f6d7b8'; c.strokeStyle=ink; c.lineWidth=1.6; c.beginPath(); c.arc(hand.x,hand.y,3.6,0,Math.PI*2); c.fill(); c.stroke();
+  // ウイニングラン:片手を高く上げる
+  if(o.win){ const up={x:sh.x+6,y:sh.y-20}, el2={x:sh.x+8,y:sh.y-9};
+    c.strokeStyle=ink; c.lineWidth=6+lw*2; line(sh.x,sh.y,el2.x,el2.y,up.x,up.y);
+    c.strokeStyle=o.sleeve||o.silk; c.lineWidth=6; line(sh.x,sh.y,el2.x,el2.y,up.x,up.y);
+    c.fillStyle='#f6d7b8'; c.strokeStyle=ink; c.lineWidth=1.6; c.beginPath(); c.arc(up.x,up.y,3.8,0,Math.PI*2); c.fill(); c.stroke(); }
+  // 頭(ヘルメット+ゴーグル)
+  const hr=T?8.5:10.5;
+  c.fillStyle='#f6d7b8'; c.strokeStyle=ink; c.lineWidth=lw*0.8; c.beginPath(); c.arc(hd.x,hd.y,hr,0,Math.PI*2); c.fill(); c.stroke();
+  c.fillStyle=o.silk; c.beginPath(); c.arc(hd.x,hd.y,hr,Math.PI*0.95,Math.PI*2.12); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle='#bfe3ff'; c.strokeStyle=ink; c.lineWidth=1.6; rr(c,hd.x+hr*0.1,hd.y-1,hr*0.95,hr*0.45,2); c.fill(); c.stroke();
+  // 速さの線(かっこいい版)
+  if(T&&push>0){ c.strokeStyle='rgba(255,255,255,.75)'; c.lineWidth=2.2; for(let i=0;i<3;i++){ const yy=-26+i*14, xx=-P.bodyRx-30-((g*20+i*13)%18); line(xx,yy,xx-22,yy); } }
+  c.restore();
+}
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function shade(hex,k){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255; const f=v=>Math.max(0,Math.min(255,Math.round(k<0?v*(1+k):v+(255-v)*k))); return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+
 let csCache={};
 function drawRace(run){
   const c=$('#cv').getContext('2d'), cs=v=>{ if(!(v in csCache)) csCache[v]=getComputedStyle(document.documentElement).getPropertyValue(v).trim(); return csCache[v]; };
@@ -1165,7 +1280,7 @@ function drawRace(run){
   c.fillStyle=cs('--field'); c.fillRect(0,0,W,H);
   c.save(); c.translate(W/2,H/2); c.scale(Z,Z); c.translate(-cxv,-cyv);
   drawCourse(c,cs);
-  items.forEach(o=>drawHorse(c,o.x,o.y-u*0.3,u,o.dir,o.ang,run[o.i].ph,o.h));
+  items.forEach(o=>{ const r=run[o.i]; drawHorse(c,o.x,o.y-u*0.3,u,o.dir,o.ang,r.ph,o.h,r.fin===null&&r.state==='spurt'?0.6:0,!!(S.win&&S.win.i===o.i)); });
   drawGate(c);
   // 馬番の丸
   c.textAlign='center'; c.textBaseline='middle';
@@ -1223,13 +1338,13 @@ function drawStraight(run,c,cs){
     c.fillStyle='#c8102e'; c.fillRect(gx-40,top-58,80,34); c.fillStyle='#fff'; c.font=`900 20px ${cs('--f-body')}`; c.fillText('ゴール',gx,top-41);
   }
   // 馬(奥のレーンから描く)
-  const u=Math.min(laneH*1.75,W/11);
+  const u=Math.min(laneH*2.4,W/8.5);   // 馬の大きさ(となりのレーンと少し重なってもよい)
   S.horses.map((h,i)=>({h,i,y:top+laneH*((run[i].lane??i/Math.max(1,S.H-1))*(S.H-1)+0.62)})).sort((a,b)=>a.y-b.y).forEach(({h,i,y})=>{
     const r=run[i], nose=X(r.x), hx=nose-u*0.78;
     if(S.surf==='dirt'&&(r.fin===null||(r.post||0)>0.5)){   // ダートは後ろ脚が砂を蹴り上げる
       for(let k=0;k<4;k++){ const q=((r.ph*0.35+k*0.25)%1); c.fillStyle=`rgba(196,160,118,${0.45*(1-q)})`;
         c.beginPath(); c.arc(hx-u*0.55-q*u*0.7,y+u*0.18-q*u*0.25,u*(0.06+q*0.12),0,Math.PI*2); c.fill(); } }
-    drawHorse(c,hx,y-u*0.22,u,1,0,r.ph,h);
+    drawHorse(c,hx,y-u*0.22,u,1,0,r.ph,h,r.fin===null?1:0);
     const [bg,fg]=wk(h.no), rr=Math.max(11,Math.min(laneH*0.36,22)), bx=hx-u*0.62, by=y-u*0.35;
     c.fillStyle=bg; c.strokeStyle='rgba(0,0,0,.6)'; c.lineWidth=2; c.beginPath(); c.arc(bx,by,rr,0,Math.PI*2); c.fill(); c.stroke();
     c.fillStyle=fg; c.font=`900 ${rr*1.2}px ${cs('--f-body')}`; c.fillText(h.no,bx,by+1);
@@ -1763,7 +1878,7 @@ addEventListener('resize',()=>{ if(S&&S.phase!=='bet'&&S.lastRun){ layout(); dra
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=15;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=16;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
