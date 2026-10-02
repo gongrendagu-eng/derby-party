@@ -135,6 +135,8 @@ textarea{resize:vertical;line-height:1.6}
 table.paper{width:100%;border-collapse:collapse;font-family:var(--f-paper)}
 .paper th{font-family:var(--f-body);font-size:.78rem;font-weight:800;color:var(--paper);background:var(--ink);padding:5px 6px;border-right:1px solid var(--paper);white-space:nowrap;position:sticky;top:0;z-index:1}
 .paper td{padding:4px 8px;border-bottom:1px solid var(--rule);border-right:1px solid var(--line);font-size:clamp(.95rem,1.35vw,1.2rem);white-space:nowrap}
+.paper td.jk{white-space:nowrap;font-weight:800;font-size:.95em}
+.paper td.jk small{display:block;color:var(--gold);font-size:.62em;letter-spacing:-.05em;line-height:1}
 .paper.many td{padding-top:1px;padding-bottom:1px}
 .paper td.mk{font-size:clamp(1.3rem,2vw,1.8rem);text-align:center;width:2.2em;font-weight:800;line-height:1}
 .mk.m0{color:var(--win)} .mk.m1{color:#2b5fd6} .mk.m2{color:var(--ink)} .mk.m3{color:var(--soft)} .mk.m4{color:var(--soft)}
@@ -358,6 +360,8 @@ html.padmode{-webkit-text-size-adjust:100%}
 .a-paper .n{width:34px;height:34px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--arc);font-size:18px;border:2px solid rgba(255,255,255,.55)}
 .a-paper td.mk{font-size:20px;width:34px;color:var(--gl)}
 .a-paper td.mk.m0{color:var(--pk)} .a-paper td.mk.m1{color:var(--cy)}
+.a-paper td.jk{font-size:14px;white-space:nowrap}
+.a-paper td.jk small{display:block;color:var(--gl);font-size:10px;line-height:1}
 .a-paper td.nm{font-family:var(--arc);font-size:17px;text-align:left;position:relative}
 .a-paper td.cm{white-space:normal;text-align:left;font-size:13px;color:#b8c0ea;min-width:9em;line-height:1.35}
 .a-paper td.pop{color:#b8c0ea}.a-paper tr.p1 td.pop{color:var(--pk)}
@@ -491,6 +495,7 @@ html.padmode{-webkit-text-size-adjust:100%}
     <legend>設定</legend>
     <div class="row">
       <label>レース数<input type="number" id="f-races" min="1" max="10"></label>
+      <label>回り<select id="f-dir"><option value="mix">左回り・右回り(レースごとにランダム)</option><option value="left">左回りだけ</option><option value="right">右回りだけ</option></select></label>
       <label>コース<select id="f-surf"><option value="mix">芝とダート(レースごとにランダム)</option><option value="turf">芝だけ</option><option value="dirt">ダートだけ</option></select></label>
       <label>距離
         <select id="f-dist">
@@ -684,6 +689,13 @@ function namePool(){
 const STYLES=['逃げ','先行','差し','追込'];
 const APT=['短距離','マイル','中距離','長距離'];
 const COATS=[['鹿毛','#8b5a2b','#5b3714'],['栗毛','#b0652b','#7a3f14'],['黒鹿毛','#4a2f1b','#2a1a0e'],['芦毛','#c9c9c9','#8f8f8f'],['青毛','#2b2b2b','#111111']];
+// 騎手:現役・往年の名騎手の名前を少しもじった架空の騎手。sk は腕前(1〜5)
+const JOCKEYS=[
+  ['竹 豊',5],['ルメーノ',5],['川多 将雅',5],['岡辺 幸雄',5],['安東 勝己',5],
+  ['デムーラ',4],['戸咲 圭太',4],['横川 武史',4],['松川 弘平',4],['福長 祐一',4],['海老名 正善',4],['川内 洋',4],['芝田 正人',4],['的庭 均',4],
+  ['阪井 瑠星',3],['岩畑 望来',3],['池副 謙一',3],['浜仲 俊',3],['三輪 皇成',3],['藤多 菜々子',3],['四井 洋文',3],['南居 克己',3],['横川 典広',3],['藤多 伸司',3],
+  ['鈴森 一郎',2],['佐野 健吾',2],['中村 翔汰',2],['高橋 匠海',2],['山岸 勇樹',1],['吉田 大輔',1]];
+const JSK=0.0025;    // 騎手の腕前の効き具合(★1つで馬の実力の約0.2倍ぶん)
 // 距離の区分(馬の得意距離 apt と比べる。0=短距離〜3=長距離)
 function dcat(D){ return D<=1200?0:D<=1600?(D-1200)/400:D<=2000?1+(D-1600)/400:D<=2400?2+(D-2000)/800:Math.min(3,2.5+(D-2400)/1200); }
 const surfText=(long,surf=S.surf,dist=S.dist)=>`${surf==='dirt'?(long?'ダート':'ダ'):'芝'}${dist}m`;
@@ -705,7 +717,7 @@ function raceName(last){
 const rTitle=()=>`${S.rn.no?'第'+S.rn.no+'回 ':''}${S.rn.name}`;
 const WRITERS=['本紙','A記者','B記者','C記者'];
 
-const DEF={races:3,dist:'random',horses:'grade',money:10000,groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ',net:'off',join:'group',goal:'clean',timer:'0',surf:'mix'};
+const DEF={races:3,dist:'random',horses:'grade',money:10000,groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ',net:'off',join:'group',goal:'clean',timer:'0',surf:'mix',dir:'mix'};
 function loadCfg(){try{const s=localStorage.getItem('keiba2.cfg');if(s)return Object.assign({},DEF,JSON.parse(s));}catch(e){}return{...DEF};}
 function saveCfg(c){try{localStorage.setItem('keiba2.cfg',JSON.stringify(c));}catch(e){}}
 // 班ごとの所持金の欄(班の名前の数だけ並べる。入力した金額は班の名前で覚えておく)
@@ -724,7 +736,7 @@ function renderPer(){
   $('#perList').querySelectorAll('input').forEach(inp=>{ perMoney[inp.dataset.name]=+inp.value; });
   $('#perList').innerHTML=lines($('#f-groups').value).map(n=>`<label><span>${esc(n)}</span><input type="number" min="100" step="100" data-name="${esc(n)}" value="${perMoney[n]??base}">円</label>`).join('');
 }
-function fillForm(c){$('#f-races').value=c.races;$('#f-dist').value=c.dist;$('#f-surf').value=c.surf||'mix';$('#f-horses').value=c.horses;$('#f-money').value=c.money;$('#f-timer').value=c.timer||'0';$('#f-groups').value=c.groups;$('#f-places').value=c.places;$('#f-join').value=c.join||'group'; $('#f-goal').value=c.goal||'clean'; perMoney=c.perMoney||{}; $('#f-per').checked=!!c.usePer; renderPer(); joinUI(); $('#f-net').value=c.net||'off';netNote();}
+function fillForm(c){$('#f-races').value=c.races;$('#f-dist').value=c.dist;$('#f-surf').value=c.surf||'mix';$('#f-dir').value=c.dir||'mix';$('#f-horses').value=c.horses;$('#f-money').value=c.money;$('#f-timer').value=c.timer||'0';$('#f-groups').value=c.groups;$('#f-places').value=c.places;$('#f-join').value=c.join||'group'; $('#f-goal').value=c.goal||'clean'; perMoney=c.perMoney||{}; $('#f-per').checked=!!c.usePer; renderPer(); joinUI(); $('#f-net').value=c.net||'off';netNote();}
 
 let S=null, raf=null, soundOn=true, actx=null;
 function tone(f,d,type='sine',vol=.15,when=0){
@@ -768,7 +780,7 @@ function stepRun(run,t){
     const r=run[i]; r.px=r.x; r.pph=r.ph; if(r.fin!==null) return;
     r.f=r.f*0.97+gauss()*0.01; r.f=Math.max(-0.06,Math.min(0.06,r.f));
     const p=r.x/D, rm=D-r.x, w=1.22*(p<0.55?0.3:0.3+(p-0.55)/0.45*2.3);
-    let dev=w*(ABIL*h.s+h.cond+r.d+aptBonus(h.apt,dc)+sfBonus(h))+r.f;
+    let dev=w*(ABIL*h.s+h.cond+r.d+aptBonus(h.apt,dc)+sfBonus(h)+JSK*((h.jsk||3)-3))+r.f;
     if(rm>r.sp){ dev+=CRUISE[h.style]*1600/D*(p<0.25?1.7:0.45); r.state='cruise'; }   // 位置取りはスタート直後に大きく(道中で隊列ができる)
     else {
       const run2=r.sp-rm;
@@ -859,6 +871,7 @@ function makeComment(h){
   if(h.style==='追込') c.push(h.mak?'早めに動いて捲る':'直線一気に注目');
   if(h.style==='差し'&&h.mak) c[c.length-1]='3コーナーから捲る構え';
   if(h.cls===1) c.unshift('実績上位');
+  if(h.jsk>=5&&Math.random()<0.6) c.splice(1,0,'名手が騎乗');
   if(S.surf==='dirt'&&h.sf!=='both') c.splice(1,0,h.sf==='dirt'?'ダート巧者':'初ダートで割引');
   if(S.surf==='turf'&&h.sf==='dirt'&&Math.random()<0.6) c.splice(1,0,'芝は未知数');
   const seen=h.cond+gauss()*0.006;
@@ -868,7 +881,7 @@ function makeComment(h){
 
 /* ---------- 進行 ---------- */
 async function start(){
-  const c={races:+$('#f-races').value,dist:$('#f-dist').value,surf:$('#f-surf').value,horses:$('#f-horses').value,money:+$('#f-money').value,timer:$('#f-timer').value,groups:$('#f-groups').value,places:$('#f-places').value,net:$('#f-net').value,join:$('#f-join').value,goal:$('#f-goal').value};
+  const c={races:+$('#f-races').value,dist:$('#f-dist').value,surf:$('#f-surf').value,dir:$('#f-dir').value,horses:$('#f-horses').value,money:+$('#f-money').value,timer:$('#f-timer').value,groups:$('#f-groups').value,places:$('#f-places').value,net:$('#f-net').value,join:$('#f-join').value,goal:$('#f-goal').value};
   const free=c.join==='free', clean=c.goal==='clean', g=free?[]:lines(c.groups), p=clean?lines(c.places):[];
   renderPer(); c.usePer=$('#f-per').checked; c.perMoney={...perMoney};
   $('#perList').querySelectorAll('input').forEach(inp=>{ c.perMoney[inp.dataset.name]=Math.floor((+inp.value||0)/100)*100; });
@@ -902,11 +915,14 @@ function setupRace(){
   const sf=S.cfg.surf||'mix', last=S.race===S.races;
   S.surf=sf==='mix'?(last?'turf':(Math.random()<0.35?'dirt':'turf')):sf;     // 最終レース(教室ダービー)は芝
   S.dist=S.cfg.dist==='random'?pick(S.surf==='dirt'?[1200,1400,1600,1800,2100]:[1200,1600,2000,2400,3000]):+S.cfg.dist;
+  S.rh=(S.cfg.dir||'mix')==='mix'?Math.random()<0.5:S.cfg.dir==='right';   // 右回りなら true
   S.rn=raceName(S.race===S.races);
   S.H=S.cfg.horses==='grade'?{OP:6,G3:8,G2:8,G1:10}[S.rn.grade]:+S.cfg.horses;
   S.step=S.dist/((6.5+S.dist/450)*60);          // 1200m≈9秒、3000m≈13秒
   const names=namePool();
   S.horses=names.map((name,i)=>makeHorse(i+1,name,S.dist));
+  const js=[...JOCKEYS].sort(()=>Math.random()-0.5);
+  S.horses.forEach((h,i)=>{ h.jockey=js[i][0]; h.jsk=js[i][1]; });
   calcOdds(); makeMarks();
   S.horses.forEach(h=>h.comment=makeComment(h));
   S.phase='bet'; S.order=null;
@@ -946,7 +962,7 @@ const tkLabel=t=>`${BT[t.type].s}${t.hs.map(numTag).join(BT[t.type].ord?'→':''
 
 function render(){
   $('#raceNo').innerHTML=`第${S.race}レース<small>/ ${S.races}</small>`;
-  $('#dist').textContent=surfText(); $('#dist').classList.toggle('dirt',S.surf==='dirt');
+  $('#dist').textContent=surfText()+(S.rh?' 右':' 左'); $('#dist').classList.toggle('dirt',S.surf==='dirt');
   $('#rname').innerHTML=`${esc(rTitle())}<span class="grade ${S.rn.grade}">${S.rn.grade}</span>`;
   const btn=$('#stepBtn');
   $('#phase').textContent={bet:'馬券を買う時間です。馬・買い方・金額を選んで「追加」。1レースに何枚でも買えます。',race:'レース中!',result:'レース結果',end:'全レース終了'}[S.phase];
@@ -961,13 +977,13 @@ function render(){
   updateRoomBadge(); pushState(); doneInfo();
 }
 function renderPaper(){
-  let h='<tr><th>馬番</th>'+WRITERS.map(w=>`<th>${w}</th>`).join('')+'<th>馬名</th><th>毛色</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>'+(S.free?'買った人':'買った班')+'</th></tr>';
+  let h='<tr><th>馬番</th>'+WRITERS.map(w=>`<th>${w}</th>`).join('')+'<th>馬名</th><th>騎手</th><th>毛色</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>'+(S.free?'買った人':'買った班')+'</th></tr>';
   S.horses.forEach(ho=>{
     const nb=S.groups.filter(g=>!g.out&&g.tickets.some(t=>tkHas(t,ho.no))).length;
     const who=S.free?(nb?`<span class="bettor">${nb}人</span>`:''):S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,ho.no)).map(t=>BT[t.type].s))];
       return ty.length?`<span class="bettor">${esc(g.name)} ${ty.join('')}</span>`:''; }).join('');
     const mk=ho.marks.map(m=>`<td class="mk m${MARKS.indexOf(m)}">${m}</td>`).join('');
-    h+=`<tr class="${ho.pop===1?'pop1':''}"><td>${numTag(ho.no)}</td>${mk}<td class="nm">${esc(ho.name)}</td><td>${ho.coat[0]}</td><td>${ho.style}</td>
+    h+=`<tr class="${ho.pop===1?'pop1':''}"><td>${numTag(ho.no)}</td>${mk}<td class="nm">${esc(ho.name)}</td><td class="jk">${esc(ho.jockey)}</td><td>${ho.coat[0]}</td><td>${ho.style}</td>
       <td class="cm">${ho.comment}</td><td class="pop">${ho.pop}</td><td class="odds w">${ho.win.toFixed(1)}</td><td class="odds">${ho.plc.toFixed(1)}</td><td><div class="bettors">${who}</div></td></tr>`;
   });
   $('#paper').innerHTML=h; $('#paper').classList.toggle('many',S.H>8);
@@ -1070,7 +1086,9 @@ function fitGoal(){
 
 // s: コース上の位置(0=下の直線の左端、反時計回り。コーナーは走路の真ん中の長さで測る)、off: 内ラチからの距離
 // コーナーはどのレーンも同じ角度で回るので、外の馬だけ極端に速く見えることがない
-function pt(s,off){
+// 右回りのときは、左回りのコースを左右反転して使う
+function pt(s,off){ const p=ptL(s,off); if(S&&S.rh){ p.x=2*G.cx-p.x; p.a=Math.PI-p.a; } return p; }
+function ptL(s,off){
   const {Sx,R,cx,cy,P,tw}=G, Rm=R+tw/2, C=Math.PI*Rm; s=((s%P)+P)%P; const r=R+off;
   if(s<Sx) return {x:cx-Sx/2+s,y:cy+r,a:0};
   s-=Sx;
@@ -1105,8 +1123,9 @@ function drawCourse(c,cs){
   c.strokeStyle=cs('--rail'); c.lineWidth=3; stadium(R); c.stroke(); stadium(R+tw); c.stroke();
   // コーナー名
   c.fillStyle='rgba(255,255,255,.8)'; c.font=`800 ${Math.max(11,tw*0.14)}px ${cs('--f-body')}`; c.textAlign='center'; c.textBaseline='middle';
-  c.fillText('1・2コーナー',cx+Sx/2+R*0.45,cy); c.fillText('3・4コーナー',cx-Sx/2-R*0.45,cy);
-  c.fillText('向こう正面',cx,cy-R+tw*0.05+18); c.fillText('ホームストレッチ',cx-Sx*0.1,cy+R-16);
+  const mx=x=>S&&S.rh?2*cx-x:x;
+  c.fillText('1・2コーナー',mx(cx+Sx/2+R*0.45),cy); c.fillText('3・4コーナー',mx(cx-Sx/2-R*0.45),cy);
+  c.fillText('向こう正面',cx,cy-R+tw*0.05+18); c.fillText('ホームストレッチ',mx(cx-Sx*0.1),cy+R-16);
   // 残り距離のハロン棒
   for(let m=200;m<=600;m+=200){ const p=pt(G.goal-m*G.P/G.lap,tw+6); c.fillStyle='#fff'; c.fillRect(p.x-2,p.y-2,4,12); c.font=`700 ${Math.max(10,tw*0.11)}px ${cs('--f-body')}`; c.fillText(m,p.x,p.y+20); }
   // ゴール板
@@ -1115,19 +1134,52 @@ function drawCourse(c,cs){
   c.fillStyle='#fff'; c.font=`900 ${Math.max(12,tw*0.16)}px ${cs('--f-body')}`; c.fillText('ゴール',g1.x,g2.y+16);
 }
 // 横向きの馬(右向き)を描く
-// 横向きの馬:向き(dir)と傾き(ang)をつけて drawHorse2 で描く。push:手綱をしごく強さ(0〜1)、win:ウイニングラン
+// 横向きの馬。毎フレーム描くと重いので、走りの1周期を12コマの画像にしておき、貼るだけにする(古いPCでもなめらかに)
+// 上下のゆれと風を切る線は画像に入れず、毎フレームなめらかに動かす
+const SPR={N:12,sets:new Map(),queue:[],busy:false};
+const AXU=96, AYU=78, WU=198, HU=142;     // 画像の中での馬の位置と画像の大きさ(馬の単位)
+function spriteSet(s){ let m=SPR.sets.get(s); if(!m){ m=new Map(); SPR.sets.set(s,m); } return m; }
+function horseSprite(h,fi,push,win,dir,s){
+  const m=spriteSet(s), k=h.no+'|'+fi+'|'+push+'|'+(win?1:0)+'|'+dir;
+  let e=m.get(k); if(e) return e;
+  if(push===0) for(const kk of [...m.keys()]) if(kk.startsWith(h.no+'|')&&kk.split('|')[2]==='1') m.delete(kk);   // ゴールした馬の「しごき」の画像は捨てる
+  const cv=document.createElement('canvas'); cv.width=Math.ceil(WU*s); cv.height=Math.ceil(HU*s);
+  const c=cv.getContext('2d'), [silk,silkFg]=wk(h.no);
+  if(dir<0){ c.translate(cv.width,0); c.scale(-1,1); }
+  drawHorse2(c,AXU*s,AYU*s,s*100,fi/SPR.N*Math.PI*2,{type:'cool',coat:h.coat[1],mane:h.coat[2],silk,silkFg,no:h.no,push,win,dir,noBob:true,noLines:true});
+  e={cv,ax:dir<0?cv.width/s-AXU:AXU}; m.set(k,e); return e;
+}
+// 画像の解像度(楕円コースはズーム最大2倍に備えて2倍で作る)
+const sprScale=(u,straight)=>Math.min(3,Math.round(u*0.88/100*(straight?1:2)*(G.dpr||1)*20)/20);
+// 使う前に少しずつ画像を作っておく(レース中に一度にたくさん作ってカクつかないように)
+function warmSprites(s,push,dirs){
+  if(!S||!S.horses) return;
+  S.horses.forEach(h=>dirs.forEach(d=>{ for(let f=0;f<SPR.N;f++) SPR.queue.push([h,f,push,d,s]); }));
+  if(SPR.busy) return; SPR.busy=true;
+  const work=()=>{ const t0=performance.now();
+    while(SPR.queue.length&&performance.now()-t0<6){ const [h,f,p,d,sc]=SPR.queue.shift(); horseSprite(h,f,p,false,d,sc); }
+    if(SPR.queue.length) setTimeout(work,16); else SPR.busy=false; };
+  setTimeout(work,0);
+}
 function drawHorse(c,x,y,u,dir,ang,ph,h,push=0,win=false){
-  const [silk,silkFg]=wk(h.no);
-  c.save(); c.translate(x,y); c.rotate(ang); c.scale(dir,1);
-  drawHorse2(c,0,u*0.02,u*0.88,ph,{type:'cool',coat:h.coat[1],mane:h.coat[2],silk,silkFg,no:h.no,push,win,dir});
+  const su=u*0.88/100, s=sprScale(u,DRAW_STRAIGHT);
+  const TAU=Math.PI*2, fi=Math.round((((ph%TAU)+TAU)%TAU)/TAU*SPR.N)%SPR.N, p=push>0?1:0;
+  const e=horseSprite(h,fi,p,win,dir,s);
+  const bob=Math.sin(ph*2)*1.6;
+  c.save(); c.translate(x,y); c.rotate(ang);
+  c.drawImage(e.cv,-e.ax*su,(-AYU+bob)*su+u*0.02,e.cv.width/s*su,e.cv.height/s*su);
+  if(p){ c.scale(dir,1); c.strokeStyle='rgba(255,255,255,.75)'; c.lineWidth=2.2*su; c.lineCap='round';      // 風を切る線
+    for(let i=0;i<3;i++){ const yy=(-26+i*14+bob)*su, xx=(-77-((ph*20+i*13)%18))*su; c.beginPath(); c.moveTo(xx,yy); c.lineTo(xx-22*su,yy); c.stroke(); } }
   c.restore();
 }
+// 直線カメラでの馬の大きさ(drawStraight と同じ計算)
+function straightU(){ const H=G.H, top=H*0.25, bot=H*0.95; return Math.min((bot-top)/S.H*2.4,G.W/8.5); }
 // 馬の絵(右向き。輪郭線つきのイラスト調。'cool'=かっこいい系を使用)。c:canvas, x,y:胴の中心, u:大きさ(胴の長さの目安), ph:脚の位相, o:{coat,mane,silk,silkFg,no,type:'cute'|'cool',push:0〜1}
 function drawHorse2(c,x,y,u,ph,o){
   const s=u/100, T=o.type==='cool';
   const ink='#2a1f1a', lw=(T?3.2:4.2);
   c.save(); c.translate(x,y); c.scale(s,s); c.lineJoin='round'; c.lineCap='round';
-  const bob=Math.sin(ph*2)*(T?1.6:2.4);              // 走ると上下にゆれる
+  const bob=o.noBob?0:Math.sin(ph*2)*(T?1.6:2.4);     // 走ると上下にゆれる(画像にするときは外で動かす)
   c.translate(0,bob);
   // ---- 形の定義 ----
   const P={ // 胴・首・頭
@@ -1251,17 +1303,33 @@ function drawHorse2(c,x,y,u,ph,o){
   c.fillStyle=o.silk; c.beginPath(); c.arc(hd.x,hd.y,hr,Math.PI*0.95,Math.PI*2.12); c.closePath(); c.fill(); c.stroke();
   c.fillStyle='#bfe3ff'; c.strokeStyle=ink; c.lineWidth=1.6; rr(c,hd.x+hr*0.1,hd.y-1,hr*0.95,hr*0.45,2); c.fill(); c.stroke();
   // 速さの線(かっこいい版)
-  if(T&&push>0){ c.strokeStyle='rgba(255,255,255,.75)'; c.lineWidth=2.2; for(let i=0;i<3;i++){ const yy=-26+i*14, xx=-P.bodyRx-30-((g*20+i*13)%18); line(xx,yy,xx-22,yy); } }
+  if(T&&push>0&&!o.noLines){ c.strokeStyle='rgba(255,255,255,.75)'; c.lineWidth=2.2; for(let i=0;i<3;i++){ const yy=-26+i*14, xx=-P.bodyRx-30-((g*20+i*13)%18); line(xx,yy,xx-22,yy); } }
   c.restore();
 }
 function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function shade(hex,k){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255; const f=v=>Math.max(0,Math.min(255,Math.round(k<0?v*(1+k):v+(255-v)*k))); return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
 
 let csCache={};
+let DRAW_STRAIGHT=false;                  // いま直線の映像を描いているか(馬の画像の解像度を選ぶため)
+const XF=900;                             // 楕円コース⇔直線の切り替えにかける時間(ミリ秒)
+const ease=k=>k*k*(3-2*k);
 function drawRace(run){
   const c=$('#cv').getContext('2d'), cs=v=>{ if(!(v in csCache)) csCache[v]=getComputedStyle(document.documentElement).getPropertyValue(v).trim(); return csCache[v]; };
   c.setTransform(G.dpr,0,0,G.dpr,0,0);
-  if(S.cam){ drawStraight(run,c,cs); return; }
+  const now=performance.now();
+  if(S.cam){
+    const k=S.camT0?Math.min(1,(now-S.camT0)/XF):1;
+    if(k<1){ drawOval(run,c,cs,1+ease(k)*0.9); c.globalAlpha=ease(k); drawStraight(run,c,cs,S.cam); c.globalAlpha=1; return; }
+    if(!S.camClean){ S.camClean=true; const keep=sprScale(straightU(),true); for(const kk of [...SPR.sets.keys()]) if(kk!==keep) SPR.sets.delete(kk); }
+    drawStraight(run,c,cs,S.cam); return;
+  }
+  if(S.camPrev&&S.camOutT0&&now-S.camOutT0<XF){        // 直線→ウイニングラン(楕円コース)
+    const k=(now-S.camOutT0)/XF; drawOval(run,c,cs,1); c.globalAlpha=1-ease(k); drawStraight(run,c,cs,S.camPrev); c.globalAlpha=1; return;
+  }
+  drawOval(run,c,cs,1);
+}
+function drawOval(run,c,cs,boost){
+  DRAW_STRAIGHT=false;
   const u=G.u, {W,H}=G;
   const items=S.horses.map((h,i)=>{
     if(S.win&&i!==S.win.i) return null;
@@ -1276,7 +1344,7 @@ function drawRace(run){
   const tz=Math.max(1.15,Math.min(2.0,(W*0.75)/(x1-x0+u*3),(H*0.7)/(y1-y0+u*3)));
   const oc=S.ocam||(S.ocam={x:(x0+x1)/2,y:(y0+y1)/2-u*0.4,z:tz});
   oc.z+=(tz-oc.z)*0.05; oc.x+=((x0+x1)/2-oc.x)*0.12; oc.y+=((y0+y1)/2-u*0.4-oc.y)*0.12;
-  const Z=oc.z, cxv=Math.max(W/(2*Z),Math.min(W-W/(2*Z),oc.x)), cyv=Math.max(H/(2*Z),Math.min(H-H/(2*Z),oc.y));
+  const Z=oc.z*boost, cxv=Math.max(W/(2*Z),Math.min(W-W/(2*Z),oc.x)), cyv=Math.max(H/(2*Z),Math.min(H-H/(2*Z),oc.y));
   c.fillStyle=cs('--field'); c.fillRect(0,0,W,H);
   c.save(); c.translate(W/2,H/2); c.scale(Z,Z); c.translate(-cxv,-cyv);
   drawCourse(c,cs);
@@ -1295,15 +1363,16 @@ function drawRace(run){
 }
 
 /* ---------- 最後の直線(横から見たカメラ) ---------- */
-function drawStraight(run,c,cs){
-  const {W,H}=G, D=S.dist, cam=S.cam;
+function drawStraight(run,c,cs,cam){
+  DRAW_STRAIGHT=true;
+  const {W,H}=G, D=S.dist;
   const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs);
   // カメラ:先頭を右寄りに、後ろの馬まで入るように幅を調整(なめらかに追う)
   const anyFin=run.some(r=>r.fin!==null);
   const tv=Math.min(120,Math.max(60,(lead-last)+24)), tr=anyFin?Math.min(lead+14,last+110):Math.min(D+14,lead+14);   // ゴール後は馬群を追う(最後の馬が画面に残る範囲で)
   if(!cam.init){ cam.v=tv; cam.r=tr; cam.init=true; }
   cam.v+=(tv-cam.v)*0.04; cam.r+=(tr-cam.r)*0.12;
-  const left=cam.r-cam.v, X=m=>(m-left)/cam.v*W;
+  const left=cam.r-cam.v, sg=S.rh?-1:1, X=m=>{ const x=(m-left)/cam.v*W; return S.rh?W-x:x; };   // 右回りは右から左へ走る
   const standH=H*0.2, top=standH+H*0.05, bot=H*0.95, laneH=(bot-top)/S.H;
   // スタンドと観客
   c.fillStyle='#39414d'; c.fillRect(0,0,W,standH);
@@ -1316,12 +1385,12 @@ function drawStraight(run,c,cs){
     const y=standH*(0.22+row*0.2);
     for(let i=-1;i*sp-off<W+sp;i++){
       const k=(base+i)*7+row*13; c.fillStyle=cols[((k%7)+7)%7];
-      c.beginPath(); c.arc(i*sp-off+(row%2)*sp/2,y,5,0,Math.PI*2); c.fill();
+      const ax=i*sp-off+(row%2)*sp/2; c.beginPath(); c.arc(S.rh?W-ax:ax,y,5,0,Math.PI*2); c.fill();
     }
   }
   // 芝(10mごとの刈り目がカメラと一緒に流れる)
   for(let m=Math.floor(left/10)*10;m<cam.r+10;m+=10){
-    c.fillStyle=(Math.round(m/10)%2)?tcol(cs,0):tcol(cs,1); c.fillRect(X(m),top,pxm*10+1,bot-top);
+    c.fillStyle=(Math.round(m/10)%2)?tcol(cs,0):tcol(cs,1); c.fillRect(Math.min(X(m),X(m+10)),top,pxm*10+1,bot-top);
   }
   c.fillStyle=cs('--field'); c.fillRect(0,bot,W,H-bot);
   // ラチ(柵)
@@ -1343,22 +1412,23 @@ function drawStraight(run,c,cs){
   // 馬(奥のレーンから描く)
   const u=Math.min(laneH*2.4,W/8.5);   // 馬の大きさ(となりのレーンと少し重なってもよい)
   S.horses.map((h,i)=>({h,i,y:top+laneH*((run[i].lane??i/Math.max(1,S.H-1))*(S.H-1)+0.62)})).sort((a,b)=>a.y-b.y).forEach(({h,i,y})=>{
-    const r=run[i], nose=X(r.x), hx=nose-u*0.78;
+    const r=run[i], nose=X(r.x), hx=nose-sg*u*0.78;
     if(S.surf==='dirt'&&(r.fin===null||(r.post||0)>0.5)){   // ダートは後ろ脚が砂を蹴り上げる
       for(let k=0;k<4;k++){ const q=((r.ph*0.35+k*0.25)%1); c.fillStyle=`rgba(196,160,118,${0.45*(1-q)})`;
-        c.beginPath(); c.arc(hx-u*0.55-q*u*0.7,y+u*0.18-q*u*0.25,u*(0.06+q*0.12),0,Math.PI*2); c.fill(); } }
-    drawHorse(c,hx,y-u*0.22,u,1,0,r.ph,h,r.fin===null?1:0);
-    const [bg,fg]=wk(h.no), rr=Math.max(11,Math.min(laneH*0.36,22)), bx=hx-u*0.62, by=y-u*0.35;
+        c.beginPath(); c.arc(hx-sg*(u*0.55+q*u*0.7),y+u*0.18-q*u*0.25,u*(0.06+q*0.12),0,Math.PI*2); c.fill(); } }
+    drawHorse(c,hx,y-u*0.22,u,sg,0,r.ph,h,r.fin===null?1:0);
+    const [bg,fg]=wk(h.no), rr=Math.max(11,Math.min(laneH*0.36,22)), bx=hx-sg*u*0.62, by=y-u*0.35;
     c.fillStyle=bg; c.strokeStyle='rgba(0,0,0,.6)'; c.lineWidth=2; c.beginPath(); c.arc(bx,by,rr,0,Math.PI*2); c.fill(); c.stroke();
     c.fillStyle=fg; c.font=`900 ${rr*1.2}px ${cs('--f-body')}`; c.fillText(h.no,bx,by+1);
     if(r.place&&!hidePlace(i)){ c.font=`900 ${rr*1.3}px ${cs('--f-body')}`; c.strokeStyle='rgba(0,0,0,.75)'; c.lineWidth=4; c.fillStyle=r.place===1?cs('--gold'):'#fff';
-      c.strokeText(r.place+'着',nose+rr*2.2,y-u*0.25); c.fillText(r.place+'着',nose+rr*2.2,y-u*0.25); }
+      c.strokeText(r.place+'着',nose+sg*rr*2.2,y-u*0.25); c.fillText(r.place+'着',nose+sg*rr*2.2,y-u*0.25); }
   });
   // 見出し
   c.fillStyle='rgba(0,0,0,.6)'; c.fillRect(12,10,200,34); c.fillStyle='#fff'; c.font=`900 20px ${cs('--f-body')}`; c.textAlign='left'; c.fillText('ラストスパート 🎥',24,28);
   // 右上に小さな全体図
   drawMini(run,c,cs);
   drawPhoto(c,cs);
+  DRAW_STRAIGHT=false;
 }
 function drawMini(run,c,cs){
   const {W}=G, mw=Math.min(220,W*0.2), sx=mw/(G.Sx+2*(G.R+G.tw)), mh=2*(G.R+G.tw)*sx, x0=W-mw-12, y0=10;
@@ -1523,7 +1593,7 @@ function showIntro(dur){
   el.className='intro '+g;
   el.innerHTML=`${g==='G1'?'<div class="rays"></div>':''}<div class="band t"></div><div class="band b"></div><div class="flash"></div>
     <div class="ic"><div class="kick">${kick}</div>${S.rn.no?`<div class="no">第${S.rn.no}回</div>`:''}<div class="nm">${esc(S.rn.name)}</div>
-    <div class="gr">${rom}</div><div class="sub">${surfText(true)} ・ ${S.H}頭立て</div></div>
+    <div class="gr">${rom}</div><div class="sub">${surfText(true)}(${S.rh?'右':'左'}回り) ・ ${S.H}頭立て</div></div>
     ${g==='G1'?Array.from({length:26},()=>`<i class="sp" style="left:${(Math.random()*96).toFixed(1)}%;top:${(Math.random()*92).toFixed(1)}%;animation-delay:${(Math.random()*2).toFixed(2)}s"></i>`).join(''):''}`;
   el.hidden=false;
   clearTimeout(S.introT); clearTimeout(S.introT2);
@@ -1621,7 +1691,7 @@ function afterRace(run,win){
     const dt=Math.min(100,now-prev), k=dt/16.6, kt=dt/S.tickS; prev=now;   // kt:直線と同じ速さで進めるための係数
     if(!S.win){
       run.forEach(r=>{ r.post=r.post??r.v??S.step; r.x+=r.post*kt; r.ph+=r.post/S.step*0.42*Math.sqrt(16.6/S.tickS)*kt; r.px=null; r.pph=null; r.pl=null; });
-      if(now-t0>3800){ S.cam=null; S.win={i:win}; S.ocam=null; layout();
+      if(now-t0>3800){ S.camPrev=S.cam; S.camOutT0=performance.now(); S.cam=null; S.win={i:win}; S.ocam=null; layout();
         say(`${S.horses[win].no}番 ${S.horses[win].name}、ウイニングラン!スタンドから大きな拍手!`); crowd(0.3,1); setTimeout(()=>{ if(S===me) crowd(0.12,3); },2500); }
     } else {
       const r=run[win]; r.x+=canter*k; r.ph+=canter/S.step*0.42*k*1.4; r.px=null; r.pph=null; r.pl=null; r.lane+=Math.max(-0.004,Math.min(0.004,0.55-r.lane))*k;
@@ -1642,7 +1712,7 @@ function drawWin(c,cs){
   c.textBaseline='middle';
   c.fillStyle=bg; c.strokeStyle='#fff'; c.lineWidth=2; c.beginPath(); c.arc(x+44,y+42,26,0,Math.PI*2); c.fill(); c.stroke();
   c.fillStyle=fg; c.textAlign='center'; c.font=`900 30px ${cs('--f-body')}`; c.fillText(h.no,x+44,y+43);
-  c.textAlign='left'; c.fillStyle=cs('--gold'); c.font=`800 17px ${cs('--f-body')}`; c.fillText(`${S.rn.name} 優勝 ウイニングラン`,x+84,y+26);
+  c.textAlign='left'; c.fillStyle=cs('--gold'); c.font=`800 17px ${cs('--f-body')}`; c.fillText(`${S.rn.name} 優勝  騎手 ${h.jockey}`,x+84,y+26);
   c.fillStyle='#fff'; c.font=`700 30px ${cs('--f-paper')}`; c.fillText(h.name,x+84,y+56);
   c.fillStyle='rgba(255,255,255,.25)'; c.fillRect(x+16,y+84,w-32,2);
   c.textAlign='center';
@@ -1670,15 +1740,18 @@ function runRace(){
   S.tickS=Math.max(16.6/0.45,STRAIGHT_SEC*1000/(600/S.step));   // 直線(とゴール後)の1コマの長さ
   S.groups.forEach(g=>{ g.tickets=g.money>=100?cleanTickets(g.tickets,g.money,S.H):[]; g.staked=tkTotal(g.tickets); g.money-=g.staked; });
   S.phase='race'; render();
-  $('#pay').hidden=true; S.cam=null; S.fx={}; S.photo=null; S.gate={open:null}; S.after=false; S.win=null;
+  $('#pay').hidden=true; S.cam=null; S.camPrev=null; S.camOutT0=0; S.fx={}; S.photo=null; S.gate={open:null}; S.after=false; S.win=null;
   layout();
+  SPR.sets.clear(); SPR.queue=[]; warmSprites(sprScale(G.u,false),0,[1,-1]); S.warmS=false;   // ファンファーレの間に馬の画像を作っておく
   const run=newRun(), me=S; S.lastRun=run; S.ocam=null; run.forEach((r,i)=>r.lane=i/Math.max(1,S.H-1)); drawRace(run); renderOrder(run); sendLive(run,true);
   let lastLive=0;
   const name=i=>`${S.horses[i].no}番 ${S.horses[i].name}`, D=S.dist;
   say(`${rTitle()}(${S.rn.grade})、${surfText(true)}。ファンファーレです!`); $('#rem').textContent='';
   const fan=soundOn?raceFanfare(S.rn.grade):{G1:5.5,G2:4,G3:4,OP:2.8}[S.rn.grade];
   showIntro(fan+0.4);
-  setTimeout(()=>{ if(S===me) say('各馬、ゲートに入りました…'); },fan*1000);
+  const GATE_IN=2.2, GATE_WAIT=2.0;   // ゲートに入る時間・ゲートイン完了からスタートまでの「一呼吸」(秒)
+  setTimeout(()=>{ if(S===me) say('各馬、ゲートに入っていきます…'); },(fan+0.4)*1000);
+  setTimeout(()=>{ if(S===me){ say('ゲートイン完了。'); crowd(0.08,1.2); } },(fan+0.4+GATE_IN)*1000);   // 場内が静まる
   let t=0, lastLead=-1, nextTalk=0, lastSeg=null, finished=0, said200=false, said400=false, saidStraight=false, saidShobu=false; const hs={};
   const shobu=Math.min(1000,D*0.65);     // 勝負どころ(残り何mで演出を出すか)
   setTimeout(()=>{
@@ -1705,14 +1778,15 @@ function runRace(){
             if(gap<=PHOTO){
               S.photo={a:i,b:j,gap,revealed:false,until:performance.now()+3200,lo:Math.min(i,j),hi:Math.max(i,j)};
               say(`ゴール!${S.horses[S.photo.lo].no}番と${S.horses[S.photo.hi].no}番、ほぼ同時!写真判定です!`); crowd(1,0.3);
-            } else { say(`ゴール!${S.rn.name}を制したのは${name(i)}!`); tone(1047,.4,'triangle',.2); crowd(1,0.3); }
+            } else { say(`ゴール!${S.rn.name}を制したのは${name(i)}!鞍上は${S.horses[i].jockey}!`); tone(1047,.4,'triangle',.2); crowd(1,0.3); }
           } }
         if(finished){ if(!S.cam) S.cam={}; continue; }
         // 実況
         const seg=segOf(toS(L.x));
         if(!saidShobu&&!S.cam&&rem<=shobu){ saidShobu=true; S.fx.telop={text:'勝負どころ!',sub:`残り${Math.round(rem/100)*100}m 各馬が動き出す`,t0:performance.now()};
           say(`勝負どころ!先頭は${name(lead)}、後ろの馬も動き出した!`); nextTalk=t+60; crowd(0.5,2); tone(659,.12,'square',.06); tone(988,.3,'square',.06,.12); }
-        if(!S.cam&&rem<=600){ S.cam={}; say(`残り600m!各馬スパート態勢!先頭は${name(lead)}!`); nextTalk=t+40; crowd(0.7,1.5); }
+        if(!S.warmS&&rem<=1100){ S.warmS=true; warmSprites(sprScale(straightU(),true),1,[1]); }
+        if(!S.cam&&rem<=600){ S.cam={}; S.camT0=performance.now(); S.camClean=false; say(`残り600m!各馬スパート態勢!先頭は${name(lead)}!`); nextTalk=t+40; crowd(0.7,1.5); }
         if(rem<=200&&!said200) crowd(1,1.5);
         // 見せ場の実況(捲り・バテ・直線一気)
         const rk={}; ord.forEach((i,k)=>rk[i]=k);
@@ -1758,7 +1832,7 @@ function runRace(){
       raf=requestAnimationFrame(frame);
     };
     raf=requestAnimationFrame(frame);
-  },fan*1000+1300);
+  },(fan+0.4+GATE_IN+GATE_WAIT)*1000);
 }
 function finish(order){
   S.order=order;
@@ -1882,7 +1956,7 @@ addEventListener('resize',()=>{ if(S&&S.phase!=='bet'&&S.lastRun){ layout(); dra
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=17;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=20;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -1963,9 +2037,9 @@ function updateRoomBadge(){
 // iPadに見せる情報(本当の実力などは送らない)
 function pushState(){
   if(!NET||!S||!S.horses) return;
-  const st={ver:APP_VER,surf:S.surf,phase:S.phase,race:S.race,races:S.races,dist:S.dist,H:S.H,
+  const st={ver:APP_VER,surf:S.surf,rh:!!S.rh,phase:S.phase,race:S.race,races:S.races,dist:S.dist,H:S.H,
     rn:S.rn,
-    horses:S.horses.map(h=>({no:h.no,name:h.name,coat:h.coat[0],style:h.style,comment:h.comment,marks:h.marks,pop:h.pop,win:h.win,plc:h.plc,
+    horses:S.horses.map(h=>({no:h.no,name:h.name,jockey:h.jockey,coat:h.coat[0],style:h.style,comment:h.comment,marks:h.marks,pop:h.pop,win:h.win,plc:h.plc,
       by:S.phase!=='bet'?[]:S.free?(n=>n?[n+'人']:[])(S.groups.filter(g=>!g.out&&g.tickets.some(t=>tkHas(t,h.no))).length):S.groups.map(g=>{ const ty=[...new Set(g.tickets.filter(t=>tkHas(t,h.no)).map(t=>BT[t.type].s))]; return ty.length?g.name+' '+ty.join(''):''; }).filter(Boolean)})),
     free:!!S.free, clean:S.places.length>0,
     timer:S.tm&&S.phase==='bet'?(S.tm.paused?{paused:true,left:S.tm.left}:{end:S.tm.end}):null,
@@ -2136,7 +2210,7 @@ function padRender(){
     return;
   }
   P.had=true;
-  $('#padRace').innerHTML=`第${st.race}R ${st.rn?esc((st.rn.no?'第'+st.rn.no+'回 ':'')+st.rn.name)+` <span class="a-grade ${st.rn.grade}">${st.rn.grade}</span>`:''} ${surfText(true,st.surf,st.dist)} ${{bet:'投票受付中',race:'レース中',result:'結果発表',end:'全レース終了'}[st.phase]||''}`;
+  $('#padRace').innerHTML=`第${st.race}R ${st.rn?esc((st.rn.no?'第'+st.rn.no+'回 ':'')+st.rn.name)+` <span class="a-grade ${st.rn.grade}">${st.rn.grade}</span>`:''} ${surfText(true,st.surf,st.dist)}(${st.rh?'右':'左'}) ${{bet:'投票受付中',race:'レース中',result:'結果発表',end:'全レース終了'}[st.phase]||''}`;
   padTicker(st);
   if(st.free&&(P.gi===null||!st.groups[P.gi]||st.groups[P.gi].out)){
     who.innerHTML=''; $('#padSlip').hidden=true;
@@ -2201,7 +2275,7 @@ function padBet(st,g){
     const mk=[0,1,2,3].map(j=>{ const x=(h.marks||[])[j]||''; return `<td class="mk m${MARKS.indexOf(x)}">${x}</td>`; }).join('');
     const by=(h.by||[]).map(x=>`<span>${esc(x)}</span>`).join('');
     return `<tr class="${cls}${h.pop===1?' p1':''}" data-horse="${h.no}"><td><span class="n" style="background:${wk(h.no)[0]};color:${wk(h.no)[1]}">${h.no}</span></td>${mk}
-      <td class="nm">${multi&&k>=0?`<span class="axis">${k+1}</span>`:''}${esc(h.name)}</td><td>${esc(h.coat||'')}</td><td>${esc(h.style)}</td><td class="cm">${esc(h.comment||'')}</td>
+      <td class="nm">${multi&&k>=0?`<span class="axis">${k+1}</span>`:''}${esc(h.name)}</td><td class="jk">${esc(h.jockey||'')}</td><td>${esc(h.coat||'')}</td><td>${esc(h.style)}</td><td class="cm">${esc(h.comment||'')}</td>
       <td class="pop">${h.pop}</td><td class="od">${h.win.toFixed(1)}</td><td class="pl">${h.plc.toFixed(1)}</td><td class="by">${by}</td></tr>`; }).join('');
   let side;
   if(!multi){
@@ -2232,7 +2306,7 @@ function padBet(st,g){
     const chosen=P.selQ.length?`<div class="a-chosen">選んだ買い目 ${P.selQ.length}点:${P.selQ.slice(0,12).map(k=>keyText(P.mode,k)).join('、')}${P.selQ.length>12?' …':''} <button data-qclear>クリア</button></div>`:'';
     side=`<h3>${bt.name}<small>${bt.desc}</small></h3>${pick}${help}${chosen}`;
   }
-  m.innerHTML=`<div class="a-paperwrap${fixed?' fixed':''}"><table class="a-paper"><tr><th>馬番</th><th>本紙</th><th>A記者</th><th>B記者</th><th>C記者</th><th>馬名</th><th>毛色</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>${st.free?'買った人':'買った班'}</th></tr>${rows}</table></div>
+  m.innerHTML=`<div class="a-paperwrap${fixed?' fixed':''}"><table class="a-paper"><tr><th>馬番</th><th>本紙</th><th>A記者</th><th>B記者</th><th>C記者</th><th>馬名</th><th>騎手</th><th>毛色</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>${st.free?'買った人':'買った班'}</th></tr>${rows}</table></div>
     <div class="a-sub"><div class="a-panel">${side}</div>
     <div class="a-panel"><h3>買った馬券${P.my&&P.my.dev==='teacher'?'<small>先生のPCで入力</small>':''}</h3>${tkList(st,mine,null,!fixed)}</div></div>`;
   const slip=$('#padSlip'); slip.hidden=false;
