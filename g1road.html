@@ -684,7 +684,6 @@ html.padmode{-webkit-text-size-adjust:100%}
       <div class="order" hidden><h3>いまの順位</h3><ol id="order"></ol></div>
       <div id="pay" class="pay" hidden></div>
     </div>
-    <div id="raceInfo" class="rinfo" hidden></div>
     <aside id="side" class="side">
       <div class="sbox qrbox"><div id="sideQR"></div><div id="sideJoin"></div></div>
       <div id="sideDyn"></div>
@@ -1780,7 +1779,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=1;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=2;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2298,19 +2297,7 @@ function render(){
   $('#paperArea').hidden=!bet; $('#raceArea').hidden=bet;
   if(bet) renderPaper();
   if(S.phase==='result'&&S.payHTML){ $('#pay').innerHTML=S.payHTML; $('#pay').hidden=false; }
-  $('#raceInfo').hidden=bet; if(!bet) renderRaceInfo();
   renderSide(); updateRoomBadge(); pushState();
-}
-// レース中・結果の下の帯(プレイヤーの馬・馬券・ニュース)
-function renderRaceInfo(){
-  const own=S.horses.filter(h=>h.hid), ord=S.order?Object.fromEntries(S.order.map((i,k)=>[i,k+1])):null;
-  const ownHTML=own.length?own.map(h=>{ const i=S.horses.indexOf(h); return `<li>${numTag(h.no)}<span>${esc(h.name)}</span><small>${esc(h.owner)}</small>${ord?`<b>${ord[i]}着</b>`:`<b>${h.pop}番人気</b>`}</li>`; }).join(''):'<li>今回はプレイヤーの馬はいません</li>';
-  const bs=Object.values(S.bets), tot=bs.reduce((a,b)=>a+(b.staked||tkTotal(b.tickets)),0);
-  const mid=S.phase==='result'?(S.hitList.length?`<ol class="slist">${S.hitList.slice(0,5).map(x=>`<li><span>${esc(x.name)}</span><b>+${yen(x.pay)}</b></li>`).join('')}</ol>`:'<p>当たった人はいませんでした</p>')
-    :`<div class="big">${bs.length}人</div><div>合計 ${yen(tot)}</div>`;
-  $('#raceInfo').innerHTML=`<div class="sbox"><h3>プレイヤーの馬</h3><ol class="slist">${ownHTML}</ol></div>
-    <div class="sbox"><h3>${S.phase==='result'?'的中':'馬券'}</h3>${mid}</div>
-    <div class="sbox"><h3>ニュース</h3><ul class="snews">${W.news.slice(0,3).map(n=>`<li>${esc(n.t)}</li>`).join('')}</ul></div>`;
 }
 function renderPaper(){
   let h='<tr><th>馬番</th>'+WRITERS.map(w=>`<th>${w}</th>`).join('')+'<th>馬名</th><th>性齢</th><th>斤量</th><th>騎手</th><th>脚質</th><th>短評</th><th>人気</th><th>単勝</th><th>複勝</th><th>投票</th></tr>';
