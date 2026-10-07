@@ -613,6 +613,8 @@ html.padmode{-webkit-text-size-adjust:100%}
 .rinfo .sbox{overflow:hidden;min-height:0}
 .rinfo .slist li{font-size:.95rem}
 .rinfo .big{font-size:1.6rem;font-weight:900;font-family:var(--f-paper)}
+.ikmenu.tr{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.mh small{font-family:var(--dot);font-size:12px;color:#9aa4d6;margin-left:8px}
 
 </style>
 </head>
@@ -1779,7 +1781,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=2;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=3;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -1865,12 +1867,25 @@ const GROW={
   long:{name:'持続',pts:[[2,0.88],[3,0.95],[4,1],[6.5,1],[7.5,0.94],[9,0.86]]}};
 function curve(g,a){ const p=(GROW[g]||GROW.normal).pts; if(a<=p[0][0]) return p[0][1];
   for(let i=1;i<p.length;i++){ if(a<=p[i][0]){ const [x0,y0]=p[i-1],[x1,y1]=p[i]; return y0+(y1-y0)*(a-x0)/(x1-x0); } } return p[p.length-1][1]; }
+// 調教メニュー。up:伸びる能力、fat:疲れ(マイナスは回復)、cond:調子の変化、cost:コイン、g:分類
+const ALL5=v=>({sp:v,sta:v,pw:v,gt:v,kc:v});
 const TRAIN={
-  hill:{name:'坂路',ic:'⛰️',up:{pw:7,sta:3},fat:2,cost:20,desc:'パワー↑↑ スタミナ↑'},
-  wood:{name:'ウッドコース',ic:'🌲',up:{sta:7,gt:3},fat:2,cost:20,desc:'スタミナ↑↑ 根性↑'},
-  pair:{name:'併せ馬',ic:'🐎',up:{gt:7,sp:3},fat:3,cost:30,desc:'根性↑↑ スピード↑'},
-  fast:{name:'追い切り',ic:'⚡',up:{sp:7,kc:3},fat:3,cost:30,desc:'スピード↑↑ 瞬発力↑'},
-  rest:{name:'休養',ic:'🛁',up:{},fat:-3,cost:0,desc:'疲れが取れて体調↑'}};
+  hill:{g:'基本',name:'坂路',ic:'⛰️',up:{pw:7,sta:3},fat:2,cost:20,desc:'パワー↑↑ スタミナ↑'},
+  wood:{g:'基本',name:'ウッドコース',ic:'🌲',up:{sta:7,gt:3},fat:2,cost:20,desc:'スタミナ↑↑ 根性↑'},
+  pair:{g:'基本',name:'併せ馬',ic:'🐎',up:{gt:7,sp:3},fat:3,cost:30,desc:'根性↑↑ スピード↑'},
+  fast:{g:'基本',name:'追い切り',ic:'⚡',up:{sp:7,kc:3},fat:3,cost:30,desc:'スピード↑↑ 瞬発力↑'},
+  gate:{g:'基本',name:'ゲート練習',ic:'🚪',up:{kc:6,sp:2},fat:1,cost:20,desc:'瞬発力↑↑ スピード↑'},
+  dirt:{g:'基本',name:'ダート走',ic:'🟫',up:{pw:5,gt:4},fat:2,cost:20,desc:'パワー↑ 根性↑'},
+  canter:{g:'軽め',name:'キャンター',ic:'🌤️',up:ALL5(1),fat:1,cost:10,desc:'全部↑(少し)'},
+  pool:{g:'軽め',name:'プール',ic:'🏊',up:{sta:5,pw:2},fat:0,cost:25,desc:'スタミナ↑ 疲れない'},
+  walk:{g:'軽め',name:'引き運動',ic:'🚶',up:{gt:3},fat:-1,cost:5,desc:'根性↑(少し) 疲れ少し回復'},
+  hill2:{g:'ハード',name:'坂路2本',ic:'🏔️',up:{pw:12,sta:6},fat:4,cost:45,desc:'パワー↑↑↑ スタミナ↑↑'},
+  strong:{g:'ハード',name:'強め追い切り',ic:'🔥',up:{sp:12,kc:6},fat:4,cost:50,desc:'スピード↑↑↑ 瞬発力↑↑'},
+  long:{g:'ハード',name:'長めの追い切り',ic:'🛤️',up:{sta:12,gt:6},fat:4,cost:45,desc:'スタミナ↑↑↑ 根性↑↑'},
+  camp:{g:'ハード',name:'特訓合宿',ic:'🏕️',up:ALL5(4),fat:4,cost:70,desc:'全部↑↑'},
+  rest:{g:'休む',name:'休養',ic:'🛁',up:{},fat:-3,cond:1,cost:0,desc:'疲れが取れて調子↑'},
+  massage:{g:'休む',name:'マッサージ',ic:'💆',up:{},fat:-2,cond:2,cost:20,desc:'調子↑↑ 疲れ回復'},
+  farm:{g:'休む',name:'放牧',ic:'🌿',up:{},fat:-6,cond:1,cost:40,desc:'疲れが全部取れる'}};
 const TIER={cheap:{name:'お手頃',price:150,base:40,cap:63},mid:{name:'中堅',price:400,base:45,cap:72},blue:{name:'良血',price:1000,base:49,cap:82}};
 const CONDN={'':'',f:'牝馬限定',y:'若駒限定',yt:'若駒トライアル',ft:'牝馬トライアル'};
 // レースカレンダー(48レースで1周)。[格, 条件, 芝/ダート, 距離, 競馬場, レース名, 1着賞金]
@@ -2264,18 +2279,18 @@ function doAct(dev,a){
 }
 // 調教(1Rに1回)
 function doTrain(h,menu){
-  const M=TRAIN[menu], ag=ageAt(h,W.R), r=Math.random(), luck=menu==='rest'?1:r<0.15?1.7:r<0.25?0.4:1;
+  const M=TRAIN[menu], ag=ageAt(h,W.R), r=Math.random(), hasUp=Object.keys(M.up).length>0, hard=M.fat>=4, luck=!hasUp?1:r<0.15?(hard?1.4:1.7):r<(hard?0.32:0.25)?0.4:1;
   const gk=(ag<3?1.15:ag<4?1:ag<5?0.8:ag<6?0.6:0.45)*(h.fat>=4?0.6:1), gains=[];
   Object.entries(M.up).forEach(([k,v])=>{ const room=h.caps[k]-h.st[k], f=clamp(room/20,0,1);
     const add=f<=0?0:Math.max(1,Math.round(v*gk*luck*f*(0.85+Math.random()*0.3)));
     h.st[k]=Math.min(h.caps[k],h.st[k]+add); h.peak[k]=Math.max(h.peak[k]||0,h.st[k]);
     gains.push(add?`${STATS.find(s=>s[0]===k)[1]}+${add}`:`${STATS.find(s=>s[0]===k)[1]}は限界`); });
   h.fat=clamp(h.fat+M.fat,0,6);
-  if(menu==='rest') h.cond=Math.min(2,h.cond+1); else if(h.fat>=4) h.cond=Math.max(-2,h.cond-1);
+  if(M.cond) h.cond=Math.min(2,h.cond+M.cond); else if(h.fat>=4) h.cond=Math.max(-2,h.cond-1);
   else if(Math.random()<0.2) h.cond=clamp(h.cond+(Math.random()<0.5?1:-1),-2,2);
   h.trainedR=W.R;
-  const word=menu==='rest'?'疲れが取れた':luck>1?'大成功!':luck<1?'いまひとつ…':'成功';
-  return `${M.ic}${M.name} ${word} ${gains.join('、')}`;
+  const word=!hasUp?'疲れが取れた':luck>1?'大成功!':luck<1?'いまひとつ…':'成功';
+  return `${M.ic}${M.name} ${word} ${hasUp?gains.join('、'):`調子:${COND[h.cond+2]}`}`;
 }
 
 
@@ -2840,7 +2855,8 @@ function openModal(html){ P.modal=true; const el=$('#padModal'); el.innerHTML=`<
 function closeModal(){ P.modal=null; const el=$('#padModal'); if(el){ el.hidden=true; el.innerHTML=''; } }
 function trainModal(h){
   openModal(`<div class="ptitle">${esc(h.name)}の調教 <small>1レースのあいだに1回 ・ 疲れ:${fatW(h.fat)} 調子:${COND[h.cond+2]}</small></div>
-    <div class="ikmenu">${Object.entries(TRAIN).map(([k,M])=>`<button class="ikm" data-train="${k}" data-hid="${h.id}" ${P.pv.coins<M.cost?'disabled':''}><span class="ic">${M.ic}</span><b>${M.name}</b><span class="up">${M.desc}</span><span class="ft">${M.fat>0?'疲れ '+'●'.repeat(M.fat):'疲れ 回復'}</span><span class="cost">${M.cost?yen(M.cost):'無料'}</span></button>`).join('')}</div>
+    ${['基本','軽め','ハード','休む'].map(g=>`<h3 class="mh">${g}${g==='ハード'?'<small>(よく伸びるけど疲れる・失敗しやすい)</small>':g==='軽め'?'<small>(疲れにくい)</small>':''}</h3>
+    <div class="ikmenu tr">${Object.entries(TRAIN).filter(([,M])=>M.g===g).map(([k,M])=>`<button class="ikm" data-train="${k}" data-hid="${h.id}" ${P.pv.coins<M.cost?'disabled':''}><span class="ic">${M.ic}</span><b>${M.name}</b><span class="up">${M.desc}</span><span class="ft">${M.fat>0?'疲れ '+'●'.repeat(M.fat):M.fat===0?'疲れ なし':'疲れ 回復'}</span><span class="cost">${M.cost?yen(M.cost):'無料'}</span></button>`).join('')}</div>`).join('')}
     <p class="iksub" style="margin-top:10px">疲れが「多い」のまま調教すると伸びが悪く、調子も落ちます。年をとるほど伸びにくくなります。</p>`);
 }
 function entryModal(h){
