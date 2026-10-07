@@ -627,6 +627,9 @@ html.padmode{-webkit-text-size-adjust:100%}
 .fxres p{margin:0;font-size:clamp(16px,2.6vw,22px);color:#fff;font-family:var(--dot);padding:0 16px}
 .fxres .hb{font-size:20px;padding:10px 40px}
 @keyframes fxin{from{opacity:0;transform:scale(1.15)}to{opacity:1;transform:none}}
+.a-list li.hxli{flex-wrap:wrap}
+.a-list li .hx{flex-basis:100%;display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:#b8c0ea;padding-left:3.4em}
+.a-list li .hx b{font-weight:400;color:#fff}.a-list li .hx b.up{color:var(--gr)}.a-list li .hx .warn{color:var(--pk)}
 
 </style>
 </head>
@@ -1796,7 +1799,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=5;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=6;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2177,9 +2180,9 @@ function finish(order){
     // レースの経験(上位ほど伸びる)
     const ex=place===0?3:place<3?2:1, key=pick(SK), add=Math.min(ex,Math.max(0,h.caps[key]-h.st[key]));
     if(add>0){ h.st[key]+=add; h.peak[key]=Math.max(h.peak[key]||0,h.st[key]); gains[key]=add; }
-    h.fat=Math.min(6,h.fat+2);
+    const fat0=h.fat; h.fat=Math.min(6,h.fat+2);
     if(p){ p.coins+=prize; p.prize+=prize; if(place===0){ p.wins++; if(sp.g==='G1') p.g1++; }
-      res(h.owner).horses.push({name:h.name,place:place+1,prize,gains});
+      res(h.owner).horses.push({name:h.name,place:place+1,prize,ek:key,ea:add,f0:fat0,f1:h.fat});
       if(place===0&&sp.g==='G1') news(`🏆 ${p.name}さんの${h.name}が${sp.name}(G1)を制覇!`);
       else if(place===0&&sp.g!=='OP') news(`${p.name}さんの${h.name}が${sp.name}(${sp.g})に勝利`);
       else if(place===0) news(`${p.name}さんの${h.name}が${sp.name}に勝利`); }
@@ -2788,7 +2791,9 @@ function padResult(st,pv){
     pay=`<ul class="a-list a-pay"><li><b>単勝</b>${aNum(od[0])}<span class="am">${w.win.toFixed(1)}倍</span></li>
       ${od.slice(0,3).map((no,k)=>`<li><b>${k?'':'複勝'}</b>${aNum(no)}<span class="am">${st.horses[no-1].plc.toFixed(1)}倍</span></li>`).join('')}
       ${COMBO.map(t=>wkeys[t].map((k,j)=>`<li><b>${j?'':BT[t].name}</b>${k.split('-').map(x=>aNum(+x)).join(BT[t].ord?'→':'')}<span class="am">${((O[t]||{})[k]||0).toFixed(1)}倍</span></li>`).join('')).join('')}</ul>`; }
-  const hsHTML=hs.length?`<div class="a-panel"><h3>自分の馬の成績</h3><ul class="a-list">${hs.map(x=>`<li class="${x.place<=3?'hit':''}"><span class="ps">${x.place}着</span><span>${esc(x.name)}</span><span class="am">${x.prize?'賞金 +'+yen(x.prize):''}</span></li>`).join('')}</ul></div>`:'';
+  const sn=k=>(STATS.find(s=>s[0]===k)||['',''])[1];
+  const hsHTML=hs.length?`<div class="a-panel"><h3>自分の馬の成績</h3><ul class="a-list">${hs.map(x=>`<li class="hxli ${x.place<=3?'hit':''}"><span class="ps">${x.place}着</span><span>${esc(x.name)}</span><span class="am">${x.prize?'賞金 +'+yen(x.prize):''}</span>
+    <span class="hx">${x.ek?(x.ea>0?`<b class="up">経験:${sn(x.ek)}+${x.ea}</b>`:`経験:${sn(x.ek)}は限界`):''}${x.f1!=null?`<span>疲れ:${fatW(x.f0)}→<b class="${x.f1>=4?'warn':''}">${fatW(x.f1)}</b></span>`:''}${x.f1>=4?'<span class="warn">次は休ませよう</span>':''}</span></li>`).join('')}</ul></div>`:'';
   $('#padMain').innerHTML=`<div class="a-res">${head}<div class="cols">${hsHTML}<div class="a-panel"><h3>買った馬券</h3>${tkList(st,tickets,r.tk,false)}</div>
     <div class="a-panel"><h3>着順</h3><ul class="a-list">${all}</ul></div><div class="a-panel"><h3>払い戻し(オッズ)</h3>${pay}</div></div>
     <p class="wait">次のレースの出走表を待っています…(このあいだに厩舎や市場も見られます)</p></div>`;
