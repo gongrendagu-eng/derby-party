@@ -630,6 +630,7 @@ html.padmode{-webkit-text-size-adjust:100%}
 .a-list li.hxli{flex-wrap:wrap}
 .a-list li .hx{flex-basis:100%;display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:#b8c0ea;padding-left:3.4em}
 .a-list li .hx b{font-weight:400;color:#fff}.a-list li .hx b.up{color:var(--gr)}.a-list li .hx .warn{color:var(--pk)}
+.slist li small.bl{flex-basis:100%;text-align:right;margin-top:-3px;font-size:.78rem}
 
 </style>
 </head>
@@ -1799,7 +1800,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=6;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=7;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -1982,14 +1983,14 @@ const DAMS=[
 let W=null;
 const nid=p=>p+(W.seq=(W.seq||0)+1).toString(36)+Math.random().toString(36).slice(2,5);
 function newWorld(cfg){
-  W={v:1,R:1,seq:0,created:Date.now(),cfg,players:{},horses:{},devs:{},market:[],marketR:1,news:[]};
+  W={v:1,R:1,seq:0,created:Date.now(),cfg,players:{},horses:{},devs:{},market:[],marketR:1,news:[],best:[]};
   refreshMarket(); news('新しいワールドができました。QRコードから参加しよう!');
   return W;
 }
 // Firebaseは空の配列・オブジェクトを保存しないので、読み込んだら補う
 function normalize(w){
   w.players=w.players||{}; w.horses=w.horses||{}; w.devs=w.devs||{}; w.market=Array.isArray(w.market)?w.market.filter(Boolean):Object.values(w.market||{});
-  w.news=Array.isArray(w.news)?w.news.filter(Boolean):Object.values(w.news||{}); w.cfg=w.cfg||{}; w.R=w.R||1;
+  w.news=Array.isArray(w.news)?w.news.filter(Boolean):Object.values(w.news||{}); w.best=Array.isArray(w.best)?w.best.filter(Boolean):Object.values(w.best||{}); w.cfg=w.cfg||{}; w.R=w.R||1;
   Object.values(w.players).forEach(p=>{ p.msgs=Array.isArray(p.msgs)?p.msgs.filter(Boolean):Object.values(p.msgs||{}); p.preg=Array.isArray(p.preg)?p.preg.filter(Boolean):Object.values(p.preg||{});
     p.coins=p.coins||0; p.prize=p.prize||0; p.g1=p.g1||0; p.wins=p.wins||0; p.aidR=p.aidR??-99; });
   Object.values(w.horses).forEach(h=>{ h.rec=h.rec||{}; const r=h.rec; r.runs=r.runs||0; r.w=Array.isArray(r.w)?[r.w[0]||0,r.w[1]||0,r.w[2]||0]:[0,0,0]; r.prize=r.prize||0;
@@ -2168,7 +2169,8 @@ function finish(order){
   Object.keys(S.bets).forEach(pid=>{ const p=W.players[pid], b=S.bets[pid]; if(!p) return;
     const tk=b.tickets.map(t=>{ const hit=tkHit(t,o); return {hit,pay:hit?Math.floor(t.amt*tkOdds(t)):0}; }), pay=tk.reduce((s,r)=>s+r.pay,0);
     p.coins+=pay; Object.assign(res(pid),{tickets:b.tickets,tk,pay,staked:b.staked});
-    if(pay>0) S.hitList.push({name:p.name,pay}); });
+    if(pay>0) S.hitList.push({name:p.name,pay});
+    b.tickets.forEach((t,k)=>{ if(tk[k].pay>0) addBest({name:p.name,pay:tk[k].pay,odds:+tkOdds(t).toFixed(1),bt:BT[t.type].name,hs:t.hs.join(BT[t.type].ord?'→':'-'),race:sp.name,R:sp.R}); }); });
   S.hitList.sort((a,b)=>b.pay-a.pay);
   if(S.hitList[0]&&S.hitList[0].pay>=1000) news(`${S.hitList[0].name}さんが${sp.name}で${yen(S.hitList[0].pay)}の大当たり!`);
   order.forEach((i,place)=>{
@@ -2195,6 +2197,12 @@ function finish(order){
   S.phase='result';
   if(S.hitList.length) fanfare();
   saveWorld(); render(); armTimer();
+}
+// 最高配当ランキング(1枚の馬券の払い戻しが多い順)
+function addBest(r){
+  const old=W.best.length>=10?W.best[W.best.length-1].pay:0; if(W.best.length>=10&&r.pay<=old) return;
+  W.best.push(r); W.best.sort((a,b)=>b.pay-a.pay||b.odds-a.odds); W.best=W.best.slice(0,10);
+  const rank=W.best.indexOf(r)+1; if(rank===1&&W.best.length>1) news(`🎉 ${r.name}さんが最高配当を更新!${r.bt} ${yen(r.pay)}`);
 }
 // 次のレースへ:時間を進める
 function nextRound(){
@@ -2353,19 +2361,22 @@ function renderPaper(){
 let rankMode=0;
 function rankLists(){
   const ps=Object.values(W.players);
-  return {coins:[...ps].sort((a,b)=>b.coins-a.coins).slice(0,10).map(p=>({name:p.name,v:p.coins})),
+  return {best:W.best.slice(0,10),
     prize:[...ps].sort((a,b)=>b.prize-a.prize||b.g1-a.g1).slice(0,10).map(p=>({name:p.name,v:p.prize,g1:p.g1}))};
 }
+const bestLine=x=>`${esc(x.bt)} ${esc(x.hs)} ${x.odds}倍(${esc(x.race)})`;
 function renderSide(){
   if(!S||!W||!NET) return;
   const on=Object.keys(NET.pres||{}).length, np=Object.keys(W.players).length;
   $('#sideJoin').innerHTML=`<small>参加コード</small><b>${NET.room}</b><small>QRで参加・途中参加OK</small><small>接続中 ${on}台 / 馬主 ${np}人</small>`;
   const cal=Array.from({length:6},(_,k)=>specOf(W.R+1+k)).map(sp=>`<li><span class="rn">${sp.R}</span><span>${esc(sp.name)}</span>${gradeTag(sp.g,sp.c)}<small>${COURSES[sp.crs].name} ${sp.surf==='dirt'?'ダ':'芝'}${sp.dist}</small></li>`).join('');
-  const rk=rankLists(), coinsMode=rankMode%2===0, list=coinsMode?rk.coins:rk.prize;
-  const rkHTML=list.length?list.map((x,i)=>`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${coinsMode?yen(x.v):`${yen(x.v)}${x.g1?` 🏆${x.g1}`:''}`}</b></li>`).join(''):'<li class="none">まだ誰もいません</li>';
+  const rk=rankLists(), bestMode=rankMode%2===0, list=bestMode?rk.best:rk.prize;
+  const rkHTML=list.length?list.map((x,i)=>bestMode?`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${yen(x.pay)}</b><small class="bl">${bestLine(x)}</small></li>`
+      :`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${yen(x.v)}${x.g1?` 🏆${x.g1}`:''}</b></li>`).join('')
+    :`<li class="none">${bestMode?'まだ当たりはありません':'まだ誰もいません'}</li>`;
   const nw=W.news.slice(0,6).map(n=>`<li>${esc(n.t)}</li>`).join('');
   $('#sideDyn').innerHTML=`<div class="sbox"><h3>この先のレース</h3><ol class="slist cal">${cal}</ol></div>
-    <div class="sbox"><h3>${coinsMode?'コイン ランキング':'馬主ランキング(獲得賞金)'}</h3><ol class="slist">${rkHTML}</ol></div>
+    <div class="sbox"><h3>${bestMode?'最高配当ランキング':'馬主ランキング(獲得賞金)'}</h3><ol class="slist">${rkHTML}</ol></div>
     <div class="sbox"><h3>ニュース</h3><ul class="snews">${nw||'<li>まだありません</li>'}</ul></div>`;
 }
 setInterval(()=>{ if(S&&W&&S.phase==='bet'){ rankMode++; renderSide(); } },8000);
@@ -2608,7 +2619,7 @@ function sendAct(a,cb,quiet){
   P.be.set(`${P.base}/act/${P.dev}/${id}`,{...a,ts:Date.now()}).catch(()=>{ clearTimeout(t); delete P.acts[id]; P.busy=false; toast('送信できませんでした'); });
 }
 function onPadState(st){
-  if(st&&st.phase){ st.horses=st.horses||[]; st.news=st.news||[]; st.market=Array.isArray(st.market)?st.market:Object.values(st.market||{}); st.rank=st.rank||{}; st.rank.coins=st.rank.coins||[]; st.rank.prize=st.rank.prize||[]; }
+  if(st&&st.phase){ st.horses=st.horses||[]; st.news=st.news||[]; st.market=Array.isArray(st.market)?st.market:Object.values(st.market||{}); st.rank=st.rank||{}; st.rank.best=Array.isArray(st.rank.best)?st.rank.best:Object.values(st.rank.best||{}); st.rank.prize=st.rank.prize||[]; }
   P.st=st;
   if(st&&st.ver!==APP_VER){
     if((st.ver||0)>APP_VER){ try{ if(sessionStorage.getItem('g1.reload')!==String(st.ver)){ sessionStorage.setItem('g1.reload',String(st.ver)); location.reload(); return; } }catch(e){} }
@@ -2866,7 +2877,7 @@ function padInfo(st,pv){
   const cal=Array.from({length:12},(_,k)=>specOf(st.R+k)).map(sp=>`<li class="${sp.R===st.R?'now':''}"><span class="rn">${sp.R}</span><span class="a-grade ${sp.g}">${sp.g}</span><span>${esc(sp.name)}${sp.c?`<em class="ct">${CONDN[sp.c]}</em>`:''}</span><small>${COURSES[sp.crs].name} ${sp.surf==='dirt'?'ダ':'芝'}${sp.dist} 1着${yen(sp.prize)}</small>${mine[sp.R]?`<b class="myent">★${mine[sp.R].map(esc).join('・')}</b>`:''}</li>`).join('');
   const rk=(l,f)=>l.map((x,i)=>`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${f(x)}</b></li>`).join('')||'<li>まだいません</li>';
   $('#padMain').innerHTML=`<div class="info"><div class="a-panel"><h3>レースカレンダー<small>${CAL.length}レースで1シーズン ・ ${YEAR}レースで1歳</small></h3><ol class="ical">${cal}</ol></div>
-    <div><div class="a-panel"><h3>コイン ランキング</h3><ol class="ical">${rk(st.rank.coins,x=>yen(x.v))}</ol></div>
+    <div><div class="a-panel"><h3>最高配当ランキング<small>当たった馬券1枚の払い戻し</small></h3><ol class="ical">${st.rank.best.map((x,i)=>`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${yen(x.pay)}</b><small style="flex-basis:100%;text-align:right">${esc(x.bt)} ${esc(x.hs)} ${x.odds}倍(第${x.R}戦 ${esc(x.race)})</small></li>`).join('')||'<li>まだ当たりはありません</li>'}</ol></div>
     <div class="a-panel" style="margin-top:10px"><h3>馬主ランキング(獲得賞金)</h3><ol class="ical">${rk(st.rank.prize,x=>yen(x.v)+(x.g1?` 🏆${x.g1}`:''))}</ol></div>
     <div class="a-panel" style="margin-top:10px"><h3>ルール</h3><div class="rulebox">
       ・OPとG3は誰でも出走OK(ただしG1を勝った馬は出られません)<br>・G2:OPかG3で1勝<br>・G1:G2で1勝、またはOP・G3で2勝<br>
