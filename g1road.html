@@ -892,6 +892,19 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx.narrow .bx-row .wo{font-size:15px;padding-right:4px}
 @media (max-width:1059px){.bx.narrow .bx-row .jk{font-size:11px}.bx.narrow .bx-row .mk b{font-size:15px}.bx.narrow .bx-hd2{font-size:10px}.bx.narrow .bx-row .c{font-size:12px}}
 
+/* パドック右下のランキング */
+.pdk-cap .rk{flex:none;width:clamp(260px,27vw,400px);align-self:stretch;margin:.45em 0;background:rgba(5,6,16,.75);border:2px solid #4a5590;border-radius:10px;padding:.35em .7em;display:flex;flex-direction:column;justify-content:center;gap:.2em;overflow:hidden}
+.pdk-cap .rk.in{animation:pdkin .45s ease-out}
+.pdk-cap .rk .h{font-weight:900;color:#ffcf3a;font-size:clamp(11px,1.05vw,15px)}
+.pdk-cap .rk ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.1em}
+.pdk-cap .rk li{display:flex;align-items:center;gap:.5em;font-size:clamp(11px,1.05vw,15px);font-weight:700;white-space:nowrap;min-width:0}
+.pdk-cap .rk li.none{color:#9aa4d6;font-weight:500}
+.pdk-cap .rk .md{width:1.5em;height:1.5em;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85em;font-weight:900;flex:none;color:#1a1200}
+.pdk-cap .rk .md0{background:#ffcf3a}.pdk-cap .rk .md1{background:#d6dbe8}.pdk-cap .rk .md2{background:#d99a5b}
+.pdk-cap .rk .n{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.pdk-cap .rk b{font-family:"DotGothic16",monospace;font-weight:400;color:#3dff8c;margin-left:auto;flex:none}
+.pdk-cap .rk em{font-style:normal;color:#9aa4d6;font-size:.85em;flex:none}
+
 </style>
 </head>
 <body>
@@ -963,7 +976,7 @@ html.padmode{-webkit-text-size-adjust:100%}
       <div id="pdkTop" class="pdk-top"></div>
       <div id="pdkOdds" class="pdk-odds"></div>
       <div class="pdk-cap"><div class="lbl"><span>パドック</span><b id="pdkCnt"></b></div><div id="pdkTxt" class="txt"></div>
-        <div class="rt"><div class="tm"><small>締切まで</small><b id="pdkTime"></b></div><div class="jn"><div id="pdkQR"></div><span>参加コード<b id="pdkCode"></b></span></div></div></div>
+        <div id="pdkRank" class="rk"></div></div>
     </div>
     <div id="raceArea" class="race-area" hidden>
       <div class="caster"><span id="caster"></span><span id="rem" class="rem"></span></div>
@@ -2079,7 +2092,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=16;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=17;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3599,7 +3612,7 @@ function trainFx(menu,h,name){
 
 /* ---------- パドック(投票時間中のメイン画面):1頭ずつアップで紹介 ---------- */
 // 馬が厩務員さんに引かれて右から左へ歩き、次の馬に切りかわる。出馬表はiPadにあるので、前の画面は見て楽しむ場所
-const PDK={raf:0,t0:0,feat:-1,race:null,last:0,cache:new Map(),bg:null,bgKey:'',work:[],qrRoom:''};
+const PDK={raf:0,t0:0,feat:-1,race:null,last:0,cache:new Map(),bg:null,bgKey:'',work:[],rkKey:''};
 const PDK_N=12, HOOF=54;   // 馬の絵の中心から蹄までの長さ(馬の大きさ100のとき)
 const pdkDur=()=>Math.max(5,Math.min(9,(+W.cfg.betSec||90)/Math.max(1,S.horses.length)));
 const kehaiArrow=h=>{ const c=h.cond||0; return c>=0.005?'↑':c>=0.0015?'↗':c>-0.0015?'→':c>-0.005?'↘':'↓'; };
@@ -3643,8 +3656,7 @@ function pdkBg(W2,H2,dpr){
 function pdkStart(){
   if(!S||!S.horses) return;
   if(PDK.race!==S.race){ PDK.race=S.race; PDK.cache.clear(); PDK.t0=performance.now(); PDK.feat=-1; PDK.bgKey=''; }
-  if(NET&&PDK.qrRoom!==NET.room){ PDK.qrRoom=NET.room; const box=$('#pdkQR'); box.innerHTML=''; box.hidden=NET.kind==='local'; if(NET.kind!=='local') makeQR(box,joinURL(),84); }
-  $('#pdkCode').textContent=NET?NET.room:'';
+  PDK.rkKey=''; pdkRank(true);
   if(!PDK.raf) PDK.raf=requestAnimationFrame(pdkFrame);
 }
 function pdkOdds(){
@@ -3683,8 +3695,18 @@ function pdkFrame(now){
   const hk=u/106, hx=x-u*1.15, hy=gy-26*hk;
   c.save(); c.translate(hx,hy); c.scale(hk,hk); fxPerson(c,0,0,[14,-52],'#1b2a55'); c.restore();
   c.strokeStyle='#c8102e'; c.lineWidth=Math.max(2,u*0.015); c.beginPath(); c.moveTo(hx+14*hk,hy-78*hk); c.quadraticCurveTo(x-u*0.9,y-u*0.12,x-u*0.79,y-u*0.36); c.stroke();
-  // 締め切りまでの時間
-  if(S.tm){ const sec=Math.ceil(Math.max(0,tmLeft())/1000), txt=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`; const el=$('#pdkTime'); if(el.textContent!==txt) el.textContent=txt; }
+  pdkRank();
+}
+// 右下:最高配当ランキングと馬主ランキングを6秒ごとに交互に(上位3人)
+function pdkRank(force){
+  if(!W) return; const mode=Math.floor(performance.now()/6000)%2, rk=rankLists();
+  const key=mode+'|'+JSON.stringify(mode?rk.prize.slice(0,3):rk.best.slice(0,3)); if(!force&&key===PDK.rkKey) return; PDK.rkKey=key;
+  const medal=i=>`<span class="md md${i}">${i+1}</span>`;
+  const rows=mode
+    ? rk.prize.slice(0,3).filter(x=>x.v>0).map((x,i)=>`<li>${medal(i)}<span class="n">${esc(x.name)}</span><b>${yen(x.v)}</b>${x.g1?`<em>G1 ${x.g1}勝</em>`:''}</li>`).join('')
+    : rk.best.slice(0,3).map((x,i)=>`<li>${medal(i)}<span class="n">${esc(x.name)}</span><b>${yen(x.pay)}</b><em>${esc(x.bt)} ${x.odds}倍</em></li>`).join('');
+  const el=$('#pdkRank'); el.innerHTML=`<div class="h">${mode?'馬主ランキング':'最高配当ランキング'}</div><ol>${rows||'<li class="none">まだ記録はありません</li>'}</ol>`;
+  el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
 }
 $('#paperBtn').onclick=()=>{ if(!S) return; S.paper=!S.paper; $('#paperBtn').textContent=S.paper?'パドックを表示':'出馬表を表示'; render(); };
 
