@@ -662,7 +662,7 @@ html.padmode{-webkit-text-size-adjust:100%}
   </fieldset>
   <fieldset>
     <legend>続きから遊ぶ</legend>
-    <div class="row"><label>ルームコード(前回:<b id="lastRoom">なし</b>)<input id="f-room" maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:.15em;font-weight:800"></label></div>
+    <div class="row"><label><span>ルームコード(前回:<b id="lastRoom">なし</b>)</span><input id="f-room" maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:.15em;font-weight:800"></label></div>
     <p class="note">前回と同じルームコードで再開すると、iPadのQRコードも前回と同じです。受付時間・結果を見せる時間は上の設定が使われます。</p>
     <button id="contBtn" class="btn primary big">続きから遊ぶ</button>
   </fieldset>
@@ -754,7 +754,9 @@ html.padmode{-webkit-text-size-adjust:100%}
   </div>
 </div>
 
-<script src="../firebase-config.js"></script>
+<!-- Firebaseの設定:同じフォルダ(一番上に置いたとき)→ 1つ上のフォルダ(g1フォルダに置いたとき)の順に探す -->
+<script src="firebase-config.js"></script>
+<script>if(!window.FIREBASE_CONFIG) document.write('<script src="../firebase-config.js"><\/script>');</script>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1800,7 +1802,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=7;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=8;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
