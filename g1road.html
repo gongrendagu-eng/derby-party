@@ -751,7 +751,7 @@ html.padmode{-webkit-text-size-adjust:100%}
 .pdk-cap .t1{font-size:clamp(18px,2.3vw,32px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pdk-cap .t1 span{font-size:.7em;font-weight:700;color:#c9d0f2;margin-left:1em}
 .pdk-cap .t2{display:flex;gap:1.3em;font-size:clamp(13px,1.55vw,22px);font-weight:700;flex-wrap:wrap}
-.pdk-cap .t2 .good{color:#3dff8c}.pdk-cap .t2 .bad{color:#ff8fa8}.pdk-cap .t2 .mk.m0{color:#ff6aa0}.pdk-cap .t2 .mk.m1{color:#39e0ff}.pdk-cap .t2 .cm{color:#e4e8ff}
+.pdk-cap .t2 .mk{color:#ffffff}.pdk-cap .t2 .good{color:#3dff8c}.pdk-cap .t2 .bad{color:#ff8fa8}.pdk-cap .t2 .mk.m0{color:#ff6aa0}.pdk-cap .t2 .mk.m1{color:#39e0ff}.pdk-cap .t2 .cm{color:#e4e8ff}
 .pdk-cap .rt{display:flex;align-items:center;gap:1em;flex:none}
 .pdk-cap .tm{display:flex;flex-direction:column;align-items:center;background:#050505;border:2px solid #4a5590;border-radius:8px;padding:.2em .8em}
 .pdk-cap .tm small{font-size:clamp(10px,.9vw,13px);color:#c9d0f2;font-weight:700}.pdk-cap .tm b{font-family:"DotGothic16",monospace;font-weight:400;font-size:clamp(20px,2.2vw,32px);color:#ffcf3a}
@@ -762,10 +762,10 @@ html.padmode{-webkit-text-size-adjust:100%}
 #pdkQR[hidden]{display:none}
 
 /* ---------- 投票画面(出馬表+オッズ+BETを1つの表に) ---------- */
-.bx{display:grid;grid-template-columns:minmax(0,1fr) 270px 104px;gap:8px;align-items:stretch}
+.bx{display:grid;grid-template-columns:minmax(0,1fr) 270px 104px;grid-template-rows:minmax(0,1fr);gap:8px;align-items:stretch;min-height:240px}
 .bx.tf{grid-template-columns:minmax(0,1fr) 104px}
 .bx.fixed .bx-table,.bx.fixed .bx-panel{opacity:.45;pointer-events:none}
-.bx-table{background:#141a3e;border:3px solid #b9c2e8;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.bx-table{background:#141a3e;border:3px solid #b9c2e8;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-width:0;min-height:0}
 .bx-hd,.bx-hd2,.bx-row{display:grid;align-items:center}
 .bx-hd{background:#1f2856;color:#fff;font-size:12px;font-weight:700;text-align:center;min-height:34px}
 .bx-hd>span{display:flex;align-items:center;justify-content:center;height:100%}
@@ -775,7 +775,7 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx-mkh button.on{background:#ffcf3a;color:#1a1200;border:2px solid #fff}
 .bx-hd2{background:#2a3466;color:#c9d0f2;font-size:11px;font-weight:700;height:18px}
 .bx-hd2 .w4,.bx-row .w4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));text-align:center}
-.bx-body{overflow:auto;max-height:calc(100vh - 318px);overscroll-behavior:contain}
+.bx-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:4px}
 .bx-row{border-top:1px solid #2a3060;background:#141a3e;color:#fff}
 .bx-row:nth-child(even){background:#181f48}
 .bx-row.own{background:#163021}.bx-row.sel{background:#2b2610}
@@ -801,13 +801,13 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx-cell.lit{border:3px solid #3dff8c;background:#123a22}.bx-cell.lit .am{color:#3dff8c}
 .bx-cell:active,.bx-cb:active{transform:scale(.96)}
 .bx-sel{height:calc(100% - 8px);margin:4px 5px;border-radius:8px;border:2px solid #34407a;background:#0a0d1f;color:#fff;font-weight:900;font-size:14px}
-.bx-panel{display:flex;flex-direction:column;gap:8px;min-height:0}
+.bx-panel{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
 .bx-desc{background:#141a3e;border:2px solid #39e0ff;border-radius:10px;padding:7px 10px;font-size:12px;line-height:1.5;color:#e4e8ff}
 .bx-desc b{display:block;font-size:14px;color:#39e0ff}
 .bx-subs{display:flex;gap:5px;flex-wrap:wrap}
 .bx-subs button{flex:1;min-width:58px;height:40px;border-radius:9px;font-weight:900;font-size:13px;border:2px solid #5a66a8;background:#2a3266;color:#e4e8ff}
 .bx-subs button.on{border:3px solid #fff;background:#ffcf3a;color:#1a1200}
-.bx-list{flex:1;min-height:120px;max-height:calc(100vh - 460px);overflow:auto;background:#141a3e;border:3px solid #ffcf3a;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.bx-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#141a3e;border:3px solid #ffcf3a;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
 .bx-sum{font-weight:900;font-size:13px;color:#ffcf3a}
 .bx-cb{display:flex;align-items:center;gap:4px;min-height:46px;border-radius:8px;padding:0 8px;border:2px solid #4a5590;background:#0a0d1f;color:#fff;flex:none}
 .bx-cb .hs{display:flex;align-items:center;gap:2px}.bx-cb .hs i{font-style:normal;color:#8d96c8;font-size:12px}
@@ -816,8 +816,8 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx-cb .am{margin-left:auto;min-width:44px;text-align:right;background:#050505;border-radius:5px;padding:1px 6px;font-family:"DotGothic16",monospace;font-size:14px;color:#6b739f}
 .bx-cb.lit{border:3px solid #3dff8c;background:#123a22}.bx-cb.lit .am{color:#3dff8c}
 .bx-all{height:48px;border-radius:9px;border:3px solid #fff;background:#d81e3c;color:#fff;font-weight:900;font-size:14px}
-.bx-tabs{display:flex;flex-direction:column;gap:7px}
-.bx-tabs button{flex:1;min-height:46px;border-radius:10px;border:2px solid #5a66a8;background:#2a3266;color:#e4e8ff;font-family:var(--arc);font-size:19px}
+.bx-tabs{display:flex;flex-direction:column;gap:7px;min-height:0}
+.bx-tabs button{flex:1;min-height:40px;border-radius:10px;border:2px solid #5a66a8;background:#2a3266;color:#e4e8ff;font-family:var(--arc);font-size:19px}
 .bx-tabs button.on{border:3px solid #fff;background:#39e0ff;color:#06202c;box-shadow:0 0 14px rgba(57,224,255,.8)}
 .bx-deck{gap:14px;align-items:center;flex-wrap:nowrap;padding:8px 14px}
 .bx-btn{min-width:104px;height:60px;border-radius:10px;border:2px solid #9aa4d6;background:#3a4280;color:#fff;font-weight:900;font-size:16px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -827,7 +827,7 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx-leds{display:flex;flex-direction:column;gap:4px}.bx-leds>div{display:flex;align-items:center;gap:8px}.bx-leds small{width:62px;font-size:12px;font-weight:700;color:#c9d0f2}
 .bx-leds .led{min-width:118px;text-align:right;font-size:21px}.bx-leds .led.g{color:#3dff8c;text-shadow:0 0 6px rgba(61,255,140,.8)}
 .bx-deck .a-done{width:92px;height:84px;font-size:19px}
-@media (max-width:1100px){.bx{grid-template-columns:minmax(0,1fr) 92px}.bx-panel{grid-column:1/-1;order:3}}
+@media (max-width:1100px){.bx{grid-template-columns:minmax(0,1fr) 92px;grid-template-rows:minmax(0,1fr) minmax(0,40%)}.bx.tf{grid-template-rows:minmax(0,1fr)}.bx-panel{grid-column:1/-1;grid-row:2}}
 
 /* ---------- 管理画面 ---------- */
 .admincard{width:min(940px,94vw);max-height:90vh;overflow:auto;text-align:left}
@@ -2037,7 +2037,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=11;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=13;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3092,7 +3092,9 @@ function padRender(){
     return;
   }
   const pv=P.pv, bet=st.phase==='bet', left=bet?pv.coins-tkTotal(myTickets()):pv.coins;
-  who.innerHTML=`<span class="a-team">${esc(pv.name)}</span><small>${bet&&P.tab==='bet'?'のこり':'コイン'}</small><span class="led">${yen(left)}</span><button class="chg" id="padLogout">ログアウト</button>`;
+  // 投票受付中の馬券画面では、下の操作盤にCREDIT(のこり)があるので上には出さない
+  const deck=bet&&P.tab==='bet';
+  who.innerHTML=`<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg" id="padLogout">ログアウト</button>`;
   const tabs=$('#padTabs'); tabs.hidden=false;
   tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard)?'<i class="dotn"></i>':''}</button>`).join('');
   $('#padSlip').hidden=true;
@@ -3200,13 +3202,23 @@ function padBet(st,pv){
   m.innerHTML=`<div class="bx${tf?' tf':''}${fixed?' fixed':''}"><div class="bx-table">${head}<div class="bx-body">${rows}</div></div>${panel}${tabs}</div>`;
   const slip=$('#padSlip'); slip.hidden=false; slip.className='a-ctrl bx-deck';
   const total=tkTotal(mine);
-  if(fixed){ slip.innerHTML=`<div class="a-fixed"><b>✅ 投票を確定しました(${mine.length}点 ${yen(total)})</b><span>前のスクリーンでレースが始まるのを待ちましょう(そのあいだに厩舎で調教もできます)</span></div><button class="bx-btn" data-undo>修正する</button>`; return; }
+  if(fixed){ slip.innerHTML=`<div class="a-fixed"><b>✅ 投票を確定しました(${mine.length}点 ${yen(total)})</b><span>前のスクリーンでレースが始まるのを待ちましょう(そのあいだに厩舎で調教もできます)</span></div><button class="bx-btn" data-undo>修正する</button>`; fitBet(); return; }
   slip.innerHTML=`<button class="bx-btn" data-cancel ${P.hist.length?'':'disabled'}>キャンセル<small>直前のBETを取り消す</small></button>
     <div class="bx-denom"><small>BET単位(1回のタッチ)</small><div>${DENOM.map(v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}" data-denom="${v}"><b>${v}</b><span>枚</span></button>`).join('')}</div></div>
     <span class="bx-hint">${tf?'オッズの枠':'組み合わせの枠'}をタッチするとすぐBETされます</span>
     <div class="bx-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>
     <button class="a-done" data-done>投票<br>確定<small>これで完了</small></button>`;
+  fitBet();
 }
+// 投票画面の高さを、実際に見えている範囲(下の操作盤の上まで)に合わせる。iPadのSafariは100vhが当てにならないため
+function fitBet(){
+  const el=document.querySelector('.bx'); if(!el) return;
+  const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight, slip=$('#padSlip');
+  const top=el.getBoundingClientRect().top, foot=slip&&!slip.hidden?slip.offsetHeight:0;
+  el.style.height=Math.max(240,Math.floor(vh-top-foot-14))+'px';
+}
+['resize','orientationchange'].forEach(t=>addEventListener(t,()=>setTimeout(fitBet,60)));
+if(window.visualViewport) window.visualViewport.addEventListener('resize',()=>setTimeout(fitBet,60));
 // 馬券画面のタッチ(処理したら true)
 function betClick(t,d){
   if(!P.st||P.st.phase!=='bet'||!P.pid||P.tab!=='bet') return false;
@@ -3538,7 +3550,7 @@ function trainFx(menu,h,name){
 /* ---------- パドック(投票時間中のメイン画面):1頭ずつアップで紹介 ---------- */
 // 馬が厩務員さんに引かれて右から左へ歩き、次の馬に切りかわる。出馬表はiPadにあるので、前の画面は見て楽しむ場所
 const PDK={raf:0,t0:0,feat:-1,race:null,last:0,cache:new Map(),bg:null,bgKey:'',work:[],qrRoom:''};
-const PDK_N=12;
+const PDK_N=12, HOOF=54;   // 馬の絵の中心から蹄までの長さ(馬の大きさ100のとき)
 const pdkDur=()=>Math.max(5,Math.min(9,(+W.cfg.betSec||90)/Math.max(1,S.horses.length)));
 const kehaiArrow=h=>{ const c=h.cond||0; return c>=0.005?'↑':c>=0.0015?'↗':c>-0.0015?'→':c>-0.005?'↘':'↓'; };
 function kehai(h){ const c=h.cond||0; return c>=0.005?['気合十分','good']:c>=0.0015?['落ち着いて好気配','good']:c>-0.0015?['まずまず','']:c>-0.005?['少しイレ込み気味','bad']:['覇気がない','bad']; }
@@ -3613,12 +3625,12 @@ function pdkFrame(now){
   const N=S.horses.length, D=pdkDur(), t=Math.max(0,(now-PDK.t0)/1000), idx=Math.floor(t/D)%N, k=(t%D)/D;
   const u=Math.min(H2*0.37,W2*0.24), s=Math.min(3.5,Math.max(1,Math.round(u*dpr/100*4)/4));
   if(idx!==PDK.feat){ PDK.feat=idx; pdkWarm(idx,s); pdkInfo(); }
-  const h=S.horses[idx], x=W2*(1.18-1.36*k), y=H2*0.47, ph=t*4.2, TAU=Math.PI*2, fi=Math.round((((ph%TAU)+TAU)%TAU)/TAU*PDK_N)%PDK_N, su=u/100;
-  c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x,y+u*0.58,u,u*0.09,0,0,7); c.fill();
-  const e=PDK.cache.get(h.no+'|'+fi+'|'+s)||pdkFrameImg(h,fi,s), bob=Math.sin(ph*2)*0.8;
-  c.drawImage(e.cv,x-e.ax*su,y-AYU*su+bob*su,e.cv.width/s*su,e.cv.height/s*su);
+  const gy=H2*0.75, h=S.horses[idx], x=W2*(1.18-1.36*k), ph=t*4.2, TAU=Math.PI*2, fi=Math.round((((ph%TAU)+TAU)%TAU)/TAU*PDK_N)%PDK_N, su=u/100, y=gy-HOOF*su;   // 蹄が地面(gy)にちょうど着く高さ
+  c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x,gy,u,u*0.09,0,0,7); c.fill();
+  const e=PDK.cache.get(h.no+'|'+fi+'|'+s)||pdkFrameImg(h,fi,s);
+  c.drawImage(e.cv,x-e.ax*su,y-AYU*su,e.cv.width/s*su,e.cv.height/s*su);
   // 厩務員さん(馬の頭の前を歩く)と引き手綱
-  const hk=u/106, hx=x-u*1.15, hy=y+u*0.6+Math.sin(ph*2)*2;
+  const hk=u/106, hx=x-u*1.15, hy=gy-26*hk;
   c.save(); c.translate(hx,hy); c.scale(hk,hk); fxPerson(c,0,0,[14,-52],'#1b2a55'); c.restore();
   c.strokeStyle='#c8102e'; c.lineWidth=Math.max(2,u*0.015); c.beginPath(); c.moveTo(hx+14*hk,hy-78*hk); c.quadraticCurveTo(x-u*0.9,y-u*0.12,x-u*0.79,y-u*0.36); c.stroke();
   // 締め切りまでの時間
