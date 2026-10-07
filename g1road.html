@@ -616,6 +616,18 @@ html.padmode{-webkit-text-size-adjust:100%}
 .ikmenu.tr{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
 .mh small{font-family:var(--dot);font-size:12px;color:#9aa4d6;margin-left:8px}
 
+.fxwrap{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.fxbox{position:relative;width:min(92vw,calc(78vh*16/9));aspect-ratio:16/9;border:4px solid var(--gl);border-radius:18px;overflow:hidden;box-shadow:0 0 40px rgba(255,210,60,.35)}
+.fxbox canvas{width:100%;height:100%;display:block}
+.fxname{position:absolute;left:12px;bottom:10px;font-family:var(--arc);font-size:16px;color:#fff;background:rgba(0,0,0,.55);padding:3px 10px;border-radius:8px}
+.fxres{position:absolute;inset:0;background:rgba(10,12,30,.62);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;animation:fxin .35s ease-out}
+.fxres b{font-family:var(--arc);font-weight:400;font-size:clamp(40px,8vw,72px);color:#fff;text-shadow:0 0 16px rgba(120,200,255,.9)}
+.fxres b.gold{color:var(--gl);text-shadow:0 0 22px rgba(255,200,40,.95)}
+.fxres b.bad{color:#9fb0d8;text-shadow:none}
+.fxres p{margin:0;font-size:clamp(16px,2.6vw,22px);color:#fff;font-family:var(--dot);padding:0 16px}
+.fxres .hb{font-size:20px;padding:10px 40px}
+@keyframes fxin{from{opacity:0;transform:scale(1.15)}to{opacity:1;transform:none}}
+
 </style>
 </head>
 <body>
@@ -1121,7 +1133,7 @@ function drawHorse2(c,x,y,u,ph,o){
   const s=u/100, T=o.type==='cool';
   const ink='#2a1f1a', lw=(T?3.2:4.2);
   c.save(); c.translate(x,y); c.scale(s,s); c.lineJoin='round'; c.lineCap='round';
-  const bob=o.noBob?0:Math.sin(ph*2)*(T?1.6:2.4);     // 走ると上下にゆれる(画像にするときは外で動かす)
+  const amp=o.gait==null?1:o.gait; const bob=o.noBob?0:Math.sin(ph*2)*(T?1.6:2.4)*amp;     // 走ると上下にゆれる(画像にするときは外で動かす)
   c.translate(0,bob);
   // ---- 形の定義 ----
   const P={ // 胴・首・頭
@@ -1144,8 +1156,8 @@ function drawHorse2(c,x,y,u,ph,o){
   const line=(...p)=>{ c.beginPath(); c.moveTo(p[0],p[1]); for(let i=2;i<p.length;i+=2) c.lineTo(p[i],p[i+1]); c.stroke(); };
   const g=ph;            // ギャロップの位相
   const fA=Math.sin(g), fB=Math.sin(g+0.9), bA=Math.sin(g+2.6), bB=Math.sin(g+3.4);
-  const front=(k)=>[0.55+0.75*k, -0.2-0.9*Math.max(0,-k)];   // 前脚:前に伸ばす/たたむ
-  const back=(k)=>[-0.25+0.75*k, 0.15+0.8*Math.max(0,k)];   // 後脚
+  const front=(k)=>[(0.55+0.75*k)*amp, (-0.2-0.9*Math.max(0,-k))*amp];   // 前脚:前に伸ばす/たたむ
+  const back=(k)=>[(-0.25+0.75*k)*amp, (0.15+0.8*Math.max(0,k))*amp];   // 後脚
   // ---- 奥の脚 ----
   { const [a,b]=front(fB); leg(T?30:28,8,a,b,true); }
   { const [a,b]=back(bB); leg(T?-34:-30,6,a,b,true); }
@@ -1205,12 +1217,15 @@ function drawHorse2(c,x,y,u,ph,o){
   c.beginPath(); c.moveTo(P.head.x-P.head.r*0.6,P.head.y-P.head.r*0.55); c.lineTo(P.snout.x-8,P.snout.y-1); c.stroke();
   const bit={x:P.snout.x-3,y:P.snout.y+5};
   // ---- ゼッケン(枠の色+馬番) ----
+  if(!o.noRider){
   c.fillStyle=o.silk; c.strokeStyle=ink; c.lineWidth=lw*0.8;
   rr(c,-30,-P.bodyRy+1,30,T?19:22,5); c.fill(); c.stroke();
   c.fillStyle=o.silkFg; c.font=`900 ${T?13:15}px sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.save(); c.translate(-19,-P.bodyRy+(T?11:12.5)); c.scale(o.dir||1,1); c.fillText(o.no,0,0); c.restore();
+  }
   // ---- 手前の脚 ----
   { const [a,b]=back(bA); leg(T?-30:-27,8,a,b,false); }
   { const [a,b]=front(fA); leg(T?34:31,9,a,b,false); }
+  if(o.noRider){ c.restore(); return; }
   // ---- 騎手 ----
   const push=o.push||0;
   const pz=Math.sin(g*2);                       // 手綱をしごくリズム(脚の運びに合わせる)
@@ -1781,7 +1796,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=4;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=5;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2582,11 +2597,11 @@ function bindPlayer(pid){
   padRender();
 }
 // 先生のPCに操作を送る(結果は res/{端末} に返ってくる)
-function sendAct(a,cb){
+function sendAct(a,cb,quiet){
   if(P.busy) return; P.busy=true;
   const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const t=setTimeout(()=>{ if(P.acts[id]){ delete P.acts[id]; P.busy=false; toast('先生のPCから返事がありません。少し待ってからもう一度押してください。'); } },9000);
-  P.acts[id]=r=>{ clearTimeout(t); P.busy=false; toast(r.msg||(r.ok?'OK':'できませんでした')); if(cb) cb(r); padRender(); };
+  const t=setTimeout(()=>{ if(P.acts[id]){ delete P.acts[id]; P.busy=false; const m='先生のPCから返事がありません。少し待ってからもう一度押してください。'; if(quiet&&cb) cb({ok:false,msg:m}); else toast(m); } },9000);
+  P.acts[id]=r=>{ clearTimeout(t); P.busy=false; if(!quiet) toast(r.msg||(r.ok?'OK':'できませんでした')); if(cb) cb(r); padRender(); };
   P.be.set(`${P.base}/act/${P.dev}/${id}`,{...a,ts:Date.now()}).catch(()=>{ clearTimeout(t); delete P.acts[id]; P.busy=false; toast('送信できませんでした'); });
 }
 function onPadState(st){
@@ -2904,7 +2919,8 @@ $('#pad').addEventListener('click',e=>{
     if(d.a==='rename'&&h){ const n=prompt('新しい名前(カタカナ9文字まで)',h.name); if(n) sendAct({type:'rename',hid:h.id,name:n}); return; }
     return;
   }
-  if(d.train){ sendAct({type:'train',hid:d.hid,menu:d.train},r=>{ if(r.ok) closeModal(); }); return; }
+  if(d.train){ if(P.busy) return; const h=findH(d.hid); if(!h) return; closeModal();
+    const fx=trainFx(d.train,h,`${h.name} ・ ${TRAIN[d.train].name}`); sendAct({type:'train',hid:d.hid,menu:d.train},r=>fx.result(r),true); return; }
   if(d.entry){ sendAct({type:'entry',hid:d.hid,R:+d.entry},r=>{ if(r.ok) closeModal(); }); return; }
   if(d.unentry){ sendAct({type:'unentry',hid:d.unentry},r=>{ if(r.ok) closeModal(); }); return; }
   if(d.breed){ if(!confirm('この組み合わせで種付けしますか?')) return; sendAct({type:'breed',hid:d.breed,own:d.own||null,cpu:d.cpu||null},r=>{ if(r.ok) closeModal(); }); return; }
@@ -2938,6 +2954,117 @@ document.addEventListener('click',e=>{
   location.href=u.href;
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.target.id==='lgPin'||e.target.id==='lgName')) $('#lgGo').click(); if(e.key==='Enter'&&e.target.id==='joinCode') e.target.closest('.joinbox').querySelector('button').click(); });
+
+
+/* ---------- 調教の動画(iPad) ---------- */
+// 1つの場面は約3秒。おわったら結果(大成功!など)を重ねて表示する
+const FXW=640, FXH=360;
+function fxHorse(c,x,y,u,ph,col,opt){ u*=1.25; y+=u*0.06; drawHorse2(c,x,y,u,ph,Object.assign({type:'cool',coat:col[1],mane:col[2],silk:'#ffcf3a',silkFg:'#1e1a14',no:'',push:0,dir:1,noLines:true},opt||{})); }
+function fxSky(c,top,bot){ const g=c.createLinearGradient(0,0,0,FXH); g.addColorStop(0,top); g.addColorStop(1,bot); c.fillStyle=g; c.fillRect(0,0,FXW,FXH); }
+function fxGround(c,y,col){ c.fillStyle=col; c.fillRect(0,y,FXW,FXH-y); }
+function fxRail(c,y,off,col){ c.fillStyle=col||'#fff'; c.fillRect(0,y,FXW,5); for(let x=-(off%70);x<FXW+10;x+=70) c.fillRect(x,y,5,22); }
+function fxTrees(c,y,off,col){ for(let x=-(off%120)-40;x<FXW+80;x+=120){ c.fillStyle='#6b4a2b'; c.fillRect(x+18,y-12,10,34); c.fillStyle=col||'#3f8a43'; c.beginPath(); c.arc(x+23,y-32,30,0,7); c.fill(); c.beginPath(); c.arc(x+4,y-18,20,0,7); c.fill(); c.beginPath(); c.arc(x+42,y-18,20,0,7); c.fill(); } }
+function fxHills(c,y,off,col){ c.fillStyle=col; c.beginPath(); c.moveTo(0,FXH); for(let x=0;x<=FXW;x+=20) c.lineTo(x,y-Math.sin((x+off)/110)*26-Math.sin((x+off)/47)*8); c.lineTo(FXW,FXH); c.fill(); }
+function fxSpeed(c,t,n,col){ c.strokeStyle=col||'rgba(255,255,255,.7)'; c.lineWidth=3; for(let i=0;i<n;i++){ const y=30+((i*53)%260), x=FXW-((t*900+i*137)%(FXW+200)); c.beginPath(); c.moveTo(x,y); c.lineTo(x+60+i%3*30,y); c.stroke(); } }
+function fxDust(c,t,x,y,col){ for(let i=0;i<10;i++){ const k=((t*3+i/10)%1), px=x-k*150, py=y-k*30-Math.sin(i)*8; c.fillStyle=col.replace('A',(0.55*(1-k)).toFixed(2)); c.beginPath(); c.arc(px,py,6+k*16,0,7); c.fill(); } }
+function fxText(c,txt,x,y,size,col){ c.font=`900 ${size}px "Hiragino Sans","Noto Sans JP",sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.lineWidth=size/6; c.strokeStyle='rgba(0,0,0,.65)'; c.strokeText(txt,x,y); c.fillStyle=col||'#fff'; c.fillText(txt,x,y); }
+function fxPerson(c,x,y,arm,col){ // 厩務員さん(かんたんな人)
+  c.lineCap='round'; c.strokeStyle='#2a1f1a'; c.lineWidth=7;
+  c.beginPath(); c.moveTo(x,y-30); c.lineTo(x,y); c.lineTo(x-9,y+26); c.moveTo(x,y); c.lineTo(x+9,y+26); c.stroke();
+  c.strokeStyle=col||'#2e6fd8'; c.lineWidth=12; c.beginPath(); c.moveTo(x,y-32); c.lineTo(x,y-2); c.stroke();
+  c.strokeStyle='#f6d7b8'; c.lineWidth=6; c.beginPath(); c.moveTo(x,y-26); c.lineTo(x+arm[0],y-26+arm[1]); c.stroke();
+  c.fillStyle='#f6d7b8'; c.strokeStyle='#2a1f1a'; c.lineWidth=2; c.beginPath(); c.arc(x,y-44,11,0,7); c.fill(); c.stroke();
+  c.fillStyle=col||'#2e6fd8'; c.beginPath(); c.arc(x,y-48,11,Math.PI,0); c.fill();
+}
+const FX={
+  hill:{dur:2.8,draw:(c,t,col)=>fxHillScene(c,t,col,1)},
+  hill2:{dur:3.4,draw:(c,t,col)=>fxHillScene(c,t,col,2)},
+  wood:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#a8dcff','#e8f6ff'); fxTrees(c,170,t*120,'#2f7a3a'); fxTrees(c,200,t*260+50,'#3f9a48');
+    fxGround(c,235,'#7a5232'); for(let i=0;i<40;i++){ c.fillStyle='rgba(60,35,15,.5)'; c.fillRect((i*97-t*420)%FXW+FXW*(((i*97-t*420)%FXW)<0?1:0),245+(i*37)%100,8,3); }
+    fxRail(c,232,t*420,'#f4f1e8'); fxHorse(c,320,250,100,t*13,col,{push:0.5}); fxText(c,'ウッドコース',320,40,30); }},
+  pair:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#9fd5ff','#e6f4ff'); fxHills(c,180,t*60,'#8cc48a'); fxGround(c,215,'#5fa857');
+    fxRail(c,212,t*480); const lead=Math.sin(t*2.2)*14;
+    fxHorse(c,290+lead,222,80,t*13+1.3,COATS[2],{push:0.8,silk:'#3a7bd5',silkFg:'#fff'}); fxHorse(c,345-lead,276,100,t*13,col,{push:0.8}); fxSpeed(c,t,6); fxText(c,'併せ馬',320,40,30); }},
+  fast:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#7cc6ff','#d7f0ff'); fxHills(c,185,t*90,'#86c086'); fxGround(c,220,'#4f9e4c'); fxRail(c,217,t*700);
+    fxHorse(c,330,265,110,t*16,col,{push:1,noLines:false}); fxSpeed(c,t,8); fxText(c,'追い切り!',320,40,32); }},
+  strong:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#ff9a5a','#ffe0a0'); fxHills(c,185,t*120,'#c98a4a'); fxGround(c,220,'#4f9e4c'); fxRail(c,217,t*900);
+    const sh=Math.sin(t*60)*2; fxHorse(c,330+sh,265,112,t*18,col,{push:1,noLines:false}); fxSpeed(c,t,14,'rgba(255,240,200,.85)'); fxText(c,'🔥 強め追い切り 🔥',320,40,32,'#ffe14d'); }},
+  long:{dur:3.2,draw:(c,t,col)=>{ fxSky(c,'#9fd5ff','#e6f4ff'); fxHills(c,185,t*70,'#8cc48a'); fxGround(c,220,'#4f9e4c'); fxRail(c,217,t*500);
+    const left=Math.max(0,2400-Math.floor(t/3.2*2400/200)*200), bx=FXW-((t*500)%800);
+    c.fillStyle='#fff'; c.fillRect(bx,120,70,46); c.fillStyle='#c8102e'; c.font='900 22px sans-serif'; c.textAlign='center'; c.fillText(left+'m',bx+35,150); c.fillStyle='#ddd'; c.fillRect(bx+32,166,6,50);
+    fxHorse(c,320,265,104,t*14,col,{push:0.7}); fxText(c,'長めの追い切り',320,40,30); }},
+  gate:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#9fd5ff','#e6f4ff'); fxGround(c,220,'#5fa857');
+    const open=t>1.0, run=Math.max(0,t-1.0), x=200+run*run*90+run*60, gx=150-run*240;
+    fxHorse(c,Math.min(x,520),262,100,open?run*16:0,col,{gait:open?1:0.05,push:open?1:0});
+    c.fillStyle='#d8dde6'; c.strokeStyle='#2a1f1a'; c.lineWidth=4; c.fillRect(gx,110,40,160); c.strokeRect(gx,110,40,160); c.fillRect(gx+180,110,40,160); c.strokeRect(gx+180,110,40,160);
+    c.fillRect(gx,96,220,20); c.strokeRect(gx,96,220,20);
+    const ang=open?Math.min(1.3,(t-1.0)*5):0; c.save(); c.translate(gx+220,150); c.rotate(-ang); c.fillStyle='#ff7b2e'; c.fillRect(0,-30,14,110); c.strokeRect(0,-30,14,110); c.restore();
+    fxText(c,open?'スタート!':'ゲートイン…',320,40,30); }},
+  dirt:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#bfe1ff','#f2e6d0'); fxHills(c,180,t*60,'#b9a07a'); fxGround(c,215,'#a07848'); fxRail(c,212,t*520,'#f4f1e8');
+    fxDust(c,t,270,300,'rgba(190,150,100,A)'); fxHorse(c,330,262,102,t*14,col,{push:0.7}); fxText(c,'ダート走',320,40,30); }},
+  canter:{dur:2.6,draw:(c,t,col)=>{ fxSky(c,'#ffd27a','#fff4d6'); c.fillStyle='#ffb43a'; c.beginPath(); c.arc(520,80,40,0,7); c.fill();
+    fxHills(c,190,t*30,'#9bcf8f'); fxGround(c,222,'#6db562'); fxRail(c,219,t*200); fxHorse(c,320,265,100,t*8,col,{push:0,gait:0.7}); fxText(c,'キャンター',320,40,30); }},
+  pool:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#e6f6ff','#cfeeff'); c.fillStyle='#d9e3ea'; c.fillRect(0,140,FXW,30);
+    const y=235+Math.sin(t*4)*4; fxHorse(c,320+Math.sin(t*1.5)*20,y,104,t*6,col,{noRider:true,gait:0.6});
+    c.fillStyle='rgba(40,150,230,.72)'; c.beginPath(); c.moveTo(0,FXH); for(let x=0;x<=FXW;x+=10) c.lineTo(x,232+Math.sin(x/30+t*5)*6); c.lineTo(FXW,FXH); c.fill();
+    for(let i=0;i<8;i++){ const k=(t*0.8+i/8)%1; c.strokeStyle='rgba(255,255,255,.8)'; c.lineWidth=2; c.beginPath(); c.arc(220+i*30,330-k*80,4+i%3*2,0,7); c.stroke(); }
+    fxText(c,'プール',320,40,30); }},
+  walk:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#cbe7ff','#f2f8ff'); c.fillStyle='#b5734a'; c.fillRect(0,90,FXW,120); c.fillStyle='#8a5233'; for(let x=-(t*40%90);x<FXW;x+=90) c.fillRect(x,90,8,120);
+    fxGround(c,210,'#d8c49a'); const ph=t*5; fxHorse(c,300,250,96,ph,col,{noRider:true,gait:0.32});
+    fxPerson(c,440,262,[22,-6+Math.sin(ph)*2]); c.strokeStyle='#c8102e'; c.lineWidth=3; c.beginPath(); c.moveTo(462,236); c.quadraticCurveTo(430,262,396,226); c.stroke();
+    fxText(c,'引き運動',320,40,30); }},
+  camp:{dur:3.2,draw:(c,t,col)=>{ fxSky(c,'#6aa9e9','#d9efff'); c.fillStyle='#7d8fa8'; c.beginPath(); c.moveTo(0,190); c.lineTo(140,60); c.lineTo(260,170); c.lineTo(390,40); c.lineTo(560,180); c.lineTo(FXW,120); c.lineTo(FXW,220); c.lineTo(0,220); c.fill();
+    c.fillStyle='#fff'; c.beginPath(); c.moveTo(140,60); c.lineTo(165,85); c.lineTo(118,82); c.fill(); c.beginPath(); c.moveTo(390,40); c.lineTo(420,70); c.lineTo(362,68); c.fill();
+    fxGround(c,215,'#5a9a4a'); const tx=FXW-((t*180)%(FXW+200)); c.fillStyle='#ff8a3a'; c.beginPath(); c.moveTo(tx,215); c.lineTo(tx+45,150); c.lineTo(tx+90,215); c.fill();
+    fxHorse(c,320,262,102,t*14,col,{push:0.8}); fxSpeed(c,t,5); fxText(c,'🏕️ 特訓合宿',320,40,30); }},
+  rest:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#c08a5a','#9a6a40'); c.fillStyle='#8a5a34'; for(let x=0;x<FXW;x+=40) c.fillRect(x,0,4,FXH); fxGround(c,250,'#e8c96a');
+    for(let i=0;i<30;i++){ c.strokeStyle='#c9a440'; c.lineWidth=2; c.beginPath(); const x=(i*53)%FXW; c.moveTo(x,262+(i*7)%40); c.lineTo(x+14,256+(i*7)%40); c.stroke(); }
+    fxHorse(c,320,232+Math.sin(t*1.5)*2,104,0,col,{noRider:true,gait:0,noBob:true});
+    for(let i=0;i<3;i++){ const k=(t*0.45+i/3)%1; fxText(c,'Z',400+k*60+i*6,150-k*80,18+k*22,`rgba(255,255,255,${(1-k).toFixed(2)})`); }
+    fxText(c,'休養',320,40,30); }},
+  massage:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#ffe3ec','#fff6f9'); fxGround(c,250,'#e8d6b0');
+    fxHorse(c,300,232,104,0,col,{noRider:true,gait:0,noBob:true}); fxPerson(c,285,262,[-24+Math.sin(t*10)*8,-34+Math.cos(t*10)*6],'#e85a8a');
+    for(let i=0;i<5;i++){ const k=(t*0.7+i/5)%1; fxText(c,i%2?'♥':'✦',250+i*30,200-k*90,16+k*10,i%2?`rgba(255,90,140,${(1-k).toFixed(2)})`:`rgba(255,200,40,${(1-k).toFixed(2)})`); }
+    fxText(c,'マッサージ',320,40,30); }},
+  farm:{dur:3.0,draw:(c,t,col)=>{ fxSky(c,'#8fd0ff','#e8f7ff'); c.fillStyle='#fff'; [[100,70],[420,50],[560,95]].forEach(([x,y],i)=>{ const cx=(x+t*12*(i+1))%(FXW+80)-40; c.beginPath(); c.arc(cx,y,22,0,7); c.arc(cx+24,y-8,26,0,7); c.arc(cx+50,y,20,0,7); c.fill(); });
+    fxHills(c,175,0,'#7fc46f'); fxGround(c,215,'#69b55c'); c.fillStyle='#fff'; c.fillRect(0,200,FXW,5); for(let x=10;x<FXW;x+=60) c.fillRect(x,180,6,30);
+    fxHorse(c,260+t*30,262,96,t*4,col,{noRider:true,gait:0.25});
+    for(let i=0;i<3;i++){ const bx=420+i*50+Math.sin(t*3+i)*30, by=150+Math.cos(t*4+i*2)*25; c.fillStyle=['#ffd23a','#ff8ac0','#ffffff'][i]; c.beginPath(); c.ellipse(bx-5,by,6,9*Math.abs(Math.sin(t*15+i)),0,0,7); c.ellipse(bx+5,by,6,9*Math.abs(Math.sin(t*15+i)),0,0,7); c.fill(); }
+    fxText(c,'🌿 放牧',320,40,30); }}
+};
+function fxHillScene(c,t,col,n){
+  fxSky(c,'#8fd3ff','#e2f5ff'); fxHills(c,170,t*40,'#97c98f');
+  c.save(); c.translate(FXW/2,FXH*0.7); c.rotate(-0.17);
+  c.fillStyle='#8a6a45'; c.fillRect(-FXW,22,FXW*2,FXH); c.fillStyle='#f4f1e8'; c.fillRect(-FXW,16,FXW*2,5);
+  for(let x=-FXW-((t*(n>1?320:260))%90);x<FXW;x+=90) c.fillRect(x,16,5,-24);
+  fxHorse(c,0,-28,100,t*(n>1?15:13),col,{push:n>1?1:0.6,noLines:n<2});
+  c.restore();
+  fxText(c,n>1?(t<1.7?'坂路 1本目':'坂路 2本目!'):'坂路',320,40,30);
+}
+let FXRUN=null;
+function trainFx(menu,h,name){
+  const sc=FX[menu]||FX.canter, col=COATS[h.coat||0], reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el=document.createElement('div'); el.className='fxwrap';
+  el.innerHTML=`<div class="fxbox"><canvas width="${FXW}" height="${FXH}"></canvas><div class="fxname">${esc(name)}</div><div class="fxres" hidden></div></div>`;
+  ($('#pad')||document.body).appendChild(el);
+  const cv=el.querySelector('canvas'), c=cv.getContext('2d'), dpr=1;   // 教室のiPadでもなめらかに動くように、解像度は等倍
+  cv.width=FXW*dpr; cv.height=FXH*dpr; c.scale(dpr,dpr);
+  const dur=reduce?0.6:sc.dur, t0=performance.now(); let done=false, res=null, alive=true;
+  const R={el,result(r){ res=r; show(); }};
+  const show=()=>{ if(!done||!res) return;
+    const box=el.querySelector('.fxres'), ok=res.ok, m=String(res.msg||'');
+    const big=!ok?'できませんでした':/大成功/.test(m)?'大成功!':/いまひとつ/.test(m)?'いまひとつ…':/疲れが取れた/.test(m)?'リフレッシュ!':'成功!';
+    const detail=ok?m.replace(/^\S+\s+(大成功!|いまひとつ…|成功|疲れが取れた)\s*/,''):m;
+    box.innerHTML=`<b class="${/大成功/.test(big)?'gold':!ok||/いまひとつ/.test(big)?'bad':''}">${big}</b><p>${esc(detail)}</p><button class="hb gold" data-fxok>OK</button>`;
+    box.hidden=false; };
+  const frame=now=>{ if(!alive) return; const t=(now-t0)/1000;
+    if(t>=dur&&!done){ done=true; show(); }
+    c.clearRect(0,0,FXW,FXH); try{ sc.draw(c,reduce?sc.dur*0.5:t%sc.dur,col); }catch(e){ console.warn(e); }
+    if(!reduce||!done) requestAnimationFrame(frame); };   // 結果を出しているあいだも動き続ける
+  requestAnimationFrame(now=>{ requestAnimationFrame(frame); });
+  el.addEventListener('click',e=>{ if(e.target.closest('[data-fxok]')){ alive=false; el.remove(); FXRUN=null; padRender(); } });
+  FXRUN=R; return R;
+}
 
 /* ---------- 設定画面のイラスト(競馬場パノラマ) ---------- */
 // 馬が左から走ってきてゴールを駆け抜け、勝った騎手がガッツポーズ。終わると次のレースがはじまる
