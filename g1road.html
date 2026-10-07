@@ -861,6 +861,37 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx.narrow .bx-cb .am{min-width:34px;font-size:13px;padding:1px 4px;flex:none}
 .bx-cb .od{white-space:nowrap}.bx-cb .am{flex:none}
 
+/* ---------- iPadの上下を詰める(出馬表を広く) ---------- */
+.a-top{flex-wrap:wrap;row-gap:4px;padding:5px 12px 0}
+.a-top .a-logo{font-size:20px;flex:none}
+.a-top .a-race{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:16px}
+.a-top .a-timer{flex:none;font-size:17px;padding:0 8px}
+.a-top .a-who{flex:none;margin-left:0;gap:8px}
+.a-top .a-who .a-team{font-size:15px;padding:2px 10px}
+.a-top .a-who .led{font-size:18px}
+.a-top .a-tabs{margin-bottom:0}
+.a-top .a-tab{padding:5px 14px;font-size:14px}
+.a-main{padding:6px 10px 6px}
+.bx-deck{padding:5px 12px;gap:14px;min-height:0}
+.bx-deck .bx-btn{height:46px;min-width:96px;font-size:14px}
+.bx-deck .bx-denom{flex-direction:row;gap:8px}
+.bx-deck .bx-denom small{writing-mode:horizontal-tb;max-width:4.5em;line-height:1.2;text-align:right}
+.bx-deck .ab-coin{width:46px;height:46px}
+.bx-deck .ab-coin b{font-size:16px}.bx-deck .ab-coin span{font-size:9px}
+.bx-deck .ab-coin.on{transform:scale(1.08)}
+.bx-deck .bx-hint{font-size:12px;line-height:1.35}
+.bx-leds{flex-direction:row;gap:14px}
+.bx-leds>div{gap:6px}
+.bx-leds small{width:auto;white-space:nowrap}
+.bx-leds .led{min-width:96px;font-size:20px}
+#padSlip{flex:none}
+.bx-deck .bx-denom small{max-width:none;white-space:nowrap}
+.bx-row .sty{margin-top:0}
+.bx.narrow .bx-cell{gap:4px;padding:0 6px}.bx.narrow .bx-cell .od{font-size:17px;white-space:nowrap}.bx.narrow .bx-cell .am{min-width:30px;font-size:14px;padding:1px 4px;flex:none}
+.bx-row .wo{text-align:right;padding-right:6px;font-family:"DotGothic16",monospace;font-size:17px;color:#ffb13a;text-shadow:0 0 5px rgba(255,177,58,.6);white-space:nowrap}
+.bx.narrow .bx-row .wo{font-size:15px;padding-right:4px}
+@media (max-width:1059px){.bx.narrow .bx-row .jk{font-size:11px}.bx.narrow .bx-row .mk b{font-size:15px}.bx.narrow .bx-hd2{font-size:10px}.bx.narrow .bx-row .c{font-size:12px}}
+
 </style>
 </head>
 <body>
@@ -2048,7 +2079,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=14;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=16;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3026,7 +3057,7 @@ async function padStart(room,kind){
     const el=$('#padTimer'), st=P.st, tm=st&&TPH[st.phase]&&st.timer;
     if(!tm){ el.hidden=true; return; }
     const left=tm.paused?tm.left:Math.max(0,tm.end-(Date.now()+(P.off||0))), sec=Math.ceil(left/1000);
-    el.hidden=false; el.textContent=st.phase==='result'?`次のレースまで ${sec}秒${tm.paused?'(停止中)':''}`:sec>0?`⏱ 締め切りまで ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}${tm.paused?'(停止中)':''}`:'⏱ 締め切り!';
+    el.hidden=false; el.textContent=st.phase==='result'?`次まで ${sec}秒${tm.paused?'(停止)':''}`:sec>0?`締切 ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}${tm.paused?'(停止)':''}`:'締め切り!';
     el.classList.toggle('hurry',st.phase==='bet'&&!tm.paused&&sec<=10);
   },250);
   P.be.on(P.base+'/odds',v=>{ P.odds=v; if(P.st&&P.tab==='bet') padRender(); });
@@ -3090,6 +3121,7 @@ function padRender(){
   P.had=true;
   $('#padRace').innerHTML=`第${st.R}戦 ${st.rn?esc(st.rn.name)+` <span class="a-grade ${st.rn.grade}">${st.rn.grade}</span>`:''} ${st.cn||''} ${surfText(true,st.surf,st.dist)} ${{bet:'投票受付中',race:'レース中',result:'結果発表'}[st.phase]||''}`;
   padTicker(st);
+  if(st.phase==='bet'&&P.tab==='bet'&&P.pid){ $('#padTicker').hidden=true; P.tickerKey=''; }   // 出馬表を広く見せるため
   if(!P.pid||!P.pv){
     who.innerHTML=''; $('#padSlip').hidden=true; $('#padTabs').hidden=true;
     if(P.pid&&!P.pv){ m.innerHTML='<div class="a-msg"><h2>読み込み中…</h2></div>'; return; }
@@ -3182,13 +3214,15 @@ function padBet(st,pv){
   const m=$('#padMain');
   if(!P.odds||P.odds.race!==st.R){ padMsg('オッズを受信中…',''); return; }
   const H=st.horses.length, fixed=!!(P.my&&P.my.done&&!(P.opt&&P.optRace===st.R&&P.unfix)), mine=myTickets(), cols=bcols(), tf=P.mode==='tf', MCOL={'◎':'m0','○':'m1','▲':'m2','△':'m3','×':'m4'};
-  const KC={'↑':'k0','↗':'k1','→':'k2','↘':'k3','↓':'k4'}, rh=H>13?36:H>10?42:48;
+  const KC={'↑':'k0','↗':'k1','→':'k2','↘':'k3','↓':'k4'}, rh=H>13?33:H>10?40:46;
   const narrow=(window.innerWidth||1180)<1150;   // 幅1080pxなどのiPadでは列を詰めて、横に並べたまま収める
   const extraW=tf?(narrow?['132px','132px']:['150px','150px']):cols.map(()=>cols.length>2?(narrow?'50px':'58px'):(narrow?'56px':'66px'));
-  const grid=narrow?`36px minmax(100px,1fr) 40px 34px 68px ${tf?'176px':'144px'} 44px ${extraW.join(' ')}`:`40px minmax(120px,1fr) 44px 40px 80px ${tf?'200px':'170px'} 50px ${extraW.join(' ')}`;
+  const winW=tf?'':(narrow?' 54px':' 58px');   // 組み合わせの券種でも単勝の倍率を出す
+  const xn=(window.innerWidth||1180)<1060;   // 幅1024pxのiPadでは騎手と印の列をさらに詰めて馬名を残す
+  const grid=narrow?(xn?`34px minmax(110px,1fr) 36px 30px 58px ${tf?'164px':'124px'} 42px${winW} ${extraW.join(' ')}`:`36px minmax(100px,1fr) 40px 34px 68px ${tf?'176px':'144px'} 44px${winW} ${extraW.join(' ')}`):`40px minmax(${tf?120:100}px,1fr) 44px 40px 80px ${tf?'200px':'156px'} 50px${winW} ${extraW.join(' ')}`;
   const mkHead=`<span class="bx-mkh"><button class="${P.mkMode==='mk'?'on':''}" data-mkmode="mk">印</button><button class="${P.mkMode==='cm'?'on':''}" data-mkmode="cm">短評</button></span>`;
-  const head=`<div class="bx-hd" style="grid-template-columns:${grid}"><span>番</span><span class="l">馬名</span><span>性齢</span><span>気配</span><span>騎手</span>${mkHead}<span>人気</span>${tf?'<span class="c-win">単勝(タッチでBET)</span><span class="c-plc">複勝(タッチでBET)</span>':cols.map(c=>`<span style="background:${SELC[c]}">${c}</span>`).join('')}</div>`
-    +(P.mkMode==='mk'?`<div class="bx-hd2" style="grid-template-columns:${grid}"><span></span><span></span><span></span><span></span><span></span><span class="w4"><span>本紙</span><span>A記者</span><span>B記者</span><span>C記者</span></span><span></span>${extraW.map(()=>'<span></span>').join('')}</div>`:'');
+  const head=`<div class="bx-hd" style="grid-template-columns:${grid}"><span>番</span><span class="l">馬名</span><span>性齢</span><span>気配</span><span>騎手</span>${mkHead}<span>人気</span>${tf?'<span class="c-win">単勝(タッチでBET)</span><span class="c-plc">複勝(タッチでBET)</span>':'<span>単勝</span>'+cols.map(c=>`<span style="background:${SELC[c]}">${c}</span>`).join('')}</div>`
+    +(P.mkMode==='mk'?`<div class="bx-hd2" style="grid-template-columns:${grid}"><span></span><span></span><span></span><span></span><span></span><span class="w4"><span>本紙</span><span>A記者</span><span>B記者</span><span>C記者</span></span><span></span>${tf?'':'<span></span>'}${extraW.map(()=>'<span></span>').join('')}</div>`:'');
   const STY=['逃げ','先行','差し','追込'];
   const rows=st.horses.map(h=>{
     const own=h.pid===P.pid, selAny=cols.some(c=>selOf(c).includes(h.no));
@@ -3200,7 +3234,7 @@ function padBet(st,pv){
     return `<div class="bx-row${own?' own':''}${selAny?' sel':''}" style="grid-template-columns:${grid};height:${rh}px">
       <span>${aNum(h.no)}</span>
       <span class="nm"><b>${esc(h.name)}</b><span class="sty">${sty}<em>${h.style}</em>${own?'<em class="ow">自分の馬</em>':h.owner?`<em class="ow2">${esc(h.owner)}</em>`:''}</span></span>
-      <span class="c">${h.sa}</span><span class="c kh ${KC[h.kh]||''}">${h.kh||''}</span><span class="c jk">${esc(h.jockey||'')}</span>${mk}<span class="c pp">${h.pop}<small>人気</small></span>${right}</div>`; }).join('');
+      <span class="c">${h.sa}</span><span class="c kh ${KC[h.kh]||''}">${h.kh||''}</span><span class="c jk">${esc(h.jockey||'')}</span>${mk}<span class="c pp">${h.pop}<small>人気</small></span>${tf?'':`<span class="wo">${h.win.toFixed(1)}</span>`}${right}</div>`; }).join('');
   let panel='';
   if(!tf){
     const list=bcombos(), shown=list.slice(0,60), subs=BSUB[P.mode], s=bsub();
@@ -3219,10 +3253,9 @@ function padBet(st,pv){
   const total=tkTotal(mine);
   if(fixed){ slip.innerHTML=`<div class="a-fixed"><b>✅ 投票を確定しました(${mine.length}点 ${yen(total)})</b><span>前のスクリーンでレースが始まるのを待ちましょう(そのあいだに厩舎で調教もできます)</span></div><button class="bx-btn" data-undo>修正する</button>`; fitBet(); return; }
   slip.innerHTML=`<button class="bx-btn" data-cancel ${P.hist.length?'':'disabled'}>キャンセル<small>直前のBETを取り消す</small></button>
-    <div class="bx-denom"><small>BET単位(1回のタッチ)</small><div>${DENOM.map(v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}" data-denom="${v}"><b>${v}</b><span>枚</span></button>`).join('')}</div></div>
-    <span class="bx-hint">${tf?'オッズの枠':'組み合わせの枠'}をタッチするとすぐBETされます</span>
-    <div class="bx-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>
-    <button class="a-done" data-done>投票<br>確定<small>これで完了</small></button>`;
+    <div class="bx-denom"><small>BET単位</small><div>${DENOM.map(v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}" data-denom="${v}"><b>${v}</b><span>枚</span></button>`).join('')}</div></div>
+    <span class="bx-hint">${tf?'オッズの枠':'組み合わせの枠'}をタッチするとすぐBET<br>締め切りまで何度でも追加・取り消しできます</span>
+    <div class="bx-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>`;
   fitBet();
 }
 // 投票画面の高さを、実際に見えている範囲(下の操作盤の上まで)に合わせる。iPadのSafariは100vhが当てにならないため
