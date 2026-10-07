@@ -1602,24 +1602,24 @@ function stretchRun(list){
 // 基本は内ラチ沿い。前に馬がいて詰まると外に出し、スパートした後ろの馬は外から追い込む
 const LANE_BASE={逃げ:0.02,先行:0.1,差し:0.16,追込:0.12};
 function updateLanes(run,t){
-  const n=S.H, ord=orderOf(run), rk={}; ord.forEach((i,k)=>rk[i]=k);
+  const n=S.H, ord=orderOf(run), rk={}, lk=Math.min(1,Math.pow(9/Math.max(1,n-1),0.6)); ord.forEach((i,k)=>rk[i]=k);
   const L=Math.max(...run.map(r=>r.x)), K=spreadK(S.dist-L), dx=r=>L-(L-r.x)*K;
   const len=S.cam?4:G.u*1.2*G.lap/G.P;       // 馬1頭の長さ(表示上のm)
   run.forEach((r,i)=>{
     if(r.lane==null) r.lane=i/Math.max(1,n-1);
-    if(r.base==null) r.base=LANE_BASE[S.horses[i].style]+Math.random()*0.12;
+    if(r.base==null) r.base=(LANE_BASE[S.horses[i].style]+Math.random()*0.12)*lk;
     r.pl=r.lane;
     let tg=r.lane;
     if(t>30&&r.fin===null){
       tg=r.base;
-      if(r.state==='spurt'||r.state==='fade'){ if(S.horses[i].mak) tg=0.8; else if(rk[i]>=2) tg=Math.min(1,tg+0.25); }
+      if(r.state==='spurt'||r.state==='fade'){ if(S.horses[i].mak) tg=0.8; else if(rk[i]>=2) tg=Math.min(1,tg+0.25*lk); }
       run.forEach((o,j)=>{ if(i===j||o.fin!==null) return; const d=dx(o)-dx(r), dl=o.lane-r.lane;
-        if(d>0&&d<len*1.1&&Math.abs(dl)<0.16) tg=Math.max(tg,o.lane+0.18);      // 前が詰まったら外へ
-        if(Math.abs(d)<len*0.7&&Math.abs(dl)<0.12) tg+=(dl<=0?0.07:-0.07); });  // 横に並んだら少し離れる
+        if(d>0&&d<len*1.1&&Math.abs(dl)<0.16*lk) tg=Math.max(tg,o.lane+0.18*lk);      // 前が詰まったら外へ
+        if(Math.abs(d)<len*0.7&&Math.abs(dl)<0.12*lk) tg+=(dl<=0?0.07:-0.07)*lk; });  // 横に並んだら少し離れる
     }
     r.tg=Math.max(0,Math.min(1,tg));
   });
-  run.forEach(r=>{ r.lane+=Math.max(-0.008,Math.min(0.008,r.tg-r.lane)); });
+  run.forEach(r=>{ r.lane+=Math.max(-0.008*lk,Math.min(0.008*lk,r.tg-r.lane)); });
 }
 // ゴール後:直線で駆け抜けて減速 → 楕円コースで勝ち馬のウイニングラン(「次のレースへ」を押すまで)
 function afterRace(run,win){
@@ -1781,7 +1781,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=3;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=4;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -1851,7 +1851,8 @@ const BASEKG=57, KGK=0.12;   // 基本の斤量・1kgあたりの効き(実力 s
 const FEE={OP:5,G3:10,G2:20,G1:40};          // 出走登録料
 const SHARE=[1,0.4,0.25,0.15,0.1];           // 2〜5着の賞金の割合
 const FIELD={OP:10,G3:12,G2:12,G1:14}, MAXF=16;   // 出走頭数(足りない分はCPUの馬)
-const CPU_S={OP:-0.6,G3:0.0,G2:0.6,G1:1.3};       // CPUの馬の強さの目安
+let CPU_S={OP:-1.5,G3:-0.8,G2:0.0,G1:0.8};
+let CPU_SD=0.7, CPU_TOP=[2.6,1.3,0.6];   // CPUの馬のばらつき・人気馬への上乗せ(本命・対抗・単穴)
 const AID={under:50,amount:200,every:10};          // 救済
 const MARKET_EVERY=6;
 const STATS=[['sp','スピード'],['sta','スタミナ'],['pw','パワー'],['gt','根性'],['kc','瞬発力']];
@@ -2045,7 +2046,7 @@ function raceHorse(h,no,sp){
 }
 function cpuHorse(no,name,sp){
   const h=makeHorse(no,name,sp.dist), young=sp.c==='y'||sp.c==='yt', fem=sp.c==='f'||sp.c==='ft';
-  h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*0.6; h.cls=h.s>CPU_S[sp.g]+0.7?1:0;
+  h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*CPU_SD; h.cls=h.s>CPU_S[sp.g]+0.7?1:0;
   h.sex=fem?'牝':Math.random()<0.25?'牝':'牡'; h.age=young?pick([2,3]):pick([3,4,4,5,5,6]);
   h.kg=BASEKG-(h.sex==='牝'&&!fem?2:0)+((sp.g==='OP'||sp.g==='G3')&&h.cls?1+rint(2):0); h.s-=(h.kg-BASEKG)*KGK; h.owner='';
   return h;
@@ -2096,6 +2097,10 @@ function makeCard(R){
     const taken=new Set(ent.map(h=>h.name)), cpuNames=shuffle(namePool().concat(namePool())).filter(n=>!taken.has(n)&&(taken.add(n),true));
     const list=shuffle([...ent.map(h=>({h})),...Array.from({length:C.H-ent.length},(_,i)=>({name:cpuNames[i]}))]);
     C.horses=list.map((o,i)=>o.h?raceHorse(o.h,i+1,sp):cpuHorse(i+1,o.name,sp));
+    // CPUの馬に力の差をつける(はっきりした本命・対抗がいるように)
+    // 距離・芝ダートが合っている馬ほど人気馬になりやすい
+    const dc=dcat(sp.dist), fit=h=>ABIL*h.s+aptBonus(h.apt,dc)+sfBonus(h)+Math.random()*0.006;
+    C.horses.filter(h=>!h.hid).map(h=>[h,fit(h)]).sort((a,b)=>b[1]-a[1]).forEach(([h],k)=>{ const b=CPU_TOP[k]||0; if(b){ h.s+=b; h.cls=1; } });
     // 騎手:プレイヤーの馬は賞金の多い馬ほど名手が乗りやすい
     const usedJ=new Set(), byskill=[...JOCKEYS].sort((a,b)=>b[1]-a[1]+Math.random()*1.5-0.75);
     C.horses.filter(h=>h.hid).sort((a,b)=>W.horses[b.hid].rec.prize-W.horses[a.hid].rec.prize+Math.random()*200-100)
