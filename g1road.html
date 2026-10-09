@@ -905,6 +905,9 @@ html.padmode{-webkit-text-size-adjust:100%}
 .pdk-cap .rk b{font-family:"DotGothic16",monospace;font-weight:400;color:#3dff8c;margin-left:auto;flex:none}
 .pdk-cap .rk em{font-style:normal;color:#9aa4d6;font-size:.85em;flex:none}
 
+.exw{margin-top:4px;padding:6px 10px;border-radius:8px;background:#3a1020;border:2px solid #ff4d8d;color:#ffd0e0;font-size:14px;font-weight:700;line-height:1.4}
+.exw small{display:block;font-size:12px;font-weight:500;color:#ffb3cc}
+.a-list .exm{color:#ff8fb8;font-weight:700}
 </style>
 </head>
 <body>
@@ -2092,7 +2095,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=18;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=20;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2147,178 +2150,249 @@ function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTi
 
 /* ---------- CPUの馬:実在の名馬をもじった架空の馬 ---------- */
 // 性別・毛色・得意距離・芝ダート・脚質・強さを元の馬に合わせている(名前は架空)
-// 形式: 名前,性,毛色(0鹿毛 1栗毛 2黒鹿毛 3芦毛 4青毛),距離(0短 1マイル 2中 3長),芝ダ(t芝 dダート b両方),脚質,強さ(S>A>B>C)
+// 形式: 名前,性,毛色(0鹿毛 1栗毛 2黒鹿毛 3芦毛 4青毛),距離(0短 1マイル 2中 3長),芝ダ(t芝 dダート b両方),脚質,実際の格(G1級/G2級/G3級/OP級),格の中での強さ(S>A>B>C)
 const ROSTER_SRC=`
-ディーブインパクト,牡,0,2,t,追,S
-オルフェーブル,牡,1,2,t,追,S
-キタサンブラッグ,牡,0,3,t,逃,S
-イクイノックズ,牡,4,2,t,先,S
-アーモンドアイズ,牝,0,2,t,差,S
-シンボリルドルブ,牡,0,3,t,先,S
-ナリタプライアン,牡,2,3,t,差,S
-ゴールドジップ,牡,3,3,t,追,A
-オグリギャップ,牡,3,1,t,差,A
-メジロマッグイーン,牡,3,3,t,先,A
-ウオッガ,牝,0,1,t,差,A
-ダイワスカーレッド,牝,1,2,t,先,A
-サイレンススズガ,牡,1,2,t,逃,A
-トウカイデイオー,牡,0,2,t,先,A
-ジェンティルトンナ,牝,0,2,t,先,A
-ゴントレイル,牡,2,2,t,差,A
-ドウジュース,牡,0,2,t,差,A
-リバティアイラント,牝,0,2,t,差,A
-スペシャルウィーグ,牡,2,2,t,差,A
-ロードカナロワ,牡,0,0,t,先,A
-グランアレグリヤ,牝,0,1,t,差,A
-タイキシャドル,牡,1,1,t,先,A
-グロフネ,牡,3,1,d,先,A
-レモンボップ,牡,1,1,d,先,A
-エルコンドルパザー,牡,2,2,t,先,A
-グラスワンター,牡,1,2,t,差,A
-テイエムオペラオウ,牡,1,2,t,先,A
-ブエナビズタ,牝,2,2,t,差,A
-エアグルーブ,牝,0,2,t,先,A
-ジャスダウェイ,牡,2,1,t,差,A
-サトノダイアモンド,牡,0,3,t,差,A
-クロノジェネシズ,牝,3,2,t,差,A
-ソダジ,牝,3,1,t,先,A
-エフフォーリヤ,牡,2,2,t,先,A
-タイトルボルダー,牡,0,3,t,逃,A
-ドゥラメンデ,牡,0,2,t,差,A
-マヤノトップカン,牡,1,3,t,先,A
-ビワハヤビデ,牡,3,3,t,先,A
-ミホノプルボン,牡,1,2,t,逃,A
-マンハッタンガフェ,牡,4,3,t,差,A
-アグネスダキオン,牡,1,2,t,先,A
-キングカメハメバ,牡,0,2,t,先,A
-ダイワメシャー,牡,1,1,t,先,A
-ハーツグライ,牡,0,3,t,差,A
-レイデオル,牡,0,2,t,差,A
-リスグラシュウ,牝,0,2,t,差,A
-デアリングタクド,牝,0,2,t,差,A
-スターズオンアーズ,牝,0,2,t,差,A
-サクラバクシンオウ,牡,0,0,t,先,A
-スーパークリーグ,牡,0,3,t,先,A
-カネビキリ,牡,1,2,d,先,A
-フォーエバーヤンク,牡,2,2,d,先,A
-アグネスデジタロ,牡,1,1,b,差,A
-ジャングルボケット,牡,0,2,t,差,B
-ネオユニバース,牡,0,2,t,差,B
-メイショウサムゾン,牡,0,3,t,先,B
-アドマイヤベカ,牡,0,2,t,差,B
-ナカヤマフェスダ,牡,0,3,t,先,B
-ステイゴールト,牡,2,3,t,差,B
-ライスジャワー,牡,2,3,t,先,B
-ヴィクトワールビサ,牡,2,2,t,先,B
-ルーラージップ,牡,0,2,t,差,B
-エイシンフラッジュ,牡,2,2,t,差,B
-ワンアンドオンリイ,牡,2,2,t,差,B
-ラブリーデー,牡,2,2,t,先,B
-シュヴァルクラン,牡,1,3,t,差,B
-サトノグラウン,牡,2,2,t,差,B
-フィエールメン,牡,0,3,t,差,B
-ワクネリアン,牡,0,2,t,差,B
-アカイトリノムズメ,牝,0,2,t,差,B
-ジャスティンバレス,牡,0,3,t,差,B
-ソングラインズ,牝,0,1,t,先,B
-パンサラッザ,牡,0,2,t,逃,B
-ジャックトール,牡,0,2,t,逃,B
-タワーオブロントン,牡,1,0,t,差,B
-ダノンズマッシュ,牡,0,0,t,先,B
-モズアスゴット,牡,1,1,t,差,B
-インディチャンブ,牡,0,1,t,先,B
-ナムラグレア,牝,1,0,t,差,B
-メイケイエーレ,牝,3,0,t,先,B
-カレンジャン,牝,0,0,t,先,B
-ビリーブ,牝,1,0,t,先,B
-デュランタル,牡,1,1,t,追,B
-ニシノブラワー,牝,0,0,t,先,B
-ラッキーライラッグ,牝,1,1,t,先,B
-エスポワールジチー,牡,1,1,d,先,B
-ゴールドトリーム,牡,0,1,d,差,B
-チュウワウィザート,牡,0,2,d,先,B
-オメガパヒューム,牡,1,2,d,差,B
-ガフェファラオ,牡,2,1,d,先,B
-テーオーゲインズ,牡,1,2,d,先,B
-コパノリッギー,牡,1,2,d,先,B
-スマートファルゴン,牡,1,2,d,逃,B
-ホクトベカ,牝,0,2,d,先,B
-ナイスネイジャ,牡,0,2,t,差,B
-メジロバーマー,牡,0,3,t,逃,B
-セイウンズカイ,牡,3,3,t,逃,B
-カワカミプリンセズ,牝,0,2,t,差,B
-ヒシアマソン,牝,0,2,t,追,B
-イナリワーン,牡,0,3,t,差,B
-カツラギエーズ,牡,0,2,t,逃,B
-メジロトーベル,牝,0,1,t,差,B
-ファインモージョン,牝,0,2,t,先,B
-ビッグアーザー,牡,0,0,t,先,B
-アドマイヤムウン,牡,0,2,t,差,B
-アイネスフウシン,牡,2,2,t,逃,B
-マーベラスサンデイ,牡,1,2,t,先,B
-ダンスインザターク,牡,0,3,t,差,B
-ナリタトップロート,牡,1,3,t,先,B
-メイショウトトウ,牡,0,2,t,先,B
-タップダンスジチー,牡,0,2,t,逃,B
-スイーブトウショウ,牝,2,1,t,追,B
-ドリームジャーニイ,牡,2,2,t,追,B
-ミッキーグイーン,牝,2,2,t,差,B
-ドウショウボーイ,牡,1,2,t,先,B
-ハイセイゴー,牡,0,2,t,先,B
-マルゼンズキー,牡,0,1,t,逃,B
-パルウララ,牝,1,1,d,逃,C
-ツインダーボ,牡,0,2,t,逃,C
-マチカネタンボイザ,牡,0,2,t,差,C
-ダイタクヘリオズ,牡,0,1,t,逃,C
-ヤエノムデキ,牡,1,2,t,先,C
-キングヘイロウ,牡,0,1,t,差,C
-ゴールドジチー,牡,1,2,t,差,C
-ダイユウザク,牡,0,2,t,差,C
-ストレイドガール,牝,0,0,t,差,C
-ゴールドアグター,牡,2,3,t,先,C
-ギセキ,牡,1,3,t,差,C
-ショウナンバンドラ,牝,0,2,t,差,C
-レッツゴートンキ,牝,1,1,t,差,C
-ミッギーアイル,牡,2,0,t,逃,C
-サウンドトゥルウ,牡,1,2,d,追,C
-メジロライヤン,牡,0,2,t,差,C
-ホワイトズトーン,牡,3,3,t,差,C
-メジロプライト,牡,0,3,t,差,C
-シルクジャスディス,牡,0,2,t,追,C
-マチカネフグキタル,牡,1,2,t,差,C
-サニープライアン,牡,0,2,t,逃,C
-ツルマルポーイ,牡,0,2,t,追,C
-ヒシミラグル,牡,3,3,t,差,C
-スクリーンビーロー,牡,1,2,t,差,C
-トーセンジョータン,牡,0,2,t,先,C
-ヒルノタムール,牡,0,3,t,先,C
-トーホウジャッガル,牡,1,3,t,先,C
+ディーブインパクト,牡,0,2,t,追,G1,S
+オルフェーブル,牡,1,2,t,追,G1,S
+キタサンブラッグ,牡,0,3,t,逃,G1,S
+イクイノックズ,牡,4,2,t,先,G1,S
+アーモンドアイズ,牝,0,2,t,差,G1,S
+シンボリルドルブ,牡,0,3,t,先,G1,S
+ナリタプライアン,牡,2,3,t,差,G1,S
+ゴールドジップ,牡,3,3,t,追,G1,A
+オグリギャップ,牡,3,1,t,差,G1,A
+メジロマッグイーン,牡,3,3,t,先,G1,A
+ウオッガ,牝,0,1,t,差,G1,A
+ダイワスカーレッド,牝,1,2,t,先,G1,A
+サイレンススズガ,牡,1,2,t,逃,G1,A
+トウカイデイオー,牡,0,2,t,先,G1,A
+ジェンティルトンナ,牝,0,2,t,先,G1,A
+ゴントレイル,牡,2,2,t,差,G1,A
+ドウジュース,牡,0,2,t,差,G1,A
+リバティアイラント,牝,0,2,t,差,G1,A
+スペシャルウィーグ,牡,2,2,t,差,G1,A
+ロードカナロワ,牡,0,0,t,先,G1,A
+グランアレグリヤ,牝,0,1,t,差,G1,A
+タイキシャドル,牡,1,1,t,先,G1,A
+グロフネ,牡,3,1,d,先,G1,A
+レモンボップ,牡,1,1,d,先,G1,A
+エルコンドルパザー,牡,2,2,t,先,G1,A
+グラスワンター,牡,1,2,t,差,G1,A
+テイエムオペラオウ,牡,1,2,t,先,G1,A
+ブエナビズタ,牝,2,2,t,差,G1,A
+エアグルーブ,牝,0,2,t,先,G1,A
+ジャスダウェイ,牡,2,1,t,差,G1,A
+サトノダイアモンド,牡,0,3,t,差,G1,A
+クロノジェネシズ,牝,3,2,t,差,G1,A
+ソダジ,牝,3,1,t,先,G1,A
+エフフォーリヤ,牡,2,2,t,先,G1,A
+タイトルボルダー,牡,0,3,t,逃,G1,A
+ドゥラメンデ,牡,0,2,t,差,G1,A
+マヤノトップカン,牡,1,3,t,先,G1,A
+ビワハヤビデ,牡,3,3,t,先,G1,A
+ミホノプルボン,牡,1,2,t,逃,G1,A
+マンハッタンガフェ,牡,4,3,t,差,G1,A
+アグネスダキオン,牡,1,2,t,先,G1,A
+キングカメハメバ,牡,0,2,t,先,G1,A
+ダイワメシャー,牡,1,1,t,先,G1,A
+ハーツグライ,牡,0,3,t,差,G1,A
+レイデオル,牡,0,2,t,差,G1,A
+リスグラシュウ,牝,0,2,t,差,G1,A
+デアリングタクド,牝,0,2,t,差,G1,A
+スターズオンアーズ,牝,0,2,t,差,G1,A
+サクラバクシンオウ,牡,0,0,t,先,G1,A
+スーパークリーグ,牡,0,3,t,先,G1,A
+カネビキリ,牡,1,2,d,先,G1,A
+フォーエバーヤンク,牡,2,2,d,先,G1,A
+アグネスデジタロ,牡,1,1,b,差,G1,A
+ジャングルボケット,牡,0,2,t,差,G1,B
+ネオユニバース,牡,0,2,t,差,G1,B
+メイショウサムゾン,牡,0,3,t,先,G1,B
+アドマイヤベカ,牡,0,2,t,差,G1,B
+ナカヤマフェスダ,牡,0,3,t,先,G1,B
+ステイゴールト,牡,2,3,t,差,G1,B
+ライスジャワー,牡,2,3,t,先,G1,B
+ヴィクトワールビサ,牡,2,2,t,先,G1,B
+ルーラージップ,牡,0,2,t,差,G1,B
+エイシンフラッジュ,牡,2,2,t,差,G1,B
+ワンアンドオンリイ,牡,2,2,t,差,G1,B
+ラブリーデー,牡,2,2,t,先,G1,B
+シュヴァルクラン,牡,1,3,t,差,G1,B
+サトノグラウン,牡,2,2,t,差,G1,B
+フィエールメン,牡,0,3,t,差,G1,B
+ワクネリアン,牡,0,2,t,差,G1,B
+アカイトリノムズメ,牝,0,2,t,差,G1,B
+ジャスティンバレス,牡,0,3,t,差,G1,B
+ソングラインズ,牝,0,1,t,先,G1,B
+パンサラッザ,牡,0,2,t,逃,G1,B
+ジャックトール,牡,0,2,t,逃,G1,B
+タワーオブロントン,牡,1,0,t,差,G1,B
+ダノンズマッシュ,牡,0,0,t,先,G1,B
+モズアスゴット,牡,1,1,t,差,G1,B
+インディチャンブ,牡,0,1,t,先,G1,B
+ナムラグレア,牝,1,0,t,差,G1,B
+メイケイエーレ,牝,3,0,t,先,G2,B
+カレンジャン,牝,0,0,t,先,G1,B
+ビリーブ,牝,1,0,t,先,G1,B
+デュランタル,牡,1,1,t,追,G1,B
+ニシノブラワー,牝,0,0,t,先,G1,B
+ラッキーライラッグ,牝,1,1,t,先,G1,B
+エスポワールジチー,牡,1,1,d,先,G1,B
+ゴールドトリーム,牡,0,1,d,差,G1,B
+チュウワウィザート,牡,0,2,d,先,G1,B
+オメガパヒューム,牡,1,2,d,差,G1,B
+ガフェファラオ,牡,2,1,d,先,G1,B
+テーオーゲインズ,牡,1,2,d,先,G1,B
+コパノリッギー,牡,1,2,d,先,G1,B
+スマートファルゴン,牡,1,2,d,逃,G1,B
+ホクトベカ,牝,0,2,d,先,G1,B
+ナイスネイジャ,牡,0,2,t,差,G2,B
+メジロバーマー,牡,0,3,t,逃,G1,B
+セイウンズカイ,牡,3,3,t,逃,G1,B
+カワカミプリンセズ,牝,0,2,t,差,G1,B
+ヒシアマソン,牝,0,2,t,追,G1,B
+イナリワーン,牡,0,3,t,差,G1,B
+カツラギエーズ,牡,0,2,t,逃,G1,B
+メジロトーベル,牝,0,1,t,差,G1,B
+ファインモージョン,牝,0,2,t,先,G1,B
+ビッグアーザー,牡,0,0,t,先,G1,B
+アドマイヤムウン,牡,0,2,t,差,G1,B
+アイネスフウシン,牡,2,2,t,逃,G1,B
+マーベラスサンデイ,牡,1,2,t,先,G1,B
+ダンスインザターク,牡,0,3,t,差,G1,B
+ナリタトップロート,牡,1,3,t,先,G1,B
+メイショウトトウ,牡,0,2,t,先,G1,B
+タップダンスジチー,牡,0,2,t,逃,G1,B
+スイーブトウショウ,牝,2,1,t,追,G1,B
+ドリームジャーニイ,牡,2,2,t,追,G1,B
+ミッキーグイーン,牝,2,2,t,差,G1,B
+ドウショウボーイ,牡,1,2,t,先,G1,B
+ハイセイゴー,牡,0,2,t,先,G1,B
+マルゼンズキー,牡,0,1,t,逃,G1,B
+パルウララ,牝,1,1,d,逃,OP,B
+ツインダーボ,牡,0,2,t,逃,G3,B
+マチカネタンボイザ,牡,0,2,t,差,G2,B
+ダイタクヘリオズ,牡,0,1,t,逃,G1,C
+ヤエノムデキ,牡,1,2,t,先,G1,C
+キングヘイロウ,牡,0,1,t,差,G1,C
+ゴールドジチー,牡,1,2,t,差,G1,C
+ダイユウザク,牡,0,2,t,差,G1,C
+ストレイドガール,牝,0,0,t,差,G1,C
+ゴールドアグター,牡,2,3,t,先,G1,C
+ギセキ,牡,1,3,t,差,G1,C
+ショウナンバンドラ,牝,0,2,t,差,G1,C
+レッツゴートンキ,牝,1,1,t,差,G1,C
+ミッギーアイル,牡,2,0,t,逃,G1,C
+サウンドトゥルウ,牡,1,2,d,追,G1,C
+メジロライヤン,牡,0,2,t,差,G1,C
+ホワイトズトーン,牡,3,3,t,差,G2,B
+メジロプライト,牡,0,3,t,差,G1,C
+シルクジャスディス,牡,0,2,t,追,G1,C
+マチカネフグキタル,牡,1,2,t,差,G1,C
+サニープライアン,牡,0,2,t,逃,G1,C
+ツルマルポーイ,牡,0,2,t,追,G1,C
+ヒシミラグル,牡,3,3,t,差,G1,C
+スクリーンビーロー,牡,1,2,t,差,G1,C
+トーセンジョータン,牡,0,2,t,先,G1,C
+ヒルノタムール,牡,0,3,t,先,G1,C
+トーホウジャッガル,牡,1,3,t,先,G1,C
+ステラヴェローヂェ,牡,0,2,t,差,G2,B
+シャケドラ,牡,0,3,t,先,G2,B
+アルバード,牡,1,3,t,差,G2,B
+ディーブボンド,牡,0,3,t,先,G2,B
+ボッゲリーニ,牡,0,2,t,先,G2,B
+タンビュライト,牡,3,2,t,先,G2,B
+サトノノプレス,牡,0,2,t,先,G2,B
+エダリオウ,牡,2,3,t,差,G2,B
+アドマイヤテウス,牡,0,3,t,先,G2,B
+ウインパリアシオン,牡,0,2,t,追,G2,B
+ディザイファ,牡,0,2,t,先,G2,B
+カレンプーケドール,牝,0,2,t,先,G2,B
+ヒシイグアズ,牡,2,2,t,先,G2,B
+エアスビネル,牡,1,1,t,先,G2,B
+ルージュバッグ,牝,0,2,t,差,G2,B
+サングレーサー,牡,2,1,t,差,G2,B
+ナカヤマナイド,牡,1,2,t,先,G2,B
+トウカイドリック,牡,0,3,t,差,G2,B
+ネヴァブジョン,牡,0,2,t,先,G2,B
+ツルマルヅヨシ,牡,0,2,t,差,G2,B
+サンライズベガサス,牡,2,2,t,差,G2,B
+ローエングリム,牡,1,1,t,逃,G2,B
+バランスオブケーム,牡,0,2,t,先,G2,B
+サクラブレジデント,牡,0,2,t,先,G2,B
+ディアテラノビア,牝,1,1,t,差,G2,B
+アドマイヤギッス,牝,0,1,t,差,G2,B
+メイショウペルーガ,牝,3,3,t,追,G2,B
+プロードストリート,牝,0,2,t,差,G2,B
+スマードレイアー,牝,3,1,t,差,G2,B
+タッチングスビーチ,牝,0,2,t,差,G2,B
+サラギア,牝,0,2,t,差,G2,B
+ヤマガツエース,牡,1,2,t,先,G2,B
+ダイアドニック,牡,0,0,t,差,G2,B
+タイセイビジョム,牡,0,1,t,差,G2,B
+メイショウデンゲン,牡,0,3,t,差,G2,B
+オセアグレイド,牡,0,3,t,先,G2,B
+ディバインフォーズ,牡,0,3,t,差,G2,B
+グリンチャー,牡,0,3,t,先,G2,B
+ロードグエスト,牡,0,1,t,追,G2,B
+スーパーホーネッド,牡,0,1,t,差,G2,B
+マルターズアボジー,牡,0,1,t,逃,G3,B
+マイネイザベル,牝,1,1,t,差,G3,B
+フロンデアクイーン,牝,0,2,t,差,G3,B
+マジッグキャッスル,牝,0,2,t,差,G3,B
+コパノギッキング,牡,1,0,d,逃,G3,B
+マテラズカイ,牡,1,0,d,逃,G3,B
+キングズカード,牡,0,0,d,差,G3,B
+アスカノロマム,牡,1,2,d,先,G3,B
+テイエムジンゾク,牡,3,2,d,先,G3,B
+ナムラダイタン,牡,0,1,d,先,G3,B
+ハギノアレグリアズ,牡,0,2,d,差,G3,B
+ロワジャルタン,牡,0,2,d,差,G3,B
+グレイドパール,牡,0,2,d,差,G3,B
+メイショウガイドウ,牡,0,2,t,先,G3,B
+ダイワファルゴン,牡,0,2,t,先,G3,B
+ウインカニオン,牡,0,1,t,先,G3,B
+グランジルク,牡,0,1,t,差,G3,B
+ネーロ,牡,1,0,t,逃,G3,B
+ベルガント,牝,1,0,t,先,G3,B
+ライオンポス,牡,0,0,t,逃,G3,B
+トーセンズーリヤ,牡,0,2,t,先,G3,B
+マイネルファンロム,牡,0,2,t,差,G3,B
+ハヤヤッゴ,牡,3,2,b,差,G3,B
+ヨガヨカ,牝,1,0,t,先,G3,B
 `;
 const ST_MAP={逃:'逃げ',先:'先行',差:'差し',追:'追込'};
-const ROSTER=ROSTER_SRC.trim().split('\n').map(l=>{ const [n,x,c,a,f,st,t]=l.split(','); return {n,x,c:+c,a:+a,f:{t:'turf',d:'dirt',b:'both'}[f],st:ST_MAP[st],t}; });
+const ROSTER=ROSTER_SRC.trim().split('\n').map(l=>{ const [n,x,c,a,f,st,k,p]=l.split(','); return {n,x,c:+c,a:+a,f:{t:'turf',d:'dirt',b:'both'}[f],st:ST_MAP[st],k,p}; });
 const RNAME=new Set(ROSTER.map(r=>r.n));
-// 格ごとの出やすさ(G1は強い馬、OPは無名寄り)と、強さの上乗せ
-const TIERW={OP:{S:0.05,A:0.5,B:3,C:6},G3:{S:0.15,A:1.5,B:5,C:3},G2:{S:0.8,A:4,B:4,C:1},G1:{S:4,A:6,B:2,C:0.2}};
-const TIERB={S:0.5,A:0.25,B:0,C:-0.25};
+// レースの格ごとに、どの格の馬を出すか(OP級の実在馬は少ないので、OPはG3級が中心)
+const CRANK={OP:0,G3:1,G2:2,G1:3};
+const MIXW={OP:{OP:3,G3:6,G2:1},G3:{G3:6,G2:2,OP:1}};
+const NEXTC={G1:['G2'],G2:['G3','G1'],G3:['G2','OP'],OP:['G3','G2']};
+const PWB={S:0.35,A:0.15,B:0,C:-0.15};          // 同じ格の中での強さ
+let CLSK=0.4; const clsB=(k,g)=>CLSK*(CRANK[k]-CRANK[g]);       // 格上の馬ほど強く、格下ほど弱い
 function pickRoster(n,sp,taken){
-  const dc=dcat(sp.dist), fem=sp.c==='f'||sp.c==='ft', surf=sp.surf, W=TIERW[sp.g], out=[];
+  const dc=dcat(sp.dist), fem=sp.c==='f'||sp.c==='ft', surf=sp.surf, out=[];
+  // 枠ごとの格を決める
+  let slots=[];
+  if(sp.g==='G1') slots=Array(n).fill('G1');
+  else if(sp.g==='G2'){ const k=Math.min(n,1+rint(3)); slots=[...Array(k).fill('G1'),...Array(n-k).fill('G2')]; }   // G1馬は1〜3頭だけ
+  else { const w=MIXW[sp.g], ks=Object.keys(w), tot=ks.reduce((a,k)=>a+w[k],0);
+    for(let i=0;i<n;i++){ let x=Math.random()*tot, k=ks[0]; for(const kk of ks){ x-=w[kk]; if(x<=0){ k=kk; break; } } slots.push(k); } }
   const ok=(r,lvl)=>!taken.has(r.n)&&!out.includes(r)&&(!fem||r.x==='牝')&&(lvl>=2||r.f==='both'||r.f===surf)&&(lvl>=1||Math.abs(r.a-dc)<=1);
-  for(let lvl=0;lvl<3&&out.length<n;lvl++){
-    const pool=ROSTER.filter(r=>ok(r,lvl));
-    while(out.length<n&&pool.length){ const tot=pool.reduce((s,r)=>s+W[r.t],0); let x=Math.random()*tot, i=0;
-      for(;i<pool.length-1;i++){ x-=W[pool[i].t]; if(x<=0) break; } out.push(pool[i]); pool.splice(i,1); }
-  }
+  const take=k=>{ for(let lvl=0;lvl<3;lvl++){ const pool=ROSTER.filter(r=>r.k===k&&ok(r,lvl)); if(pool.length) return pick(pool); } return null; };
+  slots.forEach(k=>{ let r=take(k); for(const k2 of NEXTC[k]){ if(r) break; r=take(k2); } if(r) out.push(r); });
   return out;
 }
 function rosterHorse(no,r,sp){
   const D=sp.dist, k=(D-1600)/1400, style=r.st, young=sp.c==='y'||sp.c==='yt', fem=sp.c==='f'||sp.c==='ft';
   const mak=(style==='差し'||style==='追込')&&Math.random()<0.35;
-  const h={no,name:r.n,style,mak,cls:0,apt:r.a,sf:r.f,cond:gauss()*0.01,coat:COATS[r.c],tier:r.t,
+  const h={no,name:r.n,style,mak,cls:0,apt:r.a,sf:r.f,cond:gauss()*0.01,coat:COATS[r.c],rk:r.k,star:r.p==='S'&&r.k==='G1',
     kick:KICK[style]+gauss()*0.012,spurt:mak?Math.max(600,Math.min(1100,D*(0.42+Math.random()*0.15))):SPURT[style],sus:SUS[style]+({逃げ:-60,先行:-30,差し:20,追込:40}[style])*k};
   if(mak) h.sus=h.spurt*(0.56-0.06*k+Math.random()*0.3);
-  h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*CPU_SD+TIERB[r.t]; if(r.t==='S'||r.t==='A') h.cls=1;
+  const up=CRANK[r.k]>CRANK[sp.g];
+  h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*CPU_SD+clsB(r.k,sp.g)+PWB[r.p]; if(up) h.cls=1;
   h.sex=r.x; h.age=young?pick([2,3]):pick([3,4,4,5,5,6]);
-  h.kg=BASEKG-(h.sex==='牝'&&!fem?2:0)+((sp.g==='OP'||sp.g==='G3')&&(r.t==='S'||r.t==='A')?1+rint(2):0); h.s-=(h.kg-BASEKG)*KGK; h.owner='';
+  h.kg=BASEKG-(h.sex==='牝'&&!fem?2:0)+((sp.g==='OP'||sp.g==='G3')&&up?1+rint(2):0); h.s-=(h.kg-BASEKG)*KGK; h.owner='';
   return h;
 }
 
@@ -2339,8 +2413,9 @@ const GEST=3;                // 種付けから誕生まで
 const BASEKG=57, KGK=0.12;   // 基本の斤量・1kgあたりの効き(実力 s)
 const FEE={OP:5,G3:10,G2:20,G1:40};          // 出走登録料
 const SHARE=[1,0.4,0.25,0.15,0.1];           // 2〜5着の賞金の割合
-const FIELD={OP:10,G3:12,G2:12,G1:14}, MAXF=16;   // 出走頭数(足りない分はCPUの馬)
-let CPU_S={OP:-1.8,G3:-1.2,G2:-0.45,G1:0.05};
+const FIELD={OP:[8,10],G3:[8,10],G2:[9,11],G1:[12,12]}, MAXF=12;   // 出走頭数(この範囲でランダム。プレイヤーの馬が多いときは12頭まで増やす)
+const fieldSize=g=>{ const [a,b]=FIELD[g]; return a+rint(b-a+1); };
+let CPU_S={OP:-1.1,G3:-0.6,G2:0.15,G1:1.25};
 let CPU_SD=0.7, CPU_TOP=[2.6,1.3,0.6];   // CPUの馬のばらつき・人気馬への上乗せ(本命・対抗・単穴)
 const AID={under:50,amount:200,every:10};          // 救済
 const MARKET_EVERY=6;
@@ -2525,6 +2600,8 @@ function makeFoal(sire,dam){
 }
 
 /* ---------- 出走表をつくる ---------- */
+// 除外になった馬:厩舎に理由を出し、お知らせにも残す(次に登録すると消える)
+function exclude(h,sp,why){ refundEntry(h); h.ex={R:sp.R,name:sp.name,why}; msg(h.owner,`⚠ ${h.name}は第${sp.R}戦 ${sp.name}を除外になりました(${why})。登録料は返しました`); }
 function refundEntry(h){ if(h.entry==null) return; const p=W.players[h.owner]; if(p) p.coins+=h.fee||0; h.entry=null; h.fee=0; }
 function raceHorse(h,no,sp){
   const D=sp.dist, k2=(D-1600)/1400, e=effOf(h,sp.R), kg=kgOf(h.sex,h.rec.wins,sp), st=h.style;
@@ -2573,15 +2650,15 @@ function makeCard(R){
   const C={R,spec:sp,race:R,races:0,crsId:sp.crs,crs,rh:crs.dir==='mix'?Math.random()<0.5:crs.dir==='right',surf:sp.surf,dist:sp.dist,
     rn:{name:sp.name,grade:sp.g,no:sp.loop},step:sp.dist/((6.5+sp.dist/450)*60)};
   let ent=Object.values(W.horses).filter(h=>h.status==='active'&&h.entry===R&&W.players[h.owner]);
-  ent=ent.filter(h=>{ const why=canEnter(h,sp); if(why){ refundEntry(h); msg(h.owner,`${h.name}は${sp.name}に出られませんでした(${why})。登録料を返しました`); return false; } return true; });
+  ent=ent.filter(h=>{ const why=canEnter(h,sp); if(why){ exclude(h,sp,why); return false; } return true; });
   if(ent.length>MAXF){
     const ord=sp.g==='G1'?[...ent].sort((a,b)=>b.rec.prize-a.rec.prize||Math.random()-0.5):shuffle([...ent]);
-    ord.slice(MAXF).forEach(h=>{ refundEntry(h); msg(h.owner,`${h.name}は${sp.name}の${sp.g==='G1'?'賞金順':'抽選'}で除外になりました。登録料を返しました`); });
+    ord.slice(MAXF).forEach(h=>exclude(h,sp,sp.g==='G1'?'登録が多く賞金順で漏れました':'登録が多く抽選で漏れました'));
     news(`${sp.name}は登録が多く、${ord.length-MAXF}頭が${sp.g==='G1'?'賞金順':'抽選'}で除外`);
     ent=ord.slice(0,MAXF);
   }
-  ent.forEach(h=>{ h.entry=null; h.fee=0; });
-  C.H=Math.max(FIELD[sp.g],ent.length);
+  ent.forEach(h=>{ h.fee=0; h.ex=null; });   // 登録はレースが終わるまで残す(出走表を作り直しても入るように)
+  C.H=Math.min(MAXF,Math.max(fieldSize(sp.g),ent.length));
   withS(C,()=>{
     // CPUの馬は名馬をもじった馬から、条件(性別・芝ダ・距離・格)に合わせて選ぶ。足りなければ架空の名前で補う
     const taken=new Set(ent.map(h=>h.name)), picks=pickRoster(C.H-ent.length,sp,taken);
@@ -2590,7 +2667,7 @@ function makeCard(R){
     C.horses=list.map((o,i)=>o.h?raceHorse(o.h,i+1,sp):o.r?rosterHorse(i+1,o.r,sp):cpuHorse(i+1,o.name,sp));
     // CPUの馬に力の差をつける(はっきりした本命・対抗がいるように)
     // 距離・芝ダートが合っている馬ほど人気馬になりやすい
-    const dc=dcat(sp.dist), fit=h=>ABIL*h.s+aptBonus(h.apt,dc)+sfBonus(h)+Math.random()*0.006;
+    const dc=dcat(sp.dist), fit=h=>ABIL*h.s+aptBonus(h.apt,dc)+sfBonus(h)+Math.random()*0.006+(h.rk?CRANK[h.rk]*0.03:0);   // 格上の馬ほど人気馬になりやすい
     C.horses.filter(h=>!h.hid).map(h=>[h,fit(h)]).sort((a,b)=>b[1]-a[1]).forEach(([h],k)=>{ const b=CPU_TOP[k]||0; if(b){ h.s+=b; h.cls=1; } });
     // 騎手:プレイヤーの馬は賞金の多い馬ほど名手が乗りやすい
     const usedJ=new Set(), byskill=[...JOCKEYS].sort((a,b)=>b[1]-a[1]+Math.random()*1.5-0.75);
@@ -2647,6 +2724,7 @@ function finish(order){
   if(S.hitList[0]&&S.hitList[0].pay>=1000) news(`${S.hitList[0].name}さんが${sp.name}で${yen(S.hitList[0].pay)}の大当たり!`);
   order.forEach((i,place)=>{
     const rh=S.horses[i]; if(!rh.hid) return; const h=W.horses[rh.hid]; if(!h) return; const p=W.players[h.owner];
+    if(h.entry===sp.R){ h.entry=null; h.fee=0; }
     const prize=place<SHARE.length?Math.round(sp.prize*SHARE[place]):0, r=h.rec, gains={};
     r.runs++; if(place<3) r.w[place]++; r.prize+=prize;
     if(place===0){ r.wins[sp.g]=(r.wins[sp.g]||0)+1; if(sp.g!=='OP') r.big.push(`${sp.name}(${sp.g})`); }
@@ -2656,9 +2734,9 @@ function finish(order){
     if(add>0){ h.st[key]+=add; h.peak[key]=Math.max(h.peak[key]||0,h.st[key]); gains[key]=add; }
     const fat0=h.fat; h.fat=Math.min(6,h.fat+2);
     if(p){ p.coins+=prize; p.prize+=prize; if(place===0){ p.wins++; if(sp.g==='G1') p.g1++; }
-      const beat=order.slice(place+1).map(j=>S.horses[j]).filter(x=>x.tier==='S'||x.tier==='A').map(x=>x.name);
+      const beat=order.slice(place+1).map(j=>S.horses[j]).filter(x=>x.rk==='G1').map(x=>x.name);
       res(h.owner).horses.push({name:h.name,place:place+1,prize,ek:key,ea:add,f0:fat0,f1:h.fat,beat});
-      const bigBeat=order.slice(place+1).map(j=>S.horses[j]).filter(x=>x.tier==='S');
+      const bigBeat=order.slice(place+1).map(j=>S.horses[j]).filter(x=>x.star);
       if(bigBeat.length&&!(place===0&&sp.g==='G1')) news(`🔥 ${p.name}さんの${h.name}が${bigBeat[0].name}に先着!`);
       if(place===0&&sp.g==='G1') news(`🏆 ${p.name}さんの${h.name}が${sp.name}(G1)を制覇!`);
       else if(place===0&&sp.g!=='OP') news(`${p.name}さんの${h.name}が${sp.name}(${sp.g})に勝利`);
@@ -2688,6 +2766,7 @@ function nextRound(){
     if(h.trainedR!==W.R&&!ran.has(h.id)) h.fat=Math.max(0,h.fat-1);      // 何もしなかった馬は少し回復
     if(Math.random()<0.15) h.cond=clamp(h.cond+(Math.random()<0.5?1:-1),-2,2); });
   W.R++;
+  Object.values(W.horses).forEach(h=>{ if(h.entry!=null&&h.entry<W.R) exclude(h,specOf(h.entry),'出走表に入れませんでした'); });
   // 子馬の誕生
   Object.entries(W.players).forEach(([pid,p])=>{
     p.preg=p.preg.filter(f=>{ if(f.due>W.R) return true;
@@ -2756,9 +2835,9 @@ function doAct(dev,a){
       const sp=specOf(R), why=canEnter(h,sp); if(why) return {ok:false,msg:why};
       if(inCard&&R===W.R) return {ok:false,msg:'いまのレースに出走中です'};
       const old=h.entry, oldFee=h.fee||0; if(p.coins+(old!=null?oldFee:0)<FEE[sp.g]) return {ok:false,msg:'コインが足りません'};
-      refundEntry(h); p.coins-=FEE[sp.g]; h.entry=R; h.fee=FEE[sp.g];
+      refundEntry(h); p.coins-=FEE[sp.g]; h.entry=R; h.fee=FEE[sp.g]; h.ex=null;
       return {ok:true,msg:`${h.name}を${sp.name}(第${R}戦)に登録しました`}; }
-    case 'unentry':{ if(!h||h.entry==null) return {ok:false,msg:'登録していません'}; refundEntry(h); return {ok:true,msg:'登録を取り消しました(登録料は返しました)'}; }
+    case 'unentry':{ if(!h||h.entry==null) return {ok:false,msg:'登録していません'}; if(inNext||(inCard&&h.entry===W.R)) return {ok:false,msg:'出走表が決まったので取り消せません'}; refundEntry(h); return {ok:true,msg:'登録を取り消しました(登録料は返しました)'}; }
     case 'retire':{ if(!h||h.status!=='active') return {ok:false,msg:'引退できません'}; if(inNext) return {ok:false,msg:NEXTMSG}; if(inCard) return {ok:false,msg:'いまのレースに出走中です'};
       refundEntry(h); h.status='retired'; h.retiredR=W.R; news(`${p.name}さんの${h.name}が引退`);
       return {ok:true,msg:`${h.name}は引退して牧場に入りました`}; }
@@ -2911,7 +2990,7 @@ function pushState(){
 function hView(h){
   const R=W.R, inCard=!!(S.horses&&S.phase!=='result'&&S.horses.some(x=>x.hid===h.id)); const inNext=inNextCard(h);
   const v={id:h.id,name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
-    e:h.status==='active'?effOf(h,R):h.peak,fat:h.fat,cond:h.cond,status:h.status,entry:h.entry,inCard,inNext,nextR:inNext?S.next.R:null,trained:h.trainedR===R,rec:h.rec,
+    e:h.status==='active'?effOf(h,R):h.peak,fat:h.fat,cond:h.cond,status:h.status,entry:h.entry,ex:h.ex||null,inCard,inNext,nextR:inNext?S.next.R:null,trained:h.trainedR===R,rec:h.rec,
     room:roomWord(h),sell:sellPrice(h),sire:h.sire||'',dam:h.dam||''};
   if(h.status==='active') v.elig=Array.from({length:6},(_,k)=>{ const sp=specOf(R+1+k); return {R:sp.R,why:S.next&&S.next.R===sp.R?'出走表が決まりました(受付終了)':canEnter(h,sp),kg:kgOf(h.sex,h.rec.wins,sp)}; });
   return v;
@@ -3082,7 +3161,9 @@ async function padStart(room,kind){
 function bindPlayer(pid){
   P.offs.forEach(f=>f()); P.offs=[]; P.pid=pid; P.pv=null; P.my=null;
   if(pid){
-    P.offs.push(P.be.on(`${P.base}/pv/${pid}`,v=>{ if(v){ v.horses=v.horses||[]; v.msgs=v.msgs||[]; v.preg=v.preg||[]; v.horses.forEach(h=>{ h.rec=h.rec||{}; h.rec.wins=h.rec.wins||{}; h.rec.w=h.rec.w||[0,0,0]; h.rec.big=h.rec.big||[]; h.elig=h.elig||[]; h.e=h.e||{}; }); } P.pv=v; padRender(); }));
+    P.offs.push(P.be.on(`${P.base}/pv/${pid}`,v=>{ if(v){ v.horses=v.horses||[]; v.msgs=v.msgs||[]; v.preg=v.preg||[]; v.horses.forEach(h=>{ h.rec=h.rec||{}; h.rec.wins=h.rec.wins||{}; h.rec.w=h.rec.w||[0,0,0]; h.rec.big=h.rec.big||[]; h.elig=h.elig||[]; h.e=h.e||{}; }); } const top=v&&v.msgs[0]?v.msgs[0].R+'|'+v.msgs[0].t:'';
+      if(P.pv&&P.pv.pid===pid&&top&&top!==P.msgTop){ P.newMsg=true; if(P.tab!=='stable') toast('お知らせ:'+v.msgs[0].t); }
+      if(v) P.msgTop=top; P.pv=v; padRender(); }));
     P.offs.push(P.be.on(`${P.base}/bets/${pid}`,b=>{ P.my=b&&P.st&&b.race===P.st.R?b:null; if(P.tab==='bet') padRender(); }));
   }
   padRender();
@@ -3152,14 +3233,14 @@ function padRender(){
   const deck=bet&&P.tab==='bet';
   who.innerHTML=`<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg" id="padLogout">ログアウト</button>`;
   const tabs=$('#padTabs'); tabs.hidden=false;
-  tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard)?'<i class="dotn"></i>':''}</button>`).join('');
+  tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&(P.newMsg||pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard))?'<i class="dotn"></i>':''}</button>`).join('');
   $('#padSlip').hidden=true;
   if(P.tab==='bet'){
     if(bet) return padBet(st,pv);
     if(st.phase==='race') return padRaceView(st,pv);
     return padResult(st,pv);
   }
-  if(P.tab==='stable') return padStable(st,pv);
+  if(P.tab==='stable'){ P.newMsg=false; return padStable(st,pv); }
   if(P.tab==='market') return padMarket(st,pv);
   if(P.tab==='farm') return padFarm(st,pv);
   return padInfo(st,pv);
@@ -3227,7 +3308,7 @@ function padBet(st,pv){
   const m=$('#padMain');
   if(!P.odds||P.odds.race!==st.R){ padMsg('オッズを受信中…',''); return; }
   const H=st.horses.length, fixed=!!(P.my&&P.my.done&&!(P.opt&&P.optRace===st.R&&P.unfix)), mine=myTickets(), cols=bcols(), tf=P.mode==='tf', MCOL={'◎':'m0','○':'m1','▲':'m2','△':'m3','×':'m4'};
-  const KC={'↑':'k0','↗':'k1','→':'k2','↘':'k3','↓':'k4'}, rh=H>13?33:H>10?40:46;
+  const KC={'↑':'k0','↗':'k1','→':'k2','↘':'k3','↓':'k4'}, rh=H>11?40:H>9?47:55;   // 最大12頭。頭数が少ないほど1行を高くする
   const narrow=(window.innerWidth||1180)<1150;   // 幅1080pxなどのiPadでは列を詰めて、横に並べたまま収める
   const extraW=tf?(narrow?['132px','132px']:['150px','150px']):cols.map(()=>cols.length>2?(narrow?'50px':'58px'):(narrow?'56px':'66px'));
   const winW=tf?'':(narrow?' 54px':' 58px');   // 組み合わせの券種でも単勝の倍率を出す
@@ -3385,11 +3466,12 @@ function padStable(st,pv){
   const cards=act.map((h,i)=>{
     const ent=h.entry!=null?specOf(h.entry):null;
     const state=h.inCard?'<b class="hot">🏇 いまのレースに出走中</b>':h.inNext?`<b class="hot">🏇 次のレース(第${h.nextR}戦)に出走決定!調教の成果も反映されます</b>`:ent?`出走予定:第${ent.R}戦 ${esc(ent.name)} <span class="a-grade ${ent.g}">${ent.g}</span>`:'<span class="dim">出走予定なし</span>';
+    const exHTML=h.ex&&!h.inCard&&!h.inNext&&h.entry==null?`<div class="exw">⚠ 第${h.ex.R}戦 ${esc(h.ex.name)}は除外(${esc(h.ex.why)})<small>登録料は返しました。ほかのレースに登録しましょう</small></div>`:'';
     return `<div class="hcard ${h.sex==='牝'?'f':''}"><div class="hhead">${horseCanvas(h,i)}<div><h4>${esc(h.name)}<small>${h.sex}${h.age}</small></h4><div>${horseTags(h)}</div>
       <div class="meta">${recText(h.rec)}${h.rec.big.length?`<br>🏆 ${h.rec.big.slice(-3).map(esc).join('・')}`:''}</div></div></div>
       ${statBars(h.e)}
       <div class="meta">疲れ:<b>${fatW(h.fat)}</b> 調子:<b>${COND[h.cond+2]}</b> 伸びしろ:<b>${h.room}</b>${h.sire?`<br>父 ${esc(h.sire)} × 母 ${esc(h.dam)}`:''}</div>
-      <div class="hstate">${state}</div>
+      <div class="hstate">${state}</div>${exHTML}
       <div class="btns"><button class="hb go" data-a="train" data-hid="${h.id}" ${h.trained||h.inCard?'disabled':''}>${h.trained?'調教済み':'調教する'}</button>
       <button class="hb gold" data-a="entry" data-hid="${h.id}">${h.entry!=null?'出走を変える':'出走登録'}</button>
       ${h.rec.runs===0?`<button class="hb" data-a="rename" data-hid="${h.id}">名前を変える</button>`:''}
@@ -3397,7 +3479,7 @@ function padStable(st,pv){
       <button class="hb" data-a="sell" data-hid="${h.id}" ${h.inCard||h.inNext?'disabled':''}>売る(${yen(h.sell)})</button></div></div>`; }).join('');
   const preg=pv.preg.map(f=>`<div class="hcard egg"><h4>🐣 誕生を待っています</h4><div class="meta">父 ${esc(f.sire)} × 母 ${esc(f.dam)}<br>あと${Math.max(1,f.due-pv.R)}レースで誕生(生まれたら2歳ですぐ出走できます)</div></div>`).join('');
   const empty=Array.from({length:Math.max(0,SLOTS-used)},()=>`<div class="hcard empty"><h4>空き</h4><div class="meta">「市場」で馬を買うか、「牧場」で種付けしましょう</div><button class="hb gold" data-tab="market">市場へ</button></div>`).join('');
-  const msgs=pv.msgs.length?`<div class="a-panel" style="margin-top:12px"><h3>お知らせ</h3><ul class="a-list">${pv.msgs.slice(0,5).map(x=>`<li><span class="dim">第${x.R}戦</span><span>${esc(x.t)}</span></li>`).join('')}</ul></div>`:'';
+  const msgs=pv.msgs.length?`<div class="a-panel" style="margin-top:12px"><h3>お知らせ</h3><ul class="a-list">${pv.msgs.slice(0,5).map(x=>`<li><span class="dim">第${x.R}戦</span><span class="${x.t.startsWith('⚠')?'exm':''}">${esc(x.t)}</span></li>`).join('')}</ul></div>`:'';
   $('#padMain').innerHTML=`<div class="ptitle">厩舎 <small>現役馬 ${act.length}頭 + 誕生待ち ${pv.preg.length}頭 / ${SLOTS}</small></div><div class="hcards">${cards}${preg}${empty}</div>${msgs}`;
   drawHorseCanvases();
 }
