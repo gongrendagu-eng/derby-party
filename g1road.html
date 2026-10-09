@@ -908,6 +908,27 @@ html.padmode{-webkit-text-size-adjust:100%}
 .exw{margin-top:4px;padding:6px 10px;border-radius:8px;background:#3a1020;border:2px solid #ff4d8d;color:#ffd0e0;font-size:14px;font-weight:700;line-height:1.4}
 .exw small{display:block;font-size:12px;font-weight:500;color:#ffb3cc}
 .a-list .exm{color:#ff8fb8;font-weight:700}
+.lv-tk h3 small{font-family:var(--dot);font-size:14px;color:#c9d0f2}.lv-tk h3 small b{color:var(--gl);font-size:20px;font-weight:400;text-shadow:0 0 10px rgba(255,207,58,.9)}
+.a-list li.lv{transition:background .3s,border-color .3s}
+.a-list li.lv .od{color:#9aa4d6;font-size:13px}
+.a-list li.lv .lv-st{margin-left:auto;font-family:var(--arc);font-weight:400;font-size:14px;white-space:nowrap}
+.a-list li.lv .lv-st+.am{margin-left:6px}
+.a-list li.lv.hot{border:2px solid var(--gl);background:#3a3510;animation:lvhot .8s ease-in-out infinite alternate}
+.a-list li.lv.hot .lv-st{color:var(--gl)}.a-list li.lv.hot .am{color:var(--gl);font-size:17px}
+@keyframes lvhot{from{box-shadow:0 0 6px rgba(255,207,58,.5)}to{box-shadow:0 0 22px rgba(255,207,58,1),inset 0 0 12px rgba(255,207,58,.35)}}
+.a-list li.lv.near{border:2px solid var(--cy);background:#0f2a3a;box-shadow:0 0 10px rgba(57,224,255,.5)}
+.a-list li.lv.near .lv-st{color:var(--cy)}
+.a-list li.lv.out{opacity:.4}
+@media (prefers-reduced-motion:reduce){.a-list li.lv.hot{animation:none;box-shadow:0 0 16px rgba(255,207,58,.9)}}
+.a-racebox{grid-template-columns:minmax(0,1fr) 420px}
+.lv-tk h3{gap:8px;flex-wrap:wrap}
+.a-list li.lv{flex-wrap:nowrap;white-space:nowrap;gap:5px;font-size:14px}
+.a-list li.lv .a-num{width:24px;height:24px;font-size:13px;flex:none}
+.a-list li.lv .od{font-size:12px}
+.a-list li.lv .lv-st{font-size:13px}
+.a-list li.lv .am{flex:none}
+@media (max-width:1100px){.a-racebox{grid-template-columns:minmax(0,1fr) 380px}}
+@media (max-width:900px){.a-racebox{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -2095,7 +2116,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=20;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=21;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3407,7 +3428,7 @@ function padSendList(list,done,fixed){
 function padRaceView(st,pv){
   const mine=(pv.bet||[]), myH=st.horses.filter(h=>h.pid===P.pid);
   $('#padMain').innerHTML=`<div class="a-racebox"><div><div class="a-title">RACE<span>前のスクリーンに注目!</span></div><div class="a-rem" id="liveRem"></div><ol class="a-lamps" id="liveBox"></ol></div>
-    <div><div class="a-panel"><h3>買った馬券</h3>${tkList(st,mine,null,false)}</div>${myH.length?`<div class="a-panel" style="margin-top:10px"><h3>自分の馬</h3><ul class="a-list">${myH.map(h=>`<li>${aNum(h.no)}<span>${esc(h.name)}</span><span class="am">${h.pop}番人気</span></li>`).join('')}</ul></div>`:''}</div></div>`;
+    <div><div class="a-panel lv-tk"><h3>買った馬券<small id="liveSum"></small></h3><ul class="a-list" id="liveTk">${mine.length?'':'<li class="none">このレースは馬券を買っていません</li>'}</ul></div>${myH.length?`<div class="a-panel" style="margin-top:10px"><h3>自分の馬</h3><ul class="a-list">${myH.map(h=>`<li>${aNum(h.no)}<span>${esc(h.name)}</span><span class="am">${h.pop}番人気</span></li>`).join('')}</ul></div>`:''}</div></div>`;
   padLive();
 }
 function padLive(){
@@ -3419,6 +3440,26 @@ function padLive(){
   $('#liveRem').textContent=lv.fin?'ゴール!':lv.gate?'ゲートイン…':`残り ${Math.ceil(lv.rem/50)*50}m`;
   box.innerHTML=lv.order.map((no,k)=>{ const ph=lv.photo&&k<2, me=mine.has(no)||own.has(no);
     return `<li class="${me?'mine':''} ${k===0&&!ph?'first':''}"><span class="ps">${ph?'判定':k<lv.fin?(k+1)+'着':(k+1)+'位'}</span>${aNum(no)}<span class="nm">${esc(st.horses[no-1].name)}</span><span class="tag">${own.has(no)?'★自分の馬':mine.has(no)?'★買った馬':''}</span></li>`; }).join('');
+  liveTickets(st,lv);
+}
+// 買った馬券を「いまの順位のままなら」で光らせる(的中=金色、あと少し=水色)
+const NEEDPOS={win:1,plc:3,qn:2,ex:2,wd:3,t3f:3,t3:3};
+function liveTickets(st,lv){
+  const box=$('#liveTk'); if(!box) return; const list=(P.pv&&P.pv.bet)||[]; if(!list.length) return;
+  const run=lv&&lv.race===st.R&&lv.order&&!lv.gate&&(lv.fin>0||lv.rem<=st.dist-200), o=run?lv.order:[], done=run&&lv.fin>=o.length;   // スタートから200mまでは判定しない
+  let sum=0;
+  const rows=list.map(t=>{ const odds=padOdds(st,t), pay=Math.floor(t.amt*odds); let cls='', tag='';
+    if(run){ const hit=tkHit(t,o), k=NEEDPOS[t.type], inPos=t.hs.filter(x=>{ const p=o.indexOf(x); return p>=0&&p<k; }).length;
+      const pos=o.indexOf(t.hs[0])+1;
+      const near=t.type==='win'?pos<=3:t.type==='plc'?pos<=5:inPos>=t.hs.length-1;
+      if(hit){ cls='hot'; sum+=pay; tag=`<b class="lv-st">${done?'的中!':lv.photo?'判定待ち':'このままなら的中!'}</b><span class="am">+${yen(pay)}</span>`; }
+      else if(near&&!done){ cls='near'; tag=`<b class="lv-st">${t.type==='win'?pos+'位':t.type==='plc'?pos+'位':'あと1頭'}</b><span class="am">${yen(t.amt)}</span>`; }
+      else { cls=done?'out':''; tag=`<span class="am">${yen(t.amt)}</span>`; } }
+    else tag=`<span class="am">${yen(t.amt)}</span>`;
+    return {cls,html:`<li class="lv ${cls}">${tkName(t)}<span class="od">${odds.toFixed(1)}倍</span>${tag}</li>`}; });
+  const ordr={hot:0,near:1,'':2,out:3};
+  box.innerHTML=rows.sort((a,b)=>ordr[a.cls]-ordr[b.cls]).map(r=>r.html).join('');
+  const el=$('#liveSum'); if(el) el.innerHTML=!run?'スタートから200mで判定します':sum?`${done?'払い戻し':'このままなら'} <b>+${yen(sum)}</b>`:'';
 }
 function padResult(st,pv){
   const r=pv.res||{tickets:[],tk:[],pay:0,horses:[]}, first=P.shownRes!==st.R; P.shownRes=st.R;
