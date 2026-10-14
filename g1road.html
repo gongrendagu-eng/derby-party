@@ -929,6 +929,37 @@ html.padmode{-webkit-text-size-adjust:100%}
 .a-list li.lv .am{flex:none}
 @media (max-width:1100px){.a-racebox{grid-template-columns:minmax(0,1fr) 380px}}
 @media (max-width:900px){.a-racebox{grid-template-columns:1fr}}
+.pr-wrap{display:flex;flex-direction:column;gap:8px;min-height:420px}
+.pr-video{position:relative;flex:1 1 auto;min-height:200px;border-radius:10px;overflow:hidden;border:2px solid var(--edge);background:#2d6a35}
+.pr-video canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.pr-top{position:absolute;left:10px;top:10px;display:flex;gap:8px;align-items:center;pointer-events:none}
+.pr-rem{background:rgba(8,10,24,.85);border:2px solid var(--gl);border-radius:8px;padding:0 12px;font-family:var(--dot);font-size:26px;color:var(--gl);white-space:nowrap}
+.pr-rem:empty{display:none}
+.pr-live{display:flex;align-items:center;gap:6px;background:#d61f3c;color:#fff;font-weight:900;font-size:13px;padding:3px 10px;border-radius:4px}
+.pr-live i{width:8px;height:8px;border-radius:50%;background:#fff;animation:prblink 1s infinite}
+@keyframes prblink{50%{opacity:.3}}
+.pr-cap{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:6px 12px;background:linear-gradient(to top,rgba(8,10,24,.92),rgba(8,10,24,.5));pointer-events:none}
+.pr-cap b{flex:none;font-size:12px;color:#06202c;background:var(--cy);padding:1px 8px;border-radius:4px}
+.pr-cap span{font-weight:900;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pr-cap em{margin-left:auto;flex:none;font-style:normal;font-size:12px;font-weight:700;color:var(--gl)}
+.pr-strip{list-style:none;margin:0;padding:0;display:flex;gap:4px;flex:none}
+.pr-strip li{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:4px;padding:3px 4px;height:44px;box-sizing:border-box;border-radius:7px;background:var(--pnl);border:2px solid var(--edge)}
+.pr-strip .ps{flex:none;font-family:var(--dot);font-size:13px;color:#c9d0f2}
+.pr-strip .a-num{width:22px;height:22px;font-size:12px;flex:none}
+.pr-strip .nm{font-size:11px;font-weight:700;line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
+.pr-strip .tag{display:none}
+.pr-strip li.first .ps{color:var(--gl)}
+.pr-strip li.mine{border-color:var(--gl);background:#2b2610;animation:lvhot .8s ease-in-out infinite alternate}
+.pr-strip li.mine .nm{color:#ffe9a8}
+.pr-bottom{flex:none;height:150px;display:flex;gap:8px}
+.pr-sum{flex:none;width:200px;border-radius:10px;border:2px solid var(--gl);background:#1a1606;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.pr-sum small{font-size:13px;font-weight:700;color:#ffe9a8}
+.pr-sum b{font-family:var(--dot);font-weight:400;font-size:36px;line-height:1.1;color:var(--gl);text-shadow:0 0 12px rgba(255,207,58,.8)}
+.pr-sum b.zero{color:#8088b0;text-shadow:none}
+.pr-tk{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:34px;gap:5px;overflow-y:auto;align-content:start}
+.pr-tk li.none{grid-column:1/-1}
+@media (max-width:900px){.pr-video{flex:none;height:62vw}.pr-bottom{flex:1 1 auto;height:auto;min-height:150px}.pr-tk{grid-template-columns:1fr}.pr-cap em{display:none}.pr-sum{width:150px}.pr-strip .nm{display:none}}
+@media (prefers-reduced-motion:reduce){.pr-strip li.mine{animation:none}}
 </style>
 </head>
 <body>
@@ -1336,9 +1367,9 @@ function buildCourse(crs,rh,W,H,pad,top,tw){
   return {P,N,X,Y,NX,NY,segs,home0:home.s0,home1:home.s1,cx:(bx0+bx1)/2,cy:(by0+by1)/2,sc,bx0,bx1,by0,by1};
 }
 
-function layout(){
+function layout(cvEl){
   csCache={};
-  const cv=$('#cv'), box=cv.parentElement.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  const cv=cvEl||$('#cv'), box=cv.parentElement.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
   cv.width=Math.max(1,box.width*dpr); cv.height=Math.max(1,box.height*dpr);
   const W=box.width, H=box.height;
   const pad=Math.max(12,Math.min(W,H)*0.04);
@@ -1346,7 +1377,7 @@ function layout(){
   const u=Math.max(24,Math.min(tw*0.4,64));               // 馬の大きさ
   const top=u*1.35+6;                                     // 上側は馬番の丸が切れないよう余白を多めに
   const crs=S&&S.crs?S.crs:COURSES.kyoshitsu, g=buildCourse(crs,!!(S&&S.rh),W,H,pad,top,tw);
-  G={W,H,dpr,pad,tw,u,P:g.P,g,R:Math.max(40,(g.by1-g.by0)/2-tw/2),goal:0,lap:LAP};
+  G={W,H,dpr,pad,tw,u,P:g.P,g,R:Math.max(40,(g.by1-g.by0)/2-tw/2),goal:0,lap:LAP,cv};
   G.goal=fitGoal();
   G.sw=S&&S.crs?S.crs.sw:400;   // 直線の長さ(m)。ここで直線カメラに切り替える
 }
@@ -1591,7 +1622,7 @@ let DRAW_STRAIGHT=false;                  // いま直線の映像を描いて�
 const XF=900;                             // 楕円コース⇔直線の切り替えにかける時間(ミリ秒)
 const ease=k=>k*k*(3-2*k);
 function drawRace(run){
-  const c=$('#cv').getContext('2d'), cs=v=>{ if(!(v in csCache)) csCache[v]=getComputedStyle(document.documentElement).getPropertyValue(v).trim(); return csCache[v]; };
+  const c=(G.cv||$('#cv')).getContext('2d'), cs=v=>{ if(!(v in csCache)) csCache[v]=getComputedStyle(document.documentElement).getPropertyValue(v).trim(); return csCache[v]; };
   c.setTransform(G.dpr,0,0,G.dpr,0,0);
   const now=performance.now();
   if(S.cam){
@@ -1604,6 +1635,13 @@ function drawRace(run){
     const k=(now-S.camOutT0)/XF; drawOval(run,c,cs,1); c.globalAlpha=1-ease(k); drawStraight(run,c,cs,S.camPrev); c.globalAlpha=1; return;
   }
   drawOval(run,c,cs,1);
+}
+// 馬の足元に金色の光(iPadで自分の馬券・自分の馬を見つけやすく)
+function glowAt(c,x,y,rx){
+  const a=0.75+0.2*Math.sin(performance.now()/260);
+  c.save(); c.translate(x,y); c.scale(1,0.32);
+  const g=c.createRadialGradient(0,0,rx*0.15,0,0,rx); g.addColorStop(0,`rgba(255,214,70,${a})`); g.addColorStop(0.7,`rgba(255,200,40,${a*0.6})`); g.addColorStop(1,'rgba(255,200,40,0)');
+  c.fillStyle=g; c.beginPath(); c.arc(0,0,rx,0,Math.PI*2); c.fill(); c.restore();
 }
 function drawOval(run,c,cs,boost){
   DRAW_STRAIGHT=false;
@@ -1625,6 +1663,7 @@ function drawOval(run,c,cs,boost){
   c.fillStyle=cs('--field'); c.fillRect(0,0,W,H);
   c.save(); c.translate(W/2,H/2); c.scale(Z,Z); c.translate(-cxv,-cyv);
   drawCourse(c,cs);
+  if(S.glow) items.forEach(o=>{ if(S.glow.has(o.h.no)) glowAt(c,o.x,o.y+u*0.12,u*1.05); });
   items.forEach(o=>{ const r=run[o.i]; drawHorse(c,o.x,o.y-u*0.3,u,o.dir,o.ang,r.ph,o.h,r.fin===null&&r.state==='spurt'?0.6:0,!!(S.win&&S.win.i===o.i)); });
   drawGate(c);
   // 馬番の丸
@@ -1695,6 +1734,7 @@ function drawStraight(run,c,cs,cam){
     if(S.surf==='dirt'&&(r.fin===null||(r.post||0)>0.5)){   // ダートは後ろ脚が砂を蹴り上げる
       for(let k=0;k<4;k++){ const q=((r.ph*0.35+k*0.25)%1); c.fillStyle=`rgba(196,160,118,${0.45*(1-q)})`;
         c.beginPath(); c.arc(hx-sg*(u*0.55+q*u*0.7),y+u*0.18-q*u*0.25,u*(0.06+q*0.12),0,Math.PI*2); c.fill(); } }
+    if(S.glow&&S.glow.has(h.no)) glowAt(c,hx,y+u*0.2,u*1.05);
     drawHorse(c,hx,y-u*0.22,u,sg,0,r.ph,h,r.fin===null?1:0);
     const [bg,fg]=wk(h.no), rr=Math.max(11,Math.min(laneH*0.36,22)), bx=hx-sg*u*0.62, by=y-u*0.35;
     c.fillStyle=bg; c.strokeStyle='rgba(0,0,0,.6)'; c.lineWidth=2; c.beginPath(); c.arc(bx,by,rr,0,Math.PI*2); c.fill(); c.stroke();
@@ -1703,7 +1743,7 @@ function drawStraight(run,c,cs,cam){
       c.strokeText(r.place+'着',nose+sg*rr*2.2,y-u*0.25); c.fillText(r.place+'着',nose+sg*rr*2.2,y-u*0.25); }
   });
   // 見出し
-  c.fillStyle='rgba(0,0,0,.6)'; c.fillRect(12,10,200,34); c.fillStyle='#fff'; c.font=`900 20px ${cs('--f-body')}`; c.textAlign='left'; c.fillText('ラストスパート 🎥',24,28);
+  if(!S.padView){ c.fillStyle='rgba(0,0,0,.6)'; c.fillRect(12,10,200,34); c.fillStyle='#fff'; c.font=`900 20px ${cs('--f-body')}`; c.textAlign='left'; c.fillText('ラストスパート 🎥',24,28); }
   // 右上に小さな全体図
   drawMini(run,c,cs);
   drawPhoto(c,cs); drawFx(c,cs);
@@ -1860,7 +1900,7 @@ function drawPhoto(c,cs){
   c.restore();
 }
 
-function say(t){ $('#caster').textContent=t; }
+function say(t){ $('#caster').textContent=t; if(S) S.sayT=t; }
 // 発走前:レース名をドーンと出す(G1は光の筋・キラキラ・金色の文字、G2/G3は色の帯、OPは控えめ)
 function showIntro(dur){
   const el=$('#intro'), g=S.rn.grade, last=S.races>0&&S.race===S.races, rom={G1:'GⅠ',G2:'GⅡ',G3:'GⅢ',OP:'オープン'}[g];
@@ -1958,7 +1998,7 @@ function updateLanes(run,t){
 }
 // ゴール後:直線で駆け抜けて減速 → 楕円コースで勝ち馬のウイニングラン(「次のレースへ」を押すまで)
 function afterRace(run,win){
-  const me=S, t0=performance.now(); let prev=t0;
+  const me=S, t0=performance.now(); let prev=t0, lastTrk=0;
   S.after=true;
   const canter=1600/(20*60);          // ウイニングランの速さ(1周約20秒)
   const f=now=>{
@@ -1966,6 +2006,7 @@ function afterRace(run,win){
     const dt=Math.min(100,now-prev), k=dt/16.6, kt=dt/S.tickS; prev=now;   // kt:直線と同じ速さで進めるための係数
     if(!S.win){
       run.forEach(r=>{ r.post=r.post??r.v??S.step; r.x+=r.post*kt; r.ph+=r.post/S.step*0.42*Math.sqrt(16.6/S.tickS)*kt; r.px=null; r.pph=null; r.pl=null; });
+      if(now-t0<2500&&now-lastTrk>=300){ lastTrk=now; sendTrk(run); }
       if(now-t0>3800){ S.camPrev=S.cam; S.camOutT0=performance.now(); S.cam=null; S.win={i:win}; S.ocam=null; layout();
         say(`${S.horses[win].no}番 ${S.horses[win].name}、ウイニングラン!スタンドから大きな拍手!`); crowd(0.3,1); setTimeout(()=>{ if(S===me) crowd(0.12,3); },2500); }
     } else {
@@ -2010,6 +2051,13 @@ function sendLive(run,gate){
     fin,gate:!!gate,photo:!!(S.photo&&!S.photo.revealed)}).catch(()=>{});
 }
 
+// iPadのレース映像用:各馬の位置・脚の動き・コース上の左右を送る(iPadはこれをなめらかにつないで描く)
+function sendTrk(run){
+  if(!NET||!S) return;
+  const ph=S.photo&&!S.photo.revealed?[S.photo.lo,S.photo.hi]:0;
+  NET.be.set(NET.base+'/trk',{race:S.race,t:Date.now(),x:run.map(r=>Math.round(r.x*10)),p:run.map(r=>Math.round(r.ph*100)),l:run.map(r=>Math.round((r.lane??0)*1000)),
+    s:run.map(r=>r.state==='spurt'?1:0).join(''),pl:run.map(r=>r.place||0),ph,c:S.sayT||''}).catch(()=>{});
+}
 function runRace(){
   stopTimer();
   S.tickS=Math.max(16.6/0.45,STRAIGHT_SEC*1000/(600/S.step));   // 直線(とゴール後)の1コマの長さ
@@ -2018,8 +2066,8 @@ function runRace(){
   $('#pay').hidden=true; S.cam=null; S.camPrev=null; S.camOutT0=0; S.fx={}; S.photo=null; S.gate={open:null}; S.after=false; S.win=null;
   layout();
   SPR.sets.clear(); SPR.queue=[]; warmSprites(sprScale(G.u,false),0,[1,-1]); S.warmS=false;   // ファンファーレの間に馬の画像を作っておく
-  const run=newRun(), me=S; S.lastRun=run; S.ocam=null; run.forEach((r,i)=>r.lane=i/Math.max(1,S.H-1)); drawRace(run); renderOrder(run); sendLive(run,true);
-  let lastLive=0;
+  const run=newRun(), me=S; S.lastRun=run; S.ocam=null; run.forEach((r,i)=>r.lane=i/Math.max(1,S.H-1)); drawRace(run); renderOrder(run); sendLive(run,true); sendTrk(run);
+  let lastLive=0, lastTrk=0;
   const name=i=>`${S.horses[i].no}番 ${S.horses[i].name}`, D=S.dist;
   say(`${rTitle()}(${S.rn.grade})、${S.crs.full}の${surfText(true)}。ファンファーレです!`); $('#rem').textContent='';
   const fan=soundOn?raceFanfare(S.rn.grade):{G1:5.5,G2:4,G3:4,OP:2.8}[S.rn.grade];
@@ -2096,6 +2144,7 @@ function runRace(){
       drawRace(stretchRun(run.map(r=>({...r, x:r.px==null?r.x:r.px+(r.x-r.px)*al, ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
       if(t%6===0||finished) renderOrder(run);
       if(NET&&now-lastLive>600){ lastLive=now; sendLive(run); }
+      if(NET&&now-lastTrk>=300){ lastTrk=now; sendTrk(run); }
       if(run.every(r=>r.fin!==null)){
         // 写真判定は少しためてから発表
         if(S.photo&&!S.photo.revealed){
@@ -2103,7 +2152,7 @@ function runRace(){
           S.photo.revealed=true; tone(1047,.4,'triangle',.2);
           say(`写真判定の結果……1着は${name(S.photo.a)}!${marginName(S.photo.gap)}差の大接戦!`);
         }
-        renderOrder(run); drawRace(run); sendLive(run); $('#rem').textContent=''; crowd(0.2,2.5); setTimeout(()=>crowd(0,2),3000);
+        renderOrder(run); drawRace(run); sendLive(run); sendTrk(run); $('#rem').textContent=''; crowd(0.2,2.5); setTimeout(()=>crowd(0,2),3000);
         const ord=orderOf(run); finish(ord); afterRace(run,ord[0]); return;
       }
       raf=requestAnimationFrame(frame);
@@ -2116,7 +2165,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=21;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=22;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2718,7 +2767,7 @@ function adoptCard(C){
   S.phase='bet'; S.order=null; S.bets={}; S.res={}; S.hitList=[]; S.payHTML='';
   // 次のレースの出走表を、投票のあいだに作っておく(次のレースの登録はここで締め切り)
   const nx=S.next=prepCard(C.R+1,()=>{ if(S&&S.waitNext&&S.next===nx) goNext(); });
-  if(NET){ NET.be.remove(NET.base+'/bets').catch(()=>{}); NET.be.remove(NET.base+'/live').catch(()=>{}); }
+  if(NET){ NET.be.remove(NET.base+'/bets').catch(()=>{}); NET.be.remove(NET.base+'/live').catch(()=>{}); NET.be.remove(NET.base+'/trk').catch(()=>{}); }
 }
 // すぐに出走表を作る(テスト用)
 function buildCard(){ const C=makeCard(W.R); withS(C,()=>{ const a=oddsAcc(C.H), N=oddsN(C.H); while(a.n<N) oddsRun(a); oddsFinal(a); cardMarks(); }); C.ready=true; adoptCard(C); }
@@ -3175,6 +3224,7 @@ async function padStart(room,kind){
   },250);
   P.be.on(P.base+'/odds',v=>{ P.odds=v; if(P.st&&P.tab==='bet') padRender(); });
   P.be.on(P.base+'/live',v=>{ P.live=v; if(P.st&&P.st.phase==='race') padLive(); });
+  P.be.on(P.base+'/trk',onTrk);
   P.be.on(`${P.base}/res/${P.dev}`,v=>{ if(!v||!v.id||!P.acts[v.id]) return; const cb=P.acts[v.id]; delete P.acts[v.id]; cb(v); });
   P.be.on(`${P.base}/who/${P.dev}`,v=>{ const pid=v&&v.pid||null; if(pid!==P.pid) bindPlayer(pid); });
   P.be.on(P.base+'/state',onPadState);
@@ -3205,7 +3255,9 @@ function onPadState(st){
     padMsg('画面を更新してください',(st.ver||0)<APP_VER?'先生のPCのページが古い版です。先生のPCでページを再読み込み(Ctrl+Shift+R)して、「続きから」で再開してください。':'このiPadのページが古い版です。ページを再読み込みしてください。');
     return;
   }
-  if(st&&st.phase!==P.lastPhase){ if(st.phase==='race'||st.phase==='result'){ P.tab='bet'; closeModal(); } P.lastPhase=st.phase; }
+  if(st&&st.phase!==P.lastPhase){ if(st.phase==='race'||st.phase==='result'){ P.tab='bet'; closeModal(); }
+    if(st.phase==='result'&&P.lastPhase==='race'&&PR.on){ PR.hold=Date.now()+1600; setTimeout(padRender,1650); }
+    P.lastPhase=st.phase; }
   if(st&&st.R!==P.race){ P.race=st.R; P.selH=[]; P.selQ=[]; P.sel={}; P.opt=null; P.optRace=null; P.hist=[]; P.unfix=false; }
   if(P.my&&st&&P.my.race!==st.R) P.my=null;
   padRender();
@@ -3236,7 +3288,7 @@ function padRender(){
   P.had=true;
   $('#padRace').innerHTML=`第${st.R}戦 ${st.rn?esc(st.rn.name)+` <span class="a-grade ${st.rn.grade}">${st.rn.grade}</span>`:''} ${st.cn||''} ${surfText(true,st.surf,st.dist)} ${{bet:'投票受付中',race:'レース中',result:'結果発表'}[st.phase]||''}`;
   padTicker(st);
-  if(st.phase==='bet'&&P.tab==='bet'&&P.pid){ $('#padTicker').hidden=true; P.tickerKey=''; }   // 出馬表を広く見せるため
+  if((st.phase==='bet'||st.phase==='race'||(st.phase==='result'&&PR.on))&&P.tab==='bet'&&P.pid){ $('#padTicker').hidden=true; P.tickerKey=''; }   // 出馬表を広く見せるため
   if(!P.pid||!P.pv){
     who.innerHTML=''; $('#padSlip').hidden=true; $('#padTabs').hidden=true;
     if(P.pid&&!P.pv){ m.innerHTML='<div class="a-msg"><h2>読み込み中…</h2></div>'; return; }
@@ -3257,10 +3309,11 @@ function padRender(){
   tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&(P.newMsg||pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard))?'<i class="dotn"></i>':''}</button>`).join('');
   $('#padSlip').hidden=true;
   if(P.tab==='bet'){
-    if(bet) return padBet(st,pv);
-    if(st.phase==='race') return padRaceView(st,pv);
-    return padResult(st,pv);
+    if(bet){ padRaceStop(); return padBet(st,pv); }
+    if(st.phase==='race'||(st.phase==='result'&&PR.on&&Date.now()<PR.hold)) return padRaceView(st,pv);
+    padRaceStop(); return padResult(st,pv);
   }
+  padRaceStop();
   if(P.tab==='stable'){ P.newMsg=false; return padStable(st,pv); }
   if(P.tab==='market') return padMarket(st,pv);
   if(P.tab==='farm') return padFarm(st,pv);
@@ -3426,18 +3479,98 @@ function padSendList(list,done,fixed){
     .finally(()=>{ clearTimeout(slow); P.sending=false; padRender(); });
 }
 function padRaceView(st,pv){
-  const mine=(pv.bet||[]), myH=st.horses.filter(h=>h.pid===P.pid);
-  $('#padMain').innerHTML=`<div class="a-racebox"><div><div class="a-title">RACE<span>前のスクリーンに注目!</span></div><div class="a-rem" id="liveRem"></div><ol class="a-lamps" id="liveBox"></ol></div>
-    <div><div class="a-panel lv-tk"><h3>買った馬券<small id="liveSum"></small></h3><ul class="a-list" id="liveTk">${mine.length?'':'<li class="none">このレースは馬券を買っていません</li>'}</ul></div>${myH.length?`<div class="a-panel" style="margin-top:10px"><h3>自分の馬</h3><ul class="a-list">${myH.map(h=>`<li>${aNum(h.no)}<span>${esc(h.name)}</span><span class="am">${h.pop}番人気</span></li>`).join('')}</ul></div>`:''}</div></div>`;
+  const mine=(pv.bet||[]);
+  if(PR.on&&$('#prCv')&&st.phase==='result') return;     // ゴール直後:映像はそのまま(順位・馬券もそのまま)
+  if(!(PR.on&&PR.R===st.R&&$('#prCv'))){
+    $('#padMain').innerHTML=`<div class="pr-wrap" id="prWrap">
+      <div class="pr-video"><canvas id="prCv"></canvas>
+        <div class="pr-top"><span class="pr-rem" id="liveRem"></span><span class="pr-live"><i></i>LIVE</span></div>
+        <div class="pr-cap"><b>実況</b><span id="prCap"></span><em>金色に光る馬 = あなたの馬券・持ち馬</em></div></div>
+      <ol class="pr-strip" id="liveBox"></ol>
+      <div class="pr-bottom"><div class="pr-sum" id="liveSum"></div>
+        <ul class="a-list pr-tk" id="liveTk">${mine.length?'':'<li class="none">このレースは馬券を買っていません</li>'}</ul></div></div>`;
+    padRaceStart(st,pv);
+  }
   padLive();
 }
+// ---------- iPadのレース映像 ----------
+// 先生のPCから0.3秒ごとに届く位置(trk)を、少し遅らせて(DELAY)前後の2つの間をなめらかにつないで描く
+const PR={on:false,R:null,buf:[],off:null,raf:0,hold:0,cam:false,shobu:false,gate:false,warmS:false,w:0,h:0,capT:'',remT:''};
+const PR_DELAY=450;
+function onTrk(v){
+  if(!v||!v.x) return;
+  const at=Date.now();
+  if(PR.bufR!==v.race){ PR.bufR=v.race; PR.buf=[]; PR.off=null; }
+  const off=at-v.t; if(PR.off==null||off<PR.off) PR.off=off;      // 時計のずれ(届くのが一番早かったときを基準に)
+  PR.buf.push(v); if(PR.buf.length>24) PR.buf.shift();
+}
+function padRaceStart(st,pv){
+  padRaceStop();
+  const crs=Object.values(COURSES).find(c=>c.name===st.cn)||COURSES.kyoshitsu;
+  const horses=st.horses.map(h=>{ const ct=COATS.find(c=>c[0]===h.coat)||COATS[0]; return {no:h.no,name:h.name,coat:ct,style:h.style}; });
+  const glow=new Set(); ((pv&&pv.bet)||[]).forEach(t=>(t.hs||[]).forEach(x=>glow.add(x))); st.horses.forEach(h=>{ if(h.pid&&h.pid===P.pid) glow.add(h.no); });
+  // 描画の関数は先生のPCと同じものを使う(S と G をiPad用に用意する)
+  S={padView:true,phase:'padrace',race:st.R,horses,H:horses.length,dist:st.dist,crs,surf:st.surf,rh:!!st.rh,fx:{},gate:{open:null},cam:null,photo:null,win:null,glow};
+  Object.assign(PR,{on:true,R:st.R,cam:false,shobu:false,gate:false,warmS:false,w:0,h:0,capT:'',remT:'',hold:0});
+  if(PR.bufR!==st.R){ PR.buf=[]; PR.off=null; }
+  SPR.sets.clear(); SPR.queue=[];
+  prFit(); layout($('#prCv')); PR.w=G.W; PR.h=G.H;
+  warmSprites(sprScale(G.u,false),0,[1,-1]);
+  PR.raf=requestAnimationFrame(prFrame);
+}
+function padRaceStop(){ if(PR.raf) cancelAnimationFrame(PR.raf); PR.raf=0; if(PR.on){ PR.on=false; if(S&&S.padView) S=null; } }
+// 画面の高さに合わせて映像の大きさを決める
+function prFit(){
+  const w=$('#prWrap'); if(!w) return;
+  const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  w.style.height=Math.max(420,Math.floor(vh-w.getBoundingClientRect().top-10))+'px';
+}
+// 届いた位置の中から、いま映す時刻の前後2つを選んでつなぐ
+function prSample(){
+  const b=PR.buf; if(!b.length||PR.off==null) return null;
+  const T=Date.now()-PR.off-PR_DELAY;
+  let A,B,k;
+  const i=b.findIndex(q=>q.t>=T);
+  if(i===0||b.length===1){ A=B=b[i===0?0:b.length-1]; k=1; }
+  else if(i<0){ A=b[b.length-2]; B=b[b.length-1]; const sp=B.t-A.t||300; k=1+Math.min(1,(T-B.t)/sp); }   // 届くのが遅れたら少しだけ先読み
+  else { A=b[i-1]; B=b[i]; k=(T-A.t)/((B.t-A.t)||1); }
+  const lerp=(a,c)=>a+(c-a)*k;
+  return {B,run:B.x.map((x,j)=>{ const pl=Math.max(A.pl[j]||0,k>=1?(B.pl[j]||0):0);
+    return {x:lerp(A.x[j],B.x[j])/10,ph:lerp(A.p[j],B.p[j])/100,lane:lerp(A.l[j],B.l[j])/1000,state:B.s[j]==='1'?'spurt':'cruise',place:pl||null,fin:pl?1:null}; })};
+}
+function prFrame(){
+  PR.raf=0;
+  const cv=$('#prCv'); if(!PR.on||!cv||!S||!S.padView){ padRaceStop(); return; }
+  const box=cv.parentElement.getBoundingClientRect();
+  if(Math.abs(box.width-PR.w)>1||Math.abs(box.height-PR.h)>1){ layout(cv); PR.w=G.W; PR.h=G.H; S.ocam=null; }
+  const sm=prSample(), now=performance.now();
+  const run=sm?sm.run:S.horses.map((h,i)=>({x:0,ph:0,lane:i/Math.max(1,S.H-1),state:'cruise',place:null,fin:null}));
+  const lead=Math.max(...run.map(r=>r.x)), rem=S.dist-lead;
+  if(!PR.gate&&lead>0){ PR.gate=true; S.gate.open=now; }
+  // 写真判定
+  const ph=sm&&sm.B.ph;
+  if(ph){ if(!S.photo) S.photo={a:ph[0],b:ph[1],lo:ph[0],hi:ph[1],revealed:false}; }
+  else if(S.photo) S.photo.revealed=true;
+  // カメラの切り替えとテロップ(先生のPCと同じタイミング)
+  if(!PR.shobu&&!PR.cam&&lead>0&&rem<=Math.min(G.sw+400,S.dist*0.65)){ PR.shobu=true; S.fx.telop={text:'勝負どころ!',sub:`残り${Math.round(rem/100)*100}m 各馬が動き出す`,t0:now}; }
+  if(!PR.warmS&&rem<=G.sw+500){ PR.warmS=true; warmSprites(sprScale(straightU(),true),1,[1]); }
+  if(!PR.cam&&lead>0&&(rem<=G.sw||run.some(r=>r.place))){ PR.cam=true; S.cam={}; S.camT0=now; S.camClean=false; S.fx.telop={text:'最後の直線!',sub:`${S.crs.full} 直線 約${G.sw}m`,t0:now}; }
+  drawRace(stretchRun(run));
+  // 残り距離と実況
+  const nf=run.filter(r=>r.place).length, rt=!sm?'ゲートイン…':nf?'ゴール!':!PR.gate?'ゲートイン…':`残り ${Math.max(0,Math.ceil(rem/50)*50)}m`;
+  if(rt!==PR.remT){ PR.remT=rt; const e=$('#liveRem'); if(e) e.textContent=rt; }
+  const ct=sm?sm.B.c:'';
+  if(ct!==PR.capT){ PR.capT=ct; const e=$('#prCap'); if(e) e.textContent=ct; }
+  PR.raf=requestAnimationFrame(prFrame);
+}
+['resize','orientationchange'].forEach(t=>addEventListener(t,()=>setTimeout(()=>{ if(PR.on) prFit(); },80)));
 function padLive(){
   const box=$('#liveBox'); if(!box) return;
   const st=P.st, lv=P.live, mine=new Set(), own=new Set();
   ((P.pv&&P.pv.bet)||[]).forEach(t=>(t.hs||[]).forEach(x=>mine.add(x)));
   (st.horses||[]).forEach(h=>{ if(h.pid&&h.pid===P.pid) own.add(h.no); });
-  if(!lv||lv.race!==st.R||!lv.order){ $('#liveRem').textContent='ゲートイン…スタートを待っています'; box.innerHTML=''; return; }
-  $('#liveRem').textContent=lv.fin?'ゴール!':lv.gate?'ゲートイン…':`残り ${Math.ceil(lv.rem/50)*50}m`;
+  if(S&&S.padView) S.glow=new Set([...mine,...own]);     // 映像で光らせる馬(馬券は少し遅れて届くことがあるので毎回作り直す)
+  if(!lv||lv.race!==st.R||!lv.order){ box.innerHTML=st.horses.map(h=>`<li><span class="ps">-</span>${aNum(h.no)}<span class="nm">${esc(h.name)}</span><span class="tag"></span></li>`).join(''); liveTickets(st,lv); return; }
   box.innerHTML=lv.order.map((no,k)=>{ const ph=lv.photo&&k<2, me=mine.has(no)||own.has(no);
     return `<li class="${me?'mine':''} ${k===0&&!ph?'first':''}"><span class="ps">${ph?'判定':k<lv.fin?(k+1)+'着':(k+1)+'位'}</span>${aNum(no)}<span class="nm">${esc(st.horses[no-1].name)}</span><span class="tag">${own.has(no)?'★自分の馬':mine.has(no)?'★買った馬':''}</span></li>`; }).join('');
   liveTickets(st,lv);
@@ -3445,7 +3578,7 @@ function padLive(){
 // 買った馬券を「いまの順位のままなら」で光らせる(的中=金色、あと少し=水色)
 const NEEDPOS={win:1,plc:3,qn:2,ex:2,wd:3,t3f:3,t3:3};
 function liveTickets(st,lv){
-  const box=$('#liveTk'); if(!box) return; const list=(P.pv&&P.pv.bet)||[]; if(!list.length) return;
+  const box=$('#liveTk'); if(!box) return; const list=(P.pv&&P.pv.bet)||[]; if(!list.length){ const el=$('#liveSum'); if(el) el.innerHTML='<small>馬券なし</small>'; return; }
   const run=lv&&lv.race===st.R&&lv.order&&!lv.gate&&(lv.fin>0||lv.rem<=st.dist-200), o=run?lv.order:[], done=run&&lv.fin>=o.length;   // スタートから200mまでは判定しない
   let sum=0;
   const rows=list.map(t=>{ const odds=padOdds(st,t), pay=Math.floor(t.amt*odds); let cls='', tag='';
@@ -3459,7 +3592,7 @@ function liveTickets(st,lv){
     return {cls,html:`<li class="lv ${cls}">${tkName(t)}<span class="od">${odds.toFixed(1)}倍</span>${tag}</li>`}; });
   const ordr={hot:0,near:1,'':2,out:3};
   box.innerHTML=rows.sort((a,b)=>ordr[a.cls]-ordr[b.cls]).map(r=>r.html).join('');
-  const el=$('#liveSum'); if(el) el.innerHTML=!run?'スタートから200mで判定します':sum?`${done?'払い戻し':'このままなら'} <b>+${yen(sum)}</b>`:'';
+  const el=$('#liveSum'); if(el) el.innerHTML=!run?'<small>スタートから200mで<br>判定します</small>':`<small>${done?'払い戻し':'このままなら'}</small><b class="${sum?'':'zero'}">+${yen(sum)}</b><small>BET ${yen(tkTotal(list))} ・ ${list.length}点</small>`;
 }
 function padResult(st,pv){
   const r=pv.res||{tickets:[],tk:[],pay:0,horses:[]}, first=P.shownRes!==st.R; P.shownRes=st.R;
