@@ -1302,7 +1302,7 @@ return {SHEETS:USE_SHEETS, SHEET_DOCS, PATTERN_NAME, MESSAGES, CIRCLED, SURNAMES
 })();
 
 // ===== 設定 =====
-const APP_VER = 7;                 // 更新のたびに1つ上げる
+const APP_VER = 8;                 // 更新のたびに1つ上げる
 const TEACHER_PASS = 'sensei';     // ランキング削除用のパスワード（変更してください）
 const FB_VER = '10.12.2';
 const ATTACK_SEC = 60;
@@ -2496,7 +2496,7 @@ $('#qkeyIn').addEventListener('input', e=>{ const v=e.target.value; e.target.val
 const DN_MODES = [
   {v:'A', t:'セリフ練習', d:'受ける側のセリフを最初から最後まで'},
   {v:'B', t:'パターン特訓', d:'不在の連絡（あいにく〜／お差し支えなければ〜／申し伝えます）だけを5人分'},
-  {v:'D', t:'本番', d:'頭文字だけ・ヒントなしで全セリフ'},
+  {v:'D', t:'本番', d:'1回目（折り返し）→2回目（伝言）を続けて。頭文字だけ・ヒントなし'},
   {v:'E', t:'フレーズ早打ち', d:'重要フレーズを60秒で何個打てるか'},
 ];
 const DN_LEVELS = [
@@ -2506,9 +2506,10 @@ const DN_LEVELS = [
   {v:4, t:'なし', d:'何も表示しない'},
 ];
 const DN_E_SEC = 60;
+const DN_MSGS = [1, 2, 4, 6, 12];   // 出題する伝言：②③⑤⑦⑬（この中から常にランダム）
 const DN_HINT_MS = 5000;
 const DN_B_PEOPLE = 5;
-Object.assign(PREF, Object.assign({dnMode:'A', dnLevel:1, dnSheet:'s0', dnRound:'1', dnPerson:'random', dnMsg:'random', dnLen:'s',
+Object.assign(PREF, Object.assign({dnMode:'A', dnLevel:1, dnSheet:'s0', dnRound:'1', dnLen:'s',
   dnCo:'', dnCoY:'', dnMe:'', dnMeY:''}, lsGet('pref',{})));
 const dnRec = ()=>Object.assign({plays:0, best:{}, weak:{}}, lsGet('denwa', {}));
 const dnSaveRec = r => lsSet('denwa', r);
@@ -2546,7 +2547,7 @@ function setupDenwa(){
   const draw = ()=>{
     const m = PREF.dnMode, sh = DN.SHEETS.find(s=>s.id===PREF.dnSheet) || DN.SHEETS[0];
     const rec = dnRec();
-    const needMe = m!=='E', perSel = m==='A' || m==='D';
+    const needMe = m!=='E';
     const people = sh.people.map(p=>({v:p.id, t:`${p.dept} ${p.name}${p.title||'さん'}（${DN.PATTERN_NAME[p.pattern].slice(0,1)}${p.short}）`}));
     const bestOf = k => rec.best[k] ? `ベスト ${rec.best[k].rank}` : '';
     el.innerHTML = `<div class="panel dsetup" style="max-width:860px">
@@ -2556,11 +2557,8 @@ function setupDenwa(){
       ${m==='A'||m==='B' ? `<div class="field"><label>覚え度レベル</label>${chips('lv', DN_LEVELS.map(x=>({v:x.v, t:`${x.v} ${x.t}<small>${x.d}</small>`})), PREF.dnLevel)}</div>` : ''}
       ${m!=='E' ? `<div class="field"><label>状況設定シート</label>${chips('sheet', DN.SHEETS.map(s=>({v:s.id, t:s.label})), sh.id)}
         <details class="shprev"><summary>シートを見る</summary>${dnSheetHtml(sh.id, null)}</details></div>` : ''}
-      ${perSel ? `<div class="field"><label>実技の回</label>${chips('round', [{v:'1',t:'1回目<small>折り返しを頼む</small>'},{v:'2',t:'2回目<small>伝言を頼む</small>'}], PREF.dnRound)}</div>
-        <div class="field drow">
-          <label class="dsel">呼び出す人<select id="dnPerson"><option value="random">ランダム</option>${people.map(p=>`<option value="${p.v}" ${PREF.dnPerson===p.v?'selected':''}>${esc(p.t)}</option>`).join('')}</select></label>
-          ${PREF.dnRound==='2' ? `<label class="dsel">伝言<select id="dnMsg"><option value="random">ランダム</option>${DN.MESSAGES.map((x,i)=>`<option value="${i}" ${String(PREF.dnMsg)===String(i)?'selected':''}>${DN.CIRCLED[i]} ${esc(x.title)}</option>`).join('')}</select></label>` : ''}
-        </div>` : ''}
+      ${m==='A' ? `<div class="field"><label>実技の回</label>${chips('round', [{v:'1',t:'1回目<small>折り返しを頼む</small>'},{v:'2',t:'2回目<small>伝言を頼む</small>'}], PREF.dnRound)}</div>` : ''}
+      ${m!=='E' ? `<p class="hint" style="margin:-4px 0 12px">呼び出す人${m==='B'?'':'と伝言（②③⑤⑦⑬）'}は毎回ランダムで決まります。</p>` : ''}
       ${m!=='E' ? `<div class="field"><label>かける側の会社名</label>${chips('len', [{v:'s',t:'短い'},{v:'m',t:'中くらい'},{v:'l',t:'長い'}], PREF.dnLen)}</div>` : ''}
       ${needMe ? `<div class="field"><label>受ける側（セリフに入ります。読みはひらがなで）</label>
         <div class="dme">
@@ -2575,12 +2573,10 @@ function setupDenwa(){
         <button class="btn pri" id="go">スタート（Enter）</button></div>
     </div>`;
     bindChips(el, (k,v)=>{
-      if(k==='mode') PREF.dnMode=v; if(k==='lv') PREF.dnLevel=+v; if(k==='sheet'){ PREF.dnSheet=v; PREF.dnPerson='random'; }
+      if(k==='mode') PREF.dnMode=v; if(k==='lv') PREF.dnLevel=+v; if(k==='sheet') PREF.dnSheet=v;
       if(k==='round') PREF.dnRound=v; if(k==='len') PREF.dnLen=v;
       dnSaveInputs(); savePref(); draw();
     });
-    const ps = el.querySelector('#dnPerson'); if(ps) ps.onchange = ()=>{ PREF.dnPerson = ps.value; savePref(); };
-    const ms = el.querySelector('#dnMsg'); if(ms) ms.onchange = ()=>{ PREF.dnMsg = ms.value; savePref(); };
     el.querySelectorAll('.dme input').forEach(i=>i.addEventListener('input', ()=>{ dnSaveInputs(); savePref(); }));
     el.querySelector('#bk').onclick = toTitle;
     el.querySelector('#dnReset').onclick = ()=>{ if(confirm('電話応対の記録（ベスト・苦手フレーズ）を消します。よろしいですか？')){ lsSet('denwa', {}); draw(); } };
@@ -2627,10 +2623,14 @@ function dnStartScript(mode){
         lines.push(l);
       });
     });
+  } else if(mode==='D'){
+    // 本番：1回目と2回目を続けて（同じ人は呼ばない）
+    const [p1, p2] = shuffle(sh.people);
+    const r1 = dnMakeCall(sh, p1, '1', 0), r2 = dnMakeCall(sh, p2, '2', pick(DN_MSGS));
+    lines = [{s:'c', text:'― 1回目（折り返しを頼む）―', ctx:r1[0].ctx, note:true}, ...r1,
+             {s:'c', text:'― 2回目（伝言を頼む）―', ctx:r2[0].ctx, note:true, sep:true}, ...r2];
   } else {
-    const person = PREF.dnPerson==='random' ? pick(sh.people) : (sh.people.find(p=>p.id===PREF.dnPerson) || pick(sh.people));
-    const msgIdx = PREF.dnMsg==='random' ? Math.floor(Math.random()*DN.MESSAGES.length) : +PREF.dnMsg;
-    lines = dnMakeCall(sh, person, PREF.dnRound, msgIdx);
+    lines = dnMakeCall(sh, pick(sh.people), PREF.dnRound, pick(DN_MSGS));
   }
   dnNew(mode, {lines, level: mode==='D' ? 3 : PREF.dnLevel, hintsOn: mode!=='D'});
   dnAdvance();
@@ -2641,8 +2641,8 @@ const pick = a => a[Math.floor(Math.random()*a.length)];
 function dnPhrasePool(){
   const out = new Map();
   for(const sh of DN.SHEETS) for(const p of sh.people){
-    for(const round of ['1','2']){
-      const lines = DN.buildScriptY({sheet:sh, person:p, caller:DN.newCaller('s'), round, vals:DN.newVals(sh), msgIdx:Math.floor(Math.random()*DN.MESSAGES.length), co:{t:'',y:''}, me:{t:'',y:''}});
+    for(const [round, msgIdx] of [['1',0], ...DN_MSGS.map(i=>['2',i])]){
+      const lines = DN.buildScriptY({sheet:sh, person:p, caller:DN.newCaller('s'), round, vals:DN.newVals(sh), msgIdx, co:{t:'',y:''}, me:{t:'',y:''}});
       for(const l of [...lines.head, ...lines.body]) if(l.s==='r'){
         let run = [];
         const flush = ()=>{ if(run.length){ const t = run.map(x=>x.t).join(''); const g = run[0].k; if(!out.has(t) && g!=='onaji') out.set(t, {g, toks:run}); } run = []; };
@@ -2781,7 +2781,7 @@ function dnRenderLog(){
   const items = DZ.log.slice(-7);
   el.innerHTML = items.map((g,i)=>{
     if(g.hold) return '<div class="dhold">保留</div>';
-    if(g.note) return `<div class="dnote">${esc(g.text)}</div>`;
+    if(g.note) return `${g.sep?'<div class="dsep"></div>':''}<div class="dnote">${esc(g.text)}</div>`;
     const last = i===items.length-1 && g.anim;
     return `${g.sep?'<div class="dsep"></div>':''}<div class="db ${g.s==='c'?'c':'r'}${g.msg?' msg':''}"><span class="who">${g.s==='c'?'かける側':'あなた'}</span><span class="tx" ${last?'data-tw="1"':''}>「${esc(last ? '' : g.text)}${last?'':'」'}</span>${g.alt?`<span class="alt">または「${esc(g.alt)}」</span>`:''}</div>`;
   }).join('');
@@ -2884,8 +2884,8 @@ function dnFinish(){
   dnSaveRec(rec);
   const top = Object.entries(z.keyMiss).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const missHtml = top.length ? `<div class="qmiss"><div class="mh">ミスが多かったフレーズ</div>${top.map(([g,n])=>`<div class="mi"><span class="kb k-4択">${n}回</span><span class="mq">${esc(KEYL(g))}</span><b></b></div>`).join('')}<div class="hint">次のフレーズ早打ちで多めに出ます</div></div>` : '';
-  const chk = z.lines.find(l=>l.ctx) ? z.lines.find(l=>l.ctx).ctx.checks : null;
-  const chkHtml = chk && z.mode!=='B' ? `<div class="qmiss dpts"><div class="mh">ポイント</div>${chk.map(x=>`<div class="mi"><span>☐</span><span class="mq">${esc(x)}</span><b></b></div>`).join('')}</div>` : '';
+  const ctxs = [...new Set(z.lines.filter(l=>l.ctx).map(l=>l.ctx))];
+  const chkHtml = z.mode==='B' ? '' : ctxs.map(x=>`<div class="qmiss dpts"><div class="mh">ポイント${ctxs.length>1?`（${x.round}回目：${esc(x.label)}）`:''}</div>${x.checks.map(c=>`<div class="mi"><span>☐</span><span class="mq">${esc(c)}</span><b></b></div>`).join('')}</div>`).join('');
   if(rank==='S') sfx('win'); else sfx('word');
   const title = z.mode==='E' ? `${z.phrases}フレーズ ・ ${DN_E_SEC}秒` : `通話完了 ・ ${Math.floor(sec/60)}分${Math.round(sec%60)}秒 ・ ヒント ${z.hints}回`;
   showResult({
