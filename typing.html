@@ -129,7 +129,7 @@ main{max-width:1100px;margin:0 auto;padding:8px 20px 40px}
 .waitmsg b{display:block;font-family:var(--f-head);font-size:40px;color:var(--acc);font-weight:400}
 .waitmsg span{color:var(--mut)}
 @keyframes cdp{0%{transform:scale(1.6);opacity:0}30%{transform:scale(1);opacity:1}100%{opacity:.85}}
-#keyIn{position:absolute;opacity:0;width:1px;height:1px;left:50%;top:40%;border:0;padding:0;pointer-events:none}
+#keyIn{ime-mode:disabled;position:absolute;opacity:0;width:1px;height:1px;left:50%;top:40%;border:0;padding:0;pointer-events:none}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#2b1730;border:1px solid var(--bad);color:#ffd7df;padding:12px 18px;border-radius:12px;font-size:15px;z-index:50;max-width:92vw;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .toast.on{display:block;animation:fade .2s}
 .toast.info{background:#132b30;border-color:var(--you);color:#d4fff8}
@@ -322,7 +322,7 @@ body{font-weight:500}
 .mbtn:nth-child(5){background:#c9f3e8;transform:rotate(.8deg)}
 .mbtn:nth-child(6){background:#d6e8ff;transform:rotate(-.9deg)}
 #s-quiz{max-width:960px;margin:0 auto;position:relative}
-#qkeyIn{position:absolute;opacity:0;width:1px;height:1px;left:50%;top:40%;border:0;padding:0;pointer-events:none}
+#qkeyIn{ime-mode:disabled;position:absolute;opacity:0;width:1px;height:1px;left:50%;top:40%;border:0;padding:0;pointer-events:none}
 .kb{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:4px;border:1.5px solid var(--ink);color:var(--ink);vertical-align:2px;margin-right:4px}
 .k-記述{background:#fff8a8}.k-穴うめ{background:#c9f3e8}.k-4択{background:#ffd3e1}.k-計算{background:#d6e8ff}
 .chip .kb{margin-right:2px}
@@ -380,7 +380,7 @@ body{font-weight:500}
 
 /* ===== 電話応対 ===== */
 #s-denwa{max-width:960px;margin:0 auto;position:relative;--f-dn:"Yu Gothic Medium","游ゴシック Medium",YuGothic,"游ゴシック体","Hiragino Kaku Gothic ProN",Meiryo,sans-serif}
-#dkeyIn{position:absolute;opacity:0;width:1px;height:1px;left:50%;top:40%;border:0;padding:0;pointer-events:none}
+#dkeyIn{ime-mode:disabled;position:absolute;opacity:0;width:1px;height:1px;left:50%;top:40%;border:0;padding:0;pointer-events:none}
 .dcall .dcc{display:grid;grid-template-columns:1.4fr 1fr;gap:6px 22px;background:#fff;border:2px solid var(--ink);border-radius:6px;padding:10px 16px;margin-bottom:12px;font-family:var(--f-dn);font-weight:500}
 .dcall .l{display:inline-block;font-size:12px;color:var(--mut);border:1.5px solid var(--line);border-radius:4px;padding:0 6px;margin-right:6px}
 .dcall b{font-size:18px}
@@ -508,7 +508,7 @@ body{font-weight:500}
     <div class="bars" id="bars"></div>
     <div class="ghint" id="ghint">半角英数で入力 ・ Esc：やめる</div>
     <div class="overlay" id="ov"></div>
-    <input id="keyIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <input id="keyIn" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1" data-lpignore="true" data-1p-ignore>
   </section>
 
   <section class="screen" id="s-quiz">
@@ -523,7 +523,7 @@ body{font-weight:500}
     <div class="bars" id="qbars"></div>
     <div class="ghint" id="qhint"></div>
     <div class="overlay" id="qov"></div>
-    <input id="qkeyIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <input id="qkeyIn" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1" data-lpignore="true" data-1p-ignore>
   </section>
   <section class="screen" id="s-denwa">
    <div class="dwrap"><div class="dmain">
@@ -539,7 +539,7 @@ body{font-weight:500}
     </div>
     <div class="ghint" id="dhint"></div>
     <div class="overlay" id="dov"></div>
-    <input id="dkeyIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <input id="dkeyIn" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1" data-lpignore="true" data-1p-ignore>
    </div><aside class="dsheet" id="dsheet"></aside></div>
   </section>
   <section class="screen" id="s-result"></section>
@@ -1302,7 +1302,7 @@ return {SHEETS:USE_SHEETS, SHEET_DOCS, PATTERN_NAME, MESSAGES, CIRCLED, SURNAMES
 })();
 
 // ===== 設定 =====
-const APP_VER = 9;                 // 更新のたびに1つ上げる
+const APP_VER = 10;                 // 更新のたびに1つ上げる
 const TEACHER_PASS = 'sensei';     // ランキング削除用のパスワード（変更してください）
 const FB_VER = '10.12.2';
 const ATTACK_SEC = 60;
@@ -1552,7 +1552,11 @@ function countdown(ms, onGo, label){
 
 // キー入力
 let imeWarnAt = 0;
-function imeWarn(){ const t=performance.now(); if(t-imeWarnAt>2500){ imeWarnAt=t; toast('日本語入力がオンになっています。「半角/全角」キーで半角英数に切り替えてください'); } }
+function imeWarn(){
+  // 入力欄にもう一度合わせ直す（パスワード欄なので日本語入力が止まる）
+  const el = document.activeElement; if(el && /keyIn$/.test(el.id||'')){ el.blur(); setTimeout(()=>{ try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } }, 0); }
+  const t=performance.now(); if(t-imeWarnAt>2500){ imeWarnAt=t; toast('日本語入力が入っているようです。画面を1回クリックするか、「半角/全角」キーを押してください'); }
+}
 function handleChar(ch){
   if(!G || !G.run || G.myFin) return;
   if(/[^\x20-\x7e]/.test(ch)){ imeWarn(); return; }
