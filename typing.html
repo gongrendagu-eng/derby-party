@@ -1302,7 +1302,7 @@ return {SHEETS:USE_SHEETS, SHEET_DOCS, PATTERN_NAME, MESSAGES, CIRCLED, SURNAMES
 })();
 
 // ===== 設定 =====
-const APP_VER = 8;                 // 更新のたびに1つ上げる
+const APP_VER = 9;                 // 更新のたびに1つ上げる
 const TEACHER_PASS = 'sensei';     // ランキング削除用のパスワード（変更してください）
 const FB_VER = '10.12.2';
 const ATTACK_SEC = 60;
@@ -2506,7 +2506,7 @@ const DN_LEVELS = [
   {v:4, t:'なし', d:'何も表示しない'},
 ];
 const DN_E_SEC = 60;
-const DN_MSGS = [1, 2, 4, 6, 12];   // 出題する伝言：②③⑤⑦⑬（この中から常にランダム）
+const DN_MSGS = [1, 2, 4, 6, 12];   // 出題する伝言（MESSAGES の番号。0から数える）
 const DN_HINT_MS = 5000;
 const DN_B_PEOPLE = 5;
 Object.assign(PREF, Object.assign({dnMode:'A', dnLevel:1, dnSheet:'s0', dnRound:'1', dnLen:'s',
@@ -2558,7 +2558,7 @@ function setupDenwa(){
       ${m!=='E' ? `<div class="field"><label>状況設定シート</label>${chips('sheet', DN.SHEETS.map(s=>({v:s.id, t:s.label})), sh.id)}
         <details class="shprev"><summary>シートを見る</summary>${dnSheetHtml(sh.id, null)}</details></div>` : ''}
       ${m==='A' ? `<div class="field"><label>実技の回</label>${chips('round', [{v:'1',t:'1回目<small>折り返しを頼む</small>'},{v:'2',t:'2回目<small>伝言を頼む</small>'}], PREF.dnRound)}</div>` : ''}
-      ${m!=='E' ? `<p class="hint" style="margin:-4px 0 12px">呼び出す人${m==='B'?'':'と伝言（②③⑤⑦⑬）'}は毎回ランダムで決まります。</p>` : ''}
+      ${m!=='E' ? `<p class="hint" style="margin:-4px 0 12px">呼び出す人${m==='B'?'':'と伝言'}は毎回ランダムで決まります。</p>` : ''}
       ${m!=='E' ? `<div class="field"><label>かける側の会社名</label>${chips('len', [{v:'s',t:'短い'},{v:'m',t:'中くらい'},{v:'l',t:'長い'}], PREF.dnLen)}</div>` : ''}
       ${needMe ? `<div class="field"><label>受ける側（セリフに入ります。読みはひらがなで）</label>
         <div class="dme">
@@ -2771,7 +2771,7 @@ function dnCallCard(){
   if(!x){ el.innerHTML = '<div class="dcc"><b>フレーズ早打ち</b><span class="hint">重要フレーズを次々に打とう。苦手なフレーズほどよく出ます</span></div>'; return; }
   const p = x.person, c = x.caller;
   el.innerHTML = `<div class="dcc">
-    <div><span class="l">状況</span><b>${esc(p.dept)}　${esc(x.label)}</b> <span class="kb2">${esc(DN.PATTERN_NAME[p.pattern])}</span>${x.round==='2' && DZ.mode!=='B' ? ` <span class="kb2 m">伝言${DN.CIRCLED[x.msgIdx]} ${esc(DN.MESSAGES[x.msgIdx].title)}</span>` : ''}
+    <div><span class="l">状況</span><b>${esc(p.dept)}　${esc(x.label)}</b> <span class="kb2">${esc(DN.PATTERN_NAME[p.pattern])}</span>${x.round==='2' && DZ.mode!=='B' ? ` <span class="kb2 m">伝言 ${esc(DN.MESSAGES[x.msgIdx].title)}</span>` : ''}
       <div class="st">${esc(p.status)}</div></div>
     <div><span class="l">相手</span><b>${esc(c.co.t)}　${esc(c.name.t)}様</b>${x.round==='1' ? `<div class="st">TEL ${esc(c.tel)}</div>` : ''}</div>
   </div>`;
