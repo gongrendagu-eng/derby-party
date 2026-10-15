@@ -969,6 +969,13 @@ html.padmode{-webkit-text-size-adjust:100%}
 @media (orientation:portrait){.pr-wrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"v v" "s b"}
   .pr-video{height:56vw}.pr-cap em{display:none}.pr-bottom{flex-direction:column}.pr-sum{width:auto;height:96px}.pr-tk{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.pr-rank li.mine{animation:none}}
+/* iPadのレース名の演出(映像の枠に合わせて文字を小さめに) */
+.pr-video .intro{z-index:6}
+.pr-video .intro .nm{font-size:clamp(2rem,5.2vw,4.4rem)}
+.pr-video .intro .kick{font-size:clamp(.9rem,1.5vw,1.2rem)}
+.pr-video .intro .gr{font-size:clamp(1.3rem,2.6vw,2.2rem)}
+.pr-video .intro .sub{font-size:clamp(.95rem,1.6vw,1.3rem)}
+.chg.snd{font-size:16px;padding:2px 8px}
 /* 一口馬主(投票画面) */
 .bx-hd .c-ku{background:#b37400}
 .bx-row .sty em.kuo{color:#1a1606;background:#ffcf3a;border-radius:3px;padding:0 4px;font-weight:900}
@@ -1190,9 +1197,35 @@ const surfText=(long,surf=S.surf,dist=S.dist)=>`${surf==='dirt'?(long?'ダート
 const MARKS=['◎','○','▲','△','×'];
 
 let S=null, raf=null, soundOn=true, actx=null;
+// ---------- 最小化・別タブでも止めない(先生のPC) ----------
+// ブラウザは見えていないページの描画(requestAnimationFrame)を止め、タイマーも間引く。
+// 見えていない間は、間引かれない Web Worker の時計(約30ms)で、レースの計算とタイマーを進める(絵は描かない)
+const BG={w:null,n:0,p:new Map(),q:[]};
+const isPad=()=>document.documentElement.classList.contains('padmode');
+const quiet=()=>document.hidden&&!isPad();      // 先生のPCが裏に回っている間は音を出さない
+function bgStart(){ if(BG.w) return; try{ BG.w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),30)'],{type:'text/javascript'}))); BG.w.onmessage=bgTick; }catch(e){ BG.w=null; } }
+function bgTick(){
+  if(!document.hidden&&!BG.q.length) return;
+  const now=performance.now();
+  if(document.hidden){
+    [...BG.p].forEach(([k,e])=>{ if(e.rid==null&&BG.p.get(k)===e){ BG.p.delete(k); try{ e.f(now); }catch(err){ console.error(err); } } });
+    if(typeof tmLoop!=='undefined'&&tmLoop) tmTick();
+  }
+  if(BG.q.length){ const due=BG.q.filter(x=>x.at<=now); if(due.length){ BG.q=BG.q.filter(x=>x.at>now); due.forEach(x=>{ try{ x.f(); }catch(err){ console.error(err); } }); } }
+}
+function rafX(f){ const k=++BG.n, e={f,rid:null}; BG.p.set(k,e);
+  if(!document.hidden) e.rid=requestAnimationFrame(now=>{ if(BG.p.get(k)===e){ BG.p.delete(k); f(now); } });
+  return k; }
+function cafX(k){ const e=BG.p.get(k); if(e){ if(e.rid!=null) cancelAnimationFrame(e.rid); BG.p.delete(k); } }
+function laterX(f,ms){ if(!document.hidden) return setTimeout(f,ms); BG.q.push({at:performance.now()+ms,f}); }
+document.addEventListener('visibilitychange',()=>{
+  BG.p.forEach((e,k)=>{ if(document.hidden){ if(e.rid!=null){ cancelAnimationFrame(e.rid); e.rid=null; } }
+    else if(e.rid==null) e.rid=requestAnimationFrame(now=>{ if(BG.p.get(k)===e){ BG.p.delete(k); e.f(now); } }); });
+  if(document.hidden){ bgStart(); if(!isPad()){ try{ crowd(0,0.3); }catch(e){} } }
+});
 function tone(f,d,type='sine',vol=.15,when=0){
-  if(!soundOn) return;
-  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  if(!soundOn||quiet()) return;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume();
     const t=actx.currentTime+when,o=actx.createOscillator(),g=actx.createGain();
     o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
     o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
@@ -1839,7 +1872,7 @@ function noiseBuf(sec){
 }
 // ゲートが開く音
 function gateSound(){
-  if(!soundOn) return;
+  if(!soundOn||quiet()) return;
   try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
     const t=actx.currentTime, src=actx.createBufferSource(), hp=actx.createBiquadFilter(), g=actx.createGain();
     src.buffer=noiseBuf(0.3); hp.type='highpass'; hp.frequency.value=1200;
@@ -1851,7 +1884,7 @@ function gateSound(){
 // 観客の歓声(level 0〜1 を ramp 秒かけて変える。0で止める)
 let crowdN=null;
 function crowd(level,ramp=1.2){
-  if(!soundOn&&level>0) return;
+  if((!soundOn||quiet())&&level>0) return;
   try{
     actx=actx||new (window.AudioContext||window.webkitAudioContext)();
     if(!crowdN){
@@ -1939,14 +1972,23 @@ function drawPhoto(c,cs){
 
 function say(t){ $('#caster').textContent=t; if(S) S.sayT=t; }
 // 発走前:レース名をドーンと出す(G1は光の筋・キラキラ・金色の文字、G2/G3は色の帯、OPは控えめ)
-function showIntro(dur){
-  const el=$('#intro'), g=S.rn.grade, last=S.races>0&&S.race===S.races, rom={G1:'GⅠ',G2:'GⅡ',G3:'GⅢ',OP:'オープン'}[g];
+// レース名の演出の中身(先生のPCとiPadで同じものを使う)
+function introInfo(){
+  const g=S.rn.grade, last=S.races>0&&S.race===S.races;
   const kick=last?'最終レース':g==='G1'?'本日のメインレース':g==='OP'?`第${S.race}レース`:`重賞 第${S.race}レース`;
-  el.className='intro '+g;
-  el.innerHTML=`${g==='G1'?'<div class="rays"></div>':''}<div class="band t"></div><div class="band b"></div><div class="flash"></div>
-    <div class="ic"><div class="kick">${kick}</div>${S.rn.no?`<div class="no">第${S.rn.no}回</div>`:''}<div class="nm">${esc(S.rn.name)}</div>
-    <div class="gr">${rom}</div><div class="sub">${S.crs.full} ${surfText(true)}(${S.rh?'右':'左'}回り) ・ ${S.H}頭立て</div></div>
+  return {g,kick,no:S.rn.no||0,nm:S.rn.name,sub:`${S.crs.full} ${surfText(true)}(${S.rh?'右':'左'}回り) ・ ${S.H}頭立て`};
+}
+function introHTML(o){
+  const g=o.g, rom={G1:'GⅠ',G2:'GⅡ',G3:'GⅢ',OP:'オープン'}[g];
+  return `${g==='G1'?'<div class="rays"></div>':''}<div class="band t"></div><div class="band b"></div><div class="flash"></div>
+    <div class="ic"><div class="kick">${esc(o.kick)}</div>${o.no?`<div class="no">第${o.no}回</div>`:''}<div class="nm">${esc(o.nm)}</div>
+    <div class="gr">${rom}</div><div class="sub">${esc(o.sub)}</div></div>
     ${g==='G1'?Array.from({length:26},()=>`<i class="sp" style="left:${(Math.random()*96).toFixed(1)}%;top:${(Math.random()*92).toFixed(1)}%;animation-delay:${(Math.random()*2).toFixed(2)}s"></i>`).join(''):''}`;
+}
+function showIntro(dur){
+  const el=$('#intro'), o=introInfo();
+  el.className='intro '+o.g;
+  el.innerHTML=introHTML(o);
   el.hidden=false;
   clearTimeout(S.introT); clearTimeout(S.introT2);
   S.introT=setTimeout(()=>el.classList.add('out'),Math.max(1500,dur*1000-600));
@@ -1959,7 +2001,7 @@ let tmLoop=null, tmBeep=-1;
 const nowS=()=>Date.now()+(NET&&NET.off||0);
 const tmLeft=()=>!S||!S.tm?0:S.tm.paused?S.tm.left:Math.max(0,S.tm.end-nowS());
 function armTimer(){
-  clearInterval(tmLoop); const sec=S.phase==='result'?+W.cfg.resSec||25:+W.cfg.betSec||90;
+  clearInterval(tmLoop); tmLoop=null; const sec=S.phase==='result'?+W.cfg.resSec||25:+W.cfg.betSec||90;
   if(!sec||!TPH[S.phase]){ S.tm=null; showTimer(); return; }
   S.tm={left:sec*1000,end:null,paused:true};
   if(!$('#qrModal').hidden) S.tmWait=true;    // 1レース目はQRコードを閉じてから数え始める
@@ -1970,14 +2012,15 @@ function startTimer(){
   if(!S||!S.tm) return; S.tmWait=false;
   S.tm.end=nowS()+S.tm.left; S.tm.paused=false; tmBeep=-1;
   clearInterval(tmLoop);
-  tmLoop=setInterval(()=>{
-    if(!S||!S.tm||!TPH[S.phase]){ clearInterval(tmLoop); return; }
-    showTimer(); if(S.tm.paused) return;
-    const left=tmLeft(), sec=Math.ceil(left/1000);
-    if(S.phase==='bet'&&sec<=5&&sec>0&&sec!==tmBeep){ tmBeep=sec; tone(880,.08,'square',.07); }
-    if(left<=0){ clearInterval(tmLoop); timeUp(); }
-  },200);
+  tmLoop=setInterval(tmTick,200);
   showTimer(); pushState();
+}
+function tmTick(){
+  if(!S||!S.tm||!TPH[S.phase]){ clearInterval(tmLoop); tmLoop=null; return; }
+  showTimer(); if(S.tm.paused) return;
+  const left=tmLeft(), sec=Math.ceil(left/1000);
+  if(S.phase==='bet'&&sec<=5&&sec>0&&sec!==tmBeep){ tmBeep=sec; tone(880,.08,'square',.07); }
+  if(left<=0){ clearInterval(tmLoop); tmLoop=null; timeUp(); }
 }
 function pauseTimer(){
   if(!S||!S.tm) return;
@@ -1985,7 +2028,7 @@ function pauseTimer(){
   S.tm.left=tmLeft(); S.tm.paused=true; S.tm.end=null; showTimer(); pushState();
 }
 function addTimer(ms){ if(!S||!S.tm) return; if(S.tm.paused) S.tm.left+=ms; else S.tm.end+=ms; showTimer(); pushState(); }
-function stopTimer(){ clearInterval(tmLoop); if(S){ S.tm=null; S.tmWait=false; } showTimer(); }
+function stopTimer(){ clearInterval(tmLoop); tmLoop=null; if(S){ S.tm=null; S.tmWait=false; } showTimer(); }
 function showTimer(){
   const el=$('#timer'), on=!!(S&&S.tm&&TPH[S.phase]); el.hidden=!on; if(!on) return;
   const sec=Math.ceil(tmLeft()/1000);
@@ -2049,10 +2092,10 @@ function afterRace(run,win){
     } else {
       const r=run[win]; r.x+=canter*k; r.ph+=canter/S.step*0.42*k*1.4; r.px=null; r.pph=null; r.pl=null; r.lane+=Math.max(-0.004,Math.min(0.004,0.55-r.lane))*k;
     }
-    drawRace(run);
-    raf=requestAnimationFrame(f);
+    if(!document.hidden) drawRace(run);
+    raf=rafX(f);
   };
-  raf=requestAnimationFrame(f);
+  raf=rafX(f);
 }
 // ウイニングラン中の表示(画面の上に勝ち馬と当たった班)
 function drawWin(c,cs){
@@ -2107,14 +2150,15 @@ function runRace(){
   let lastLive=0, lastTrk=0;
   const name=i=>`${S.horses[i].no}番 ${S.horses[i].name}`, D=S.dist;
   say(`${rTitle()}(${S.rn.grade})、${S.crs.full}の${surfText(true)}。ファンファーレです!`); $('#rem').textContent='';
-  const fan=soundOn?raceFanfare(S.rn.grade):{G1:5.5,G2:4,G3:4,OP:2.8}[S.rn.grade];
+  const fan=soundOn&&!quiet()?raceFanfare(S.rn.grade):{G1:5.5,G2:4,G3:4,OP:2.8}[S.rn.grade];
   showIntro(fan+0.4);
+  S.intro={t:nowS(),fan:fan+0.4,...introInfo()}; pushState();     // iPadにもレース名の演出とファンファーレを出す
   const GATE_IN=2.2, GATE_WAIT=2.0;   // ゲートに入る時間・ゲートイン完了からスタートまでの「一呼吸」(秒)
-  setTimeout(()=>{ if(S===me) say('各馬、ゲートに入っていきます…'); },(fan+0.4)*1000);
-  setTimeout(()=>{ if(S===me){ say('ゲートイン完了。'); crowd(0.08,1.2); } },(fan+0.4+GATE_IN)*1000);   // 場内が静まる
+  laterX(()=>{ if(S===me) say('各馬、ゲートに入っていきます…'); },(fan+0.4)*1000);
+  laterX(()=>{ if(S===me){ say('ゲートイン完了。'); crowd(0.08,1.2); } },(fan+0.4+GATE_IN)*1000);   // 場内が静まる
   let t=0, lastLead=-1, nextTalk=0, lastSeg=null, finished=0, said200=false, saidHill=false, said400=false, saidStraight=false, saidShobu=false; const hs={};
   const shobu=Math.min(G.sw+400,D*0.65);     // 勝負どころ(直線の手前400m)
-  setTimeout(()=>{
+  laterX(()=>{
     if(S!==me) return;
     S.gate.open=performance.now(); gateSound(); crowd(0.25,1.5);
     say('ゲートが開いた!スタートしました!');
@@ -2178,23 +2222,23 @@ function runRace(){
         $('#rem').textContent=rem>0?`残り${Math.ceil(rem/50)*50}m`:'';
       }
       const al=Math.min(1,acc/TICK);
-      drawRace(stretchRun(run.map(r=>({...r, x:r.px==null?r.x:r.px+(r.x-r.px)*al, ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
+      if(!document.hidden) drawRace(stretchRun(run.map(r=>({...r, x:r.px==null?r.x:r.px+(r.x-r.px)*al, ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
       if(t%6===0||finished) renderOrder(run);
       if(NET&&now-lastLive>600){ lastLive=now; sendLive(run); }
       if(NET&&now-lastTrk>=300){ lastTrk=now; sendTrk(run); }
       if(run.every(r=>r.fin!==null)){
         // 写真判定は少しためてから発表
         if(S.photo&&!S.photo.revealed){
-          if(now<S.photo.until){ raf=requestAnimationFrame(frame); return; }
+          if(now<S.photo.until){ raf=rafX(frame); return; }
           S.photo.revealed=true; tone(1047,.4,'triangle',.2);
           say(`写真判定の結果……1着は${name(S.photo.a)}!${marginName(S.photo.gap)}差の大接戦!`);
         }
         renderOrder(run); drawRace(run); sendLive(run); sendTrk(run); $('#rem').textContent=''; crowd(0.2,2.5); setTimeout(()=>crowd(0,2),3000);
         const ord=orderOf(run); finish(ord); afterRace(run,ord[0]); return;
       }
-      raf=requestAnimationFrame(frame);
+      raf=rafX(frame);
     };
-    raf=requestAnimationFrame(frame);
+    raf=rafX(frame);
   },(fan+0.4+GATE_IN+GATE_WAIT)*1000);
 }
 
@@ -2202,7 +2246,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=23;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=24;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2650,12 +2694,17 @@ function normalize(w){
     p.coins=p.coins||0; p.prize=p.prize||0; p.g1=p.g1||0; p.wins=p.wins||0; p.aidR=p.aidR??-99; });
   Object.values(w.horses).forEach(h=>{ h.rec=h.rec||{}; const r=h.rec; r.runs=r.runs||0; r.w=Array.isArray(r.w)?[r.w[0]||0,r.w[1]||0,r.w[2]||0]:[0,0,0]; r.prize=r.prize||0;
     r.wins=Object.assign({OP:0,G3:0,G2:0,G1:0},r.wins||{}); r.big=Array.isArray(r.big)?r.big.filter(Boolean):Object.values(r.big||{});
-    h.fat=h.fat||0; h.cond=h.cond||0; h.entry=h.entry??null; h.fee=h.fee||0; h.trainedR=h.trainedR||0; h.peak=h.peak||{...h.st}; });
+    h.fat=h.fat||0; h.cond=h.cond||0; h.entry=h.entry??null; h.fee=h.fee||0; h.trainedR=h.trainedR||0; h.peak=h.peak||{...h.st};
+    if(h.lv==null) h.lv=Math.max(0,w.R-(h.born||w.R)); });      // 版23までの馬は、いまの年齢をそのまま引き継ぐ
+  Object.values(w.players).forEach(p=>p.preg.forEach(f=>{ if(f.left==null) f.left=Math.max(1,(f.due||w.R)-w.R); }));
   return w;
 }
 function news(t){ W.news.unshift({R:W.R,t}); W.news=W.news.slice(0,30); }
 function msg(pid,t){ const p=W.players[pid]; if(!p) return; p.msgs.unshift({R:W.R,t}); p.msgs=p.msgs.slice(0,12); }
-const ageAt=(h,R)=>2+(R-h.born)/YEAR;
+// 年齢:馬主が参加していた(iPadをつないでいた・馬券を買った)レースの数 h.lv で年をとる。この先のレースは、参加する前提で数える
+const ageAt=(h,R)=>2+((h.lv||0)+Math.max(0,R-W.R))/YEAR;
+// そのレースに参加していたプレイヤー(馬券・一口を買った人と、iPadがつながっていた人)
+function activePids(){ const s=new Set(Object.keys((S&&S.bets)||{})); if(NET) Object.keys(NET.pres||{}).forEach(d=>{ const pid=W.devs[d]; if(pid&&W.players[pid]) s.add(pid); }); return s; }
 const effOf=(h,R)=>{ const k=curve(h.grow,ageAt(h,R)), e={}; SK.forEach(s=>e[s]=Math.round(h.st[s]*k)); return e; };
 const activeOf=pid=>Object.values(W.horses).filter(h=>h.owner===pid&&h.status==='active');
 const slotsUsed=pid=>activeOf(pid).length+((W.players[pid]||{}).preg||[]).length;
@@ -2694,7 +2743,7 @@ function marketHorse(tier){
 function refreshMarket(){ W.market=[]; ['cheap','cheap','mid','mid','blue','blue'].forEach(t=>W.market.push(marketHorse(t))); W.marketR=W.R; }
 function addHorse(pid,src,price0){
   const h={id:nid('h'),owner:pid,name:src.name,sex:src.sex,coat:src.coat,style:src.style,apt:src.apt,sf:src.sf,grow:src.grow,st:{...src.st},caps:{...src.caps},peak:{...src.st},
-    born:W.R,fat:0,cond:0,status:'active',entry:null,fee:0,trainedR:0,price0,sire:src.sire||'',dam:src.dam||'',
+    born:W.R,lv:0,fat:0,cond:0,status:'active',entry:null,fee:0,trainedR:0,price0,sire:src.sire||'',dam:src.dam||'',
     rec:{runs:0,w:[0,0,0],prize:0,wins:{OP:0,G3:0,G2:0,G1:0},yt2:false,ft2:false,big:[]}};
   W.horses[h.id]=h; return h;
 }
@@ -2794,11 +2843,11 @@ function cardMarks(){ makeMarks(); S.horses.forEach(h=>{ h.comment=makeComment(h
 function prepCard(R,onDone,onProg){
   const C=makeCard(R), a=oddsAcc(C.H), N=oddsN(C.H);
   const chunk=()=>{ if(C.cancel) return;
-    if(S&&S.phase==='race'&&S.next===C){ setTimeout(chunk,400); return; }   // レース中は映像を優先
+    if(S&&S.phase==='race'&&S.next===C&&!document.hidden){ laterX(chunk,400); return; }   // レース中は映像を優先(裏に回っているときは描かないので進める)
     withS(C,()=>{ const t0=performance.now(); while(a.n<N&&performance.now()-t0<18) oddsRun(a); if(a.n>=N){ oddsFinal(a); cardMarks(); } });
     if(onProg) onProg(a.n/N);
-    if(a.n<N) setTimeout(chunk,6); else { C.ready=true; if(onDone) onDone(C); } };
-  setTimeout(chunk,0); return C;
+    if(a.n<N) laterX(chunk,6); else { C.ready=true; if(onDone) onDone(C); } };
+  laterX(chunk,0); return C;
 }
 function refreshCard(C){
   C.horses.forEach((rh,i)=>{ if(!rh.hid) return; const h=W.horses[rh.hid]; if(!h||h.status!=='active') return;
@@ -2887,8 +2936,9 @@ function addBest(r){
 // 次のレースへ:時間を進める
 function nextRound(){
   if(!S||S.waitNext) return;
-  S.after=false; S.win=null; cancelAnimationFrame(raf); crowd(0,0.5); hideIntro(); stopTimer();
-  const ran=new Set(S.horses.filter(h=>h.hid).map(h=>h.hid));
+  S.after=false; S.win=null; cafX(raf); crowd(0,0.5); hideIntro(); stopTimer();
+  const ran=new Set(S.horses.filter(h=>h.hid).map(h=>h.hid)), act=activePids();
+  Object.values(W.horses).forEach(h=>{ if(act.has(h.owner)) h.lv=(h.lv||0)+1; });   // 参加していた馬主の馬だけ年をとる
   Object.values(W.horses).forEach(h=>{ if(h.status!=='active') return;
     if(h.trainedR!==W.R&&!ran.has(h.id)) h.fat=Math.max(0,h.fat-1);      // 何もしなかった馬は少し回復
     if(Math.random()<0.15) h.cond=clamp(h.cond+(Math.random()<0.5?1:-1),-2,2); });
@@ -2896,7 +2946,7 @@ function nextRound(){
   Object.values(W.horses).forEach(h=>{ if(h.entry!=null&&h.entry<W.R) exclude(h,specOf(h.entry),'出走表に入れませんでした'); });
   // 子馬の誕生
   Object.entries(W.players).forEach(([pid,p])=>{
-    p.preg=p.preg.filter(f=>{ if(f.due>W.R) return true;
+    p.preg=p.preg.filter(f=>{ if(act.has(pid)) f.left=(f.left??1)-1; if(f.left>0) return true;   // 子馬も、参加したレースの数で生まれる
       const src={...f.foal,name:newName()}, h=addHorse(pid,src,150);
       msg(pid,`🐣 子馬が生まれました!${h.name}(${h.sex}・父${h.sire}×母${h.dam})`); news(`${p.name}さんの牧場で${h.name}が誕生`); return false; });
     if(p.coins<AID.under&&W.R-p.aidR>=AID.every){ p.coins+=AID.amount; p.aidR=W.R; msg(pid,`コインが少なくなったので${AID.amount}枚の支給がありました`); }
@@ -2982,10 +3032,10 @@ function doAct(dev,a){
       else { const list=h.sex==='牝'?SIRES:DAMS; const c=list.find(x=>x.id===a.cpu); if(!c) return {ok:false,msg:'相手を選んでください'}; mate={...c,g1:0}; fee=c.fee; }
       if(p.coins<fee) return {ok:false,msg:'コインが足りません'};
       p.coins-=fee; const me=parentOf(h), [sire,dam]=h.sex==='牝'?[mate,me]:[me,mate];
-      p.preg.push({due:W.R+GEST,sire:sire.name,dam:dam.name,foal:makeFoal(sire,dam)});
+      p.preg.push({left:GEST,sire:sire.name,dam:dam.name,foal:makeFoal(sire,dam)});
       delete W.horses[h.id]; if(mateH) delete W.horses[mateH.id];
       news(`${p.name}さんが${sire.name}×${dam.name}の種付け`);
-      return {ok:true,msg:`種付けしました!${GEST}レース後に子馬が生まれます`}; }
+      return {ok:true,msg:`種付けしました!あなたが参加する${GEST}レースのあとに子馬が生まれます`}; }
   }
   return {ok:false,msg:'その操作はできません'};
 }
@@ -3109,7 +3159,7 @@ function pushState(){
     timer:S.tm&&TPH[S.phase]?(S.tm.paused?{paused:true,left:S.tm.left}:{end:S.tm.end}):null,
     order:S.order?S.order.map(i=>i+1):null,
     rank:rankLists(), news:W.news.slice(0,12), market:W.market, np:Object.keys(W.players).length,
-    prize:S.spec?S.spec.prize:0, big:S.phase==='result'&&S.big&&S.big.length?S.big:null};
+    prize:S.spec?S.spec.prize:0, intro:S.phase==='race'&&S.intro?S.intro:null, big:S.phase==='result'&&S.big&&S.big.length?S.big:null};
   if(NET.oddsRace!==W.R){ NET.oddsRace=W.R; NET.be.set(NET.base+'/odds',{race:W.R,...S.odds}).catch(netErr); }
   const j=JSON.stringify(st); if(j!==NET.last){ NET.last=j; NET.be.set(NET.base+'/state',st).catch(netErr); }
   pushPVs();
@@ -3125,7 +3175,7 @@ function hView(h){
 }
 function pvOf(pid){
   const p=W.players[pid], hs=Object.values(W.horses).filter(h=>h.owner===pid);
-  return {pid,name:p.name,coins:p.coins,prize:p.prize,g1:p.g1,wins:p.wins,msgs:p.msgs.slice(0,8),preg:p.preg.map(f=>({due:f.due,sire:f.sire,dam:f.dam})),
+  return {pid,name:p.name,coins:p.coins,prize:p.prize,g1:p.g1,wins:p.wins,msgs:p.msgs.slice(0,8),preg:p.preg.map(f=>({left:f.left,sire:f.sire,dam:f.dam})),
     horses:hs.map(hView),R:W.R,res:S.phase!=='bet'?(S.res[pid]||null):null,
     bet:S.phase==='race'&&S.bets[pid]?S.bets[pid].tickets:null,
     ku:S.phase==='race'&&S.bets[pid]&&S.bets[pid].ku?{no:S.bets[pid].ku,price:S.bets[pid].kp}:null};
@@ -3201,7 +3251,7 @@ function stepBtn(){
   if(S.phase==='bet') runRace();
   else if(S.phase==='result') nextRound();
 }
-function back(){ bgmStop(true); BN.pause=false; if(S&&S.next) S.next.cancel=true; if(W&&NET) saveWorld(true); cancelAnimationFrame(raf); hideIntro(); clearInterval(tmLoop); crowd(0,0.2); hostClose(); S=null; W=null; $('#game').hidden=true; $('#setup').hidden=false; fillSetup(); }
+function back(){ bgmStop(true); BN.pause=false; if(S&&S.next) S.next.cancel=true; if(W&&NET) saveWorld(true); cafX(raf); hideIntro(); clearInterval(tmLoop); crowd(0,0.2); hostClose(); S=null; W=null; $('#game').hidden=true; $('#setup').hidden=false; fillSetup(); }
 function fillSetup(){
   let last=null; try{ last=JSON.parse(localStorage.getItem('g1.lastRoom')); }catch(e){}
   if(last&&last.room){ $('#f-room').value=last.room; $('#lastRoom').textContent=last.room; if(last.kind) $('#f-net').value=last.kind; }
@@ -3268,6 +3318,7 @@ async function padStart(room,kind){
   ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
   const vp=document.querySelector('meta[name=viewport]'); if(vp) vp.content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
   P.room=room; P.kind=kind; P.base=`rooms/${room}`; P.dev=devId();
+  try{ soundOn=localStorage.getItem('g1.snd')!=='0'; }catch(e){}
   if(kind==='firebase'&&!fbReady()){ padMsg('準備ができていません','このページにはFirebaseの設定がありません。先生に伝えてください。'); return; }
   padMsg('接続しています…','');
   try{ P.be=await withTimeout(connectNet(kind),12000,'timeout'); }
@@ -3380,7 +3431,7 @@ function padRender(){
   const pv=P.pv, bet=st.phase==='bet', left=bet?pv.coins-tkTotal(myTickets())-kuP():pv.coins;
   // 投票受付中の馬券画面では、下の操作盤にCREDIT(のこり)があるので上には出さない
   const deck=bet&&P.tab==='bet';
-  who.innerHTML=`<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg" id="padLogout">ログアウト</button>`;
+  who.innerHTML=`<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg snd" id="padSnd" aria-label="音">${soundOn?'🔊':'🔇'}</button><button class="chg" id="padLogout">ログアウト</button>`;
   const tabs=$('#padTabs'); tabs.hidden=false;
   tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&(P.newMsg||pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard))?'<i class="dotn"></i>':''}</button>`).join('');
   $('#padSlip').hidden=true;
@@ -3577,12 +3628,14 @@ function padRaceView(st,pv){
     $('#padMain').innerHTML=`<div class="pr-wrap" id="prWrap">
       <div class="pr-video"><canvas id="prCv"></canvas>
         <div class="pr-top"><span class="pr-rem" id="liveRem"></span><span class="pr-live"><i></i>LIVE</span></div>
-        <div class="pr-cap"><b>実況</b><span id="prCap"></span><em>金色に光る馬 = あなたの馬券・持ち馬</em></div></div>
+        <div class="pr-cap"><b>実況</b><span id="prCap"></span><em>金色に光る馬 = あなたの馬券・持ち馬</em></div>
+        <div class="intro" id="prIntro" hidden></div></div>
       <div class="pr-side"><h3>現在の順位</h3><ol class="pr-rank" id="liveBox"></ol></div>
       <div class="pr-bottom"><div class="pr-sum" id="liveSum"></div>
         <ul class="a-list pr-tk" id="liveTk">${mine.length||ku?'':'<li class="none">このレースは馬券を買っていません</li>'}</ul></div></div>`;
     padRaceStart(st,pv);
   }
+  padIntro(st);
   padLive();
 }
 // ---------- iPadのレース映像 ----------
@@ -3609,6 +3662,14 @@ function padRaceStart(st,pv){
   prFit(); layout($('#prCv')); PR.w=G.W; PR.h=G.H;
   warmSprites(sprScale(G.u,false),0,[1,-1]);
   PR.raf=requestAnimationFrame(prFrame);
+}
+// レース名の演出とファンファーレ(先生のPCと同じタイミング。途中から開いたときは音を鳴らさない)
+function padIntro(st){
+  const o=st.intro, el=$('#prIntro'); if(!el||!o||P.introR===st.R) return;
+  const now=Date.now()+(P.off||0), left=o.t+o.fan*1000-now; P.introR=st.R; if(left<700) return;
+  el.className='intro '+o.g; el.innerHTML=introHTML(o); el.hidden=false;
+  if(now-o.t<1500) raceFanfare(o.g);
+  setTimeout(()=>el.classList.add('out'),Math.max(800,left-600)); setTimeout(()=>{ el.hidden=true; },left);
 }
 function padRaceStop(){ if(PR.raf) cancelAnimationFrame(PR.raf); PR.raf=0; if(PR.on){ PR.on=false; if(S&&S.padView) S=null; } }
 // 画面の高さに合わせて映像の大きさを決める
@@ -3753,7 +3814,7 @@ function padStable(st,pv){
       ${h.rec.runs===0?`<button class="hb" data-a="rename" data-hid="${h.id}">名前を変える</button>`:''}
       <button class="hb" data-a="retire" data-hid="${h.id}" ${h.inCard||h.inNext?'disabled':''}>引退</button>
       <button class="hb" data-a="sell" data-hid="${h.id}" ${h.inCard||h.inNext?'disabled':''}>売る(${yen(h.sell)})</button></div></div>`; }).join('');
-  const preg=pv.preg.map(f=>`<div class="hcard egg"><h4>🐣 誕生を待っています</h4><div class="meta">父 ${esc(f.sire)} × 母 ${esc(f.dam)}<br>あと${Math.max(1,f.due-pv.R)}レースで誕生(生まれたら2歳ですぐ出走できます)</div></div>`).join('');
+  const preg=pv.preg.map(f=>`<div class="hcard egg"><h4>🐣 誕生を待っています</h4><div class="meta">父 ${esc(f.sire)} × 母 ${esc(f.dam)}<br>あなたが参加するレースあと${Math.max(1,f.left||1)}回で誕生(生まれたら2歳ですぐ出走できます)</div></div>`).join('');
   const empty=Array.from({length:Math.max(0,SLOTS-used)},()=>`<div class="hcard empty"><h4>空き</h4><div class="meta">「市場」で馬を買うか、「牧場」で種付けしましょう</div><button class="hb gold" data-tab="market">市場へ</button></div>`).join('');
   const msgs=pv.msgs.length?`<div class="a-panel" style="margin-top:12px"><h3>お知らせ</h3><ul class="a-list">${pv.msgs.slice(0,5).map(x=>`<li><span class="dim">第${x.R}戦</span><span class="${x.t.startsWith('⚠')?'exm':''}">${esc(x.t)}</span></li>`).join('')}</ul></div>`:'';
   $('#padMain').innerHTML=`<div class="ptitle">厩舎 <small>現役馬 ${act.length}頭 + 誕生待ち ${pv.preg.length}頭 / ${SLOTS}</small></div><div class="hcards">${cards}${preg}${empty}</div>${msgs}`;
@@ -3773,7 +3834,7 @@ function padFarm(st,pv){
       <div class="meta">${recText(h.rec)}${h.rec.big.length?`<br>🏆 ${h.rec.big.slice(-3).map(esc).join('・')}`:''}</div></div></div>${statBars(h.e)}
       <div class="btns"><button class="hb go" data-a="breed" data-hid="${h.id}" ${used>=SLOTS?'disabled':''}>種付けする</button><button class="hb" data-a="release" data-hid="${h.id}">手放す</button></div></div>`).join('');
   $('#padMain').innerHTML=`<div class="ptitle">牧場 <small>引退した馬 ${ret.length}頭</small></div>
-    <p class="iksub">種付けすると、その馬は牧場から卒業して${GEST}レース後に子馬が生まれます(2歳ですぐ出走OK)。子は両親の能力・素質・成長型を受けつぎます。${used>=SLOTS?'<br><b style="color:var(--pk)">いまは現役馬と誕生待ちがいっぱいなので種付けできません</b>':''}</p>
+    <p class="iksub">種付けすると、その馬は牧場から卒業して、あなたが参加した${GEST}レースのあとに子馬が生まれます(2歳ですぐ出走OK)。子は両親の能力・素質・成長型を受けつぎます。${used>=SLOTS?'<br><b style="color:var(--pk)">いまは現役馬と誕生待ちがいっぱいなので種付けできません</b>':''}</p>
     <div class="hcards">${cards||'<p class="iksub">まだ引退した馬はいません。厩舎で「引退」すると牧場に来ます</p>'}</div>`;
   drawHorseCanvases();
 }
@@ -3781,13 +3842,14 @@ function padInfo(st,pv){
   const mine={}; pv.horses.forEach(h=>{ if(h.entry!=null) (mine[h.entry]=mine[h.entry]||[]).push(h.name); });
   const cal=Array.from({length:12},(_,k)=>specOf(st.R+k)).map(sp=>`<li class="${sp.R===st.R?'now':''}"><span class="rn">${sp.R}</span><span class="a-grade ${sp.g}">${sp.g}</span><span>${esc(sp.name)}${sp.c?`<em class="ct">${CONDN[sp.c]}</em>`:''}</span><small>${COURSES[sp.crs].name} ${sp.surf==='dirt'?'ダ':'芝'}${sp.dist} 1着${yen(sp.prize)}</small>${mine[sp.R]?`<b class="myent">★${mine[sp.R].map(esc).join('・')}</b>`:''}</li>`).join('');
   const rk=(l,f)=>l.map((x,i)=>`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${f(x)}</b></li>`).join('')||'<li>まだいません</li>';
-  $('#padMain').innerHTML=`<div class="info"><div class="a-panel"><h3>レースカレンダー<small>${CAL.length}レースで1シーズン ・ ${YEAR}レースで1歳</small></h3><ol class="ical">${cal}</ol></div>
+  $('#padMain').innerHTML=`<div class="info"><div class="a-panel"><h3>レースカレンダー<small>${CAL.length}レースで1シーズン ・ 参加した${YEAR}レースで1歳</small></h3><ol class="ical">${cal}</ol></div>
     <div><div class="a-panel"><h3>最高配当ランキング<small>当たった馬券1枚の払い戻し</small></h3><ol class="ical best1">${st.rank.best.map((x,i)=>`<li><span class="rn">${i+1}</span><span class="bn">${esc(x.name)}</span><small class="bd">${esc(x.bt)} ${x.odds}倍 第${x.R}戦 ${esc(x.race)}</small><b>${yen(x.pay)}</b></li>`).join('')||'<li>まだ当たりはありません</li>'}</ol></div>
     <div class="a-panel" style="margin-top:10px"><h3>馬主ランキング(獲得賞金)</h3><ol class="ical">${rk(st.rank.prize,x=>yen(x.v)+(x.g1?` 🏆${x.g1}`:''))}</ol></div>
     <div class="a-panel" style="margin-top:10px"><h3>ルール</h3><div class="rulebox">
       ・OPとG3は誰でも出走OK(ただしG1を勝った馬は出られません)<br>・G2:OPかG3で1勝<br>・G1:G2で1勝、またはOP・G3で2勝<br>
       ・若駒限定G1:3歳まで。OP・G3で1勝か、若駒トライアル2着以内<br>・牝馬限定G1:牝馬だけ。G1の条件か、牝馬トライアル2着以内<br>
       ・斤量:基本${BASEKG}kg。牝馬は混合レースで-2kg。OP・G3では重賞1勝ごとに+1kg<br>・登録料:OP ${FEE.OP}・G3 ${FEE.G3}・G2 ${FEE.G2}・G1 ${FEE.G1}枚<br>
+      ・馬の年齢と子馬の誕生は、あなたが参加していた(iPadをつないでいた・馬券を買った)レースの数で進みます。休んでいる間は年をとりません<br>
       ・一口馬主:1レース1頭まで。5着までに入ると、その着順の賞金がもらえます(プレイヤーの馬なら、本物の馬主に売れた分の1割のファンボーナス)<br>
       ・馬券は1点${MAXBET}枚まで。コインが${AID.under}枚未満になると${AID.amount}枚の支給(${AID.every}レースに1回)</div></div>
     <div class="a-panel" style="margin-top:10px"><h3>ニュース</h3><ul class="a-list">${st.news.slice(0,8).map(n=>`<li><span class="dim">第${n.R}戦</span><span>${esc(n.t)}</span></li>`).join('')}</ul></div></div></div>`;
@@ -3829,6 +3891,7 @@ $('#pad').addEventListener('click',e=>{
     try{ localStorage.setItem('g1.auth',JSON.stringify({name,pin})); }catch(e){}
     sendAct({type:'login',name,pin}); padRender(); return;
   }
+  if(t.id==='padSnd'){ soundOn=!soundOn; try{ localStorage.setItem('g1.snd',soundOn?'1':'0'); }catch(e){} if(soundOn) sfx(1320,0.06); toast(soundOn?'音を出します':'音を消しました'); padRender(); return; }
   if(t.id==='padLogout'){ if(confirm('ログアウトしますか?(同じ名前と合言葉でまたログインできます)')) sendAct({type:'logout'}); return; }
   if(d.a){ const h=findH(d.hid);
     if(d.a==='train'&&h) return trainModal(h);
@@ -4143,7 +4206,7 @@ $('#adminBody').addEventListener('change',e=>{
       ask(`ファイルのワールド(第${v.R}戦・参加者${Object.keys(v.players).length}人)を読み込みますか?いまのワールドは置きかわります。`,'読み込む',async()=>{
         const room=NET.room, kind=NET.kind; v.saved=Date.now();
         try{ await NET.be.set(NET.base+'/save',v); localStorage.setItem('g1.save.'+room,JSON.stringify(v)); }catch(err){ return toast('保存できませんでした'); }
-        $('#adminModal').hidden=true; if(S&&S.next) S.next.cancel=true; W=null; cancelAnimationFrame(raf); clearInterval(tmLoop); bgmStop(true); hideIntro(); hostClose(); S=null;
+        $('#adminModal').hidden=true; if(S&&S.next) S.next.cancel=true; W=null; cafX(raf); clearInterval(tmLoop); bgmStop(true); hideIntro(); hostClose(); S=null;
         $('#game').hidden=true; $('#setup').hidden=false; fillSetup(); $('#f-room').value=room; $('#f-net').value=kind;
         toast('読み込みました。続きから再開します'); setTimeout(()=>$('#contBtn').click(),600); }); };
     rd.readAsText(file); e.target.value=''; }
@@ -4221,7 +4284,7 @@ function bgmStop(quick){
 // いまの場面に合わせて流す(投票中=パドック、ゲートが開いたら=レース、結果=止める)
 function bgmSync(){
   if(!S||!soundOn||!bgmOn){ if(BGM.cur) bgmStop(); return; }
-  const want=S.phase==='bet'?'paddock':S.phase==='race'&&S.gate&&S.gate.open&&!S.after?'race':null;
+  const want=quiet()?null:S.phase==='bet'?'paddock':S.phase==='race'&&S.gate&&S.gate.open&&!S.after?'race':null;
   if(want) bgmPlay(want); else if(BGM.cur) bgmStop();
 }
 setInterval(bgmSync,250);
