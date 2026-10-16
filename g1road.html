@@ -576,7 +576,7 @@ html.padmode{-webkit-text-size-adjust:100%}
 .hb:disabled{opacity:.35}
 .hb:active{transform:scale(.95)}
 .price{font-family:var(--arc);font-size:22px;color:var(--led);margin-right:auto;text-shadow:0 0 6px rgba(255,177,58,.8)}
-.tag.t5{background:#b37400}
+.tag.t5{background:#b37400}.tag.t6{background:#d6487e}
 #padModal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
 #padModal .box{background:#141a38;border:3px solid var(--gl);border-radius:16px;max-width:820px;width:100%;max-height:90vh;overflow:auto;padding:14px 16px}
 .ikm .cost{font-family:var(--arc);font-size:14px;color:var(--led)}
@@ -1244,6 +1244,16 @@ const SPURT={逃げ:380,先行:430,差し:480,追込:420};
 const SUS={逃げ:290,先行:380,差し:470,追込:430};
 const KICKB={逃げ:1,先行:1.03,差し:1.12,追込:1.18};   // 直線の差し脚の強さ(脚質ごと)
 const SPREAD=0.22;   // 馬どうしの差の大きさ
+// 個性:ki=末脚自慢(差し・追込) os=大逃げ・押し切り型 ot=大逃げ・一か八か型(逃げ)
+const TRAIT={ki:{name:'末脚自慢',st:['差し','追込']},os:{name:'大逃げ(押し切り)',st:['逃げ']},ot:{name:'大逃げ(一か八か)',st:['逃げ']}};
+const trOk=(tr,style)=>!!(tr&&TRAIT[tr]&&TRAIT[tr].st.includes(style));
+// 個性をランダムに決める(逃げなら大逃げ、差し・追込なら末脚自慢)
+const rollTr=(style,p)=>style==='逃げ'?(Math.random()<p?(Math.random()<0.5?'os':'ot'):''):(style==='差し'||style==='追込')?(Math.random()<p?'ki':''):'';
+// 調整用の数値(直線の追い込み・大逃げ)
+let BUNCH_K=0.035, BUNCH_MAX=0.35, BUNCH_ONI=0.5;           // 3〜4コーナーで後ろの馬が差を詰める強さ
+let KIRE=0.07;                                   // 末脚自慢:直線での上乗せ(同じ馬で比べて勝率が約2倍)
+let ONIGE={os:0.18,ot:0.2}, ONIGE_SUS_S=-120;     // 大逃げ:中間地点で約10馬身のリード。押し切り型は勝率が約3倍
+let TURBO_HOLD=0.3, ONIGE_SUS=200, TURBO_DROP=0.8, TURBO_AT=1;   // 一か八か型:3割の日は粘り、7割は直線で止まって下位へ
 const ABIL=0.013;    // 実力差の効き具合
 function aptBonus(apt,dc){ return 0.008-0.008*Math.abs(apt-dc); }
 // 芝・ダートの向き不向き(sf:'turf'芝向き/'dirt'ダート向き/'both'どちらも)
@@ -1261,24 +1271,31 @@ function makeHorse(no,name,D){
   return h;
 }
 const swF=()=>((S.crs?S.crs.sw:500)+100)/600;   // 直線が短いほどスパートも短く
-function newRun(){ const f=swF(); return S.horses.map(h=>({x:0,f:0,fin:null,d:gauss()*0.03,late:gauss()*0.08,sf:f,sp:h.spurt*f+gauss()*50,ph:Math.random()*6})); }
+function newRun(){ const f=swF(); return S.horses.map(h=>({x:0,f:0,fin:null,d:gauss()*0.03,late:gauss()*0.08,sf:f,sp:h.spurt*f+gauss()*50,ph:Math.random()*6,tb:Math.random()<TURBO_HOLD})); }
 function stepRun(run,t){
-  const D=S.dist, dc=dcat(D), step=S.step; let LX=0; for(let q=0;q<run.length;q++) if(run[q].x>LX) LX=run[q].x;
+  const D=S.dist, dc=dcat(D), step=S.step; let LX=0, LXo=0; for(let q=0;q<run.length;q++){ const tq=S.horses[q].tr, x=run[q].x; if(tq==='os'||tq==='ot'){ if(x>LXo) LXo=x; } else if(x>LX) LX=x; }
+  if(LXo>LX) LX+=(LXo-LX)*BUNCH_ONI;   // 大逃げの馬には、馬群はリードの半分くらいまで追いかける
   S.horses.forEach((h,i)=>{
     const r=run[i]; r.px=r.x; r.pph=r.ph; if(r.fin!==null) return;
     r.f=r.f*0.97+gz()*0.01; r.f=Math.max(-0.06,Math.min(0.06,r.f));
     const p=r.x/D, rm=D-r.x, w=1.22*(p<0.55?0.3:0.3+(p-0.55)/0.45*2.3);
     let dev=w*(ABIL*h.s+h.cond+r.d+aptBonus(h.apt,dc)+sfBonus(h)+JSK*((h.jsk||3)-3)+(h.ca?0.005:0))+r.f;
-    if(rm>r.sp){ dev+=CRUISE[h.style]*1600/D*(p<0.25?1.7:0.45); r.state='cruise'; }   // 位置取りはスタート直後に大きく(道中で隊列ができる)
+    const tr=h.tr, SW0=S.crs?S.crs.sw:500;
+    if(rm>r.sp){ dev+=CRUISE[h.style]*1600/D*(p<0.25?1.7:0.45); r.state='cruise';
+      if(tr==='os'||tr==='ot') dev+=ONIGE[tr]*1600/D*(p<0.55?1:0.35);      // 大逃げ:スタートから飛ばして後ろを大きく離す
+      if(tr==='ki') dev-=0.012; }                                            // 末脚自慢:道中は後ろでじっと脚をためる(位置取りはスタート直後に大きく決まる)
     else {
       const run2=r.sp-rm;
       dev+=CRUISE[h.style]*0.3*1600/D+h.kick*(KICKB[h.style]||1)*(S.crs?S.crs.kick:1)*Math.pow(1/r.sf,0.5)*Math.min(1,run2/120);   // 直線が短くても差し脚が届くように
-      if(run2>h.sus*r.sf){ dev-=Math.min(0.22,0.22*(run2-h.sus*r.sf)/180)*(h.gt!=null?Math.max(0.5,1-(h.gt-50)/150):1); r.state='fade'; } else r.state='spurt';
+      if(tr==='ki'&&rm<SW0) dev+=KIRE*Math.min(1,(SW0-rm)/80);              // 末脚自慢:直線だけ一段と伸びる
+      if(tr==='ot'&&!r.tb&&rm<SW0*TURBO_AT) dev-=TURBO_DROP*Math.min(1,(SW0*TURBO_AT-rm)/100);   // 一か八か型:たいてい直線で止まる
+      const sus=h.sus+(tr==='ki'?150:tr==='os'?ONIGE_SUS_S:tr==='ot'&&r.tb?ONIGE_SUS:0);
+      if(run2>sus*r.sf){ dev-=Math.min(0.22,0.22*(run2-sus*r.sf)/180)*(h.gt!=null?Math.max(0.5,1-(h.gt-50)/150):1); r.state='fade'; } else r.state='spurt';
       if(S.crs&&S.crs.hill&&rm<300) dev-=S.crs.hill*(r.state==='fade'?0.03:0.008)*(h.pw!=null?Math.max(0.3,1-(h.pw-50)/90):1);   // ゴール前の坂:バテた馬ほど止まる
     }
     // 3〜4コーナー(残り1000〜500m):後ろの馬が差を詰めて馬群が固まる(直線で逆転が起きやすくなる)
     const SWc=S.crs?S.crs.sw:500;
-    if(rm<SWc+500&&rm>SWc) dev+=Math.min(0.35,(LX-r.x)*0.035);
+    if(rm<SWc+500&&rm>SWc) dev+=Math.max(0,Math.min(BUNCH_MAX,(LX-r.x)*BUNCH_K));
     // ゴール前の伸び・粘りはレースごとに少し変わる(最後まで分からないように)
     if(rm<SWc*0.9) dev+=r.late*2*Math.min(1,(SWc*0.9-rm)/(SWc*0.5));
     const v=step*(1+SPREAD*dev);
@@ -1324,12 +1341,15 @@ function makeMarks(){
 function makeComment(h){
   const dc=dcat(S.dist), diff=Math.abs(h.apt-dc), c=[];
   if(diff<=0.5) c.push('距離ピッタリ'); else if(diff>=2) c.push('距離に不安');
-  if(h.style==='逃げ') c.push(dc<=1?'ハナを切れば粘る':'スタミナ持つか');
+  if(h.style==='逃げ'&&!h.tr) c.push(dc<=1?'ハナを切れば粘る':'スタミナ持つか');
   if(h.style==='先行') c.push('好位から抜け出す');
   if(h.style==='差し') c.push('じっくり脚をためる');
-  if(h.style==='追込') c.push(h.mak?'早めに動いて捲る':'直線一気に注目');
+  if(h.style==='追込'&&!h.tr) c.push(h.mak?'早めに動いて捲る':'直線一気に注目');
   if(h.style==='差し'&&h.mak) c[c.length-1]='3コーナーから捲る構え';
   if(h.cls===1) c.unshift('実績上位');
+  if(h.tr==='ki') c.unshift('直線一気の末脚');
+  if(h.tr==='os') c.unshift('大逃げで押し切る');
+  if(h.tr==='ot') c.unshift('大逃げ!残るか垂れるか');
   if(h.jsk>=5&&Math.random()<0.6) c.splice(1,0,'名手が騎乗');
   if(S.surf==='dirt'&&h.sf!=='both') c.splice(1,0,h.sf==='dirt'?'ダート巧者':'初ダートで割引');
   if(S.surf==='turf'&&h.sf==='dirt'&&Math.random()<0.6) c.splice(1,0,'芝は未知数');
@@ -2010,19 +2030,25 @@ function drawReal(run,c,cs){
   const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs);
   const TW=24, Z1=TW/0.5625, HX=1.32, BX=1.75*HX;     // 走路の幅(m)・外ラチからカメラまで(m)・馬を大きめに描く倍率
   // ---- カメラ:コースの外側から、馬群に合わせて動きながら映す(コーナーではコースが奥へ曲がって見える) ----
-  let tv,tc; const straight=!!S.cam&&!S.win;
+  let tv,tc,to=0; const straight=!!S.cam&&!S.win;     // to:大逃げのときに馬群へ向ける分(速さの計算には入れず、別になめらかに動かす)
   if(S.win){ tv=26; tc=run[S.win.i].x-3; }
   else if(!S.gate||!S.gate.open||lead<1){ tv=38; tc=-2; }
   else if(run.every(r=>r.fin!==null)){ tv=44; tc=(lead+last)/2+2; }
-  else if(straight){ tv=33; tc=lead-7; }               // 最後の直線は少し寄る
-  else { tv=42; tc=lead-9; }
-  const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc,t:now,hist:[],bgx:0,pfw:null});
+  else {
+    // 大逃げで先頭が離れているとき:道中は先頭と馬群を交互に映し(テレビ中継のように)、直線では両方が入るように引く
+    const sec=Math.max(...xs.filter((x,i)=>i!==xs.indexOf(lead))), gap=lead-sec;
+    if(gap>14&&straight){ tv=Math.min(72,gap+28); tc=lead-7; to=7-gap/2; }
+    else if(gap>14){ tv=42; tc=lead-9; to=Math.floor(now/1000)%10<4?0:-gap; }
+    else if(straight){ tv=33; tc=lead-7; }               // 最後の直線は少し寄る
+    else { tv=42; tc=lead-9; }
+  }
+  const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc,t:now,hist:[],bgx:0,pfw:null,o:0});
   const dt=Math.min(0.1,Math.max(0,(now-RC.t)/1000)); RC.t=now;
   if(Math.abs(tc-RC.c)>80){ RC.c=tc; RC.v=tv; RC.hist=[]; }
   const WIN=S.padView?1800:1100, FIX=S.padView?1.6:1.0;
   RC.hist.push([now,tc]); while(RC.hist.length>2&&now-RC.hist[0][0]>WIN) RC.hist.shift();
   const h0=RC.hist[0], span=(now-h0[0])/1000, vel=span>0.25?(tc-h0[1])/span:0;
-  if(dt>0){ RC.c+=vel*dt+(tc-RC.c)*(1-Math.exp(-dt/FIX)); RC.v+=(tv-RC.v)*(1-Math.exp(-dt/1.5)); }
+  if(dt>0){ RC.o=(RC.o||0)+(to-(RC.o||0))*(1-Math.exp(-dt/0.9)); RC.c+=vel*dt+(tc+RC.o-RC.c)*(1-Math.exp(-dt/FIX)); RC.v+=(tv-RC.v)*(1-Math.exp(-dt/1.5)); }
   const cc=realPathPt(RC.c), fw={x:-cc.nx,y:-cc.ny}, rt={x:-fw.y,y:fw.x}, CX=cc.x+cc.nx*(TW/2+Z1), CY=cc.y+cc.ny*(TW/2+Z1);
   const f=Z1*W/RC.v, f0=Z1*W/42, hC=(yN-yF)*42/(W*0.36), zRef=Z1+TW*0.3, yRefS=(yN-f0*hC/Z1)+f0*hC/zRef, yHor=yRefS-f*hC/zRef;
   const PC=new Map();     // このコマの中で同じ地点を何度も計算しない
@@ -2715,6 +2741,28 @@ function runRace(){
   laterX(()=>{ if(S===me) say('各馬、ゲートに入っていきます…'); },(fan+0.4)*1000);
   laterX(()=>{ if(S===me){ say('ゲートイン完了。'); crowd(0.08,1.2); } },(fan+0.4+GATE_IN)*1000);   // 場内が静まる
   let t=0, lastLead=-1, nextTalk=0, lastSeg=null, finished=0, said200=false, saidHill=false, said400=false, saidStraight=false, saidShobu=false; const hs={};
+  // 道中の実況(隊列・人気馬・個性の馬・プレイヤーの馬・展開を順番に話す)
+  let lastLeadT=0, talkK=0, segQ=null, saidHana=false, saidOni=false, stRk=null, extraK=0;
+  const BS=m=>{ const b=Math.max(0,m)/2.4; return b<0.35?'クビ差':b<0.75?'半馬身':b<1.25?'1馬身':b<1.75?'1馬身半':b<2.5?'2馬身':b<3.5?'3馬身':`${Math.round(b)}馬身`; };
+  const no=i=>`${S.horses[i].no}番`;
+  const midTalk=(ord,run)=>{
+    const H=S.H, X=i=>run[i].x, rkOf=i=>ord.indexOf(i);
+    const GEN=[
+      ()=>H>=3&&`先頭は${name(ord[0])}、${BS(X(ord[0])-X(ord[1]))}離れて${name(ord[1])}、その後ろに${no(ord[2])}。`,
+      ()=>{ const m=ord.slice(3,Math.max(4,H-3)).slice(0,4); return m.length>=2&&`中団は${name(m[0])}、${m.slice(1).map(no).join('、')}あたり。`; },
+      ()=>H>=5&&`後方から${name(ord[H-2])}、最後方に${name(ord[H-1])}。先頭から最後方までおよそ${BS(X(ord[0])-X(ord[H-1]))}。`,
+      ()=>{ const pp=1+(Math.floor(talkK/6)%2), f=S.horses.findIndex(h=>h.pop===pp); if(f<0) return ''; const k=rkOf(f);
+        return `${pp}番人気の${name(f)}は${k+1}番手。${k<=2?'好位で折り合っています':k>=H/2?'後方でじっと脚をためています':'中団で様子をうかがっています'}。`; },
+      ()=>{ const list=[]; const L0=ord[0];
+        S.horses.forEach((h,i)=>{ const k=rkOf(i);
+          if((h.tr==='os'||h.tr==='ot')&&k===0&&X(i)-X(ord[1])>12) list.push(`大逃げ!${name(i)}、後続を${BS(X(i)-X(ord[1]))}もちぎって一人旅!`);
+          else if(h.tr==='ki') list.push(`末脚自慢の${name(i)}は${k+1}番手。${k>=H/2?'まだ後方でじっと我慢':'いつもより前の位置'}。`);
+          if(h.owner) list.push(`${h.owner}さんの${name(i)}は${k+1}番手${k===0?'、先頭を行きます!':k<=2?'、いい位置です!':''}。`); });
+        return list.length?list[(extraK++)%list.length]:''; },
+      ()=>{ const sp=(X(ord[0])-X(ord[H-1]))/2.4; return sp>12?'縦に長い隊列。ペースは速そうです。':sp<6?'馬群はひとかたまり。ゆったりとした流れです。':'淡々とした平均ペースで進んでいます。'; }];
+    for(let q=0;q<GEN.length;q++){ const txt=GEN[(talkK+q)%GEN.length](); if(txt){ talkK+=q+1; return txt; } }
+    talkK++; return '';
+  };
   const shobu=Math.min(G.sw+400,D*0.65);     // 勝負どころ(直線の手前400m)
   laterX(()=>{
     if(S!==me) return;
@@ -2748,7 +2796,7 @@ function runRace(){
         if(!saidShobu&&!S.cam&&rem<=shobu){ saidShobu=true; S.fx.telop={text:'勝負どころ!',sub:`残り${Math.round(rem/100)*100}m 各馬が動き出す`,t0:performance.now()};
           say(`勝負どころ!先頭は${name(lead)}、後ろの馬も動き出した!`); nextTalk=t+60; crowd(0.5,2); tone(659,.12,'square',.06); tone(988,.3,'square',.06,.12); }
         if(!S.warmS&&rem<=G.sw+500){ S.warmS=true; warmSprites(sprScale(straightU(),true),1,[1]); }
-        if(!S.cam&&rem<=G.sw){ S.cam={}; S.camT0=performance.now(); S.camClean=false; S.fx.telop={text:'最後の直線!',sub:`${S.crs.full} 直線 約${G.sw}m`,t0:performance.now()};
+        if(!S.cam&&rem<=G.sw){ S.cam={}; saidStraight=true; S.camT0=performance.now(); S.camClean=false; S.fx.telop={text:'最後の直線!',sub:`${S.crs.full} 直線 約${G.sw}m`,t0:performance.now()};
           say(`4コーナーをカーブして最後の直線!残り${G.sw}m、先頭は${name(lead)}!`); nextTalk=t+40; crowd(0.7,1.5); }
         if(rem<=200&&!said200) crowd(1,1.5);
         // 見せ場の実況(捲り・バテ・直線一気)
@@ -2762,19 +2810,35 @@ function runRace(){
           if(r.state==='fade'&&!r.saidFade&&rk[i]<=2){ r.saidFade=true; ev=ev||`${h.no}番 ${h.name}、脚色が鈍った!`; }
           const hist=hs[i]; if(S.cam&&hist&&hist.length>=4&&hist[0]-rk[i]>=3&&!r.saidSurge){ r.saidSurge=true; ev=`${h.no}番 ${h.name}、大外から一気に伸びてくる!`; }
         });
-        if(ev&&t>=nextTalk-30){ say(ev); nextTalk=t+45; }
+        // 個性の馬の見せ場(大逃げ・末脚自慢)
+        if(S.cam&&!stRk){ stRk={...rk}; const L0=ord[0], h0=S.horses[L0];
+          if((h0.tr==='os'||h0.tr==='ot')&&run[L0].x-run[ord[1]].x>4.8) ev=`${name(L0)}、まだリードは${BS(run[L0].x-run[ord[1]].x)}!このまま逃げ切るか!`; }
+        S.horses.forEach((h,i)=>{ const r=run[i]; if(!stRk||r.fin!==null) return;
+          if(h.tr==='ot'&&stRk[i]===0&&rk[i]>=2&&!r.saidStop){ r.saidStop=true; ev=`${name(i)}、ここで脚が止まった!後続が一気に飲み込む!`; }
+          if(h.tr==='os'&&rk[i]===0&&rem<160&&!r.saidHold){ r.saidHold=true; ev=`${name(i)}、粘る粘る!大逃げのまま押し切るか!`; }
+          if(h.tr==='ot'&&r.tb&&rk[i]===0&&rem<160&&!r.saidHold){ r.saidHold=true; ev=`${name(i)}、今日は止まらない!まさかの逃げ切りか!`; }
+          if(h.tr==='ki'&&stRk[i]-rk[i]>=2&&!r.saidKi){ r.saidKi=true; r.saidSurge=true; ev=`出た!末脚自慢の${name(i)}、ものすごい脚で突っ込んでくる!`; } });
+        if(seg!==lastSeg&&t>30&&!S.cam) segQ=seg;
+        if(!said400&&rem<300) said400=true; if(!said200&&rem<120) said200=true; if(!saidHill&&rem<200) saidHill=true;   // 過ぎてしまった区切りは言わない
+        if(ev&&t>=nextTalk-30){ say(ev); nextTalk=t+40; }
         if(t>=nextTalk){
-          if(!saidStraight&&seg==='home'&&rem<(G.goal-G.g.home0)*G.lap/G.P+10&&rem<380){ saidStraight=true; say(`最後の直線!先頭は${name(lead)}!`); nextTalk=t+55; }
-          else if(!said400&&rem<400){ said400=true; say(`残り400m!先頭は${name(lead)}、${S.horses[ord[1]].no}番が追う!`); nextTalk=t+50; }
-          else if(!saidHill&&S.crs.hill>=0.7&&rem<300){ saidHill=true; say(`ゴール前の急坂!${name(lead)}、坂を駆け上がる!`); nextTalk=t+50; }
-          else if(!said200&&rem<200){ said200=true; const sec=ord[1]; say(`残り200m!${name(lead)}、${S.horses[sec].no}番も迫る!`); nextTalk=t+60; }
-          else if(seg!==lastSeg&&t>30){
-            if(seg==='c34') say(`3コーナーから4コーナーへ。先頭は${name(lead)}`);
-            else if(seg==='back') say(`向こう正面、先頭は${name(lead)}`);
+          if(!saidStraight&&seg==='home'&&rem<(G.goal-G.g.home0)*G.lap/G.P+10&&rem<380){ saidStraight=true; say(`最後の直線!先頭は${name(lead)}!`); nextTalk=t+45; }
+          else if(!said400&&rem<400){ said400=true; say(`残り400m!先頭は${name(lead)}、${name(ord[1])}が追う!`); nextTalk=t+40; }
+          else if(!saidHill&&S.crs.hill>=0.7&&rem<300){ saidHill=true; say(`ゴール前の急坂!${name(lead)}、坂を駆け上がる!`); nextTalk=t+40; }
+          else if(!said200&&rem<200){ said200=true; const sec=ord[1]; say(`残り200m!${name(lead)}、${S.horses[sec].no}番も迫る!`); nextTalk=t+45; }
+          else if(!saidHana&&t>18){ saidHana=true; const h0=S.horses[lead];
+            say(h0.tr==='os'||h0.tr==='ot'?`${name(lead)}が飛ばしていく!大逃げの構えです!`:`まずは先行争い。${name(lead)}がハナを奪いました。`); nextTalk=t+35; }
+          else if(segQ&&segQ===seg){
+            if(seg==='c34') say(`3コーナーから4コーナーへ。先頭は${name(lead)}、${name(ord[1])}が続く`);
+            else if(seg==='back') say(`向こう正面に入りました。先頭は${name(lead)}`);
             else if(seg==='c12') say(`1コーナーから2コーナーへ。先頭は${name(lead)}`);
-            nextTalk=t+60;
-          } else if(lead!==lastLead&&t>40){ say(rem<400?`${name(lead)}が抜け出した!`:`先頭が替わって${name(lead)}`); nextTalk=t+60; }
-          lastLead=lead;
+            else if(seg==='home') say(`ホームストレッチ、スタンドの前を通過。先頭は${name(lead)}`);
+            segQ=null; nextTalk=t+35;
+          } else if(lead!==lastLead&&t>40&&(rem<400||(t-lastLeadT>70&&run[lead].x-run[ord[1]].x>1.2))){ say(rem<400?`${name(lead)}が抜け出した!`:`先頭が替わって${name(lead)}`); nextTalk=t+40; lastLeadT=t; lastLead=lead; }
+          else if(!S.cam&&t>30){ const txt=midTalk(ord,run); if(txt){ say(txt); nextTalk=t+38; } }
+          else if(S.cam&&rem>30){ const k=ord.findIndex((i,q)=>q>0&&hs[i]&&hs[i].length>=3&&hs[i][hs[i].length-3]-q>=2&&run[i].fin===null&&!run[i].saidUp);
+            if(k>0){ const i=ord[k]; run[i].saidUp=true; say(`${name(i)}、外から${k+1}番手まで上がってきた!`); nextTalk=t+38; } }
+          if(lastLead<0) lastLead=lead;
         }
         lastSeg=seg;
         $('#rem').textContent=rem>0?`残り${Math.ceil(rem/50)*50}m`:'';
@@ -2804,7 +2868,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=33;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=34;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3076,7 +3140,11 @@ const ROSTER_SRC=`
 ヨガヨカ,牝,1,0,t,先,G3,B
 `;
 const ST_MAP={逃:'逃げ',先:'先行',差:'差し',追:'追込'};
-const ROSTER=ROSTER_SRC.trim().split('\n').map(l=>{ const [n,x,c,a,f,st,k,p]=l.split(','); return {n,x,c:+c,a:+a,f:{t:'turf',d:'dirt',b:'both'}[f],st:ST_MAP[st],k,p}; });
+// 元の馬にちなんだ個性(os:大逃げ・押し切り ot:大逃げ・一か八か ki:末脚自慢)
+const TRAIT_OF={サイレンススズガ:'os',セイウンズカイ:'os',ツインダーボ:'ot',メジロバーマー:'ot',パンサラッザ:'ot',
+  ディーブインパクト:'ki',デュランタル:'ki',ブエナビズタ:'ki',ハーツグライ:'ki',ギセキ:'ki',ヒシアマソン:'ki',スイーブトウショウ:'ki',ドウジュース:'ki',
+  オルフェーブル:'ki',ゴールドジップ:'ki',マンハッタンガフェ:'ki',ジャスダウェイ:'ki',ドリームジャーニイ:'ki',シルクジャスディス:'ki',ツルマルポーイ:'ki',ウインパリアシオン:'ki',ロードグエスト:'ki',メイショウペルーガ:'ki'};
+const ROSTER=ROSTER_SRC.trim().split('\n').map(l=>{ const [n,x,c,a,f,st,k,p]=l.split(','); return {n,x,c:+c,a:+a,f:{t:'turf',d:'dirt',b:'both'}[f],st:ST_MAP[st],k,p,tr:TRAIT_OF[n]||''}; });
 const RNAME=new Set(ROSTER.map(r=>r.n));
 // レースの格ごとに、どの格の馬を出すか(OP級の実在馬は少ないので、OPはG3級が中心)
 const CRANK={OP:0,G3:1,G2:2,G1:3};
@@ -3100,9 +3168,9 @@ function pickRoster(n,sp,taken){
 function rosterHorse(no,r,sp){
   const D=sp.dist, k=(D-1600)/1400, style=r.st, young=sp.c==='y'||sp.c==='yt', fem=sp.c==='f'||sp.c==='ft';
   const mak=(style==='差し'||style==='追込')&&Math.random()<0.35;
-  const h={no,name:r.n,style,mak,cls:0,apt:r.a,sf:r.f,cond:gauss()*0.01,coat:COATS[r.c],rk:r.k,star:r.p==='S'&&r.k==='G1',
+  const tr=r.tr||rollTr(style,0.08), h={no,name:r.n,style,mak:mak&&tr!=='ki',tr:trOk(tr,style)?tr:'',cls:0,apt:r.a,sf:r.f,cond:gauss()*0.01,coat:COATS[r.c],rk:r.k,star:r.p==='S'&&r.k==='G1',
     kick:KICK[style]+gauss()*0.012,spurt:mak?Math.max(600,Math.min(1100,D*(0.42+Math.random()*0.15))):SPURT[style],sus:SUS[style]+({逃げ:-60,先行:-30,差し:20,追込:40}[style])*k};
-  if(mak) h.sus=h.spurt*(0.56-0.06*k+Math.random()*0.3);
+  if(h.mak) h.sus=h.spurt*(0.56-0.06*k+Math.random()*0.3); else if(mak) h.spurt=SPURT[style];
   const up=CRANK[r.k]>CRANK[sp.g];
   h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*CPU_SD+clsB(r.k,sp.g)+PWB[r.p]; if(up) h.cls=1;
   h.sex=r.x; h.age=young?pick([2,3]):pick([3,4,4,5,5,6]);
@@ -3257,6 +3325,7 @@ function normalize(w){
     p.coins=p.coins||0; p.prize=p.prize||0; p.g1=p.g1||0; p.wins=p.wins||0; p.aidR=p.aidR??-99; });
   Object.values(w.horses).forEach(h=>{ h.rec=h.rec||{}; const r=h.rec; r.runs=r.runs||0; r.w=Array.isArray(r.w)?[r.w[0]||0,r.w[1]||0,r.w[2]||0]:[0,0,0]; r.prize=r.prize||0;
     r.wins=Object.assign({OP:0,G3:0,G2:0,G1:0},r.wins||{}); r.big=Array.isArray(r.big)?r.big.filter(Boolean):Object.values(r.big||{});
+    if(h.tr==null) h.tr=rollTr(h.style,0.15);      // 版32までの馬にも個性を(15%)
     h.fat=h.fat||0; h.cond=h.cond||0; h.entry=h.entry??null; h.fee=h.fee||0; h.trainedR=h.trainedR||0; h.peak=h.peak||{...h.st};
     if(h.lv==null) h.lv=Math.max(0,w.R-(h.born||w.R)); });      // 版23までの馬は、いまの年齢をそのまま引き継ぐ
   Object.values(w.players).forEach(p=>p.preg.forEach(f=>{ if(f.left==null) f.left=Math.max(1,(f.due||w.R)-w.R); }));
@@ -3303,20 +3372,20 @@ function marketHorse(tier){
   return {mid:nid('m'),tier,price:Math.round(T.price*(0.9+Math.random()*0.2)/10)*10,name:newName(),sex:Math.random()<0.5?'牡':'牝',coat:rint(COATS.length),
     style:pick(STYLES),apt:rint(4),sf:pickSf(),grow:pickGrow(),st,caps};
 }
-function refreshMarket(){ W.market=[]; ['cheap','cheap','mid','mid','blue','blue'].forEach(t=>W.market.push(marketHorse(t))); W.marketR=W.R; }
+function refreshMarket(){ W.market=[];  /* 個性は買ってみるまで分からない(買うと決まる) */ ['cheap','cheap','mid','mid','blue','blue'].forEach(t=>W.market.push(marketHorse(t))); W.marketR=W.R; }
 function addHorse(pid,src,price0){
-  const h={id:nid('h'),owner:pid,name:src.name,sex:src.sex,coat:src.coat,style:src.style,apt:src.apt,sf:src.sf,grow:src.grow,st:{...src.st},caps:{...src.caps},peak:{...src.st},
+  const h={id:nid('h'),owner:pid,name:src.name,sex:src.sex,coat:src.coat,style:src.style,tr:src.tr!=null?src.tr:rollTr(src.style,0.15),apt:src.apt,sf:src.sf,grow:src.grow,st:{...src.st},caps:{...src.caps},peak:{...src.st},
     born:W.R,lv:0,fat:0,cond:0,status:'active',entry:null,fee:0,trainedR:0,price0,sire:src.sire||'',dam:src.dam||'',
     rec:{runs:0,w:[0,0,0],prize:0,wins:{OP:0,G3:0,G2:0,G1:0},yt2:false,ft2:false,big:[]}};
   W.horses[h.id]=h; return h;
 }
 // 親の情報(プレイヤーの引退馬は全盛期の能力、CPUは表の値)
-const parentOf=h=>({name:h.name,st:h.peak||h.st,cap:h.caps?SK.reduce((s,k)=>s+h.caps[k],0)/SK.length:h.cap,grow:h.grow,style:h.style,apt:h.apt,sf:h.sf,g1:h.rec?h.rec.wins.G1||0:0});
+const parentOf=h=>({tr:h.tr||'',name:h.name,st:h.peak||h.st,cap:h.caps?SK.reduce((s,k)=>s+h.caps[k],0)/SK.length:h.cap,grow:h.grow,style:h.style,apt:h.apt,sf:h.sf,g1:h.rec?h.rec.wins.G1||0:0});
 function makeFoal(sire,dam){
   const bonus=Math.min(6,(sire.g1+dam.g1)*2), cap=clamp((sire.cap+dam.cap)/2+gauss()*5+bonus,50,100), st={}, caps={};
   SK.forEach(k=>{ const pa=(sire.st[k]+dam.st[k])/2; st[k]=clamp(Math.round(28+0.25*pa+gauss()*4),25,62); caps[k]=clamp(Math.round(cap+(pa-70)*0.3+gauss()*6),st[k]+6,100); });
-  const from=()=>Math.random()<0.5?sire:dam;
-  return {name:'',sex:Math.random()<0.5?'牡':'牝',coat:rint(COATS.length),style:Math.random()<0.65?from().style:pick(STYLES),
+  const from=()=>Math.random()<0.5?sire:dam, style=Math.random()<0.65?from().style:pick(STYLES), ptr=[sire.tr,dam.tr].find(t=>trOk(t,style));
+  return {tr:ptr&&Math.random()<0.5?ptr:rollTr(style,0.15),name:'',sex:Math.random()<0.5?'牡':'牝',coat:rint(COATS.length),style,
     apt:clamp(Math.round((sire.apt+dam.apt)/2+gauss()*0.6),0,3),sf:sire.sf===dam.sf&&Math.random()<0.8?sire.sf:Math.random()<0.7?from().sf:pickSf(),
     grow:Math.random()<0.7?from().grow:pickGrow(),st,caps,sire:sire.name,dam:dam.name};
 }
@@ -3327,13 +3396,14 @@ function exclude(h,sp,why){ refundEntry(h); h.ex={R:sp.R,name:sp.name,why}; msg(
 function refundEntry(h){ if(h.entry==null) return; const p=W.players[h.owner]; if(p) p.coins+=h.fee||0; h.entry=null; h.fee=0; }
 function raceHorse(h,no,sp){
   const D=sp.dist, k2=(D-1600)/1400, e=effOf(h,sp.R), kg=kgOf(h.sex,h.rec.wins,sp), st=h.style;
-  return {no,name:h.name,style:st,mak:false,cls:0,s:(e.sp-50)/12+(e.gt-50)/40-(kg-BASEKG)*KGK,apt:h.apt,sf:h.sf,
+  return {no,name:h.name,style:st,mak:false,tr:trOk(h.tr,st)?h.tr:'',cls:0,s:(e.sp-50)/12+(e.gt-50)/40-(kg-BASEKG)*KGK,apt:h.apt,sf:h.sf,
     cond:h.cond*0.006-(h.fat>=4?0.008:0)-(h.fat>=6?0.006:0),coat:COATS[h.coat],kick:KICK[st]+(e.kc-50)*0.0016,spurt:SPURT[st],
     sus:SUS[st]+({逃げ:-60,先行:-30,差し:20,追込:40}[st])*k2+(e.sta-50)*4,pw:e.pw,gt:e.gt,
     pid:h.owner,hid:h.id,owner:(W.players[h.owner]||{}).name||'',kg,sex:h.sex,age:Math.floor(ageAt(h,sp.R)),hc:h.cond};
 }
 function cpuHorse(no,name,sp){
   const h=makeHorse(no,name,sp.dist), young=sp.c==='y'||sp.c==='yt', fem=sp.c==='f'||sp.c==='ft';
+  h.tr=h.mak?'':rollTr(h.style,0.08);
   h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*CPU_SD; h.cls=h.s>CPU_S[sp.g]+0.7?1:0;
   h.sex=fem?'牝':Math.random()<0.25?'牝':'牡'; h.age=young?pick([2,3]):pick([3,4,4,5,5,6]);
   h.kg=BASEKG-(h.sex==='牝'&&!fem?2:0)+((sp.g==='OP'||sp.g==='G3')&&h.cls?1+rint(2):0); h.s-=(h.kg-BASEKG)*KGK; h.owner='';
@@ -3730,7 +3800,7 @@ function pushState(){
 // 一人ひとりの画面用の情報(合言葉は送らない)
 function hView(h){
   const R=W.R, inCard=!!(S.horses&&S.phase!=='result'&&S.horses.some(x=>x.hid===h.id)); const inNext=inNextCard(h);
-  const v={id:h.id,name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
+  const v={id:h.id,tr:trOk(h.tr,h.style)?h.tr:'',name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
     e:h.status==='active'?effOf(h,R):h.peak,fat:h.fat,cond:h.cond,status:h.status,entry:h.entry,ex:h.ex||null,inCard,inNext,nextR:inNext?S.next.R:null,trained:h.trainedR===R,rec:h.rec,
     room:roomWord(h),sell:sellPrice(h),sire:h.sire||'',dam:h.dam||''};
   if(h.status==='active') v.elig=Array.from({length:6},(_,k)=>{ const sp=specOf(R+1+k); return {R:sp.R,why:S.next&&S.next.R===sp.R?'出走表が決まりました(受付終了)':canEnter(h,sp),kg:kgOf(h.sex,h.rec.wins,sp)}; });
@@ -4357,7 +4427,7 @@ const rankOf=v=>v>=90?'S':v>=80?'A':v>=70?'B':v>=60?'C':v>=50?'D':v>=40?'E':v>=3
 function statBars(e){ return `<div class="ikbars">${STATS.map(([k,n])=>`<span>${n}</span><div class="ikbar${k==='pw'?' pw':''}"><i style="width:${Math.min(100,e[k]||0)}%"></i></div><b>${rankOf(e[k]||0)}</b>`).join('')}</div>`; }
 const fatW=f=>['なし','少し','少し','中','多い','多い','限界'][f]||'';
 function horseTags(h){
-  return `<span class="tag t2">${h.style}</span><span class="tag t1">${APTN[h.apt]}</span><span class="tag t3">${SFN[h.sf]}</span><span class="tag t4">${h.grow?GROW[h.grow].name:'成長型 ？'}</span>`;
+  return `${h.tr&&TRAIT[h.tr]?`<span class="tag t6">★${TRAIT[h.tr].name}</span>`:''}<span class="tag t2">${h.style}</span><span class="tag t1">${APTN[h.apt]}</span><span class="tag t3">${SFN[h.sf]}</span><span class="tag t4">${h.grow?GROW[h.grow].name:'成長型 ？'}</span>`;
 }
 const recText=r=>`${r.runs}戦${(r.wins.OP||0)+(r.wins.G3||0)+(r.wins.G2||0)+(r.wins.G1||0)}勝(${r.w[0]}-${r.w[1]}-${r.w[2]}) 賞金${yen(r.prize)}`;
 function horseCanvas(h,i){ return `<canvas width="150" height="84" class="hcv" data-hcv="${i}" data-coat="${h.coat}"></canvas>`; }
