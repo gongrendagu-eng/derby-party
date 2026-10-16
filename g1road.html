@@ -2024,11 +2024,10 @@ function realPathPt(m){
   return {x,y,nx:nx/l,ny:ny/l};
 }
 const RND=new Map(); const rnd=m=>{ let v=RND.get(m); if(v===undefined){ v=rkHash('r'+m); if(RND.size>20000) RND.clear(); RND.set(m,v); } return v; };
-function drawReal(run,c,cs){
-  const g=realGeo(), {W,H,yH,yF,yN}=g, D=S.dist, now=performance.now();
+// リアル調のカメラ:どこを(c)どのくらいの幅で(v)映すか。先生のPCで計算し、iPadには同じ値を送る
+function realCam(run,now){
   run=realSmooth(run,now);
   const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs);
-  const TW=24, Z1=TW/0.5625, HX=1.32, BX=1.75*HX;     // 走路の幅(m)・外ラチからカメラまで(m)・馬を大きめに描く倍率
   // ---- カメラ:コースの外側から、馬群に合わせて動きながら映す(コーナーではコースが奥へ曲がって見える) ----
   let tv,tc,to=0; const straight=!!S.cam&&!S.win;     // to:大逃げのときに馬群へ向ける分(速さの計算には入れず、別になめらかに動かす)
   if(S.win){ tv=26; tc=run[S.win.i].x-3; }
@@ -2043,12 +2042,19 @@ function drawReal(run,c,cs){
     else { tv=42; tc=lead-9; }
   }
   const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc,t:now,hist:[],bgx:0,pfw:null,o:0});
+  if(S.padView&&S.padCam){ RC.c=S.padCam.c; RC.v=S.padCam.v; RC.t=now; RC.hist=[]; return {run,RC,straight,lead,last}; }   // iPad:先生のPCと同じカメラ
   const dt=Math.min(0.1,Math.max(0,(now-RC.t)/1000)); RC.t=now;
   if(Math.abs(tc-RC.c)>80){ RC.c=tc; RC.v=tv; RC.hist=[]; }
   const WIN=S.padView?1800:1100, FIX=S.padView?1.6:1.0;
   RC.hist.push([now,tc]); while(RC.hist.length>2&&now-RC.hist[0][0]>WIN) RC.hist.shift();
   const h0=RC.hist[0], span=(now-h0[0])/1000, vel=span>0.25?(tc-h0[1])/span:0;
   if(dt>0){ RC.o=(RC.o||0)+(to-(RC.o||0))*(1-Math.exp(-dt/0.9)); RC.c+=vel*dt+(tc+RC.o-RC.c)*(1-Math.exp(-dt/FIX)); RC.v+=(tv-RC.v)*(1-Math.exp(-dt/1.5)); }
+  return {run,RC,straight,lead,last};
+}
+function drawReal(run,c,cs){
+  const g=realGeo(), {W,H,yH,yF,yN}=g, D=S.dist, now=performance.now();
+  const TW=24, Z1=TW/0.5625, HX=1.32, BX=1.75*HX;     // 走路の幅(m)・外ラチからカメラまで(m)・馬を大きめに描く倍率
+  const CAM=realCam(run,now), RC=CAM.RC, straight=CAM.straight, lead=CAM.lead, last=CAM.last; run=CAM.run;
   const cc=realPathPt(RC.c), fw={x:-cc.nx,y:-cc.ny}, rt={x:-fw.y,y:fw.x}, CX=cc.x+cc.nx*(TW/2+Z1), CY=cc.y+cc.ny*(TW/2+Z1);
   const f=Z1*W/RC.v, f0=Z1*W/42, hC=(yN-yF)*42/(W*0.36), zRef=Z1+TW*0.3, yRefS=(yN-f0*hC/Z1)+f0*hC/zRef, yHor=yRefS-f*hC/zRef;
   const PC=new Map();     // このコマの中で同じ地点を何度も計算しない
@@ -2676,7 +2682,7 @@ function afterRace(run,win){
     } else {
       const r=run[win]; r.x+=canter*k; r.ph+=canter/S.step*0.42*k*1.4; r.px=null; r.pph=null; r.pl=null; r.lane+=Math.max(-0.004,Math.min(0.004,0.55-r.lane))*k;
     }
-    if(!document.hidden) drawRace(run);
+    if(!document.hidden) drawRace(run); else if(REAL) realCam(run,now);
     raf=rafX(f);
   };
   raf=rafX(f);
@@ -2720,7 +2726,7 @@ function sendTrk(run){
   if(!NET||!S) return;
   const ph=S.photo&&!S.photo.revealed?[S.photo.lo,S.photo.hi]:0;
   NET.be.set(NET.base+'/trk',{race:S.race,t:Date.now(),x:run.map(r=>Math.round((r.x+(r.off||0))*10)),p:run.map(r=>Math.round(r.ph*100)),l:run.map(r=>Math.round((r.lane??0)*1000)),
-    s:run.map(r=>r.state==='spurt'?1:0).join(''),pl:run.map(r=>r.place||0),ph,c:S.sayT||''}).catch(()=>{});
+    s:run.map(r=>r.state==='spurt'?1:0).join(''),pl:run.map(r=>r.place||0),ph,c:S.sayT||'',cm:REAL&&S.rcam&&S.rcam.race===S.race?[Math.round(S.rcam.c*100),Math.round(S.rcam.v*100)]:null}).catch(()=>{});
 }
 function runRace(){
   stopTimer();
@@ -2844,7 +2850,8 @@ function runRace(){
         $('#rem').textContent=rem>0?`残り${Math.ceil(rem/50)*50}m`:'';
       }
       const al=Math.min(1,acc/TICK);
-      if(!document.hidden) drawRace(stretchV(run.map(r=>({...r, x:(r.px==null?r.x:r.px+(r.x-r.px)*al)+(r.off||0), ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
+      const vis=stretchV(run.map(r=>({...r, x:(r.px==null?r.x:r.px+(r.x-r.px)*al)+(r.off||0), ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al})));
+      if(!document.hidden) drawRace(vis); else if(REAL) realCam(vis,now);
       if(t%6===0||finished) renderOrder(run);
       if(NET&&now-lastLive>600){ lastLive=now; sendLive(run); }
       if(NET&&now-lastTrk>=300){ lastTrk=now; sendTrk(run); }
@@ -2868,7 +2875,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=34;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=35;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -4273,14 +4280,18 @@ function padRaceView(st,pv){
 }
 // ---------- iPadのレース映像 ----------
 // 先生のPCから0.3秒ごとに届く位置(trk)を、少し遅らせて(DELAY)前後の2つの間をなめらかにつないで描く
-const PR={on:false,R:null,buf:[],off:null,raf:0,hold:0,cam:false,shobu:false,gate:false,warmS:false,w:0,h:0,capT:'',remT:''};
-const PR_DELAY=450;
+const PR={on:false,R:null,buf:[],lat:[],off:null,raf:0,hold:0,cam:false,shobu:false,gate:false,warmS:false,w:0,h:0,capT:'',remT:''};
+const PR_DELAY=250;
 function onTrk(v){
   if(!v||!v.x) return;
   const at=Date.now();
-  if(PR.bufR!==v.race){ PR.bufR=v.race; PR.buf=[]; PR.off=null; }
-  const off=at-v.t; if(PR.off==null||off<PR.off) PR.off=off;      // 時計のずれ(届くのが一番早かったときを基準に)
-  PR.buf.push(v); if(PR.buf.length>24) PR.buf.shift();
+  if(PR.bufR!==v.race){ PR.bufR=v.race; PR.buf=[]; PR.off=null; PR.lat=[]; }
+  if(PR.buf.some(q=>q.t===v.t)) return;
+  // 時計のずれと通信の遅れ:最近20回の届き方のうち遅い方(85%)を基準にし、急に変えずに少しずつ合わせる(映像の速さが変わらないように)
+  const off=at-v.t; PR.lat.push(off); if(PR.lat.length>20) PR.lat.shift();
+  const ls=[...PR.lat].sort((a,b)=>a-b), tgt=ls[Math.min(ls.length-1,Math.floor(ls.length*0.85))];
+  PR.off=PR.off==null?tgt:PR.off+(tgt-PR.off)*(tgt>PR.off?0.25:0.05);
+  PR.buf.push(v); PR.buf.sort((a,b)=>a.t-b.t); if(PR.buf.length>24) PR.buf.shift();
 }
 function padRaceStart(st,pv){
   padRaceStop();
@@ -4314,7 +4325,11 @@ function prFit(){
 // 届いた位置の中から、いま映す時刻の前後2つを選んでつなぐ
 function prSample(){
   const b=PR.buf; if(!b.length||PR.off==null) return null;
-  const T=Date.now()-PR.off-PR_DELAY;
+  // 再生の時計:実際の時間どおりに進め、届き方の基準とのずれは少しずつ直す(急に速くなったり遅くなったりしないように)
+  const now=Date.now(), ideal=now-PR.off-PR_DELAY;
+  if(PR.clk==null||PR.clkR!==PR.bufR||Math.abs(ideal-PR.clk)>600){ PR.clk=ideal; PR.clkR=PR.bufR; }
+  else { PR.clk+=Math.min(100,now-(PR.clkAt||now)); PR.clk+=(ideal-PR.clk)*0.03; }
+  PR.clkAt=now; const T=PR.clk;
   let A,B,k;
   const i=b.findIndex(q=>q.t>=T);
   if(i===0||b.length===1){ A=B=b[i===0?0:b.length-1]; k=1; }
@@ -4323,9 +4338,13 @@ function prSample(){
   const lerp=(a,c)=>a+(c-a)*k;
   // 位置(x)は前後4点を使ったなめらかな曲線でつなぐ(折れ線だと0.3秒ごとに速さが変わって、横からの映像ではカクつく)
   const ia=b.indexOf(A), A0=b[ia-1]||A, B1=b[ia+2]||B, kk=Math.min(1,Math.max(0,k));
-  const cr=(p0,p1,p2,p3)=>{ const t=kk, t2=t*t, t3=t2*t; return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3); };
+  // 届いた時刻の間隔に合わせた曲線(エルミート補間)。間隔が少しずつ違っても、速さがなめらかにつながる
+  const t0=A0.t, t1=A.t, t2=B.t, t3=B1.t, hh=(t2-t1)||1, m1k=hh/((t2-t0)||1), m2k=hh/((t3-t1)||1), u=kk, u2=u*u, u3=u2*u;
+  const cr=(p0,p1,p2,p3)=>(2*u3-3*u2+1)*p1+(u3-2*u2+u)*(p2-p0)*m1k+(-2*u3+3*u2)*p2+(u3-u2)*(p3-p1)*m2k;
   const smx=j=>k>1||A===B?lerp(A.x[j],B.x[j]):cr(A0.x[j],A.x[j],B.x[j],B1.x[j]);
-  return {B,run:B.x.map((x,j)=>{ const pl=Math.max(A.pl[j]||0,k>=1?(B.pl[j]||0):0);
+  // カメラ:先生のPCと同じ位置・幅(なめらかな曲線でつなぐ)
+  const cam=A.cm&&B.cm?{c:(k>1||A===B||!A0.cm||!B1.cm?lerp(A.cm[0],B.cm[0]):cr(A0.cm[0],A.cm[0],B.cm[0],B1.cm[0]))/100,v:lerp(A.cm[1],B.cm[1])/100}:null;
+  return {B,cam,run:B.x.map((x,j)=>{ const pl=Math.max(A.pl[j]||0,k>=1?(B.pl[j]||0):0);
     return {x:smx(j)/10,ph:lerp(A.p[j],B.p[j])/100,lane:lerp(A.l[j],B.l[j])/1000,state:B.s[j]==='1'?'spurt':'cruise',place:pl||null,fin:pl?1:null}; })};
 }
 function prFrame(){
@@ -4333,7 +4352,7 @@ function prFrame(){
   const cv=$('#prCv'); if(!PR.on||!cv||!S||!S.padView){ padRaceStop(); return; }
   const box=cv.parentElement.getBoundingClientRect();
   if(Math.abs(box.width-PR.w)>1||Math.abs(box.height-PR.h)>1){ layout(cv); PR.w=G.W; PR.h=G.H; S.ocam=null; }
-  const sm=prSample(), now=performance.now();
+  const sm=prSample(), now=performance.now(); S.padCam=sm&&sm.cam||null;
   const run=sm?sm.run:S.horses.map((h,i)=>({x:0,ph:0,lane:i/Math.max(1,S.H-1),state:'cruise',place:null,fin:null}));
   const lead=Math.max(...run.map(r=>r.x)), rem=S.dist-lead;
   if(!PR.gate&&lead>0){ PR.gate=true; S.gate.open=now; }
