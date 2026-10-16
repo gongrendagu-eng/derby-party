@@ -2052,7 +2052,8 @@ function drawReal(run,c,cs){
     c.fillStyle='#fff'; c.strokeStyle='#c8102e'; c.lineWidth=Math.max(2,s*0.12); c.beginPath(); c.arc(x,y-s*4.6,s*0.95,0,RH.TAU); c.fill(); c.stroke();
     c.fillStyle='#c8102e'; c.beginPath(); c.arc(x,y-s*4.6,s*0.45,0,RH.TAU); c.fill(); } }
   // ---- ゲート(奥側の骨組み) ----
-  const gp=P(0,0.5), gateOn=!!gp&&gp[0]>-W*0.5&&gp[0]<W*1.5;
+  // ゲートはスタート前と、スタート直後(先頭が150m進むまで)だけ描く(一周して戻ってきたときに残らないように)
+  const gp=P(0,0.5), gateOn=!!gp&&gp[0]>-W*0.5&&gp[0]<W*1.5&&(!S.gate||!S.gate.open||(lead<150&&!S.win));
   if(gateOn) drawRealGate(false);
   // ---- 馬 ----
   const list=S.horses.map((h,i)=>{ const t=0.07+0.86*(run[i].lane??i/Math.max(1,S.H-1)), p=P(run[i].x-BX,t); return {h,i,r:run[i],t,p}; }).filter(o=>o.p&&!(S.win&&o.i!==S.win.i));
@@ -2550,7 +2551,7 @@ function updateLanes(run,t){
 function afterRace(run,win){
   const me=S, t0=performance.now(); let prev=t0, lastTrk=0;
   S.after=true;
-  const canter=REAL?0.13:1600/(20*60);          // ウイニングランの速さ(1周約20秒。リアル調では本物に近いゆっくりのキャンター)
+  const canter=REAL?0.22:1600/(20*60);          // ウイニングランの速さ(1周約20秒。リアル調では本物に近いゆっくりのキャンター)
   const f=now=>{
     if(S!==me||S.phase==='bet'||S.after!==true) return;
     const dt=Math.min(100,now-prev), k=dt/16.6, kt=dt/S.tickS; prev=now;   // kt:直線と同じ速さで進めるための係数
@@ -2716,7 +2717,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=30;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=31;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
