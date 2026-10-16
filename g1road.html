@@ -2106,7 +2106,9 @@ function drawReal(run,c,cs){
   if(gateOn) drawRealGate(false);
   // ---- 馬 ----
   const list=S.horses.map((h,i)=>{ const t=0.07+0.86*(run[i].lane??i/Math.max(1,S.H-1)), p=P(run[i].x-BX,t); return {h,i,r:run[i],t,p}; }).filter(o=>o.p&&!(S.win&&o.i!==S.win.i));
-  list.sort((a,b)=>b.p[3]-a.p[3]);
+  const DL=S.dl&&S.dl.length===S.horses.length&&S.dlR===S.race?S.dl:(S.dlR=S.race,S.dl=S.horses.map((h,i)=>run[i].lane??0));
+  list.forEach(o=>{ const l=o.r.lane??0; if(Math.abs(l-DL[o.i])>0.035) DL[o.i]=l; });
+  list.sort((a,b)=>DL[a.i]-DL[b.i]||b.p[3]-a.p[3]);
   const shd=rspShadow();
   list.forEach(o=>{ const [x,y,s]=o.p, k=0.025*HX*s; c.drawImage(shd,x-50*k+sg*2*k,y-11*k,100*k,22*k); if(S.glow&&S.glow.has(o.h.no)) glowAt(c,x,y+k*2,k*55); });
   const kb=0.025*HX*(W/34)*(G.dpr||1);      // 絵の細かさ(最後の直線で寄ったときの手前の馬に合わせて固定)
@@ -2573,28 +2575,64 @@ function stretchRun(list){
   if(K>1) list.forEach(r=>{ r.x=L-(L-r.x)*K; });
   return list;
 }
-// 馬の左右の位置(0=内ラチ、1=外)。見た目だけで、勝ち負けの計算には影響しない
-// 基本は内ラチ沿い。前に馬がいて詰まると外に出し、スパートした後ろの馬は外から追い込む
-const LANE_BASE={逃げ:0.02,先行:0.1,差し:0.16,追込:0.12};
+// 馬の左右の位置(0=内ラチ、1=外)。見た目だけで、勝ち負けの計算には影響しない(オッズも変わらない)
+// 走路を「1頭分の幅(約1.5m)の列」に分けて考える。基本は内ラチ沿いの列を取り、
+// 前の馬に追いつきそうなら外へ1列ずつ持ち出す。同じ列で前後に1頭分の長さより近づかない(重ならない)ようにする
+const LANE_M=24*0.86;               // lane 0〜1 の幅(m)
+const ROWW=1.5/LANE_M;              // 1列の幅(lane の単位)
+const LANE_MAX=0.6;                 // 外へ出すのはここまで(走路の外の4割には行かない)
+const ROW_BASE={逃げ:[0,0],先行:[0,1],差し:[0,2],追込:[0,2]};    // 道中の列(内から何列目):[最小,最大]
 function updateLanes(run,t){
-  const n=S.H, ord=orderOf(run), rk={}, lk=Math.min(1,Math.pow(9/Math.max(1,n-1),0.6)); ord.forEach((i,k)=>rk[i]=k);
-  const L=Math.max(...run.map(r=>r.x)), K=spreadK(S.dist-L), dx=r=>L-(L-r.x)*K;
-  const len=S.cam?4:G.u*1.2*G.lap/G.P;       // 馬1頭の長さ(表示上のm)
-  run.forEach((r,i)=>{
+  const n=S.H, D=S.dist, L=Math.max(...run.map(r=>r.x)), K=REAL?1:spreadK(D-L), dx=r=>REAL?r.x+(r.off||0):L-(L-r.x)*K;
+  const len=REAL?4.6:(S.cam?4:G.u*1.2*G.lap/G.P);      // 馬1頭の長さ(表示上のm。リアル調の絵は実物より少し大きい)
+  const SW=G.sw||400, mv=0.075*S.step/LANE_M;           // 横に動ける速さ(前に1m進むあいだに約7.5cm)
+  const ord=orderOf(run), rk={}; ord.forEach((i,k)=>rk[i]=k);
+  const front=run.map((r,i)=>i).sort((a,b)=>dx(run[b])-dx(run[a]));
+  const placed=new Array(n).fill(false);
+  // その列が空いているか(all=true のときは後ろの馬も見る:内へ入るときに前をカットしないように)
+  const free=(i,lane,all)=>{ const r=run[i];
+    for(let j=0;j<n;j++){ if(j===i) continue; const o=run[j]; if(!all&&!placed[j]) continue;
+      if(Math.abs(o.lane-lane)>=ROWW*0.95) continue;
+      const g=dx(o)-dx(r), close=Math.max(0,(r.v||0)-(o.v||0))*16;
+      if(g>-(all&&!placed[j]?len*1.3:len*0.9)&&g<len+close+0.6) return false; }
+    return true; };
+  front.forEach(i=>{
+    const r=run[i], h=S.horses[i];
     if(r.lane==null) r.lane=i/Math.max(1,n-1);
-    if(r.base==null) r.base=(LANE_BASE[S.horses[i].style]+Math.random()*0.12)*lk;
+    if(r.row==null){ const [a,b]=ROW_BASE[h.style]||[0,1]; r.row=a+Math.floor(Math.random()*(b-a+1)); r.wide=2+Math.floor(Math.random()*3); }
     r.pl=r.lane;
-    let tg=r.lane;
-    if(t>30&&r.fin===null){
-      tg=r.base;
-      if(r.state==='spurt'||r.state==='fade'){ if(S.horses[i].mak) tg=0.8; else if(rk[i]>=2) tg=Math.min(1,tg+0.25*lk); }
-      run.forEach((o,j)=>{ if(i===j||o.fin!==null) return; const d=dx(o)-dx(r), dl=o.lane-r.lane;
-        if(d>0&&d<len*1.1&&Math.abs(dl)<0.16*lk) tg=Math.max(tg,o.lane+0.18*lk);      // 前が詰まったら外へ
-        if(Math.abs(d)<len*0.7&&Math.abs(dl)<0.12*lk) tg+=(dl<=0?0.07:-0.07)*lk; });  // 横に並んだら少し離れる
-    }
-    r.tg=Math.max(0,Math.min(1,tg));
+    if(t<=20||r.fin!==null){ r.tg=r.lane; if(r.off) r.off=Math.min(0,r.off+0.3*S.step); placed[i]=true; return; }
+    const rm=D-r.x;
+    let want=r.row*ROWW;
+    if(rm<SW&&r.state==='spurt'&&rk[i]>=3) want=(r.row+r.wide)*ROWW;               // 直線:後ろの馬は外に持ち出して追い込む
+    if(h.mak&&r.state==='spurt'&&rm>=SW) want=Math.max(want,(3+r.wide*0.5)*ROWW);  // 捲り:3〜4コーナーで外から上がっていく
+    want=Math.min(LANE_MAX,want);
+    // 横にいる馬(前後が1頭分以内)がいる列は通れない
+    const pass=row=>{ for(let j=0;j<n;j++){ if(j===i) continue; const o=run[j]; if(Math.abs(o.lane-row)<ROWW*0.9&&Math.abs(dx(o)-dx(r))<len*0.95) return false; } return true; };
+    const reach=c=>{ const s2=Math.sign(c-r.lane); if(!s2) return true; for(let q=Math.round(r.lane/ROWW)+s2;(c-q*ROWW)*s2>-ROWW*0.5;q+=s2){ if(!pass(q*ROWW)) return false; } return true; };
+    // 行きたい列から近い順に、空いていて、横の馬にぶつからずに行ける列を探す(外を先に。内へは後ろの馬も含めて空いているときだけ)
+    let tg=null;
+    for(let k=0;k<=14&&tg==null;k++) for(const sgn of k?[1,-1]:[1]){
+      const c=Math.round(want/ROWW+sgn*k)*ROWW; if(c<-0.001||c>LANE_MAX+ROWW*2) continue;
+      if(free(i,c,c<r.lane-ROWW*0.3)&&reach(c)){ tg=Math.max(0,c); break; } }
+    const stuck=!free(i,r.lane,false);      // いまの列の前が詰まりかけている
+    if(tg==null) tg=r.lane;
+    if(r.tg!=null&&Math.abs(tg-r.tg)<ROWW*0.5&&Math.abs(r.tg-r.lane)<ROWW*0.5) tg=r.tg;
+    r.tg=tg;
+    // 横へ動く(詰まりかけているときは急いで)。動いた先がとなりの馬と重なるなら、その場で待つ
+    const sp=stuck?mv*2.2:mv, step=Math.max(-sp,Math.min(sp,tg-r.lane));
+    if(step){ const nl=r.lane+step, side=Math.sign(step);
+      let ok=true; for(let j=0;j<n;j++){ if(j===i) continue; const o=run[j], dl=(o.lane-nl)*side;
+        if(dl>=0&&dl<ROWW*0.8&&Math.abs(dx(o)-dx(r))<len*0.95&&(o.lane-r.lane)*side>0){ ok=false; break; } }
+      if(ok) r.lane=nl; }
+    // 見た目の手綱:同じ列で前の馬に追いついたら、少しだけ控えて見せる(重ならないように)。ゴール前100mでは実際の位置にもどす
+    if(REAL){ r.off=r.off||0; let lim=0;
+      for(let j=0;j<n;j++){ if(j===i||!placed[j]) continue; const o=run[j];
+        if(Math.abs(o.lane-r.lane)<ROWW*0.85&&dx(o)-(r.x+r.off)>-len*0.3) lim=Math.min(lim,dx(o)-len-r.x); }
+      lim=Math.max(-16,lim); if(rm<100) lim=0;
+      r.off=lim<r.off?Math.max(lim,r.off-0.6*S.step):Math.min(lim,r.off+(rm<160?0.3:0.12)*S.step); }
+    placed[i]=true;
   });
-  run.forEach(r=>{ r.lane+=Math.max(-0.008*lk,Math.min(0.008*lk,r.tg-r.lane)); });
 }
 // ゴール後:直線で駆け抜けて減速 → 楕円コースで勝ち馬のウイニングラン(「次のレースへ」を押すまで)
 function afterRace(run,win){
@@ -2655,7 +2693,7 @@ function sendLive(run,gate){
 function sendTrk(run){
   if(!NET||!S) return;
   const ph=S.photo&&!S.photo.revealed?[S.photo.lo,S.photo.hi]:0;
-  NET.be.set(NET.base+'/trk',{race:S.race,t:Date.now(),x:run.map(r=>Math.round(r.x*10)),p:run.map(r=>Math.round(r.ph*100)),l:run.map(r=>Math.round((r.lane??0)*1000)),
+  NET.be.set(NET.base+'/trk',{race:S.race,t:Date.now(),x:run.map(r=>Math.round((r.x+(r.off||0))*10)),p:run.map(r=>Math.round(r.ph*100)),l:run.map(r=>Math.round((r.lane??0)*1000)),
     s:run.map(r=>r.state==='spurt'?1:0).join(''),pl:run.map(r=>r.place||0),ph,c:S.sayT||''}).catch(()=>{});
 }
 function runRace(){
@@ -2742,7 +2780,7 @@ function runRace(){
         $('#rem').textContent=rem>0?`残り${Math.ceil(rem/50)*50}m`:'';
       }
       const al=Math.min(1,acc/TICK);
-      if(!document.hidden) drawRace(stretchV(run.map(r=>({...r, x:r.px==null?r.x:r.px+(r.x-r.px)*al, ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
+      if(!document.hidden) drawRace(stretchV(run.map(r=>({...r, x:(r.px==null?r.x:r.px+(r.x-r.px)*al)+(r.off||0), ph:r.pph==null?r.ph:r.pph+(r.ph-r.pph)*al, lane:r.pl==null?r.lane:r.pl+(r.lane-r.pl)*al}))));
       if(t%6===0||finished) renderOrder(run);
       if(NET&&now-lastLive>600){ lastLive=now; sendLive(run); }
       if(NET&&now-lastTrk>=300){ lastTrk=now; sendTrk(run); }
@@ -2766,7 +2804,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=32;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=33;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
