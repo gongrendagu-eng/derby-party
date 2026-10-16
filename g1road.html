@@ -1705,6 +1705,13 @@ function rhFore(p){
   const a2=a1-k;
   return [a1,a2,a2-0.55*Math.sin(Math.PI*Math.min(1,s/0.8))];
 }
+// 常歩(なみあし:パドックの歩き)。地面に着いている時間が長く、ひざの曲がりも小さい
+function rhForeWalk(p){ const ST=0.62;
+  if(p<ST){ const s=p/ST, a1=rhLerp(0.26,-0.3,s); return [a1,a1,a1+0.2+0.15*Math.sin(Math.PI*s)]; }
+  const s=(p-ST)/(1-ST), a1=rhLerp(-0.3,0.26,rhE(s)), k=0.95*Math.sin(Math.PI*Math.min(1,s/0.85)), a2=a1-k; return [a1,a2,a2-0.35*Math.sin(Math.PI*s)]; }
+function rhHindWalk(p){ const ST=0.62;
+  if(p<ST){ const s=p/ST, a1=rhLerp(0.08,-0.5,s), h=rhLerp(0.55,0.42,s); return [a1,a1+h,a1+h+0.25]; }
+  const s=(p-ST)/(1-ST), a1=rhLerp(-0.5,0.08,rhE(s)), h=0.5+0.6*Math.sin(Math.PI*s); return [a1,a1+h,a1+h-0.3*Math.sin(Math.PI*s)]; }
 function rhHind(p){
   const ST=0.32;
   if(p<ST){ const s=p/ST, a1=rhLerp(0.18,-0.95,s), h=rhLerp(0.62,0.42,s); return [a1,a1+h,a1+h+0.3+0.35*Math.sin(Math.PI*s)]; }
@@ -1742,7 +1749,8 @@ function drawRealHorse(c,x,y,k,ph,o){
   const p=(((ph/RH.TAU)%1)+1)%1, dir=o.dir||1, push=o.push||0;
   c.save(); c.translate(x,y); c.scale(k*dir,k); c.lineJoin='round'; c.lineCap='round';
   // 体の上下動と前後の傾き(四肢が地面を離れる瞬間に浮く)
-  const bob=-1.5*Math.sin(RH.TAU*(p-0.62))-0.4, pitch=0.03*Math.sin(RH.TAU*(p-0.2));
+  const walk=!!o.walk, bob=walk?0.5*Math.sin(2*RH.TAU*p):-1.5*Math.sin(RH.TAU*(p-0.62))-0.4, pitch=walk?0.01*Math.sin(RH.TAU*p):0.03*Math.sin(RH.TAU*(p-0.2));
+  const FF=walk?rhForeWalk:rhFore, HH=walk?rhHindWalk:rhHind;
   const coat=o.coat, dark=rhShade(coat,-0.42), nearCol=rhShade(coat,-0.3), farCol=rhShade(coat,-0.5), low=o.low||coat, lowFar=rhShade(low,-0.3);
   const socks=o.socks||[];
   const sockC=i=>socks[i]?(i%2===0?'#d9d4c8':'#f2eee4'):null;
@@ -1752,19 +1760,24 @@ function drawRealHorse(c,x,y,k,ph,o){
   const T=(px,py)=>{ const dx=px-cx, dy=py-cy; return [cx+dx*cs-dy*sn, cy+dx*sn+dy*cs+bob]; };
   // ---- 奥の脚 ----
   const fa=T(21,-41), ha=T(-28,-44);
-  const pf=(p+0.40)%1, pfn=(p+0.52)%1, ph0=p, phn=(p+0.10)%1;
-  rhLeg(c,fa[0],fa[1],rhFore(pf),ForeL,ForeW,farCol,lowFar,sockC(0)&&rhShade(sockC(0),-0.2));
-  rhLeg(c,ha[0],ha[1],rhHind(ph0),HindL,HindW,farCol,lowFar,sockC(2)&&rhShade(sockC(2),-0.2));
+  const pf=walk?(p+0.25)%1:(p+0.40)%1, pfn=walk?(p+0.75)%1:(p+0.52)%1, ph0=p, phn=walk?(p+0.5)%1:(p+0.10)%1;   // 常歩は4拍子(後→前→後→前)
+  rhLeg(c,fa[0],fa[1],FF(pf),ForeL,ForeW,farCol,lowFar,sockC(0)&&rhShade(sockC(0),-0.2));
+  rhLeg(c,ha[0],ha[1],HH(ph0),HindL,HindW,farCol,lowFar,sockC(2)&&rhShade(sockC(2),-0.2));
   // ---- しっぽ ----
   const tw=Math.sin(RH.TAU*p)*3;
   c.save(); c.translate(0,bob);
   c.fillStyle=rhShade(o.mane,-0.1);
+  if(walk){ const sw=Math.sin(RH.TAU*p)*1.5;      // 歩いているときは、しっぽは下に垂れて少しゆれる
+    c.beginPath(); c.moveTo(-37,-59); c.bezierCurveTo(-45,-58,-47,-48+sw*0.2,-46+sw*0.5,-36); c.bezierCurveTo(-45+sw,-28,-44+sw,-22,-42+sw*1.2,-17);
+    c.bezierCurveTo(-39+sw,-22,-39,-30,-40,-40); c.bezierCurveTo(-40,-48,-39,-53,-37,-55); c.closePath(); c.fill();
+    c.strokeStyle=rhShade(o.mane,0.18); c.lineWidth=0.6; c.globalAlpha=0.5; for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(-40,-55); c.bezierCurveTo(-45,-50,-44+i*0.6,-36,-43+sw+i*0.7,-19); c.stroke(); } c.globalAlpha=1;
+  } else {
   c.beginPath(); c.moveTo(-38,-58); c.bezierCurveTo(-48,-62,-56,-58+tw*0.4,-64,-52+tw); c.bezierCurveTo(-70,-47+tw,-74,-42+tw*1.2,-80,-38+tw*1.5);
   c.bezierCurveTo(-72,-40+tw,-64,-44+tw*0.6,-58,-46+tw*0.4); c.bezierCurveTo(-52,-48,-46,-50,-40,-50); c.closePath(); c.fill();
   // 毛の流れ
   c.strokeStyle=rhShade(o.mane,0.18); c.lineWidth=0.7; c.globalAlpha=0.55;
   for(let i=0;i<5;i++){ const d=i*1.6-3; c.beginPath(); c.moveTo(-40,-55+d*0.4); c.bezierCurveTo(-50,-58+d,-60,-52+d+tw*0.6,-74+i*1.5,-42+d*0.6+tw*1.3); c.stroke(); }
-  c.globalAlpha=1;
+  c.globalAlpha=1; }
   c.restore();
   // ---- 胴・首・頭(傾けて描く) ----
   c.save(); c.translate(0,bob); c.translate(cx,cy); c.rotate(pitch); c.translate(-cx,-cy);
@@ -1774,7 +1787,7 @@ function drawRealHorse(c,x,y,k,ph,o){
     c.bezierCurveTo(-45,-53,-44,-44,-39,-39); c.bezierCurveTo(-34,-35,-28,-36,-22,-37);
     c.bezierCurveTo(-10,-34,6,-33,16,-35); c.bezierCurveTo(24,-36,31,-40,33,-47); c.closePath(); };
   // 首の振り(前脚が着くときに少し下がる)
-  const na=0.06*Math.sin(RH.TAU*(p-0.45));
+  const na=walk?-0.2+0.035*Math.sin(2*RH.TAU*(p-0.1)):0.06*Math.sin(RH.TAU*(p-0.45));
   const neck=()=>{ c.save(); c.translate(26,-54); c.rotate(na); c.translate(-26,54);
     c.beginPath(); c.moveTo(10,-60); c.bezierCurveTo(23,-66,35,-73,46,-77); c.lineTo(52,-69); c.bezierCurveTo(45,-62,38,-52,32,-43); c.lineTo(20,-46); c.closePath(); c.restore(); };
   const head=()=>{ c.save(); c.translate(26,-54); c.rotate(na); c.translate(-26,54);
@@ -1833,8 +1846,9 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.restore();
   // ---- 手前の脚 ----
   const fb=T(24,-41), hb=T(-25,-43);
-  rhLeg(c,hb[0],hb[1],rhHind(phn),HindL,HindW,nearCol,low,sockC(3));
-  rhLeg(c,fb[0],fb[1],rhFore(pfn),ForeL,ForeW,nearCol,low,sockC(1));
+  rhLeg(c,hb[0],hb[1],HH(phn),HindL,HindW,nearCol,low,sockC(3));
+  rhLeg(c,fb[0],fb[1],FF(pfn),ForeL,ForeW,nearCol,low,sockC(1));
+  if(o.noRider){ c.restore(); return; }
   // ---- 騎手(モンキー乗り) ----
   c.save(); c.translate(0,bob); c.translate(cx,cy); c.rotate(pitch); c.translate(-cx,-cy);
   const JS=1.32, J=v=>({x:2+(v.x-2)*JS,y:-61+(v.y+61)*JS});      // 騎手は少し大きめに描く(鞍のあたりを中心に拡大)
@@ -1893,12 +1907,47 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.restore();
   c.restore();
 }
+// 厩務員さん(馬を引いて歩く人)。単位は馬と同じ(100=約2.5m)、足元が y=0、右向きに描いて dir=-1 で反転
+// o:{col:上着の色, col2:ズボンの色, cap:帽子の色, dir}
+function drawRealGroom(c,x,y,k,p,o){
+  const dir=o.dir||1, TAU=RH.TAU, sw=Math.sin(TAU*p), bob=-Math.abs(Math.cos(TAU*p))*0.9;
+  c.save(); c.translate(x,y); c.scale(k*dir,k); c.lineCap='round'; c.lineJoin='round';
+  const L=(w,col,...pts)=>{ c.strokeStyle=col; c.lineWidth=w; c.beginPath(); c.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) c.lineTo(pts[i][0],pts[i][1]); c.stroke(); };
+  const hip=[0,-35+bob], sh=[1.5,-57+bob], nk=[2.3,-60.5+bob], hd=[3.2,-65.5+bob];
+  const leg=(ph,far)=>{ const a=0.42*Math.sin(TAU*ph), sw2=Math.max(0,-Math.cos(TAU*ph)), kn=[hip[0]+Math.sin(a)*17,hip[1]+Math.cos(a)*17], b=a-0.55*sw2*(Math.sin(TAU*ph)>0?1:0.3);
+    const ft=[kn[0]+Math.sin(b)*17,kn[1]+Math.cos(b)*17]; const pc=far?rhShade(o.col2||'#2b2f3a',-0.3):(o.col2||'#2b2f3a');
+    L(6.2,pc,hip,kn); L(5.2,pc,kn,ft); c.fillStyle=far?'#141414':'#1e1e1e'; c.beginPath(); c.ellipse(ft[0]+2.2,ft[1]+0.6,4.4,1.8,0,0,TAU); c.fill(); };
+  leg(p+0.5,true);
+  // 奥の腕(前後に振る)
+  const elF=[sh[0]+Math.sin(-0.3*sw)*8,sh[1]+8], haF=[elF[0]+Math.sin(-0.4*sw)*8,elF[1]+7];
+  L(3.6,rhShade(o.col||'#1b2a55',-0.3),sh,elF,haF);
+  // 胴(上着)
+  c.fillStyle=o.col||'#1b2a55'; c.beginPath(); c.moveTo(hip[0]-4.6,hip[1]+2); c.quadraticCurveTo(hip[0]-5.4,hip[1]-12,sh[0]-4.4,sh[1]+1.5); c.quadraticCurveTo(sh[0]+0.5,sh[1]-2.4,sh[0]+4.6,sh[1]+1.2);
+  c.quadraticCurveTo(hip[0]+5.6,hip[1]-11,hip[0]+4.8,hip[1]+2); c.closePath(); c.fill();
+  c.fillStyle='rgba(255,255,255,.12)'; c.fillRect(hip[0]-4,hip[1]-18,2,16);
+  c.fillStyle='#f4f4f0'; c.fillRect(hip[0]-1.2,hip[1]-20,6,7); c.fillStyle='#1b1b1b'; c.font='700 4.5px sans-serif'; c.textAlign='center'; c.textBaseline='middle';   // 胸の番号札
+  if(o.no!=null){ c.save(); c.translate(hip[0]+1.8,hip[1]-16.4); c.scale(dir,1); c.fillText(String(o.no),0,0); c.restore(); }
+  leg(p,false);
+  // 首・顔・帽子
+  L(3,'#e2b993',sh,nk);
+  c.fillStyle='#e9c6a1'; c.beginPath(); c.ellipse(hd[0],hd[1],4.3,4.9,0.1,0,TAU); c.fill();
+  c.fillStyle='#d8ad85'; c.beginPath(); c.ellipse(hd[0]+3.6,hd[1]+0.4,1,1.5,0,0,TAU); c.fill();      // 鼻
+  c.fillStyle='#2a1d14'; c.beginPath(); c.arc(hd[0]+1.8,hd[1]-0.6,0.6,0,TAU); c.fill();               // 目
+  c.fillStyle=o.cap||'#1b2a55'; c.beginPath(); c.arc(hd[0],hd[1]-1.2,4.6,Math.PI*1.02,Math.PI*1.98); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(hd[0]+3,hd[1]-2.2); c.lineTo(hd[0]+8,hd[1]-1.4); c.lineTo(hd[0]+3.2,hd[1]-0.6); c.closePath(); c.fill();   // つば
+  // 手前の腕(うしろへ伸ばして引き手綱を持つ)
+  const elN=[sh[0]-4,sh[1]+9], haN=[sh[0]-9,sh[1]+15];
+  L(3.8,o.col||'#1b2a55',sh,elN); L(3.2,o.col||'#1b2a55',elN,haN);
+  c.fillStyle='#e9c6a1'; c.beginPath(); c.arc(haN[0],haN[1],1.6,0,TAU); c.fill();
+  c.restore();
+  return [x+dir*haN[0]*k,y+haN[1]*k];      // 手の位置(引き手綱の端)
+}
 // 影
 function drawRealShadow(c,x,y,k,dir){ c.save(); c.translate(x,y); c.scale(k,k*0.22); const g=c.createRadialGradient(0,0,4,0,0,48); g.addColorStop(0,'rgba(0,0,0,.34)'); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.beginPath(); c.arc(dir*4,0,48,0,RH.TAU); c.fill(); c.restore(); }
 
 /* ---------- リアル調のレース映像(横から見たカメラ・奥行きつき) ---------- */
 // ?look=real で使う試作。レースの計算・iPadへの送信はそのままで、絵を描くところだけを入れ替える
-const REAL=new URLSearchParams(location.search).get('look')==='real';
+const REAL=new URLSearchParams(location.search).get('look')!=='classic';   // 標準はリアル調。?look=classic で前の絵
 if(REAL) document.documentElement.classList.add('real');
 const stretchV=list=>REAL?list:stretchRun(list);
 function rkHash(s){ let h=2166136261; for(const ch of String(s)){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
@@ -2551,7 +2600,7 @@ function updateLanes(run,t){
 function afterRace(run,win){
   const me=S, t0=performance.now(); let prev=t0, lastTrk=0;
   S.after=true;
-  const canter=REAL?0.22:1600/(20*60);          // ウイニングランの速さ(1周約20秒。リアル調では本物に近いゆっくりのキャンター)
+  const canter=REAL?0.38:1600/(20*60);          // ウイニングランの速さ(1周約20秒。リアル調では本物に近いゆっくりのキャンター)
   const f=now=>{
     if(S!==me||S.phase==='bet'||S.after!==true) return;
     const dt=Math.min(100,now-prev), k=dt/16.6, kt=dt/S.tickS; prev=now;   // kt:直線と同じ速さで進めるための係数
@@ -2717,7 +2766,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=31;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=32;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3593,7 +3642,7 @@ setInterval(()=>{ if(S&&W&&S.phase==='bet'){ rankMode++; renderSide(); } },8000)
 let NET=null;
 const ROOM_CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newRoom=()=>Array.from({length:5},()=>ROOM_CH[Math.floor(Math.random()*ROOM_CH.length)]).join('');
-function joinURL(){ const u=new URL(location.href); u.search=''; u.hash=''; u.searchParams.set('room',NET.room); if(REAL) u.searchParams.set('look','real'); if(NET.kind==='local') u.searchParams.set('local','1'); return u.href; }
+function joinURL(){ const u=new URL(location.href); u.search=''; u.hash=''; u.searchParams.set('room',NET.room); if(!REAL) u.searchParams.set('look','classic'); if(NET.kind==='local') u.searchParams.set('local','1'); return u.href; }
 function netErr(e){ console.warn(e); toast('iPadとの通信でエラーが出ました:'+(String(e&&e.message||e).includes('PERMISSION')?'データベースのルールを確認してください':'通信を確認してください')); }
 async function hostOpen(kind,room,be){
   be=be||await withTimeout(connectNet(kind),10000,'Firebaseの読み込みに時間がかかっています');
@@ -4520,8 +4569,13 @@ const pdkDur=()=>Math.max(5,Math.min(9,(+W.cfg.betSec||90)/Math.max(1,S.horses.l
 const kehaiArrow=h=>{ const c=h.cond||0; return c>=0.005?'↑':c>=0.0015?'↗':c>-0.0015?'→':c>-0.005?'↘':'↓'; };
 function kehai(h){ const c=h.cond||0; return c>=0.005?['気合十分','good']:c>=0.0015?['落ち着いて好気配','good']:c>-0.0015?['まずまず','']:c>-0.005?['少しイレ込み気味','bad']:['覇気がない','bad']; }
 // 大きな馬の絵は、いま映す馬と次の馬の分だけ作っておく(少しずつ作って画面を止めない)
+const PDK_NR=16;      // リアル調のパドック:常歩1歩きぶんのコマ数
+const pdkN=()=>REAL?PDK_NR:PDK_N;
 function pdkFrameImg(h,fi,s){
   const k=h.no+'|'+fi+'|'+s; let e=PDK.cache.get(k); if(e) return e;
+  if(REAL){ const cv=document.createElement('canvas'); cv.width=Math.ceil(174*s); cv.height=Math.ceil(108*s);
+    drawRealHorse(cv.getContext('2d'),84*s,98*s,s,fi/PDK_NR*Math.PI*2,{...realLook(h),dir:-1,walk:true,noRider:true});
+    e={cv,ax:84,ay:98,real:true}; PDK.cache.set(k,e); return e; }
   const cv=document.createElement('canvas'); cv.width=Math.ceil(WU*s); cv.height=Math.ceil(HU*s);
   const c=cv.getContext('2d'), [silk,silkFg]=wk(h.no); c.translate(cv.width,0); c.scale(-1,1);
   drawHorse2(c,AXU*s,AYU*s,s*100,fi/PDK_N*Math.PI*2,{type:'cool',coat:h.coat[1],mane:h.coat[2],silk,silkFg,no:h.no,push:0,dir:-1,noBob:true,noLines:true,gait:0.3});
@@ -4530,7 +4584,7 @@ function pdkFrameImg(h,fi,s){
 function pdkWarm(idx,s){
   const n=S.horses.length, keep=new Set([idx,(idx+1)%n].map(i=>S.horses[i]&&S.horses[i].no));
   for(const k of [...PDK.cache.keys()]){ const [no,,sc]=k.split('|'); if(!keep.has(+no)||+sc!==s) PDK.cache.delete(k); }
-  PDK.work=[]; [idx,(idx+1)%n].forEach(i=>{ const h=S.horses[i]; if(h) for(let f=0;f<PDK_N;f++) PDK.work.push([h,f,s]); });
+  PDK.work=[]; [idx,(idx+1)%n].forEach(i=>{ const h=S.horses[i]; if(h) for(let f=0;f<pdkN();f++) PDK.work.push([h,f,s]); });
   const run=()=>{ const t0=performance.now(); while(PDK.work.length&&performance.now()-t0<8){ const [h,f,sc]=PDK.work.shift(); pdkFrameImg(h,f,sc); } if(PDK.work.length) setTimeout(run,20); };
   setTimeout(run,0);
 }
@@ -4587,8 +4641,19 @@ function pdkFrame(now){
   const c=cv.getContext('2d'); c.setTransform(1,0,0,1,0,0);
   c.drawImage(pdkBg(W2,H2,dpr),0,0); c.setTransform(dpr,0,0,dpr,0,0);
   const N=S.horses.length, D=pdkDur(), t=Math.max(0,(now-PDK.t0)/1000), idx=Math.floor(t/D)%N, k=(t%D)/D;
-  const u=Math.min(H2*0.37,W2*0.24), s=Math.min(3.5,Math.max(1,Math.round(u*dpr/100*4)/4));
+  const u=Math.min(H2*0.37,W2*0.24), kR=u/100*1.25, s=REAL?Math.min(4,Math.max(1,Math.round(kR*dpr*4)/4)):Math.min(3.5,Math.max(1,Math.round(u*dpr/100*4)/4));
   if(idx!==PDK.feat){ PDK.feat=idx; pdkWarm(idx,s); pdkInfo(); }
+  if(REAL){   // リアル調:厩務員さんに引かれて常歩で歩く(脚の運びは進んだ距離に合わせる)
+    const gy=H2*0.78, h=S.horses[idx], x=W2*(1.18-1.36*k), walked=W2*1.36*k, fi=Math.floor(((walked/(72*kR))%1)*PDK_NR)%PDK_NR;
+    c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x,gy,u*1.05,u*0.09,0,0,7); c.fill();
+    const e=PDK.cache.get(h.no+'|'+fi+'|'+s)||pdkFrameImg(h,fi,s);
+    c.drawImage(e.cv,x-e.ax*kR,gy-e.ay*kR,e.cv.width/s*kR,e.cv.height/s*kR);
+    const gx=x-80*kR; c.fillStyle='rgba(0,0,0,.2)'; c.beginPath(); c.ellipse(gx,gy,u*0.22,u*0.05,0,0,7); c.fill();
+    const hand=drawRealGroom(c,gx,gy,kR,(walked/(60*kR))%1,{col:'#1b2a55',col2:'#2b2f3a',cap:'#1b2a55',dir:-1,no:h.no});
+    const bx=x-60.7*kR, by=gy-64.1*kR;   // 馬のくつわ
+    c.strokeStyle='#c8102e'; c.lineWidth=Math.max(2,kR*0.9); c.beginPath(); c.moveTo(hand[0],hand[1]); c.quadraticCurveTo((hand[0]+bx)/2,Math.max(hand[1],by)+kR*6,bx,by); c.stroke();
+    pdkRank(); return;
+  }
   const gy=H2*0.75, h=S.horses[idx], x=W2*(1.18-1.36*k), ph=t*4.2, TAU=Math.PI*2, fi=Math.round((((ph%TAU)+TAU)%TAU)/TAU*PDK_N)%PDK_N, su=u/100, y=gy-HOOF*su;   // 蹄が地面(gy)にちょうど着く高さ
   c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x,gy,u,u*0.09,0,0,7); c.fill();
   const e=PDK.cache.get(h.no+'|'+fi+'|'+s)||pdkFrameImg(h,fi,s);
