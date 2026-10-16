@@ -1441,7 +1441,7 @@ function buildCourse(crs,rh,W,H,pad,top,tw){
 
 function layout(cvEl){
   csCache={};
-  const cv=cvEl||$('#cv'), box=cv.parentElement.getBoundingClientRect(), dpr=REAL?Math.min(1.25,window.devicePixelRatio||1):(window.devicePixelRatio||1);   // リアル調は描く量が多いので解像度を少し抑える
+  const cv=cvEl||$('#cv'), box=cv.parentElement.getBoundingClientRect(), dpr=REAL?1:(window.devicePixelRatio||1);   // リアル調は描く量が多いので解像度を少し抑える
   cv.width=Math.max(1,box.width*dpr); cv.height=Math.max(1,box.height*dpr);
   const W=box.width, H=box.height;
   const pad=Math.max(12,Math.min(W,H)*0.04);
@@ -1742,7 +1742,7 @@ function drawRealHorse(c,x,y,k,ph,o){
   const p=(((ph/RH.TAU)%1)+1)%1, dir=o.dir||1, push=o.push||0;
   c.save(); c.translate(x,y); c.scale(k*dir,k); c.lineJoin='round'; c.lineCap='round';
   // 体の上下動と前後の傾き(四肢が地面を離れる瞬間に浮く)
-  const bob=-2.2*Math.sin(RH.TAU*(p-0.62))-0.6, pitch=0.045*Math.sin(RH.TAU*(p-0.2));
+  const bob=-1.5*Math.sin(RH.TAU*(p-0.62))-0.4, pitch=0.03*Math.sin(RH.TAU*(p-0.2));
   const coat=o.coat, dark=rhShade(coat,-0.42), nearCol=rhShade(coat,-0.3), farCol=rhShade(coat,-0.5), low=o.low||coat, lowFar=rhShade(low,-0.3);
   const socks=o.socks||[];
   const sockC=i=>socks[i]?(i%2===0?'#d9d4c8':'#f2eee4'):null;
@@ -1903,8 +1903,31 @@ function realGeo(){
   const yN=H*(panel?0.755:0.9), yF=H*(panel?0.415:0.47), yH=H*(panel?0.215:0.255);
   return {W,H,yH,yF,yN,sF:0.64,sN:1,panel};
 }
+// 馬の表示位置をなめらかにする(計算は0.1秒刻みで速さが少しずつ変わるので、そのまま描くと馬がブレて見える)
+function realSmooth(run,now){
+  const DS=S.rdisp&&S.rdisp.race===S.race&&S.rdisp.n===run.length?S.rdisp:(S.rdisp={race:S.race,n:run.length,h:run.map(r=>({x:r.x,t:now,hist:[]}))});
+  return run.map((r,i)=>{ const st=DS.h[i], dt=Math.min(0.1,Math.max(0,(now-st.t)/1000)); st.t=now;
+    st.hist.push([now,r.x]); while(st.hist.length>2&&now-st.hist[0][0]>600) st.hist.shift();
+    const h0=st.hist[0], span=(now-h0[0])/1000, v=span>0.15?(r.x-h0[1])/span:0;
+    if(Math.abs(r.x-st.x)>6) st.x=r.x; else if(dt>0) st.x+=v*dt+(r.x-st.x)*(1-Math.exp(-dt/0.3));
+    return {...r,x:st.x}; });
+}
+// 馬の絵は、脚の運び20コマ分を最初に1回だけ描いておき、あとは貼るだけにする(毎コマ描くと重く、ときどきカクつく)
+const RSP={map:new Map(),kb:0,race:null,dir:1,NF:20,shadow:null};
+function rspSprite(h,L,fi,kb,dir,build){
+  if(RSP.race!==S.race||RSP.dir!==dir||!RSP.kb||Math.abs(RSP.kb-kb)/kb>0.2){ RSP.map.clear(); RSP.kb=kb; RSP.race=S.race; RSP.dir=dir; }
+  const id=h.no+'|'+fi; let e=RSP.map.get(id); if(e||!build) return e||null;
+  const kb2=RSP.kb, cv=document.createElement('canvas'); cv.width=Math.ceil(174*kb2); cv.height=Math.ceil(108*kb2);
+  const ax=dir>0?88:86, ay=99;
+  drawRealHorse(cv.getContext('2d'),ax*kb2,ay*kb2,kb2,fi/RSP.NF*RH.TAU,{...L,dir,push:0.7});
+  e={cv,ax,ay,kb:kb2}; RSP.map.set(id,e); return e;
+}
+function rspShadow(){ if(RSP.shadow) return RSP.shadow; const cv=document.createElement('canvas'); cv.width=200; cv.height=44; const x=cv.getContext('2d');
+  x.translate(100,22); x.scale(1,0.22); const g=x.createRadialGradient(0,0,8,0,0,96); g.addColorStop(0,'rgba(0,0,0,.34)'); g.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g; x.beginPath(); x.arc(0,0,96,0,RH.TAU); x.fill();
+  return RSP.shadow=cv; }
 function drawReal(run,c,cs){
   const g=realGeo(), {W,H,yH,yF,yN,sF,sN}=g, D=S.dist, sg=S.rh?-1:1, now=performance.now();
+  run=realSmooth(run,now);
   const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs), anyFin=run.some(r=>r.fin!==null);
   // ---- カメラ ----
   let tv,tc;
@@ -1928,21 +1951,27 @@ function drawReal(run,c,cs){
   const mAt=(px,t)=>RC.c+sg*(px-W/2)/(ppm*Ts(t));       // 画面のx → コース上の距離
   const range=(t,step,pad=0)=>{ const a=mAt(-60,t), b=mAt(W+60,t), lo=Math.min(a,b)-pad, hi=Math.max(a,b)+pad; const out=[]; for(let m=Math.floor(lo/step)*step;m<=hi;m+=step) out.push(m); return out; };
   const dirt=S.surf==='dirt';
-  // ---- 空 ----
-  let gr=c.createLinearGradient(0,0,0,yH); gr.addColorStop(0,'#6fa6dc'); gr.addColorStop(1,'#d6eaf6');
-  c.fillStyle=gr; c.fillRect(0,0,W,yH+2);
-  c.fillStyle='rgba(255,255,255,.85)';
-  for(let i=0;i<6;i++){ const span=W+500, cx=((i*431+ -sg*RC.c*ppm*0.02)%span+span)%span-250, cy=yH*(0.18+0.13*(i%3)), r=W*(0.03+0.012*(i%2));
-    c.beginPath(); c.ellipse(cx,cy,r*2.2,r*0.7,0,0,RH.TAU); c.ellipse(cx+r*1.2,cy-r*0.35,r*1.3,r*0.7,0,0,RH.TAU); c.ellipse(cx-r*1.1,cy-r*0.2,r,r*0.55,0,0,RH.TAU); c.fill(); }
-  // 遠くの山と森(ゆっくり流れる)
-  const ridge=(par,base,amp,step,col,seed,bump)=>{
-    const off=-sg*RC.c*ppm*par; c.fillStyle=col; c.beginPath(); c.moveTo(0,base+2);
-    for(let px=-step;px<=W+step;px+=step){ const v=(px-off)/step, i=Math.floor(v), f=v-i, hgt=n=>{ const q=rkHash(seed+':'+n)%1000/1000; return amp*(0.35+0.65*q); };
-      const y=base-(hgt(i)*(1-f)+hgt(i+1)*f); if(bump){ const bx=px, br=step*0.62; c.lineTo(bx-br,y+br*0.3); c.arc(bx,y+br*0.3,br,Math.PI,0); } else c.lineTo(px,y); }
-    c.lineTo(W,base+2); c.closePath(); c.fill(); };
-  ridge(0.03,yH+1,H*0.06,W/9,'#98b9c7','m',false);
-  ridge(0.08,yH+2,H*0.045,W/40,'#4f7f5c','t1',true);
-  ridge(0.14,yH+3,H*0.03,W/55,'#2f6440','t2',true);
+  // ---- 空・雲・遠くの山と森 ----
+  // ゆっくり流れる遠景は、横に長い1枚の絵にしておいて貼るだけにする(毎コマ描くと重い)
+  { const dpr=G.dpr||1, hh=Math.ceil(yH+4), off=-sg*RC.c*ppm*0.06;
+    let B=RSP.bg; const need=-off, SW=Math.ceil(W*2.4);
+    if(!B||B.W!==W||B.H!==H||B.sg!==sg||B.dpr!==dpr||need<B.u0||need+W>B.u0+SW){
+      const u0=Math.floor(need-W*0.7), cv=B&&B.cv&&B.W===W&&B.H===H&&B.dpr===dpr?B.cv:document.createElement('canvas');
+      cv.width=Math.ceil(SW*dpr); cv.height=Math.ceil(hh*dpr); const x=cv.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,SW,hh);
+      const gr0=x.createLinearGradient(0,0,0,yH); gr0.addColorStop(0,'#6fa6dc'); gr0.addColorStop(1,'#d6eaf6'); x.fillStyle=gr0; x.fillRect(0,0,SW,hh);
+      x.fillStyle='rgba(255,255,255,.85)'; const cw=W*0.42;
+      for(let n=Math.floor(u0/cw)-1;n*cw<u0+SW+cw;n++){ const q=rkHash('c'+n), cx=n*cw+(q%1000)/1000*cw*0.6-u0, cy=yH*(0.16+0.3*((q>>>10)%100)/100), r=W*(0.026+0.016*((q>>>17)%10)/10);
+        x.beginPath(); x.ellipse(cx,cy,r*2.2,r*0.7,0,0,RH.TAU); x.ellipse(cx+r*1.2,cy-r*0.35,r*1.3,r*0.7,0,0,RH.TAU); x.ellipse(cx-r*1.1,cy-r*0.2,r,r*0.55,0,0,RH.TAU); x.fill(); }
+      const ridge=(base,amp,step,col,seed,bump)=>{ x.fillStyle=col; x.beginPath(); x.moveTo(0,hh);
+        for(let u=Math.floor(u0/step)*step-step;u<=u0+SW+step;u+=step){ const px=u-u0, i=Math.round(u/step), hgt=n=>{ const q=rkHash(seed+':'+n)%1000/1000; return amp*(0.35+0.65*q); };
+          const y=base-hgt(i); if(bump){ const br=step*0.62; x.lineTo(px-br,y+br*0.3); x.arc(px,y+br*0.3,br,Math.PI,0); } else x.lineTo(px,y); }
+        x.lineTo(SW,hh); x.closePath(); x.fill(); };
+      ridge(yH+1,H*0.06,W/9,'#98b9c7','m',false); ridge(yH+2,H*0.045,W/40,'#4f7f5c','t1',true); ridge(yH+3,H*0.03,W/55,'#2f6440','t2',true);
+      B=RSP.bg={cv,W,H,sg,dpr,u0,hh};
+    }
+    c.drawImage(B.cv,(need-B.u0)*dpr,0,W*dpr,B.hh*dpr,0,0,W,B.hh);
+  }
+  let gr;
   // ---- 内側(奥)の芝生・コース・植え込み ----
   gr=c.createLinearGradient(0,yH,0,yF); gr.addColorStop(0,'#78a85c'); gr.addColorStop(1,'#5f9a48');
   c.fillStyle=gr; c.fillRect(0,yH+2,W,yF-yH);
@@ -1988,14 +2017,23 @@ function drawReal(run,c,cs){
   // ---- 馬 ----
   const list=S.horses.map((h,i)=>({h,i,r:run[i],t:0.07+0.86*(run[i].lane??i/Math.max(1,S.H-1))})).filter(o=>!(S.win&&o.i!==S.win.i));
   list.sort((a,b)=>a.t-b.t);
-  list.forEach(o=>{ const k=0.025*HX*ppm*Ts(o.t), x=X(o.r.x-BX,o.t), y=Ty(o.t); drawRealShadow(c,x,y,k,sg); if(S.glow&&S.glow.has(o.h.no)) glowAt(c,x,y+k*2,k*55); });
+  const shd=rspShadow();
+  list.forEach(o=>{ const k=0.025*HX*ppm*Ts(o.t), x=X(o.r.x-BX,o.t), y=Ty(o.t); c.drawImage(shd,x-100*k*0.5+sg*2*k,y-22*k*0.5,200*k*0.5,44*k*0.5); if(S.glow&&S.glow.has(o.h.no)) glowAt(c,x,y+k*2,k*55); });
+  const kb=0.025*HX*ppm*Ts(1)*(G.dpr||1);
+  let budget=(!S.gate||!S.gate.open)?40:6;          // ゲートにいる間にまとめて絵を用意する
   list.forEach(o=>{
     const k=0.025*HX*ppm*Ts(o.t), x=X(o.r.x-BX,o.t), y=Ty(o.t), r=o.r, L=realLook(o.h);
     if(x<-k*120||x>W+k*120) return;
+    // 脚の運びは、実際に進んだ距離に合わせる(1完歩 約7m。地面の上を滑って見えないように)
+    const ph=RH.TAU*(Math.max(0,r.x)/7.2+(o.h.no*0.37)%1), fi=Math.floor(((ph/RH.TAU)%1+1)%1*RSP.NF)%RSP.NF;
     const run1=r.fin===null||(r.post||0)>0.3;
-    if(dirt&&run1){ for(let j=0;j<5;j++){ const q=((r.ph*0.3+j*0.2)%1); c.fillStyle=`rgba(170,128,84,${0.5*(1-q)})`; c.beginPath(); c.arc(x-sg*k*(30+q*40),y-k*(2+q*14),k*(2+q*6),0,RH.TAU); c.fill(); } }
-    drawRealHorse(c,x,y,k,r.ph,{...L,dir:sg,push:r.fin===null&&r.state==='spurt'?1:0.35});
+    if(dirt&&run1){ for(let j=0;j<4;j++){ const q=((ph/RH.TAU*1.2+j*0.25)%1); c.fillStyle=`rgba(170,128,84,${0.45*(1-q)})`; c.beginPath(); c.arc(x-sg*k*(30+q*40),y-k*(2+q*14),k*(2+q*6),0,RH.TAU); c.fill(); } }
+    const had=RSP.map.has(o.h.no+'|'+fi), e=rspSprite(o.h,L,fi,kb,sg,budget>0); if(e&&!had) budget--;
+    if(e){ const sc=k/e.kb; c.drawImage(e.cv,x-e.ax*k,y-e.ay*k,e.cv.width*sc,e.cv.height*sc); }
+    else drawRealHorse(c,x,y,k,ph,{...L,dir:sg,push:0.7});
   });
+  // まだ用意していない絵を少しずつ作っておく
+  if(budget>0){ for(const o of list){ if(budget<=0) break; const L=realLook(o.h); for(let f=0;f<RSP.NF&&budget>0;f++){ if(!RSP.map.has(o.h.no+'|'+f)){ rspSprite(o.h,L,f,kb,sg,true); budget--; } } } }
   // ゲート(手前側の骨組み)
   if(gateOn) drawRealGate(true);
   // 馬番の札と着順
@@ -2063,7 +2101,9 @@ function drawCasterPanel(run,c,cs,g){
   c.textAlign='left';
   log.forEach((t,i)=>{ const y=py+ph*0.2+i*fs*1.32, latest=i===log.length-1;
     c.fillStyle=latest?'#ffffff':`rgba(190,200,240,${0.45+0.15*i})`; c.font=`${latest?900:700} ${fs}px ${cs('--f-body')}`;
-    let s=t; while(c.measureText(s).width>maxW&&s.length>4) s=s.slice(0,-2); if(s!==t) s+='…'; c.fillText(s,tx,y); });
+    const key=t+'|'+Math.round(maxW)+'|'+fs+'|'+latest; let s=RSP.txt&&RSP.txt.get(key);
+    if(s==null){ s=t; while(c.measureText(s).width>maxW&&s.length>4) s=s.slice(0,-2); if(s!==t) s+='…'; (RSP.txt=RSP.txt||new Map()).set(key,s); if(RSP.txt.size>200) RSP.txt.clear(); }
+    c.fillText(s,tx,y); });
   // コースの地図
   const {tw}=G, gg=G.g, mx=px+pw-mapW-ph*0.15, my=py+ph*0.1, mh=ph*0.66, sx=Math.min(mapW/(gg.bx1-gg.bx0+tw),mh/(gg.by1-gg.by0+tw));
   c.save(); c.translate(mx+mapW/2-gg.cx*sx,my+mh/2-gg.cy*sx); c.scale(sx,sx);
@@ -2217,6 +2257,7 @@ function drawMini(run,c,cs){
   c.restore();
 }
 function renderOrder(run){
+  if(REAL) return;      // リアル調では使っていない(隠れている一覧を毎回作り直さない)
   const ord=orderOf(run), lead=run[ord[0]];
   if(S.photo&&!S.photo.revealed){ ord[0]=S.photo.lo; ord[1]=S.photo.hi; }
   $('#order').innerHTML=ord.map((i,k)=>{
@@ -2635,7 +2676,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=28;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=29;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -2648,20 +2689,25 @@ function fbClean(v){
   return v;
 }
 function localBackend(){
+  // お試しモード:データはこのタブのメモリに持ち、ブラウザの保存領域にはまとめて書く(毎回全部を書き直すとカクつくため)
   const KEY='g1.localdb', subs=new Set();
-  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};}};
+  const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};}};
+  let mem=load(), dirty=new Map(), flushT=0;
+  const read=()=>mem;
   const get=(t,path)=>path.split('/').reduce((o,k)=>o==null?null:(o[k]??null),t);
-  const notify=()=>{const t=read(); subs.forEach(s=>{const v=get(t,s.path), j=JSON.stringify(v); if(j!==s.last){s.last=j; s.cb(clone(v));}});};
-  const write=(path,val)=>{const t=read(), ks=path.split('/'); let o=t;
-    ks.slice(0,-1).forEach(k=>{ if(typeof o[k]!=='object'||o[k]===null) o[k]={}; o=o[k]; });
-    const k=ks[ks.length-1], cv=fbClean(clone(val)); if(cv==null) delete o[k]; else o[k]=cv;
-    try{localStorage.setItem(KEY,JSON.stringify(t));}catch(e){} notify(); };
-  addEventListener('storage',e=>{ if(e.key===KEY) notify(); });
+  const put=(t,path,cv)=>{ const ks=path.split('/'); let o=t; ks.slice(0,-1).forEach(k=>{ if(typeof o[k]!=='object'||o[k]===null) o[k]={}; o=o[k]; }); const k=ks[ks.length-1]; if(cv==null) delete o[k]; else o[k]=cv; };
+  const notify=()=>{const t=mem; subs.forEach(s=>{const v=get(t,s.path), j=JSON.stringify(v); if(j!==s.last){s.last=j; s.cb(clone(v));}});};
+  // ほかのタブの変更を読み込んでから、このタブで変えたところだけを上書きして保存する
+  const flush=()=>{ flushT=0; if(!dirty.size) return; const t=load(); dirty.forEach((v,p)=>put(t,p,v)); dirty.clear(); mem=t; try{localStorage.setItem(KEY,JSON.stringify(t));}catch(e){} };
+  const write=(path,val)=>{ const cv=fbClean(clone(val)); put(mem,path,cv); dirty.set(path,cv);
+    if(!flushT) flushT=setTimeout(flush,100); notify(); };
+  addEventListener('pagehide',flush);
+  addEventListener('storage',e=>{ if(e.key===KEY){ const t=load(); dirty.forEach((v,p)=>put(t,p,v)); mem=t; notify(); } });
   return {kind:'local',
     set:(p,v)=>{write(p,v);return Promise.resolve();},
     remove:p=>{write(p,null);return Promise.resolve();},
     on:(p,cb)=>{const s={path:p,cb}; subs.add(s); const v=get(read(),p); s.last=JSON.stringify(v); cb(clone(v)); return ()=>subs.delete(s);},
-    presence:p=>{write(p,Date.now()); const off=()=>write(p,null); addEventListener('pagehide',off); return ()=>{removeEventListener('pagehide',off); off();};},
+    presence:p=>{write(p,Date.now()); const off=()=>{ write(p,null); flush(); }; addEventListener('pagehide',off); return ()=>{removeEventListener('pagehide',off); off();};},
     connected:cb=>{cb(true); return ()=>{};},
     offset:cb=>{cb(0); return ()=>{};}};
 }
