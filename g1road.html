@@ -1716,7 +1716,7 @@ function rhHind(p){
 // 太さの変わる骨を1本描く
 function rhSeg(c,x1,y1,x2,y2,w1,w2,cap){
   const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L;
-  if(cap){ c.beginPath(); c.ellipse(x1,y1,w1*0.62,w1*0.75,Math.atan2(dy,dx),0,RH.TAU); c.fill(); }
+  if(cap){ c.beginPath(); c.ellipse(x1,y1,w1*0.5,w1*0.55,Math.atan2(dy,dx),0,RH.TAU); c.fill(); }
   c.beginPath(); c.moveTo(x1+nx*w1/2,y1+ny*w1/2); c.lineTo(x2+nx*w2/2,y2+ny*w2/2); c.lineTo(x2-nx*w2/2,y2-ny*w2/2); c.lineTo(x1-nx*w1/2,y1-ny*w1/2); c.closePath(); c.fill();
   c.beginPath(); c.arc(x2,y2,w2/2,0,RH.TAU); c.fill();
 }
@@ -1728,6 +1728,12 @@ function rhLeg(c,ax,ay,ang,L,W,col,low,sock){
   c.fillStyle=col; rhSeg(c,ax,ay,kx,ky,W[0],W[1],true);
   c.fillStyle=low; rhSeg(c,kx,ky,fx,fy,W[1]*0.92,W[2]);
   c.fillStyle=sock||low; rhSeg(c,fx,fy,hx,hy,W[2]*1.05,W[2]*0.95);
+  // 関節のふくらみ(ひざ・球節)と、脚の後ろ側の影
+  c.fillStyle=col; c.beginPath(); c.ellipse(kx,ky,W[1]*0.62,W[1]*0.72,a1,0,RH.TAU); c.fill();
+  c.fillStyle=sock||low; c.beginPath(); c.ellipse(fx,fy,W[2]*0.72,W[2]*0.8,a2,0,RH.TAU); c.fill();
+  const edge=(x1,y1,x2,y2,w1,w2)=>{ const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L; c.beginPath(); c.moveTo(x1+nx*w1*0.38,y1+ny*w1*0.38); c.lineTo(x2+nx*w2*0.38,y2+ny*w2*0.38); c.stroke(); };
+  c.strokeStyle='rgba(0,0,0,.2)'; c.lineWidth=1.4; edge(ax,ay,kx,ky,W[0],W[1]); c.lineWidth=0.9; edge(kx,ky,fx,fy,W[1],W[2]);
+  c.strokeStyle='rgba(255,255,255,.08)'; c.lineWidth=1; { const dx=kx-ax, dy=ky-ay, L=Math.hypot(dx,dy)||1, nx=dy/L, ny=-dx/L; c.beginPath(); c.moveTo(ax+nx*W[0]*0.3,ay+ny*W[0]*0.3); c.lineTo(kx+nx*W[1]*0.3,ky+ny*W[1]*0.3); c.stroke(); }
   // ひづめ
   c.fillStyle='#24201c'; c.save(); c.translate(hx,hy); c.rotate(-a3); c.beginPath(); c.moveTo(-W[2]*0.6,-0.5); c.lineTo(W[2]*0.6,-0.5); c.lineTo(W[2]*0.9,2.6); c.lineTo(-W[2]*0.75,2.6); c.closePath(); c.fill(); c.restore();
   return {x:hx,y:hy+2.6};
@@ -1737,7 +1743,7 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.save(); c.translate(x,y); c.scale(k*dir,k); c.lineJoin='round'; c.lineCap='round';
   // 体の上下動と前後の傾き(四肢が地面を離れる瞬間に浮く)
   const bob=-2.2*Math.sin(RH.TAU*(p-0.62))-0.6, pitch=0.045*Math.sin(RH.TAU*(p-0.2));
-  const coat=o.coat, dark=rhShade(coat,-0.42), nearCol=rhShade(coat,-0.2), farCol=rhShade(coat,-0.42), low=o.low||coat, lowFar=rhShade(low,-0.3);
+  const coat=o.coat, dark=rhShade(coat,-0.42), nearCol=rhShade(coat,-0.3), farCol=rhShade(coat,-0.5), low=o.low||coat, lowFar=rhShade(low,-0.3);
   const socks=o.socks||[];
   const sockC=i=>socks[i]?(i%2===0?'#d9d4c8':'#f2eee4'):null;
   const ForeL=[16,15,6], ForeW=[9.5,5,3.8], HindL=[18,17,6], HindW=[12.5,5.2,4];
@@ -1755,6 +1761,10 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.fillStyle=rhShade(o.mane,-0.1);
   c.beginPath(); c.moveTo(-38,-58); c.bezierCurveTo(-48,-62,-56,-58+tw*0.4,-64,-52+tw); c.bezierCurveTo(-70,-47+tw,-74,-42+tw*1.2,-80,-38+tw*1.5);
   c.bezierCurveTo(-72,-40+tw,-64,-44+tw*0.6,-58,-46+tw*0.4); c.bezierCurveTo(-52,-48,-46,-50,-40,-50); c.closePath(); c.fill();
+  // 毛の流れ
+  c.strokeStyle=rhShade(o.mane,0.18); c.lineWidth=0.7; c.globalAlpha=0.55;
+  for(let i=0;i<5;i++){ const d=i*1.6-3; c.beginPath(); c.moveTo(-40,-55+d*0.4); c.bezierCurveTo(-50,-58+d,-60,-52+d+tw*0.6,-74+i*1.5,-42+d*0.6+tw*1.3); c.stroke(); }
+  c.globalAlpha=1;
   c.restore();
   // ---- 胴・首・頭(傾けて描く) ----
   c.save(); c.translate(0,bob); c.translate(cx,cy); c.rotate(pitch); c.translate(-cx,-cy);
@@ -1774,12 +1784,31 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.fillStyle=grad; body(); c.fill(); neck(); c.fill(); head(); c.fill();
   // 筋肉のつや(肩・トモ)
   const glow=(gx,gy,r,a)=>{ const g=c.createRadialGradient(gx,gy,0,gx,gy,r); g.addColorStop(0,`rgba(255,255,255,${a})`); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.beginPath(); c.arc(gx,gy,r,0,RH.TAU); c.fill(); };
-  c.save(); body(); c.clip(); glow(22,-52,13,0.16); glow(-28,-53,15,0.16); glow(-4,-56,16,0.08);
-  c.fillStyle='rgba(0,0,0,.12)'; c.beginPath(); c.ellipse(-2,-30,30,6,0,0,RH.TAU); c.fill(); c.restore();
+  c.save(); body(); c.clip(); glow(24,-50,12,0.2); glow(-27,-53,14,0.22); glow(-4,-57,16,0.08);
+  c.fillStyle='rgba(0,0,0,.14)'; c.beginPath(); c.ellipse(-2,-31,30,6,0,0,RH.TAU); c.fill();
+  c.fillStyle='rgba(255,255,255,.14)'; c.beginPath(); c.ellipse(-8,-59,26,2.6,-0.03,0,RH.TAU); c.fill();      // 背中のつや
+  c.lineCap='round';
+  const crease=(a,w,...pts)=>{ c.strokeStyle=`rgba(0,0,0,${a})`; c.lineWidth=w; c.beginPath(); c.moveTo(pts[0],pts[1]); c.bezierCurveTo(pts[2],pts[3],pts[4],pts[5],pts[6],pts[7]); c.stroke(); };
+  crease(0.1,2.4, 13,-61, 12,-52, 16,-44, 21,-38);      // 肩甲骨のうしろのくぼみ
+  crease(0.08,2.4, -17,-57, -21,-49, -22,-42, -27,-36); // トモ(腰)の前のくぼみ
+  crease(0.1,2.4, -36,-53, -33,-47, -33,-42, -35,-37);  // ももの裏
+  c.fillStyle='rgba(0,0,0,.2)'; c.beginPath(); c.ellipse(19,-38,5,3.2,0.3,0,RH.TAU); c.fill();          // ひじの影
+  c.restore();
+  // 首の陰影(首の下側を暗く、たてがみの下を明るく)
+  c.save(); neck(); c.clip();
+  c.strokeStyle='rgba(0,0,0,.22)'; c.lineWidth=5; c.beginPath(); c.moveTo(52,-68); c.bezierCurveTo(45,-61,38,-51,31,-42); c.stroke();
+  c.strokeStyle='rgba(255,255,255,.14)'; c.lineWidth=3.5; c.beginPath(); c.moveTo(12,-58); c.bezierCurveTo(24,-63,35,-70,46,-74); c.stroke();
+  c.restore();
+  // 顔の陰影(ほお・鼻すじ)
+  c.save(); head(); c.clip();
+  c.strokeStyle='rgba(0,0,0,.2)'; c.lineWidth=1.2; c.beginPath(); c.arc(50,-67.5,5.2,0.6,3.6); c.stroke();
+  c.fillStyle='rgba(255,255,255,.13)'; c.beginPath(); c.ellipse(58,-71,7,2,0.85,0,RH.TAU); c.fill();
+  c.fillStyle='rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(57,-60,7,3,0.6,0,RH.TAU); c.fill();
+  c.restore();
   // 首と頭の細部
   c.save(); c.translate(26,-54); c.rotate(na); c.translate(-26,54);
   c.fillStyle=rhShade(coat,-0.38); c.beginPath(); c.ellipse(65,-57.5,3.8,2.6,0.5,0,RH.TAU); c.fill();   // 鼻先
-  c.fillStyle='#120c08'; c.beginPath(); c.ellipse(66.3,-59.2,1,0.7,0.6,0,RH.TAU); c.fill();            // 鼻の穴
+  c.fillStyle='#120c08'; c.beginPath(); c.ellipse(66,-59.4,1.3,0.9,0.6,0,RH.TAU); c.fill();            // 鼻の穴
   c.fillStyle='#120c08'; c.beginPath(); c.ellipse(53.5,-72.5,1.6,1.15,-0.3,0,RH.TAU); c.fill();       // 目
   c.fillStyle='rgba(255,255,255,.7)'; c.beginPath(); c.arc(54,-73,0.4,0,RH.TAU); c.fill();
   c.fillStyle=rhShade(coat,-0.15); c.beginPath(); c.moveTo(45,-78); c.lineTo(41.5,-85); c.lineTo(48,-79.5); c.closePath(); c.fill();   // 耳
@@ -1790,6 +1819,7 @@ function drawRealHorse(c,x,y,k,ph,o){
   for(let i=1;i<=5;i++){ const t=i/5, px=45-t*34, py=-79+t*18.5, fl=3+Math.sin(RH.TAU*p*2+i*1.3)*0.9;
     c.quadraticCurveTo(px+3-fl*0.3,py-fl*1.1,px-fl*0.6,py-fl*0.55); c.quadraticCurveTo(px+1,py-0.6,px+0.5,py+0.8); }
   c.lineTo(11,-59); c.quadraticCurveTo(28,-66,44,-76.5); c.closePath(); c.fill();
+  c.fillStyle=o.mane; c.beginPath(); c.moveTo(46,-79); c.quadraticCurveTo(53,-80,54,-76); c.quadraticCurveTo(50,-77,46,-76); c.closePath(); c.fill();   // 前髪
   // 頭絡(とうらく)とメンコ
   c.strokeStyle='#1d1d1d'; c.lineWidth=1; c.beginPath(); c.moveTo(47,-78); c.lineTo(51,-64.5); c.lineTo(62.5,-57); c.stroke();
   c.beginPath(); c.moveTo(58,-66); c.lineTo(61,-70); c.stroke();
@@ -1807,13 +1837,15 @@ function drawRealHorse(c,x,y,k,ph,o){
   rhLeg(c,fb[0],fb[1],rhFore(pfn),ForeL,ForeW,nearCol,low,sockC(1));
   // ---- 騎手(モンキー乗り) ----
   c.save(); c.translate(0,bob); c.translate(cx,cy); c.rotate(pitch); c.translate(-cx,-cy);
+  const JS=1.32, J=v=>({x:2+(v.x-2)*JS,y:-61+(v.y+61)*JS});      // 騎手は少し大きめに描く(鞍のあたりを中心に拡大)
   const pz=Math.sin(RH.TAU*p*1), pm=push*pz;
   const hip={x:0-pm*1.2,y:-72+Math.abs(pm)*0.6}, sh={x:13+pm*1.6,y:-77.5+pm*0.8}, hd={x:18.8+pm*1.6,y:-81.5+pm*0.6};
   const hand={x:31+pm*4,y:-68+pm*1.2}, elbow={x:(sh.x+hand.x)/2+1,y:Math.max(sh.y,hand.y)+2.5};
   const knee={x:11,y:-67}, ankle={x:6,y:-58};
   const L=(w,col,...pts)=>{ c.strokeStyle=col; c.lineWidth=w; c.beginPath(); c.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) c.lineTo(pts[i].x,pts[i].y); c.stroke(); };
-  // 手綱
-  c.strokeStyle='#3b2a1c'; c.lineWidth=0.9; c.beginPath(); c.moveTo(hand.x,hand.y); c.quadraticCurveTo((hand.x+62)/2,(hand.y-57)/2+3,62,-57); c.stroke();
+  // 手綱(手の位置は拡大したあとの位置)
+  const H2=J(hand); c.strokeStyle='#3b2a1c'; c.lineWidth=0.9; c.beginPath(); c.moveTo(H2.x,H2.y); c.quadraticCurveTo((H2.x+62)/2,(H2.y-57)/2+3,62,-57); c.stroke();
+  c.save(); c.translate(2,-61); c.scale(JS,JS); c.translate(-2,61);
   // 脚
   L(4.2,'#f3f1ea',hip,knee); L(3.6,'#151515',knee,ankle);
   c.fillStyle='#151515'; c.beginPath(); c.ellipse(7.5,-57,3,1.4,0,0,RH.TAU); c.fill();
@@ -1839,6 +1871,7 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.beginPath(); c.moveTo(hd.x+2.7,hd.y-0.2); c.lineTo(hd.x+5.3,hd.y+0.3); c.lineTo(hd.x+2.9,hd.y+0.9); c.closePath(); c.fill();   // つば
   c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=0.45; c.beginPath(); c.arc(hd.x,hd.y,3.3,Math.PI*0.92,Math.PI*2.08); c.stroke();
   c.fillStyle='#2a3440'; c.fillRect(hd.x+1.3,hd.y+0.5,2.4,1.1);   // ゴーグル
+  c.restore();
   c.restore();
   c.restore();
 }
@@ -1875,14 +1908,15 @@ function drawReal(run,c,cs){
   const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs), anyFin=run.some(r=>r.fin!==null);
   // ---- カメラ ----
   let tv,tc;
-  if(S.win){ tv=24; tc=run[S.win.i].x-3; }
-  else if(!S.gate||!S.gate.open||lead<1){ tv=30; tc=-1.5; }
-  else if(run.every(r=>r.fin!==null)){ tv=Math.min(52,Math.max(26,lead-last+12)); tc=(lead+last)/2+2; }
-  else { tv=Math.min(50,Math.max(22,(lead-last)+12)); tc=lead-tv*0.22; }
+  // 映る幅(m)。広めに映して画面の流れをゆるやかにし、そのぶん馬を大きめ(HX倍)に描く
+  if(S.win){ tv=32; tc=run[S.win.i].x-4; }
+  else if(!S.gate||!S.gate.open||lead<1){ tv=38; tc=-2; }
+  else if(run.every(r=>r.fin!==null)){ tv=Math.min(64,Math.max(34,lead-last+16)); tc=(lead+last)/2+2; }
+  else { tv=Math.min(62,Math.max(30,(lead-last)+16)); tc=lead-tv*0.22; }
   const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc});
   if(Math.abs(tc-RC.c)>80){ RC.c=tc; RC.v=tv; }
-  RC.v+=(tv-RC.v)*0.035; RC.c+=(tc-RC.c)*0.14;
-  const ppm=W/RC.v;
+  RC.v+=(tv-RC.v)*0.03; RC.c+=(tc-RC.c)*0.12;
+  const ppm=W/RC.v, HX=1.32, BX=1.75*HX;
   const Ty=t=>yF+(yN-yF)*t, Ts=t=>sF+(sN-sF)*t;
   const X=(m,t)=>W/2+sg*(m-RC.c)*ppm*Ts(t);
   const mAt=(px,t)=>RC.c+sg*(px-W/2)/(ppm*Ts(t));       // 画面のx → コース上の距離
@@ -1921,13 +1955,13 @@ function drawReal(run,c,cs){
   if(dirt){ gr.addColorStop(0,'#a77a4c'); gr.addColorStop(1,'#c4945f'); } else { gr.addColorStop(0,'#3f8a33'); gr.addColorStop(1,'#5aa845'); }
   c.fillStyle=gr; c.fillRect(0,Ty(t0),W,Ty(t1)-Ty(t0));
   // 刈り目(芝)・ハローの跡(ダート)
-  const SW=8;
+  const SW=14;
   range(t0,SW,SW*2).forEach(m=>{ if(Math.round(m/SW)%2) return;
-    c.fillStyle=dirt?'rgba(255,240,215,.06)':'rgba(255,255,255,.07)';
+    c.fillStyle=dirt?'rgba(255,240,215,.045)':'rgba(255,255,255,.05)';
     c.beginPath(); c.moveTo(X(m,t0),Ty(t0)); c.lineTo(X(m+SW,t0),Ty(t0)); c.lineTo(X(m+SW,t1),Ty(t1)); c.lineTo(X(m,t1),Ty(t1)); c.closePath(); c.fill(); });
   if(dirt){ c.strokeStyle='rgba(90,55,25,.13)'; c.lineWidth=1.2; [0.12,0.3,0.46,0.63,0.8,0.95].forEach(t=>{ c.beginPath(); c.moveTo(0,Ty(t)); c.lineTo(W,Ty(t)); c.stroke(); });
-    c.fillStyle='rgba(80,50,22,.22)'; range(0.5,1.5,2).forEach(m=>{ const q=rkHash('d'+m), t=(q%1000)/1000*1.08-0.04, s=Ts(t)*ppm; c.fillRect(X(m,t),Ty(t),Math.max(1,s*0.08),Math.max(1,s*0.04)); }); }
-  else { c.fillStyle='rgba(20,60,15,.16)'; range(0.5,1.6,2).forEach(m=>{ const q=rkHash('g'+m), t=(q%1000)/1000*1.08-0.04, s=Ts(t)*ppm; c.fillRect(X(m,t),Ty(t),Math.max(1,s*0.12),Math.max(1,s*0.03)); }); }
+    c.fillStyle='rgba(80,50,22,.22)'; range(0.5,3,4).forEach(m=>{ const q=rkHash('d'+m), t=(q%1000)/1000*1.08-0.04, s=Ts(t)*ppm; c.fillRect(X(m,t),Ty(t),Math.max(1,s*0.08),Math.max(1,s*0.04)); }); }
+  else { c.fillStyle='rgba(20,60,15,.16)'; range(0.5,3.2,4).forEach(m=>{ const q=rkHash('g'+m), t=(q%1000)/1000*1.08-0.04, s=Ts(t)*ppm; c.fillRect(X(m,t),Ty(t),Math.max(1,s*0.12),Math.max(1,s*0.03)); }); }
   // ゴール板の線
   const gx0=X(D,t0), gx1=X(D,t1); if(Math.max(gx0,gx1)>-20&&Math.min(gx0,gx1)<W+20){ c.strokeStyle='rgba(255,255,255,.9)'; c.lineWidth=Math.max(2,ppm*0.12); c.beginPath(); c.moveTo(gx0,Ty(t0)); c.lineTo(gx1,Ty(t1)); c.stroke(); }
   // ---- 内ラチ(奥の柵)と標識 ----
@@ -1948,9 +1982,9 @@ function drawReal(run,c,cs){
   // ---- 馬 ----
   const list=S.horses.map((h,i)=>({h,i,r:run[i],t:0.07+0.86*(run[i].lane??i/Math.max(1,S.H-1))})).filter(o=>!(S.win&&o.i!==S.win.i));
   list.sort((a,b)=>a.t-b.t);
-  list.forEach(o=>{ const k=0.025*ppm*Ts(o.t), x=X(o.r.x-1.75,o.t), y=Ty(o.t); drawRealShadow(c,x,y,k,sg); if(S.glow&&S.glow.has(o.h.no)) glowAt(c,x,y+k*2,k*55); });
+  list.forEach(o=>{ const k=0.025*HX*ppm*Ts(o.t), x=X(o.r.x-BX,o.t), y=Ty(o.t); drawRealShadow(c,x,y,k,sg); if(S.glow&&S.glow.has(o.h.no)) glowAt(c,x,y+k*2,k*55); });
   list.forEach(o=>{
-    const k=0.025*ppm*Ts(o.t), x=X(o.r.x-1.75,o.t), y=Ty(o.t), r=o.r, L=realLook(o.h);
+    const k=0.025*HX*ppm*Ts(o.t), x=X(o.r.x-BX,o.t), y=Ty(o.t), r=o.r, L=realLook(o.h);
     if(x<-k*120||x>W+k*120) return;
     const run1=r.fin===null||(r.post||0)>0.3;
     if(dirt&&run1){ for(let j=0;j<5;j++){ const q=((r.ph*0.3+j*0.2)%1); c.fillStyle=`rgba(170,128,84,${0.5*(1-q)})`; c.beginPath(); c.arc(x-sg*k*(30+q*40),y-k*(2+q*14),k*(2+q*6),0,RH.TAU); c.fill(); } }
@@ -1960,7 +1994,7 @@ function drawReal(run,c,cs){
   if(gateOn) drawRealGate(true);
   // 馬番の札と着順
   c.textAlign='center'; c.textBaseline='middle';
-  if(S.gate&&S.gate.open) list.forEach(o=>{ const k=0.025*ppm*Ts(o.t), x=X(o.r.x-1.75,o.t)+sg*k*18, y=Ty(o.t)-k*97; if(x<-40||x>W+40) return;
+  if(S.gate&&S.gate.open) list.forEach(o=>{ const k=0.025*HX*ppm*Ts(o.t), x=X(o.r.x-BX,o.t)+sg*k*18, y=Ty(o.t)-k*104; if(x<-40||x>W+40) return;
     const [bg,fg]=wk(o.h.no), s=Math.max(9,Math.min(16,k*6.5));
     c.fillStyle=bg; c.strokeStyle='rgba(0,0,0,.55)'; c.lineWidth=1.5; rr(c,x-s,y-s*0.8,s*2,s*1.6,s*0.35); c.fill(); c.stroke();
     c.fillStyle=fg; c.font=`900 ${Math.round(s*1.15)}px ${cs('--f-body')}`; c.fillText(o.h.no,x,y+1);
@@ -1979,7 +2013,7 @@ function drawReal(run,c,cs){
   // ラチ:t の位置に、高さ h(m)の柵を描く
   function railLine(t,h,col,lw){
     const y=Ty(t), s=Ts(t)*ppm, top=y-h*s;
-    c.fillStyle=col; range(t,2.5,3).forEach(m=>{ const x=X(m,t); c.fillRect(x-Math.max(1,s*0.04),top,Math.max(2,s*0.08),h*s); });
+    c.fillStyle=col; range(t,5,6).forEach(m=>{ const x=X(m,t); c.fillRect(x-Math.max(1,s*0.04),top,Math.max(2,s*0.08),h*s); });
     c.fillStyle='rgba(0,0,0,.18)'; c.fillRect(0,top+Math.max(2,lw*s*0.03),W,Math.max(1.5,s*0.05));
     c.fillStyle=col; c.fillRect(0,top-Math.max(1.5,s*0.05),W,Math.max(3,s*0.11));
   }
@@ -2595,7 +2629,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=25;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=26;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
