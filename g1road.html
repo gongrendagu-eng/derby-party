@@ -1913,11 +1913,15 @@ function drawReal(run,c,cs){
   else if(!S.gate||!S.gate.open||lead<1){ tv=38; tc=-2; }
   else if(run.every(r=>r.fin!==null)){ tv=44; tc=(lead+last)/2+2; }
   else { tv=42; tc=lead-9; }
-  const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc,t:now});
+  const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc,t:now,hist:[]});
   const dt=Math.min(0.1,Math.max(0,(now-RC.t)/1000)); RC.t=now;
-  if(Math.abs(tc-RC.c)>80){ RC.c=tc; RC.v=tv; }
-  RC.c+=(tc-RC.c)*(1-Math.exp(-dt/0.15));      // 先頭にぴったりついていく(ほんの少しだけ遅れる)
-  RC.v+=(tv-RC.v)*(1-Math.exp(-dt/1.5));       // 場面が変わったときだけ、ゆっくりズーム
+  if(Math.abs(tc-RC.c)>80){ RC.c=tc; RC.v=tv; RC.hist=[]; }
+  // カメラは「この1秒の平均の速さ」で動かし、先頭とのずれは1秒くらいかけてゆっくり直す
+  // (先頭の速さの細かな上下や、iPadに届く位置のとびとびをカメラに伝えない)
+  const WIN=S.padView?1800:1100, FIX=S.padView?1.6:1.0;    // iPadは位置がとびとびに届くので、長めにならす
+  RC.hist.push([now,tc]); while(RC.hist.length>2&&now-RC.hist[0][0]>WIN) RC.hist.shift();
+  const h0=RC.hist[0], span=(now-h0[0])/1000, vel=span>0.25?(tc-h0[1])/span:0;
+  if(dt>0){ RC.c+=vel*dt+(tc-RC.c)*(1-Math.exp(-dt/FIX)); RC.v+=(tv-RC.v)*(1-Math.exp(-dt/1.5)); }
   const ppm=W/RC.v, HX=1.32, BX=1.75*HX;
   const Ty=t=>yF+(yN-yF)*t, Ts=t=>sF+(sN-sF)*t;
   const X=(m,t)=>W/2+sg*(m-RC.c)*ppm*Ts(t);
@@ -2631,7 +2635,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=27;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=28;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -4073,8 +4077,12 @@ function prSample(){
   else if(i<0){ A=b[b.length-2]; B=b[b.length-1]; const sp=B.t-A.t||300; k=1+Math.min(1,(T-B.t)/sp); }   // 届くのが遅れたら少しだけ先読み
   else { A=b[i-1]; B=b[i]; k=(T-A.t)/((B.t-A.t)||1); }
   const lerp=(a,c)=>a+(c-a)*k;
+  // 位置(x)は前後4点を使ったなめらかな曲線でつなぐ(折れ線だと0.3秒ごとに速さが変わって、横からの映像ではカクつく)
+  const ia=b.indexOf(A), A0=b[ia-1]||A, B1=b[ia+2]||B, kk=Math.min(1,Math.max(0,k));
+  const cr=(p0,p1,p2,p3)=>{ const t=kk, t2=t*t, t3=t2*t; return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3); };
+  const smx=j=>k>1||A===B?lerp(A.x[j],B.x[j]):cr(A0.x[j],A.x[j],B.x[j],B1.x[j]);
   return {B,run:B.x.map((x,j)=>{ const pl=Math.max(A.pl[j]||0,k>=1?(B.pl[j]||0):0);
-    return {x:lerp(A.x[j],B.x[j])/10,ph:lerp(A.p[j],B.p[j])/100,lane:lerp(A.l[j],B.l[j])/1000,state:B.s[j]==='1'?'spurt':'cruise',place:pl||null,fin:pl?1:null}; })};
+    return {x:smx(j)/10,ph:lerp(A.p[j],B.p[j])/100,lane:lerp(A.l[j],B.l[j])/1000,state:B.s[j]==='1'?'spurt':'cruise',place:pl||null,fin:pl?1:null}; })};
 }
 function prFrame(){
   PR.raf=0;
