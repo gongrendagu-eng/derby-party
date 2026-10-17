@@ -580,6 +580,9 @@ html.padmode{-webkit-text-size-adjust:100%}
 #padModal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
 #padModal .box{background:#141a38;border:3px solid var(--gl);border-radius:16px;max-width:820px;width:100%;max-height:90vh;overflow:auto;padding:14px 16px}
 .ikm .cost{font-family:var(--arc);font-size:14px;color:var(--led)}
+.ikm .sdt{font-size:11px;color:#ffd84a;font-weight:700}.ikm .sdt.no{color:#9aa4d6;font-weight:400}
+.trnow{margin:4px 0 2px;padding:8px 12px;border-radius:10px;background:rgba(214,72,126,.18);border:1px solid rgba(214,72,126,.5);font-size:13px;color:#ffd6e6}.trnow b{color:#fff}
+.a-list li .hx .bloom{color:#ffd84a}.a-list li .hx .sprout{color:#9be59b}
 .ikm:disabled{opacity:.4}
 .elist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .elist li{display:flex;align-items:center;gap:8px;background:#0a0d1f;border:1px solid #2a3060;border-radius:8px;padding:6px 8px}
@@ -704,6 +707,10 @@ html.padmode{-webkit-text-size-adjust:100%}
 .ab-coin.c1{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#c02c64}
 .ab-coin.c10{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#2456c9}
 .ab-coin.c100{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#1f8a4c}
+.ab-coin.c50{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#7a3fc0}
+.ab-coin.c200{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#c96a12}
+.ab-coin.c500{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#b0182c}
+.ab-coin.c999{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55) 0,transparent 45%),linear-gradient(135deg,#d9a300,#8a6400);color:#fff8d0}
 .ab-coin.on{opacity:1;transform:scale(1.1);border-style:solid;box-shadow:0 0 0 3px var(--gl),0 0 18px var(--gl)}
 .ab-fn{display:grid;grid-template-columns:repeat(3,auto);gap:6px}
 .ab-btn{min-width:74px;height:52px;padding:0 6px;border-radius:10px;font-family:var(--arc);font-size:15px;color:#fff;border:2px solid #9aa4d6;background:linear-gradient(#4a5290,#232a58);
@@ -876,8 +883,9 @@ html.padmode{-webkit-text-size-adjust:100%}
 .bx-deck .bx-btn{height:46px;min-width:96px;font-size:14px}
 .bx-deck .bx-denom{flex-direction:row;gap:8px}
 .bx-deck .bx-denom small{writing-mode:horizontal-tb;max-width:4.5em;line-height:1.2;text-align:right}
-.bx-deck .ab-coin{width:46px;height:46px}
-.bx-deck .ab-coin b{font-size:16px}.bx-deck .ab-coin span{font-size:9px}
+.bx-deck .ab-coin{width:44px;height:44px;border-width:3px}
+.bx-deck .ab-coin b{font-size:15px}.bx-deck .ab-coin span{font-size:9px}
+.bx-deck .bx-denom>div{gap:5px}
 .bx-deck .ab-coin.on{transform:scale(1.08)}
 .bx-deck .bx-hint{font-size:12px;line-height:1.35}
 .bx-leds{flex-direction:row;gap:14px}
@@ -1244,11 +1252,37 @@ const SPURT={逃げ:380,先行:430,差し:480,追込:420};
 const SUS={逃げ:290,先行:380,差し:470,追込:430};
 const KICKB={逃げ:1,先行:1.03,差し:1.12,追込:1.18};   // 直線の差し脚の強さ(脚質ごと)
 const SPREAD=0.22;   // 馬どうしの差の大きさ
-// 個性:ki=末脚自慢(差し・追込) os=大逃げ・押し切り型 ot=大逃げ・一か八か型(逃げ)
-const TRAIT={ki:{name:'末脚自慢',st:['差し','追込']},os:{name:'大逃げ(押し切り)',st:['逃げ']},ot:{name:'大逃げ(一か八か)',st:['逃げ']}};
-const trOk=(tr,style)=>!!(tr&&TRAIT[tr]&&TRAIT[tr].st.includes(style));
-// 個性をランダムに決める(逃げなら大逃げ、差し・追込なら末脚自慢)
-const rollTr=(style,p)=>style==='逃げ'?(Math.random()<p?(Math.random()<0.5?'os':'ot'):''):(style==='差し'||style==='追込')?(Math.random()<p?'ki':''):'';
+// 個性(1頭に1つ)。st:身につく脚質(nullはどの脚質でも)、race:レースで効く、cm:出馬表の短評、desc:説明、seed:芽が育つ特訓
+const TRAIT={
+  ki:{name:'末脚自慢',st:['差し','追込'],race:1,cm:'直線一気の末脚',desc:'道中は後ろで脚をため、直線だけ一段と伸びる',seed:'ki'},
+  os:{name:'大逃げ(押し切り)',st:['逃げ'],race:1,cm:'大逃げで押し切る',desc:'スタートから飛ばして大きく離し、そのまま粘る',seed:'oni'},
+  ot:{name:'大逃げ(一か八か)',st:['逃げ'],race:1,cm:'大逃げ!残るか垂れるか',desc:'大逃げするが、直線で止まることが多い。残ればあっと驚く逃げ切り',seed:'oni'},
+  gu:{name:'勝負根性',st:null,race:1,cm:'競り合いに強い',desc:'直線で他の馬と並ぶと、負けじと伸びる',seed:'gu'},
+  sk:{name:'坂巧者',st:null,race:1,cm:'坂をものともしない',desc:'ゴール前の急坂で止まらず、逆に伸びる(中山・阪神・中京・東京で効く)',seed:'sk'},
+  ga:{name:'好スタート',st:['逃げ','先行'],race:1,cm:'ゲートが速い',desc:'スタートがうまく、楽にいい位置を取れる',seed:'ga'},
+  st:{name:'ステイヤー',st:null,race:1,cm:'長丁場で真価',desc:'2200m以上のレースでバテにくく、よく伸びる',seed:'st'},
+  sp:{name:'快速',st:null,race:1,cm:'短距離のスピード自慢',desc:'1400m以下のレースで速い',seed:'sp'},
+  mk:{name:'捲り上手',st:['差し','追込'],race:1,cm:'3コーナーから捲る',desc:'3〜4コーナーで外から一気に上がっていく',seed:'mk'},
+  bg:{name:'大舞台に強い',st:null,race:1,cm:'G1でこそ',desc:'G1レースになると実力以上の力を出す',seed:'bg'},
+  iron:{name:'鉄の脚',st:null,race:0,cm:'',desc:'疲れにくい(調教とレースの疲れが少ない)',seed:'iron'}};
+const SEEDN={ki:'末脚',oni:'大逃げ',gu:'勝負根性',sk:'坂',ga:'スタート',st:'スタミナ',sp:'スピード',mk:'捲り',bg:'大舞台',iron:'丈夫さ'};
+const trOk=(tr,style)=>!!(tr&&TRAIT[tr]&&(!TRAIT[tr].st||TRAIT[tr].st.includes(style)));
+// 個性をランダムに決める(own:プレイヤーの馬。レースに関係しない個性も出る)
+const rollTr=(style,p,own)=>{ if(Math.random()>=p) return ''; const c=Object.keys(TRAIT).filter(k=>trOk(k,style)&&(own||TRAIT[k].race)); return c.length?pick(c):''; };
+// 個性の芽(seed)から、その馬が身につける個性を決める(大逃げは2種類のどちらか)
+const seedTr=(sd,style)=>{ const c=Object.keys(TRAIT).filter(k=>TRAIT[k].seed===sd&&trOk(k,style)); return c.length?pick(c):''; };
+// 個性の効き(調整用)。同じ馬で個性あり・なしを数千レース比べて、効く条件のレースで勝率が約1.6〜2倍になるようにしてある
+let TRS={gu:0.08,sk:0.09,ga:0.15,gaSus:150,ga2:0.04,st:0.04,stSus:200,sp:0.042,mk:0.09,bg:0.05};
+const SEED_MIN=58;              // 特訓でその能力がこれ以上あると、個性の芽が育つ
+const bloomP=pts=>pts<5?0:Math.min(0.25,(pts-4)*0.03);   // 芽の育ち具合から開花する確率(同じ特訓を平均10回ほどで開花)
+// 個性の芽を育てる。開花したら個性の名前を、芽が見えてきたら'hint'を返す
+function addSeed(h,sd,n){
+  if(h.tr||!n) return null; const tr0=seedTr(sd,h.style); if(!tr0) return null;
+  h.sd=h.sd||{}; const was=h.sd[sd]||0; h.sd[sd]=was+n;
+  if(Math.random()<bloomP(h.sd[sd])){ h.tr=tr0; h.sd={}; return {bloom:tr0}; }
+  if(was<4&&h.sd[sd]>=4) return {hint:sd};
+  return null;
+}
 // 調整用の数値(直線の追い込み・大逃げ)
 let BUNCH_K=0.035, BUNCH_MAX=0.35, BUNCH_ONI=0.5;           // 3〜4コーナーで後ろの馬が差を詰める強さ
 let KIRE=0.07;                                   // 末脚自慢:直線での上乗せ(同じ馬で比べて勝率が約2倍)
@@ -1283,19 +1317,26 @@ function stepRun(run,t){
     const tr=h.tr, SW0=S.crs?S.crs.sw:500;
     if(rm>r.sp){ dev+=CRUISE[h.style]*1600/D*(p<0.25?1.7:0.45); r.state='cruise';
       if(tr==='os'||tr==='ot') dev+=ONIGE[tr]*1600/D*(p<0.55?1:0.35);      // 大逃げ:スタートから飛ばして後ろを大きく離す
-      if(tr==='ki') dev-=0.012; }                                            // 末脚自慢:道中は後ろでじっと脚をためる(位置取りはスタート直後に大きく決まる)
+      if(tr==='ki') dev-=0.012;                                             // 末脚自慢:道中は後ろでじっと脚をためる(位置取りはスタート直後に大きく決まる)
+      if(tr==='ga'&&p<0.12) dev+=TRS.ga; }                                  // 好スタート:スタート直後に前へ
     else {
       const run2=r.sp-rm;
       dev+=CRUISE[h.style]*0.3*1600/D+h.kick*(KICKB[h.style]||1)*(S.crs?S.crs.kick:1)*Math.pow(1/r.sf,0.5)*Math.min(1,run2/120);   // 直線が短くても差し脚が届くように
       if(tr==='ki'&&rm<SW0) dev+=KIRE*Math.min(1,(SW0-rm)/80);              // 末脚自慢:直線だけ一段と伸びる
       if(tr==='ot'&&!r.tb&&rm<SW0*TURBO_AT) dev-=TURBO_DROP*Math.min(1,(SW0*TURBO_AT-rm)/100);   // 一か八か型:たいてい直線で止まる
-      const sus=h.sus+(tr==='ki'?150:tr==='os'?ONIGE_SUS_S:tr==='ot'&&r.tb?ONIGE_SUS:0);
+      if(tr==='gu'&&rm<SW0){ for(let q=0;q<run.length;q++){ if(q!==i&&run[q].fin===null&&Math.abs(run[q].x-r.x)<2.4){ dev+=TRS.gu; break; } } }   // 勝負根性:並ばれると伸びる
+      const sus=h.sus+(tr==='ki'?150:tr==='os'?ONIGE_SUS_S:tr==='ot'&&r.tb?ONIGE_SUS:tr==='st'&&D>=2200?TRS.stSus:tr==='ga'?TRS.gaSus:0);
       if(run2>sus*r.sf){ dev-=Math.min(0.22,0.22*(run2-sus*r.sf)/180)*(h.gt!=null?Math.max(0.5,1-(h.gt-50)/150):1); r.state='fade'; } else r.state='spurt';
-      if(S.crs&&S.crs.hill&&rm<300) dev-=S.crs.hill*(r.state==='fade'?0.03:0.008)*(h.pw!=null?Math.max(0.3,1-(h.pw-50)/90):1);   // ゴール前の坂:バテた馬ほど止まる
+      if(S.crs&&S.crs.hill&&rm<300) dev+=tr==='sk'?S.crs.hill*TRS.sk:-S.crs.hill*(r.state==='fade'?0.03:0.008)*(h.pw!=null?Math.max(0.3,1-(h.pw-50)/90):1);   // ゴール前の坂:バテた馬ほど止まる(坂巧者は逆に伸びる)
     }
     // 3〜4コーナー(残り1000〜500m):後ろの馬が差を詰めて馬群が固まる(直線で逆転が起きやすくなる)
     const SWc=S.crs?S.crs.sw:500;
     if(rm<SWc+500&&rm>SWc) dev+=Math.max(0,Math.min(BUNCH_MAX,(LX-r.x)*BUNCH_K));
+    if(tr==='mk'&&rm<SWc+450&&rm>SWc*0.6) dev+=TRS.mk;                      // 捲り上手:3〜4コーナーで外から上がる
+    if(tr==='st'&&D>=2200&&p>0.5) dev+=TRS.st;                              // ステイヤー:長い距離の後半
+    if(tr==='sp'&&D<=1400) dev+=TRS.sp;
+    if(tr==='ga'&&rm<SWc) dev+=TRS.ga2;                                     // 好スタート:楽に前につけた分、直線に余力                                     // 快速:短い距離
+    if(tr==='bg'&&S.spec&&S.spec.g==='G1'&&p>0.4) dev+=TRS.bg;              // 大舞台に強い:G1の後半
     // ゴール前の伸び・粘りはレースごとに少し変わる(最後まで分からないように)
     if(rm<SWc*0.9) dev+=r.late*2*Math.min(1,(SWc*0.9-rm)/(SWc*0.5));
     const v=step*(1+SPREAD*dev);
@@ -1347,9 +1388,7 @@ function makeComment(h){
   if(h.style==='追込'&&!h.tr) c.push(h.mak?'早めに動いて捲る':'直線一気に注目');
   if(h.style==='差し'&&h.mak) c[c.length-1]='3コーナーから捲る構え';
   if(h.cls===1) c.unshift('実績上位');
-  if(h.tr==='ki') c.unshift('直線一気の末脚');
-  if(h.tr==='os') c.unshift('大逃げで押し切る');
-  if(h.tr==='ot') c.unshift('大逃げ!残るか垂れるか');
+  if(h.tr&&TRAIT[h.tr]&&TRAIT[h.tr].cm) c.unshift(TRAIT[h.tr].cm);
   if(h.jsk>=5&&Math.random()<0.6) c.splice(1,0,'名手が騎乗');
   if(S.surf==='dirt'&&h.sf!=='both') c.splice(1,0,h.sf==='dirt'?'ダート巧者':'初ダートで割引');
   if(S.surf==='turf'&&h.sf==='dirt'&&Math.random()<0.6) c.splice(1,0,'芝は未知数');
@@ -2637,7 +2676,7 @@ function updateLanes(run,t){
     const rm=D-r.x;
     let want=r.row*ROWW;
     if(rm<SW&&r.state==='spurt'&&rk[i]>=3) want=(r.row+r.wide)*ROWW;               // 直線:後ろの馬は外に持ち出して追い込む
-    if(h.mak&&r.state==='spurt'&&rm>=SW) want=Math.max(want,(3+r.wide*0.5)*ROWW);  // 捲り:3〜4コーナーで外から上がっていく
+    if((h.mak||h.tr==='mk'&&rm<SW+450)&&(r.state==='spurt'||h.tr==='mk')&&rm>=SW) want=Math.max(want,(3+r.wide*0.5)*ROWW);  // 捲り:3〜4コーナーで外から上がっていく
     want=Math.min(LANE_MAX,want);
     // 横にいる馬(前後が1頭分以内)がいる列は通れない
     const pass=row=>{ for(let j=0;j<n;j++){ if(j===i) continue; const o=run[j]; if(Math.abs(o.lane-row)<ROWW*0.9&&Math.abs(dx(o)-dx(r))<len*0.95) return false; } return true; };
@@ -2807,11 +2846,14 @@ function runRace(){
         if(rem<=200&&!said200) crowd(1,1.5);
         // 見せ場の実況(捲り・バテ・直線一気)
         const rk={}; ord.forEach((i,k)=>rk[i]=k);
+        // 個性の芽のための記録:直線入口の順位と、中間地点での先頭とリード
+        if(!S.stRank&&rem<=G.sw) S.stRank={...rk};
+        if(!S.halfL&&rem<=S.dist/2) S.halfL={i:ord[0],gap:run[ord[0]].x-run[ord[1]].x};
         if(t%20===0){ S.horses.forEach((h,i)=>{ const hist=(hs[i]=hs[i]||[]); hist.push(rk[i]); if(hist.length>5) hist.shift(); }); }
         let ev=null;
         S.horses.forEach((h,i)=>{
           const r=run[i];
-          if(h.mak&&r.state==='spurt'&&!r.saidMak&&rk[i]>=3){ r.saidMak=true; ev=ev||`${h.no}番 ${h.name}、外から捲ってきた!`;
+          if((h.mak&&r.state==='spurt'||h.tr==='mk'&&rem<G.sw+420&&rem>G.sw)&&!r.saidMak&&rk[i]>=3){ r.saidMak=true; ev=ev||`${h.no}番 ${h.name}、外から捲ってきた!`;
             if(!S.cam&&!S.fx.cut) S.fx.cut={no:h.no,name:h.name,text:'外から捲った!',t0:performance.now()}; }
           if(r.state==='fade'&&!r.saidFade&&rk[i]<=2){ r.saidFade=true; ev=ev||`${h.no}番 ${h.name}、脚色が鈍った!`; }
           const hist=hs[i]; if(S.cam&&hist&&hist.length>=4&&hist[0]-rk[i]>=3&&!r.saidSurge){ r.saidSurge=true; ev=`${h.no}番 ${h.name}、大外から一気に伸びてくる!`; }
@@ -2875,7 +2917,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=35;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=36;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3175,7 +3217,7 @@ function pickRoster(n,sp,taken){
 function rosterHorse(no,r,sp){
   const D=sp.dist, k=(D-1600)/1400, style=r.st, young=sp.c==='y'||sp.c==='yt', fem=sp.c==='f'||sp.c==='ft';
   const mak=(style==='差し'||style==='追込')&&Math.random()<0.35;
-  const tr=r.tr||rollTr(style,0.08), h={no,name:r.n,style,mak:mak&&tr!=='ki',tr:trOk(tr,style)?tr:'',cls:0,apt:r.a,sf:r.f,cond:gauss()*0.01,coat:COATS[r.c],rk:r.k,star:r.p==='S'&&r.k==='G1',
+  const tr=r.tr||rollTr(style,0.08), h={no,name:r.n,style,mak:mak&&tr!=='ki'&&tr!=='mk',tr:trOk(tr,style)?tr:'',cls:0,apt:r.a,sf:r.f,cond:gauss()*0.01,coat:COATS[r.c],rk:r.k,star:r.p==='S'&&r.k==='G1',
     kick:KICK[style]+gauss()*0.012,spurt:mak?Math.max(600,Math.min(1100,D*(0.42+Math.random()*0.15))):SPURT[style],sus:SUS[style]+({逃げ:-60,先行:-30,差し:20,追込:40}[style])*k};
   if(h.mak) h.sus=h.spurt*(0.56-0.06*k+Math.random()*0.3); else if(mak) h.spurt=SPURT[style];
   const up=CRANK[r.k]>CRANK[sp.g];
@@ -3233,16 +3275,32 @@ const TRAIN={
   fast:{g:'基本',name:'追い切り',ic:'⚡',up:{sp:7,kc:3},fat:3,cost:30,desc:'スピード↑↑ 瞬発力↑'},
   gate:{g:'基本',name:'ゲート練習',ic:'🚪',up:{kc:6,sp:2},fat:1,cost:20,desc:'瞬発力↑↑ スピード↑'},
   dirt:{g:'基本',name:'ダート走',ic:'🟫',up:{pw:5,gt:4},fat:2,cost:20,desc:'パワー↑ 根性↑'},
+  turf:{g:'基本',name:'芝コース追い',ic:'🌱',up:{sp:5,sta:4},fat:2,cost:25,desc:'スピード↑ スタミナ↑'},
+  trot:{g:'基本',name:'ダク(速歩)',ic:'🐾',up:{pw:3,sta:3,gt:2},fat:1,cost:15,desc:'パワー↑ スタミナ↑ 根性↑(少し)'},
   canter:{g:'軽め',name:'キャンター',ic:'🌤️',up:ALL5(1),fat:1,cost:10,desc:'全部↑(少し)'},
   pool:{g:'軽め',name:'プール',ic:'🏊',up:{sta:5,pw:2},fat:0,cost:25,desc:'スタミナ↑ 疲れない'},
   walk:{g:'軽め',name:'引き運動',ic:'🚶',up:{gt:3},fat:-1,cost:5,desc:'根性↑(少し) 疲れ少し回復'},
+  swim:{g:'軽め',name:'海で遠泳',ic:'🌊',up:{sta:6,gt:2},fat:1,cost:35,desc:'スタミナ↑ 根性↑(少し)'},
+  stretch:{g:'軽め',name:'ストレッチ',ic:'🤸',up:{kc:3},fat:-1,cost:10,desc:'瞬発力↑(少し) 疲れ少し回復'},
   hill2:{g:'ハード',name:'坂路2本',ic:'🏔️',up:{pw:12,sta:6},fat:4,cost:45,desc:'パワー↑↑↑ スタミナ↑↑'},
   strong:{g:'ハード',name:'強め追い切り',ic:'🔥',up:{sp:12,kc:6},fat:4,cost:50,desc:'スピード↑↑↑ 瞬発力↑↑'},
   long:{g:'ハード',name:'長めの追い切り',ic:'🛤️',up:{sta:12,gt:6},fat:4,cost:45,desc:'スタミナ↑↑↑ 根性↑↑'},
   camp:{g:'ハード',name:'特訓合宿',ic:'🏕️',up:ALL5(4),fat:4,cost:70,desc:'全部↑↑'},
   rest:{g:'休む',name:'休養',ic:'🛁',up:{},fat:-3,cond:1,cost:0,desc:'疲れが取れて調子↑'},
   massage:{g:'休む',name:'マッサージ',ic:'💆',up:{},fat:-2,cond:2,cost:20,desc:'調子↑↑ 疲れ回復'},
-  farm:{g:'休む',name:'放牧',ic:'🌿',up:{},fat:-6,cond:1,cost:40,desc:'疲れが全部取れる'}};
+  farm:{g:'休む',name:'放牧',ic:'🌿',up:{},fat:-6,cond:1,cost:40,desc:'疲れが全部取れる'},
+  onsen:{g:'休む',name:'温泉療養',ic:'♨️',up:{},fat:-5,cond:2,cost:60,desc:'疲れがほぼ取れて調子↑↑'},
+  // 特訓:能力も伸びるが、くり返すと「個性の芽」が育ち、まれに個性が開花する(key:芽が育つのに必要な能力)
+  shimai:{g:'特訓',name:'しまい重点',ic:'💨',up:{kc:8,sp:3},fat:3,cost:45,seed:'ki',key:'kc',desc:'瞬発力↑↑ スピード↑'},
+  hana:{g:'特訓',name:'ハナ取り特訓',ic:'🚀',up:{sp:8,sta:3},fat:3,cost:45,seed:'oni',key:'sp',desc:'スピード↑↑ スタミナ↑'},
+  sanbon:{g:'特訓',name:'3頭併せ',ic:'🐎🐎',up:{gt:9,pw:3},fat:4,cost:55,seed:'gu',key:'gt',desc:'根性↑↑↑ パワー↑'},
+  sakadash:{g:'特訓',name:'坂路ダッシュ',ic:'⛰️💨',up:{pw:9,kc:3},fat:3,cost:45,seed:'sk',key:'pw',desc:'パワー↑↑↑ 瞬発力↑'},
+  dash:{g:'特訓',name:'スタートダッシュ',ic:'🏁',up:{kc:6,sp:5},fat:3,cost:45,seed:'ga',key:'kc',desc:'瞬発力↑↑ スピード↑↑'},
+  longrun:{g:'特訓',name:'超ロング走',ic:'🗺️',up:{sta:10,gt:3},fat:4,cost:50,seed:'st',key:'sta',desc:'スタミナ↑↑↑ 根性↑'},
+  sprint:{g:'特訓',name:'短距離スパート',ic:'⚡⚡',up:{sp:10,kc:2},fat:3,cost:50,seed:'sp',key:'sp',desc:'スピード↑↑↑ 瞬発力↑'},
+  makuri:{g:'特訓',name:'コーナー加速',ic:'🌀',up:{sta:5,sp:5},fat:3,cost:45,seed:'mk',key:'sta',desc:'スタミナ↑↑ スピード↑↑'},
+  mogi:{g:'特訓',name:'模擬レース',ic:'🏟️',up:ALL5(3),fat:4,cost:80,seed:'bg',key:'gt',desc:'全部↑↑'},
+  beach:{g:'特訓',name:'砂浜トレーニング',ic:'🏖️',up:{pw:6,sta:5},fat:2,cost:55,seed:'iron',key:'pw',desc:'パワー↑↑ スタミナ↑↑'}};
 const TIER={cheap:{name:'お手頃',price:150,base:40,cap:63},mid:{name:'中堅',price:400,base:45,cap:72},blue:{name:'良血',price:1000,base:49,cap:82}};
 const CONDN={'':'',f:'牝馬限定',y:'若駒限定',yt:'若駒トライアル',ft:'牝馬トライアル'};
 // レースカレンダー(48レースで1周)。[格, 条件, 芝/ダート, 距離, 競馬場, レース名, 1着賞金]
@@ -3333,6 +3391,7 @@ function normalize(w){
   Object.values(w.horses).forEach(h=>{ h.rec=h.rec||{}; const r=h.rec; r.runs=r.runs||0; r.w=Array.isArray(r.w)?[r.w[0]||0,r.w[1]||0,r.w[2]||0]:[0,0,0]; r.prize=r.prize||0;
     r.wins=Object.assign({OP:0,G3:0,G2:0,G1:0},r.wins||{}); r.big=Array.isArray(r.big)?r.big.filter(Boolean):Object.values(r.big||{});
     if(h.tr==null) h.tr=rollTr(h.style,0.15);      // 版32までの馬にも個性を(15%)
+    h.sd=h.sd||{};
     h.fat=h.fat||0; h.cond=h.cond||0; h.entry=h.entry??null; h.fee=h.fee||0; h.trainedR=h.trainedR||0; h.peak=h.peak||{...h.st};
     if(h.lv==null) h.lv=Math.max(0,w.R-(h.born||w.R)); });      // 版23までの馬は、いまの年齢をそのまま引き継ぐ
   Object.values(w.players).forEach(p=>p.preg.forEach(f=>{ if(f.left==null) f.left=Math.max(1,(f.due||w.R)-w.R); }));
@@ -3381,7 +3440,7 @@ function marketHorse(tier){
 }
 function refreshMarket(){ W.market=[];  /* 個性は買ってみるまで分からない(買うと決まる) */ ['cheap','cheap','mid','mid','blue','blue'].forEach(t=>W.market.push(marketHorse(t))); W.marketR=W.R; }
 function addHorse(pid,src,price0){
-  const h={id:nid('h'),owner:pid,name:src.name,sex:src.sex,coat:src.coat,style:src.style,tr:src.tr!=null?src.tr:rollTr(src.style,0.15),apt:src.apt,sf:src.sf,grow:src.grow,st:{...src.st},caps:{...src.caps},peak:{...src.st},
+  const h={id:nid('h'),owner:pid,name:src.name,sex:src.sex,coat:src.coat,style:src.style,tr:src.tr!=null?src.tr:rollTr(src.style,0.05,true),sd:{},apt:src.apt,sf:src.sf,grow:src.grow,st:{...src.st},caps:{...src.caps},peak:{...src.st},
     born:W.R,lv:0,fat:0,cond:0,status:'active',entry:null,fee:0,trainedR:0,price0,sire:src.sire||'',dam:src.dam||'',
     rec:{runs:0,w:[0,0,0],prize:0,wins:{OP:0,G3:0,G2:0,G1:0},yt2:false,ft2:false,big:[]}};
   W.horses[h.id]=h; return h;
@@ -3392,7 +3451,7 @@ function makeFoal(sire,dam){
   const bonus=Math.min(6,(sire.g1+dam.g1)*2), cap=clamp((sire.cap+dam.cap)/2+gauss()*5+bonus,50,100), st={}, caps={};
   SK.forEach(k=>{ const pa=(sire.st[k]+dam.st[k])/2; st[k]=clamp(Math.round(28+0.25*pa+gauss()*4),25,62); caps[k]=clamp(Math.round(cap+(pa-70)*0.3+gauss()*6),st[k]+6,100); });
   const from=()=>Math.random()<0.5?sire:dam, style=Math.random()<0.65?from().style:pick(STYLES), ptr=[sire.tr,dam.tr].find(t=>trOk(t,style));
-  return {tr:ptr&&Math.random()<0.5?ptr:rollTr(style,0.15),name:'',sex:Math.random()<0.5?'牡':'牝',coat:rint(COATS.length),style,
+  return {tr:ptr&&Math.random()<0.35?ptr:rollTr(style,0.05,true),name:'',sex:Math.random()<0.5?'牡':'牝',coat:rint(COATS.length),style,
     apt:clamp(Math.round((sire.apt+dam.apt)/2+gauss()*0.6),0,3),sf:sire.sf===dam.sf&&Math.random()<0.8?sire.sf:Math.random()<0.7?from().sf:pickSf(),
     grow:Math.random()<0.7?from().grow:pickGrow(),st,caps,sire:sire.name,dam:dam.name};
 }
@@ -3410,7 +3469,7 @@ function raceHorse(h,no,sp){
 }
 function cpuHorse(no,name,sp){
   const h=makeHorse(no,name,sp.dist), young=sp.c==='y'||sp.c==='yt', fem=sp.c==='f'||sp.c==='ft';
-  h.tr=h.mak?'':rollTr(h.style,0.08);
+  h.tr=rollTr(h.style,0.08); if(h.tr==='ki'||h.tr==='mk') h.mak=false;
   h.s=CPU_S[sp.g]-(young?0.5:0)-(fem?0.2:0)+gauss()*CPU_SD; h.cls=h.s>CPU_S[sp.g]+0.7?1:0;
   h.sex=fem?'牝':Math.random()<0.25?'牝':'牡'; h.age=young?pick([2,3]):pick([3,4,4,5,5,6]);
   h.kg=BASEKG-(h.sex==='牝'&&!fem?2:0)+((sp.g==='OP'||sp.g==='G3')&&h.cls?1+rint(2):0); h.s-=(h.kg-BASEKG)*KGK; h.owner='';
@@ -3546,10 +3605,24 @@ function finish(order){
     // レースの経験(上位ほど伸びる)
     const ex=place===0?3:place<3?2:1, key=pick(SK), add=Math.min(ex,Math.max(0,h.caps[key]-h.st[key]));
     if(add>0){ h.st[key]+=add; h.peak[key]=Math.max(h.peak[key]||0,h.st[key]); gains[key]=add; }
-    const fat0=h.fat; h.fat=Math.min(6,h.fat+2);
+    // レースの内容で個性の芽が育つ(個性がまだない馬だけ)
+    const sds=[], stk=S.stRank&&S.stRank[i];
+    if(place===0&&stk!=null&&stk>=S.H/2) sds.push(['ki',2]);                          // 後ろから差し切った
+    if(place===0&&S.halfL&&S.halfL.i===i&&S.halfL.gap>=9.6) sds.push(['oni',2]);   // 4馬身以上離して逃げ切った
+    if(place<3&&stk!=null&&stk-place>=5) sds.push(['mk',1]);                          // 直線で5頭以上抜いた
+    if(place<=1&&sp.g==='G1') sds.push(['bg',2]);
+    if(place===0&&S.dist>=2200) sds.push(['st',1]);
+    if(place===0&&S.dist<=1400) sds.push(['sp',1]);
+    if(place===0&&S.crs.hill>=0.7) sds.push(['sk',1]);
+    if(place===0&&S.photo) sds.push(['gu',2]);                                         // 写真判定の競り合いを制した
+    if(place<3&&S.halfL&&S.halfL.i===i) sds.push(['ga',1]);
+    if(place<3&&h.fat>=4) sds.push(['iron',1]);                                        // 疲れていても好走
+    let bloom=null, hint=null; sds.forEach(([k,n])=>{ const r2=addSeed(h,k,n); if(r2&&r2.bloom) bloom=r2.bloom; else if(r2&&r2.hint) hint=k; });
+    if(bloom&&p) news(`✨ ${p.name}さんの${h.name}に個性「${TRAIT[bloom].name}」が開花!`);
+    const fat0=h.fat; h.fat=Math.min(6,h.fat+(h.tr==='iron'?1:2));
     if(p){ p.coins+=prize; p.prize+=prize; if(place===0){ p.wins++; if(sp.g==='G1') p.g1++; }
       const beat=order.slice(place+1).map(j=>S.horses[j]).filter(x=>x.rk==='G1').map(x=>x.name);
-      res(h.owner).horses.push({name:h.name,place:place+1,prize,ek:key,ea:add,f0:fat0,f1:h.fat,beat});
+      res(h.owner).horses.push({name:h.name,place:place+1,prize,ek:key,ea:add,f0:fat0,f1:h.fat,beat,bl:bloom?TRAIT[bloom].name:'',hn:hint?SEEDN[hint]:''});
       const bigBeat=order.slice(place+1).map(j=>S.horses[j]).filter(x=>x.star);
       if(bigBeat.length&&!(place===0&&sp.g==='G1')) news(`🔥 ${p.name}さんの${h.name}が${bigBeat[0].name}に先着!`);
       if(place===0&&sp.g==='G1') news(`🏆 ${p.name}さんの${h.name}が${sp.name}(G1)を制覇!`);
@@ -3687,12 +3760,20 @@ function doTrain(h,menu){
     const add=f<=0?0:Math.max(1,Math.round(v*gk*luck*f*(0.85+Math.random()*0.3)));
     h.st[k]=Math.min(h.caps[k],h.st[k]+add); h.peak[k]=Math.max(h.peak[k]||0,h.st[k]);
     gains.push(add?`${STATS.find(s=>s[0]===k)[1]}+${add}`:`${STATS.find(s=>s[0]===k)[1]}は限界`); });
-  h.fat=clamp(h.fat+M.fat,0,6);
+  h.fat=clamp(h.fat+(h.tr==='iron'&&M.fat>=2?M.fat-1:M.fat),0,6);
+  // 特訓:個性の芽を育てる(大成功は2つ、いまひとつは育たない)
+  let note='';
+  if(M.seed&&!h.tr){ const sn=STATS.find(x=>x[0]===M.key)[1], can=seedTr(M.seed,h.style);
+    if(!can) note=` (${h.style}の馬は「${SEEDN[M.seed]}」の個性は身につきません)`;
+    else if(h.st[M.key]<SEED_MIN) note=` (${sn}が${SEED_MIN}以上になると個性の芽が育ちます)`;
+    else { const r2=addSeed(h,M.seed,luck>1?2:luck<1?0:1);
+      if(r2&&r2.bloom){ note=` ✨個性「${TRAIT[r2.bloom].name}」が開花!`; const pl=W.players[h.owner]; if(pl) news(`✨ ${pl.name}さんの${h.name}に個性「${TRAIT[r2.bloom].name}」が開花!`); }
+      else if(r2&&r2.hint) note=` 🌱${SEEDN[M.seed]}の素質が見えてきた…`; } }
   if(M.cond) h.cond=Math.min(2,h.cond+M.cond); else if(h.fat>=4) h.cond=Math.max(-2,h.cond-1);
   else if(Math.random()<0.2) h.cond=clamp(h.cond+(Math.random()<0.5?1:-1),-2,2);
   h.trainedR=W.R;
   const word=!hasUp?'疲れが取れた':luck>1?'大成功!':luck<1?'いまひとつ…':'成功';
-  return `${M.ic}${M.name} ${word} ${hasUp?gains.join('、'):`調子:${COND[h.cond+2]}`}`;
+  return `${M.ic}${M.name} ${word} ${hasUp?gains.join('、'):`調子:${COND[h.cond+2]}`}${note}`;
 }
 
 
@@ -3807,7 +3888,7 @@ function pushState(){
 // 一人ひとりの画面用の情報(合言葉は送らない)
 function hView(h){
   const R=W.R, inCard=!!(S.horses&&S.phase!=='result'&&S.horses.some(x=>x.hid===h.id)); const inNext=inNextCard(h);
-  const v={id:h.id,tr:trOk(h.tr,h.style)?h.tr:'',name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
+  const v={id:h.id,tr:trOk(h.tr,h.style)?h.tr:'',sd:h.sd||{},sdr:Object.fromEntries(SK.map(k=>[k,(h.st[k]||0)>=SEED_MIN])),name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
     e:h.status==='active'?effOf(h,R):h.peak,fat:h.fat,cond:h.cond,status:h.status,entry:h.entry,ex:h.ex||null,inCard,inNext,nextR:inNext?S.next.R:null,trained:h.trainedR===R,rec:h.rec,
     room:roomWord(h),sell:sellPrice(h),sire:h.sire||'',dam:h.dam||''};
   if(h.status==='active') v.elig=Array.from({length:6},(_,k)=>{ const sp=specOf(R+1+k); return {R:sp.R,why:S.next&&S.next.R===sp.R?'出走表が決まりました(受付終了)':canEnter(h,sp),kg:kgOf(h.sex,h.rec.wins,sp)}; });
@@ -4094,7 +4175,7 @@ function tkList(st,list,res,del){
     <div class="a-sum">合計 ${yen(tkTotal(list))}</div>`;
 }
 /* 馬券(アーケード風):出馬表とオッズが1つの表。オッズの枠をタッチすると、その場でBETされる */
-const DENOM=[1,10,100];
+const DENOM=[1,10,50,100,200,500,999];
 const BTABS=[['tf','単・複'],['qn','馬連'],['ex','馬単'],['wd','ワイド'],['t3f','3連複'],['t3','3連単'],['ku','一口馬主']];
 // 券種ごとの選び方(列)と切りかえ
 const BSUB={qn:['流し','ボックス','人気順'],wd:['流し','ボックス','人気順'],ex:['フォーメーション','ボックス','人気順'],t3f:['1頭軸','2頭軸','ボックス','人気順'],t3:['フォーメーション','ボックス','人気順']};
@@ -4236,7 +4317,6 @@ function betClick(t,d){
     betSend(); padRender(); return true; }
   if(d.betk){ betAdd([{type:P.mode,hs:d.betk.split('-').map(Number),amt:P.unit}]); return true; }
   if(d.betall!==undefined){ const list=bcombos(); if(list.length>120){ toast('一度にBETできるのは120点までです'); return true; }
-    if(list.length*P.unit>=200&&!confirm(`${list.length}点に${P.unit}枚ずつ、合計${yen(list.length*P.unit)}をBETしますか?`)) return true;
     betAdd(list.map(c=>({type:P.mode,hs:c.hs,amt:P.unit}))); return true; }
   if(d.cancel!==undefined){ if(!P.hist.length) return true; P.opt=JSON.parse(P.hist.pop()); P.optRace=st.R; betSend(); sfx(300,0.08); toast('直前のBETを取り消しました'); padRender(); return true; }
   if(d.done!==undefined){ const list=myTickets();
@@ -4424,7 +4504,7 @@ function padResult(st,pv){
       ${COMBO.map(t=>wkeys[t].map((k,j)=>`<li><b>${j?'':BT[t].name}</b>${k.split('-').map(x=>aNum(+x)).join(BT[t].ord?'→':'')}<span class="am">${((O[t]||{})[k]||0).toFixed(1)}倍</span></li>`).join('')).join('')}</ul>`; }
   const sn=k=>(STATS.find(s=>s[0]===k)||['',''])[1];
   const hsHTML=hs.length?`<div class="a-panel"><h3>自分の馬の成績</h3><ul class="a-list">${hs.map(x=>`<li class="hxli ${x.place<=3?'hit':''}"><span class="ps">${x.place}着</span><span>${esc(x.name)}</span><span class="am">${x.prize?'賞金 +'+yen(x.prize):''}</span>
-    <span class="hx">${x.ek?(x.ea>0?`<b class="up">経験:${sn(x.ek)}+${x.ea}</b>`:`経験:${sn(x.ek)}は限界`):''}${x.f1!=null?`<span>疲れ:${fatW(x.f0)}→<b class="${x.f1>=4?'warn':''}">${fatW(x.f1)}</b></span>`:''}${x.f1>=4?'<span class="warn">次は休ませるのがおすすめ</span>':''}</span></li>`).join('')}</ul></div>`:'';
+    <span class="hx">${x.ek?(x.ea>0?`<b class="up">経験:${sn(x.ek)}+${x.ea}</b>`:`経験:${sn(x.ek)}は限界`):''}${x.f1!=null?`<span>疲れ:${fatW(x.f0)}→<b class="${x.f1>=4?'warn':''}">${fatW(x.f1)}</b></span>`:''}${x.f1>=4?'<span class="warn">次は休ませるのがおすすめ</span>':''}${x.bl?`<b class="bloom">✨個性「${esc(x.bl)}」が開花!</b>`:x.hn?`<span class="sprout">🌱${esc(x.hn)}の素質が見えてきた…</span>`:''}</span></li>`).join('')}</ul></div>`:'';
   const kuHTML=ku?`<div class="a-panel"><h3>一口馬主</h3><ul class="a-list"><li class="${ku.pay>0?'hit':''}"><span class="ps">${ku.place}着</span>${aNum(ku.no)}<span>${esc(ku.name)}</span><span class="am">${ku.pay>0?'賞金 +'+yen(ku.pay):'賞金なし'}</span></li></ul><div class="a-sum">購入 ${yen(ku.price)} → 収支 ${ku.pay-ku.price>=0?'+':''}${yen(ku.pay-ku.price)}</div></div>`:'';
   $('#padMain').innerHTML=`<div class="a-res">${head}<div class="cols">${hsHTML}${kuHTML}<div class="a-panel"><h3>買った馬券</h3>${tkList(st,tickets,r.tk,false)}</div>
     <div class="a-panel"><h3>着順</h3><ul class="a-list">${all}</ul></div><div class="a-panel"><h3>払い戻し(オッズ)</h3>${pay}</div></div>
@@ -4507,16 +4587,26 @@ function padInfo(st,pv){
       ・斤量:基本${BASEKG}kg。牝馬は混合レースで-2kg。OP・G3では重賞1勝ごとに+1kg<br>・登録料:OP ${FEE.OP}・G3 ${FEE.G3}・G2 ${FEE.G2}・G1 ${FEE.G1}枚<br>
       ・馬の年齢と子馬の誕生は、あなたが参加していた(iPadをつないでいた・馬券を買った)レースの数で進みます。休んでいる間は年をとりません<br>
       ・一口馬主:1レース1頭まで。5着までに入ると、その着順の賞金がもらえます(プレイヤーの馬なら、本物の馬主に売れた分の1割のファンボーナス)<br>
+      ・個性(1頭に1つ):${Object.values(TRAIT).map(x=>x.name).join('・')}。買った馬にはまれに付いています。「特訓」をくり返したり、レースで目立つ勝ち方をしたりすると「個性の芽」が育ち、まれに開花します<br>
       ・馬券は1点${MAXBET}枚まで。コインが${AID.under}枚未満になると${AID.amount}枚の支給(${AID.every}レースに1回)</div></div>
     <div class="a-panel" style="margin-top:10px"><h3>ニュース</h3><ul class="a-list">${st.news.slice(0,8).map(n=>`<li><span class="dim">第${n.R}戦</span><span>${esc(n.t)}</span></li>`).join('')}</ul></div></div></div>`;
 }
 /* ポップアップ(調教・出走登録・種付け) */
 function openModal(html){ P.modal=true; const el=$('#padModal'); el.innerHTML=`<div class="box">${html}<div class="mbtns"><button class="hb" data-close>閉じる</button></div></div>`; el.hidden=false; }
 function closeModal(){ P.modal=null; const el=$('#padModal'); if(el){ el.hidden=true; el.innerHTML=''; } }
+// 特訓のボタンに出す「個性の芽」の様子
+function seedTag(h,M){
+  if(h.tr) return '';
+  const can=seedTr(M.seed,h.style), n=(h.sd||{})[M.seed]||0, sn=STATS.find(x=>x[0]===M.key)[1];
+  if(!can) return `<span class="sdt no">${h.style}は×</span>`;
+  if(h.sdr&&!h.sdr[M.key]) return `<span class="sdt no">${sn}${SEED_MIN}以上で芽が育つ</span>`;
+  return `<span class="sdt">${SEEDN[M.seed]}の芽 ${n<1?'—':n<4?'🌱':n<8?'🌿':'🌳'}</span>`;
+}
 function trainModal(h){
   openModal(`<div class="ptitle">${esc(h.name)}の調教 <small>1レースのあいだに1回 ・ 疲れ:${fatW(h.fat)} 調子:${COND[h.cond+2]}</small></div>
-    ${['基本','軽め','ハード','休む'].map(g=>`<h3 class="mh">${g}${g==='ハード'?'<small>(よく伸びるけど疲れる・失敗しやすい)</small>':g==='軽め'?'<small>(疲れにくい)</small>':''}</h3>
-    <div class="ikmenu tr">${Object.entries(TRAIN).filter(([,M])=>M.g===g).map(([k,M])=>`<button class="ikm" data-train="${k}" data-hid="${h.id}" ${P.pv.coins<M.cost?'disabled':''}><span class="ic">${M.ic}</span><b>${M.name}</b><span class="up">${M.desc}</span><span class="ft">${M.fat>0?'疲れ '+'●'.repeat(M.fat):M.fat===0?'疲れ なし':'疲れ 回復'}</span><span class="cost">${M.cost?yen(M.cost):'無料'}</span></button>`).join('')}</div>`).join('')}
+    <div class="trnow">${h.tr&&TRAIT[h.tr]?`この馬の個性:<b>★${TRAIT[h.tr].name}</b> ${TRAIT[h.tr].desc}(個性は1頭に1つ)`:'個性:まだなし。「特訓」をくり返すと個性の芽が育ち、まれに開花します'}</div>
+    ${['基本','軽め','ハード','特訓','休む'].map(g=>`<h3 class="mh">${g}${g==='ハード'?'<small>(よく伸びるけど疲れる・失敗しやすい)</small>':g==='軽め'?'<small>(疲れにくい)</small>':g==='特訓'?'<small>(個性の芽が育つ。開花はめったにない)</small>':''}</h3>
+    <div class="ikmenu tr">${Object.entries(TRAIN).filter(([,M])=>M.g===g).map(([k,M])=>`<button class="ikm" data-train="${k}" data-hid="${h.id}" ${P.pv.coins<M.cost?'disabled':''}><span class="ic">${M.ic}</span><b>${M.name}</b><span class="up">${M.desc}</span>${M.seed?seedTag(h,M):''}<span class="ft">${M.fat>0?'疲れ '+'●'.repeat(M.fat):M.fat===0?'疲れ なし':'疲れ 回復'}</span><span class="cost">${M.cost?yen(M.cost):'無料'}</span></button>`).join('')}</div>`).join('')}
     <p class="iksub" style="margin-top:10px">疲れが「多い」のまま調教すると伸びが悪く、調子も落ちます。年をとるほど伸びにくくなります。</p>`);
 }
 function entryModal(h){
@@ -4648,20 +4738,69 @@ const FX={
     fxHorse(c,300,232,104,0,col,{noRider:true,gait:0,noBob:true}); fxPerson(c,285,262,[-24+Math.sin(t*10)*8,-34+Math.cos(t*10)*6],'#e85a8a');
     for(let i=0;i<5;i++){ const k=(t*0.7+i/5)%1; fxText(c,i%2?'♥':'✦',250+i*30,200-k*90,16+k*10,i%2?`rgba(255,90,140,${(1-k).toFixed(2)})`:`rgba(255,200,40,${(1-k).toFixed(2)})`); }
     fxText(c,'マッサージ',320,40,30); }},
+  turf:{dur:2.8,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#8fd0ff','#e8f7ff'],hills:[185,'#86c086',80],ground:'#4f9e4c',label:'芝コース追い',lines:2})},
+  trot:{dur:2.6,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#bfe1ff','#f2f8ff'],hills:[190,'#9bcf8f',30],ground:'#6db562',rsp:200,ph:8,push:0,label:'ダク(速歩)'})},
+  swim:{dur:2.8,draw:(c,t,col)=>{ fxSky(c,'#7fc8ff','#dff3ff'); c.fillStyle='#2f8fd8'; c.fillRect(0,170,FXW,FXH-170);
+    fxHorse(c,320,238+Math.sin(t*4)*4,104,t*6,col,{noRider:true,gait:0.6});
+    c.fillStyle='rgba(30,120,210,.8)'; c.beginPath(); c.moveTo(0,FXH); for(let x=0;x<=FXW;x+=10) c.lineTo(x,236+Math.sin(x/28+t*5)*7); c.lineTo(FXW,FXH); c.fill();
+    c.fillStyle='rgba(255,255,255,.8)'; for(let i=0;i<9;i++){ const x=FXW-((t*120+i*90)%(FXW+60)); c.fillRect(x,250+(i%3)*25,36,3); } fxText(c,'🌊 海で遠泳',320,40,30); }},
+  stretch:{dur:2.6,draw:(c,t,col)=>{ fxSky(c,'#fff1d6','#fffaf0'); fxGround(c,250,'#e8d6b0');
+    fxHorse(c,300,232,104,0,col,{noRider:true,gait:0,noBob:true}); fxPerson(c,420,262,[-34+Math.sin(t*3)*14,-30+Math.cos(t*3)*10],'#1f9a4a');
+    fxText(c,'ストレッチ',320,40,30); fxText(c,['いち','に','さん','し'][Math.floor(t*2)%4],460,160,24,'#1f9a4a'); }},
+  onsen:{dur:3.0,draw:(c,t,col)=>{ fxSky(c,'#4a5a7a','#a8b8d8'); c.fillStyle='#6b7a8a'; for(let i=0;i<9;i++){ c.beginPath(); c.arc(40+i*75,250,34,0,7); c.fill(); }
+    fxHorse(c,320,240,104,0,col,{noRider:true,gait:0,noBob:true}); c.fillStyle='rgba(120,200,220,.85)'; c.fillRect(0,262,FXW,FXH-262);
+    for(let i=0;i<7;i++){ const k=(t*0.5+i/7)%1; c.fillStyle=`rgba(255,255,255,${(0.5*(1-k)).toFixed(2)})`; c.beginPath(); c.arc(140+i*60+Math.sin(k*6+i)*12,262-k*170,14+k*18,0,7); c.fill(); }
+    fxText(c,'♨️ 温泉療養',320,40,30); }},
+  shimai:{dur:2.8,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#ffb36a','#ffe6b8'],hills:[185,'#c9a46a',90],ground:'#4f9e4c',rsp:500+Math.min(1,t/1.6)*700,ph:10+t*3,push:Math.min(1,t/1.4),lines:Math.floor(t*3),
+    label:t<1.4?'しまい重点…':'ラスト1ハロン!'})},
+  hana:{dur:2.8,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#7cc6ff','#d7f0ff'],hills:[185,'#86c086',90],ground:'#4f9e4c',rsp:900,hx:400,lines:3,label:'ハナを取れ!',
+    others:[[()=>-230-t*30,6,1,0.85],[()=>-300-t*30,12,2,0.82]]})},
+  sanbon:{dur:2.8,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#9fd5ff','#e6f4ff'],hills:[180,'#8cc48a',70],ground:'#5fa857',rsp:650,hx:330,label:'3頭併せ',
+    others:[[()=>-30+Math.sin(t*2)*16,-52,1,0.78],[()=>24+Math.sin(t*2+1)*18,46,2,1.12]],extra:(c,t)=>{ if(t>1.8) fxText(c,'競り勝て!',320,90,24,'#ffd23a'); }})},
+  sakadash:{dur:2.8,draw:(c,t,col)=>fxHillScene(c,t,col,2,t<1.4?'坂路ダッシュ':'駆け上がれ!')},
+  dash:{dur:2.8,draw:(c,t,col)=>{ const go=t>0.8, k=go?Math.min(1,(t-0.8)/0.8):0;
+    fxRun(c,t,col,{sky:['#9fd5ff','#e6f4ff'],ground:'#5fa857',rsp:go?250+k*700:0,ph:go?8+k*8:0,push:k,hx:200+k*160,lines:go?3:0,label:go?'スタート!':'ゲートの中…',
+      dust:go?'rgba(160,130,90,A)':null,extra:(c,t)=>{ if(!go){ c.fillStyle='#e8e8e8'; c.fillRect(250,160,16,110); c.fillRect(250,160,90,10); } }}); }},
+  longrun:{dur:3.2,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#9fd5ff','#f0fbff'],hills:[170,'#7fb87a',40],trees:200,tsp:160,ground:'#5fa857',rsp:420,label:'超ロング走 '+(1+Math.floor(t*2.2))+'000m',push:0.5})},
+  sprint:{dur:2.6,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#ff8a5a','#ffe0a0'],hills:[190,'#c98a4a',160],ground:'#4f9e4c',rsp:1200,ph:20,push:1,lines:7,label:'短距離スパート!'})},
+  makuri:{dur:2.8,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#9fd5ff','#e6f4ff'],hills:[185,'#86c086',70],ground:'#4f9e4c',rsp:700,hx:330,lines:2,label:'コーナーで一気に!',
+    others:[[()=>170-t*160,-24,1,0.86],[()=>260-t*160,-30,2,0.84],[()=>350-t*160,-20,3,0.88]]})},
+  mogi:{dur:3.0,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#7cc6ff','#d7f0ff'],hills:[185,'#86c086',90],ground:'#4f9e4c',rsp:800,hx:330,lines:2,label:'模擬レース',
+    others:[[()=>-90+Math.sin(t*1.3)*40,-30,1,0.86],[()=>-170+Math.sin(t)*30,-18,2,0.9],[()=>60+Math.sin(t*1.7)*30,26,3,1.05]],
+    extra:(c,t)=>{ c.fillStyle='#c8102e'; c.fillRect(30,60,6,90); c.fillStyle='#ffd23a'; c.fillRect(36,60,40,24); }})},
+  beach:{dur:2.8,draw:(c,t,col)=>fxRun(c,t,col,{sky:['#7fd0ff','#f0fbff'],sun:'#ffd23a',sea:true,ground:'#e8d29a',gy:220,surf:false,rail:false,ph:11,push:0.8,
+    dust:'rgba(220,190,120,A)',label:'🏖️ 砂浜トレーニング'})},
   farm:{dur:3.0,draw:(c,t,col)=>{ fxSky(c,'#8fd0ff','#e8f7ff'); c.fillStyle='#fff'; [[100,70],[420,50],[560,95]].forEach(([x,y],i)=>{ const cx=(x+t*12*(i+1))%(FXW+80)-40; c.beginPath(); c.arc(cx,y,22,0,7); c.arc(cx+24,y-8,26,0,7); c.arc(cx+50,y,20,0,7); c.fill(); });
     fxHills(c,175,0,'#7fc46f'); fxGround(c,215,'#69b55c'); c.fillStyle='#fff'; c.fillRect(0,200,FXW,5); for(let x=10;x<FXW;x+=60) c.fillRect(x,180,6,30);
     fxHorse(c,260+t*30,262,96,t*4,col,{noRider:true,gait:0.25});
     for(let i=0;i<3;i++){ const bx=420+i*50+Math.sin(t*3+i)*30, by=150+Math.cos(t*4+i*2)*25; c.fillStyle=['#ffd23a','#ff8ac0','#ffffff'][i]; c.beginPath(); c.ellipse(bx-5,by,6,9*Math.abs(Math.sin(t*15+i)),0,0,7); c.ellipse(bx+5,by,6,9*Math.abs(Math.sin(t*15+i)),0,0,7); c.fill(); }
     fxText(c,'🌿 放牧',320,40,30); }}
 };
-function fxHillScene(c,t,col,n){
+// 新しい調教の場面(共通の作り):背景・地面・ほかの馬・スピード線などを選んで組み立てる
+function fxRun(c,t,col,o){
+  fxSky(c,o.sky[0],o.sky[1]);
+  if(o.sun){ c.fillStyle=o.sun; c.beginPath(); c.arc(520,80,38,0,7); c.fill(); }
+  if(o.sea){ c.fillStyle='#2f8fd8'; c.fillRect(0,150,FXW,70); c.fillStyle='rgba(255,255,255,.75)'; for(let i=0;i<7;i++){ const x=(i*120-(t*70)%120); c.fillRect(x,165+(i%3)*14,50,3); } }
+  if(o.hills) fxHills(c,o.hills[0],t*(o.hills[2]||60),o.hills[1]);
+  if(o.trees) fxTrees(c,o.trees,t*(o.tsp||200),'#3f8a43');
+  fxGround(c,o.gy||218,o.ground);
+  if(o.surf){ c.fillStyle='rgba(255,255,255,.85)'; c.beginPath(); c.moveTo(0,o.gy||218); for(let x=0;x<=FXW;x+=16) c.lineTo(x,(o.gy||218)+6+Math.sin(x/40+t*4)*5); c.lineTo(FXW,o.gy||218); c.fill(); }
+  if(o.rail!==false) fxRail(c,(o.gy||218)-3,t*(o.rsp||600),o.railc);
+  if(o.dust) fxDust(c,t,(o.hx||320)-50,300,o.dust);
+  const oh=o.others||[], drawO=a=>a.forEach(([dx,dy,ci,sc])=>fxHorse(c,(o.hx||320)+dx(t),262+dy,(sc||1)*96,t*(o.ph||14)+ci,COATS[ci%COATS.length],{push:0.7,silk:['#1f6fd8','#1f9a4a','#c8102e','#7a3fc0'][ci%4]}));
+  drawO(oh.filter(x=>x[1]<=0)); fxHorse(c,o.hx||320,262,102,t*(o.ph||14),col,{push:o.push??0.8}); drawO(oh.filter(x=>x[1]>0));   // 奥の馬→自分の馬→手前の馬
+  if(o.lines) fxSpeed(c,t,o.lines);
+  if(o.extra) o.extra(c,t);
+  fxText(c,o.label,320,40,30);
+}
+function fxHillScene(c,t,col,n,label){
   fxSky(c,'#8fd3ff','#e2f5ff'); fxHills(c,170,t*40,'#97c98f');
   c.save(); c.translate(FXW/2,FXH*0.7); c.rotate(-0.17);
   c.fillStyle='#8a6a45'; c.fillRect(-FXW,22,FXW*2,FXH); c.fillStyle='#f4f1e8'; c.fillRect(-FXW,16,FXW*2,5);
   for(let x=-FXW-((t*(n>1?320:260))%90);x<FXW;x+=90) c.fillRect(x,16,5,-24);
   fxHorse(c,0,-28,100,t*(n>1?15:13),col,{push:n>1?1:0.6,noLines:n<2});
   c.restore();
-  fxText(c,n>1?(t<1.7?'坂路 1本目':'坂路 2本目!'):'坂路',320,40,30);
+  fxText(c,label||(n>1?(t<1.7?'坂路 1本目':'坂路 2本目!'):'坂路'),320,40,30);
 }
 let FXRUN=null;
 function trainFx(menu,h,name){
@@ -4675,9 +4814,9 @@ function trainFx(menu,h,name){
   const R={el,result(r){ res=r; show(); }};
   const show=()=>{ if(!done||!res) return;
     const box=el.querySelector('.fxres'), ok=res.ok, m=String(res.msg||'');
-    const big=!ok?'できませんでした':/大成功/.test(m)?'大成功!':/いまひとつ/.test(m)?'いまひとつ…':/疲れが取れた/.test(m)?'リフレッシュ!':'成功!';
+    const big=!ok?'できませんでした':/開花/.test(m)?'✨個性開花!':/大成功/.test(m)?'大成功!':/いまひとつ/.test(m)?'いまひとつ…':/疲れが取れた/.test(m)?'リフレッシュ!':'成功!';
     const detail=ok?m.replace(/^\S+\s+(大成功!|いまひとつ…|成功|疲れが取れた)\s*/,''):m;
-    box.innerHTML=`<b class="${/大成功/.test(big)?'gold':!ok||/いまひとつ/.test(big)?'bad':''}">${big}</b><p>${esc(detail)}</p><button class="hb gold" data-fxok>OK</button>`;
+    box.innerHTML=`<b class="${/大成功|開花/.test(big)?'gold':!ok||/いまひとつ/.test(big)?'bad':''}">${big}</b><p>${esc(detail)}</p><button class="hb gold" data-fxok>OK</button>`;
     box.hidden=false; };
   const frame=now=>{ if(!alive) return; const t=(now-t0)/1000;
     if(t>=dur&&!done){ done=true; show(); }
