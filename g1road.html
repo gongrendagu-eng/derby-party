@@ -366,6 +366,8 @@ html.padmode{-webkit-text-size-adjust:100%}
 .a-timer{font-size:22px;color:#050505;background:var(--gl);border-radius:6px;padding:0 10px;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:0 0 10px rgba(255,207,58,.6)}
 .a-timer.hurry{background:#ff3b3b;color:#fff;animation:tmBlink 1s steps(2) infinite}
 .a-who{margin-left:auto;display:flex;align-items:center;gap:10px}
+.a-king{font-family:var(--arc);font-size:14px;background:linear-gradient(#ffe98a,#d19a00);color:#3a2000;padding:3px 10px;border-radius:999px;box-shadow:0 0 12px rgba(255,207,58,.8)}
+.a-streak{font-family:var(--arc);font-size:13px;background:#ff6a1a;color:#fff;padding:3px 9px;border-radius:999px}
 .a-team{font-family:var(--arc);font-size:17px;background:var(--pk);color:#fff;padding:3px 12px;border-radius:999px;box-shadow:0 0 10px rgba(255,61,139,.7)}
 .a-who small{font-size:13px;color:var(--chrome)}
 .a-who .chg{background:transparent;border:1px solid #4a5590;border-radius:6px;padding:2px 8px;font-size:12px;color:#aab3e6}
@@ -576,12 +578,17 @@ html.padmode{-webkit-text-size-adjust:100%}
 .hb:disabled{opacity:.35}
 .hb:active{transform:scale(.95)}
 .price{font-family:var(--arc);font-size:22px;color:var(--led);margin-right:auto;text-shadow:0 0 6px rgba(255,177,58,.8)}
-.tag.t5{background:#b37400}.tag.t6{background:#d6487e}
+.tag.t5{background:#b37400}
+.sbox.king{background:linear-gradient(135deg,rgba(255,216,74,.18),rgba(255,216,74,.04));border:2px solid #d19a00}.sbox.king .kname{font-size:1.35rem;font-weight:900;color:var(--gold)}.sbox.king small{display:block;opacity:.75}.sbox.king .hot{list-style:none;margin:6px 0 0;padding:0;font-size:.9rem}.sbox.king .hot b{color:var(--accent)}
+#pay .du{background:linear-gradient(#ffe98a,#e0a400);color:#4a2400;font-weight:900;border-radius:6px;padding:0 8px}#pay .kg{background:#3a2a6a;color:#ffd84a;font-weight:900;border-radius:6px;padding:0 8px}.tag.t6{background:#d6487e}
 #padModal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
 #padModal .box{background:#141a38;border:3px solid var(--gl);border-radius:16px;max-width:820px;width:100%;max-height:90vh;overflow:auto;padding:14px 16px}
 .ikm .cost{font-family:var(--arc);font-size:14px;color:var(--led)}
 .ikm .sdt{font-size:11px;color:#ffd84a;font-weight:700}.ikm .sdt.no{color:#9aa4d6;font-weight:400}
 .trnow{margin:4px 0 2px;padding:8px 12px;border-radius:10px;background:rgba(214,72,126,.18);border:1px solid rgba(214,72,126,.5);font-size:13px;color:#ffd6e6}.trnow b{color:#fff}
+.a-res .bons{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:2px 0 10px}.a-res .bn{font-family:var(--arc);font-size:16px;padding:4px 14px;border-radius:999px;color:#fff;background:#3a4180}
+.a-res .bn.du{background:linear-gradient(#ffe98a,#e0a400);color:#4a2400}.a-res .bn.st{background:#ff6a1a}.a-res .bn.kg{background:#3a2a6a;color:#ffd84a;border:1px solid #d19a00}.a-res .bn.off{background:#555c80}
+.a-res h3 .dun{font-size:12px;color:#ffd84a}
 .a-list li .hx .bloom{color:#ffd84a}.a-list li .hx .sprout{color:#9be59b}
 .ikm:disabled{opacity:.4}
 .elist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -2520,14 +2527,19 @@ function drawFx(c,cs){
   const fx=S.fx; if(!fx) return;
   const now=performance.now(), {W,R}=G, cy=G.H/2;
   if(fx.telop){
-    const e=(now-fx.telop.t0)/1000;
-    if(e>2.6) fx.telop=null;
-    else {
-      const k=e<0.3?e/0.3:e>2.2?Math.max(0,1-(e-2.2)/0.4):1, ease=1-Math.pow(1-Math.min(1,k),3);
-      const bh=Math.max(60,Math.min(120,R*1.7)), y=cy-bh/2, x=e<0.3?(ease-1)*W:e>2.2?(1-ease)*W:0;
-      c.save(); c.fillStyle='rgba(200,16,46,.93)'; c.fillRect(x,y,W,bh);
+    const gold=!!fx.telop.gold, sl=gold?1.2:0, e=(now-fx.telop.t0)/1000;     // 金色のテロップ(ダブルアップ)は1.2秒長く出す
+    if(e>2.6+sl) fx.telop=null;
+    else if(e>=0){
+      const e2=2.2+sl, k=e<0.3?e/0.3:e>e2?Math.max(0,1-(e-e2)/0.4):1, ease=1-Math.pow(1-Math.min(1,k),3);
+      const bh=Math.max(60,Math.min(120,R*1.7)), y=cy-bh/2, x=e<0.3?(ease-1)*W:e>e2?(1-ease)*W:0;
+      c.save();
+      if(gold){ const g=c.createLinearGradient(x,y,x,y+bh); g.addColorStop(0,'#fff1a8'); g.addColorStop(0.45,'#f2b600'); g.addColorStop(1,'#a86d00'); c.fillStyle=g; }
+      else c.fillStyle='rgba(200,16,46,.93)';
+      c.fillRect(x,y,W,bh);
       c.fillStyle='rgba(255,255,255,.9)'; c.fillRect(x,y+4,W,3); c.fillRect(x,y+bh-7,W,3);
-      c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle';
+      if(gold){ for(let q=0;q<14;q++){ const a=now/260+q*0.9, px=x+((q*137+now*0.12)%W), py=y+bh*(0.15+0.7*((q*0.37)%1)); c.globalAlpha=0.5+0.5*Math.sin(a); c.fillStyle='#fff'; c.beginPath(); c.arc(px,py,3+2*Math.sin(a*1.3),0,7); c.fill(); } c.globalAlpha=1; }
+      c.fillStyle=gold?'#5a2a00':'#fff'; c.textAlign='center'; c.textBaseline='middle';
+      if(gold){ c.lineWidth=bh*0.06; c.strokeStyle='#fff8d8'; c.font=`700 ${bh*0.5}px ${cs('--f-head')}`; c.strokeText(fx.telop.text,x+W/2,y+bh*0.42); }
       c.font=`700 ${bh*0.5}px ${cs('--f-head')}`; c.fillText(fx.telop.text,x+W/2,y+bh*0.42);
       c.font=`800 ${bh*0.17}px ${cs('--f-body')}`; c.fillText(fx.telop.sub,x+W/2,y+bh*0.8);
       c.restore();
@@ -2812,6 +2824,10 @@ function runRace(){
   laterX(()=>{
     if(S!==me) return;
     S.gate.open=performance.now(); gateSound(); crowd(0.25,1.5);
+    S.du=Math.random()<DU_P;
+    if(S.du){ S.fx.telop={text:'ダブルアップチャンス!',sub:'このレースの払い戻しはオッズの2倍!',t0:performance.now()+900,gold:true};
+      laterX(()=>{ if(S!==me) return; say('ここでダブルアップチャンス発動!このレースの払い戻しは2倍です!'); tone(1047,.12,'square',.07); tone(1319,.12,'square',.07,.12); tone(1568,.35,'square',.07,.24); },900);
+      pushState(); }
     say('ゲートが開いた!スタートしました!');
     let acc=0, prev=performance.now();
     const frame=now=>{
@@ -2917,7 +2933,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=37;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=38;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3238,6 +3254,10 @@ const WRITERS=['本紙','A記者','B記者','C記者'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=n=>Math.floor(Math.random()*n);
 const MAXBET=999;            // 1点あたりの上限(枚)
+// 払い戻しのボーナス
+const DU_P=0.08;                              // ダブルアップチャンス(レース開始直後に発動。払い戻しがオッズの2倍)の確率
+const STREAK_B=n=>n>=5?0.10:n===4?0.08:n===3?0.05:n===2?0.02:0;   // 馬券の連チャンボーナス(2連2%・3連5%・4連8%・5連以上10%)
+const KING_B=0.05;                            // 馬券王のボーナス
 const SLOTS=3;               // 現役馬+誕生待ちの上限
 const YEAR=12;               // 12レースで1歳
 const GEST=3;                // 種付けから誕生まで
@@ -3580,9 +3600,16 @@ function finish(order){
   const res=pid=>S.res[pid]||(S.res[pid]={tickets:[],tk:[],pay:0,staked:0,horses:[]});
   S.hitList=[]; S.big=[];
   const fans={};   // 一口馬主が付いた本物の馬主の馬(馬番→{人数,売上})
+  const mul=S.du?2:1, king0=W.king||null, kingPays={};
   Object.keys(S.bets).forEach(pid=>{ const p=W.players[pid], b=S.bets[pid]; if(!p) return;
-    const tk=b.tickets.map(t=>{ const hit=tkHit(t,o); return {hit,pay:hit?Math.floor(t.amt*tkOdds(t)):0}; }), pay=tk.reduce((s,r)=>s+r.pay,0);
-    p.coins+=pay; Object.assign(res(pid),{tickets:b.tickets,tk,pay,staked:b.staked});
+    const tk=b.tickets.map(t=>{ const hit=tkHit(t,o); return {hit,pay:hit?Math.floor(t.amt*tkOdds(t)*mul):0}; }), base=tk.reduce((s,r)=>s+r.pay,0);
+    // 連チャン:払い戻しが賭けた額以上なら+1(トリガミは数えない)、それ以外は0にもどす(馬券を買わなかったレースは数えない)
+    // 全部の馬を買って必ず当てる買い方で連チャンを続けられないようにしている
+    const ps=p.streak||0, win=base>0&&base>=tkTotal(b.tickets); if(b.tickets.length) p.streak=win?ps+1:0;
+    const bo=r=>Math.max(1,Math.floor(base*r));   // ボーナスは最低1枚
+    const sb=win&&STREAK_B(p.streak)?bo(STREAK_B(p.streak)):0, kb=base>0&&king0===pid?bo(KING_B):0, pay=base+sb+kb;
+    if(pay>0) kingPays[pid]=pay;
+    p.coins+=pay; Object.assign(res(pid),{tickets:b.tickets,tk,pay,staked:b.staked,base,sb,kb,streak:p.streak||0,ps,du:!!S.du,king:king0===pid});
     if(pay>0) S.hitList.push({name:p.name,pay});
     b.tickets.forEach((t,k)=>{ if(tk[k].pay<=0) return; const odds=+tkOdds(t).toFixed(1);
       if(tk[k].pay>=BIGPAY) S.big.push({pid,name:p.name,pay:tk[k].pay,bt:BT[t.type].name,odds});
@@ -3592,6 +3619,14 @@ function finish(order){
       p.coins+=kpay; res(pid).ku={no:b.ku,name:rh.name,price:b.kp,place:pl+1,pay:kpay};
       const oh=rh.hid&&W.horses[rh.hid]; if(oh&&oh.owner!==pid&&W.players[oh.owner]){ const f=fans[b.ku]||(fans[b.ku]={n:0,sum:0,h:oh}); f.n++; f.sum+=b.kp||0; } } });
   S.hitList.sort((a,b)=>b.pay-a.pay); S.big.sort((a,b)=>b.pay-a.pay); S.big=S.big.slice(0,5);
+  // 馬券王:このレースの払い戻しが一番多い人(誰も当たらなければ今の馬券王のまま。同じ額なら今の馬券王が守る)
+  S.newKing=null; const kp=Object.entries(kingPays).sort((a,b)=>b[1]-a[1]);
+  if(kp.length){ const top=kp[0][1], keep=king0&&kingPays[king0]===top, np=keep?king0:kp[0][0];
+    if(np!==king0){ W.king=np; S.newKing={pid:np,name:W.players[np].name,pay:top,old:king0&&W.players[king0]?W.players[king0].name:''};
+      news(`👑 ${W.players[np].name}さんが新しい馬券王に!(払い戻し${yen(top)})`);
+      if(king0&&W.players[king0]) msg(king0,`👑 馬券王の座を${W.players[np].name}さんに奪われました…`); }
+    Object.keys(kingPays).forEach(pid=>{ const r=S.res[pid]; if(r){ r.kingNow=W.king===pid; r.kingGot=S.newKing&&S.newKing.pid===pid; } }); }
+  if(king0&&!W.players[king0]) W.king=null;
   // ファンボーナス:一口馬主に買われた分の1割を本物の馬主へ
   Object.values(fans).forEach(f=>{ const bonus=Math.floor(f.sum*KU_FAN), op=W.players[f.h.owner]; if(bonus<1||!op) return;
     op.coins+=bonus; msg(f.h.owner,`🐴 ${f.h.name}に一口馬主が${f.n}人!ファンボーナス +${yen(bonus)}`); });
@@ -3630,7 +3665,7 @@ function finish(order){
       else if(place===0) news(`${p.name}さんの${h.name}が${sp.name}に勝利`); }
   });
   const h1=S.horses[first-1], mg=S.photo?`(${marginName(S.photo.gap)}差)`:'', wkeys=winKeys(o);
-  S.payHTML=`<span>1着 ${numTag(first)} ${esc(h1.name)}${mg}${h1.owner?`(${esc(h1.owner)})`:''}</span><span>単勝 ${first} ${h1.win.toFixed(1)}倍</span>`
+  S.payHTML=(S.du?`<span class="du">✨ダブルアップ!払い戻し2倍</span>`:'')+(S.newKing?`<span class="kg">👑 新しい馬券王:${esc(S.newKing.name)}さん</span>`:'')+`<span>1着 ${numTag(first)} ${esc(h1.name)}${mg}${h1.owner?`(${esc(h1.owner)})`:''}</span><span>単勝 ${first} ${h1.win.toFixed(1)}倍</span>`
     +`<span>複勝 ${top3.map(n=>`${n} ${S.horses[n-1].plc.toFixed(1)}倍`).join(' / ')}</span>`
     +COMBO.map(t=>`<span>${BT[t].name} ${wkeys[t].map(k=>`${keyText(t,k)} ${S.odds[t][k].toFixed(1)}倍`).join(' / ')}</span>`).join('');
   $('#pay').innerHTML=S.payHTML; $('#pay').hidden=false;
@@ -3828,7 +3863,10 @@ function renderSide(){
       :`<li><span class="rn">${i+1}</span><span>${esc(x.name)}</span><b>${yen(x.v)}${x.g1?` 🏆${x.g1}`:''}</b></li>`).join('')
     :`<li class="none">${bestMode?'まだ当たりはありません':'まだ誰もいません'}</li>`;
   const nw=W.news.slice(0,6).map(n=>`<li>${esc(n.t)}</li>`).join('');
-  $('#sideDyn').innerHTML=`<div class="sbox"><h3>この先のレース</h3><ol class="slist cal">${cal}</ol></div>
+  const kingP=W.king&&W.players[W.king], hot=Object.values(W.players).filter(p=>(p.streak||0)>=2).sort((a,b)=>b.streak-a.streak).slice(0,3);
+  const kingHTML=`<div class="sbox king"><h3>👑 馬券王</h3><div class="kname">${kingP?esc(kingP.name)+'さん':'まだいません'}</div><small>払い戻し+${Math.round(KING_B*100)}%。一番多く払い戻した人が奪い取る</small>
+    ${hot.length?`<ul class="hot">${hot.map(p=>`<li>🔥${esc(p.name)}さん <b>${p.streak}連チャン中</b>(+${Math.round(STREAK_B(p.streak)*100)}%)</li>`).join('')}</ul>`:''}</div>`;
+  $('#sideDyn').innerHTML=kingHTML+`<div class="sbox"><h3>この先のレース</h3><ol class="slist cal">${cal}</ol></div>
     <div class="sbox"><h3>${bestMode?'最高配当ランキング':'馬主ランキング(獲得賞金)'}</h3><ol class="slist">${rkHTML}</ol></div>
     <div class="sbox"><h3>ニュース</h3><ul class="snews">${nw||'<li>まだありません</li>'}</ul></div>`;
 }
@@ -3880,7 +3918,7 @@ function pushState(){
     timer:S.tm&&TPH[S.phase]?(S.tm.paused?{paused:true,left:S.tm.left}:{end:S.tm.end}):null,
     order:S.order?S.order.map(i=>i+1):null,
     rank:rankLists(), news:W.news.slice(0,12), market:W.market, np:Object.keys(W.players).length,
-    prize:S.spec?S.spec.prize:0, intro:S.phase==='race'&&S.intro?S.intro:null, big:S.phase==='result'&&S.big&&S.big.length?S.big:null};
+    du:S.phase!=='bet'&&!!S.du, king:W.king&&W.players[W.king]?W.players[W.king].name:'', prize:S.spec?S.spec.prize:0, intro:S.phase==='race'&&S.intro?S.intro:null, big:S.phase==='result'&&S.big&&S.big.length?S.big:null};
   if(NET.oddsRace!==W.R){ NET.oddsRace=W.R; NET.be.set(NET.base+'/odds',{race:W.R,...S.odds}).catch(netErr); }
   const j=JSON.stringify(st); if(j!==NET.last){ NET.last=j; NET.be.set(NET.base+'/state',st).catch(netErr); }
   pushPVs();
@@ -3896,7 +3934,7 @@ function hView(h){
 }
 function pvOf(pid){
   const p=W.players[pid], hs=Object.values(W.horses).filter(h=>h.owner===pid);
-  return {pid,name:p.name,coins:p.coins,prize:p.prize,g1:p.g1,wins:p.wins,msgs:p.msgs.slice(0,8),preg:p.preg.map(f=>({left:f.left,sire:f.sire,dam:f.dam})),
+  return {pid,name:p.name,coins:p.coins,prize:p.prize,g1:p.g1,wins:p.wins,streak:p.streak||0,king:W.king===pid,msgs:p.msgs.slice(0,8),preg:p.preg.map(f=>({left:f.left,sire:f.sire,dam:f.dam})),
     horses:hs.map(hView),R:W.R,res:S.phase!=='bet'?(S.res[pid]||null):null,
     bet:S.phase==='race'&&S.bets[pid]?S.bets[pid].tickets:null,
     ku:S.phase==='race'&&S.bets[pid]&&S.bets[pid].ku?{no:S.bets[pid].ku,price:S.bets[pid].kp}:null};
@@ -4108,7 +4146,7 @@ function showBig(list){
   setTimeout(()=>{ if(el.isConnected){ el.classList.add('out'); setTimeout(()=>el.remove(),500); } },meHit?8000:6000);
 }
 const aNum=no=>{const [bg,fg]=wk(no);return `<span class="a-num" style="background:${bg};color:${fg}">${no}</span>`;};
-const padOdds=(st,t)=>oddsOf(P.odds,st.horses,t);
+const padOdds=(st,t)=>oddsOf(P.odds,st.horses,t)*(st.du?2:1);    // ダブルアップ中は2倍
 const tkName=t=>`${BT[t.type].name} ${t.hs.map(aNum).join(BT[t.type].ord?'→':'')}`;
 // 一口馬主:選んだ馬番(押した直後はiPadの選択、そうでなければ先生のPCに届いている選択)と値段
 function myKu(){ if(!P.st) return 0; const n=P.ku&&P.ku.R===P.st.R?P.ku.no:(P.my&&+P.my.ku)||0; return n&&P.st.horses[n-1]?n:0; }
@@ -4152,7 +4190,8 @@ function padRender(){
   const pv=P.pv, bet=st.phase==='bet', left=bet?pv.coins-tkTotal(myTickets())-kuP():pv.coins;
   // 投票受付中の馬券画面では、下の操作盤にCREDIT(のこり)があるので上には出さない
   const deck=bet&&P.tab==='bet';
-  who.innerHTML=`<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg snd" id="padSnd" aria-label="音">${soundOn?'🔊':'🔇'}</button><button class="chg" id="padLogout">ログアウト</button>`;
+  const nb=STREAK_B((pv.streak||0)+1);
+  who.innerHTML=`${pv.king?'<span class="a-king" title="馬券王:払い戻し+5%">👑馬券王</span>':''}${pv.streak>=1?`<span class="a-streak">🔥${pv.streak}連${nb?` 次+${Math.round(nb*100)}%`:''}</span>`:''}<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg snd" id="padSnd" aria-label="音">${soundOn?'🔊':'🔇'}</button><button class="chg" id="padLogout">ログアウト</button>`;
   const tabs=$('#padTabs'); tabs.hidden=false;
   tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&(P.newMsg||pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard))?'<i class="dotn"></i>':''}</button>`).join('');
   $('#padSlip').hidden=true;
@@ -4441,6 +4480,7 @@ function prFrame(){
   if(ph){ if(!S.photo) S.photo={a:ph[0],b:ph[1],lo:ph[0],hi:ph[1],revealed:false}; }
   else if(S.photo) S.photo.revealed=true;
   // カメラの切り替えとテロップ(先生のPCと同じタイミング)
+  if(P.st&&P.st.du&&PR.duR!==P.st.R&&lead>0){ PR.duR=P.st.R; S.fx.telop={text:'ダブルアップチャンス!',sub:'このレースの払い戻しはオッズの2倍!',t0:now,gold:true}; sfx(1047,0.12,0.07); setTimeout(()=>sfx(1319,0.12,0.07),120); setTimeout(()=>sfx(1568,0.3,0.07),240); }
   if(!PR.shobu&&!PR.cam&&lead>0&&rem<=Math.min(G.sw+400,S.dist*0.65)){ PR.shobu=true; S.fx.telop={text:'勝負どころ!',sub:`残り${Math.round(rem/100)*100}m 各馬が動き出す`,t0:now}; }
   if(!PR.warmS&&rem<=G.sw+500){ PR.warmS=true; warmSprites(sprScale(straightU(),true),1,[1]); }
   if(!PR.cam&&lead>0&&(rem<=G.sw||run.some(r=>r.place))){ PR.cam=true; S.cam={}; S.camT0=now; S.camClean=false; S.fx.telop={text:'最後の直線!',sub:`${S.crs.full} 直線 約${G.sw}m`,t0:now}; }
@@ -4495,7 +4535,15 @@ function liveTickets(st,lv){
 function padResult(st,pv){
   const r=pv.res||{tickets:[],tk:[],pay:0,horses:[]}, first=P.shownRes!==st.R; P.shownRes=st.R;
   const tickets=r.tickets||[], hs=r.horses||[], ku=r.ku||null, tot=(r.pay||0)+(ku?ku.pay:0);
-  const head=tot>0?`<h1>${r.pay>0?'的中!!':'賞金ゲット!'}</h1><div class="pay" id="payCount" data-to="${tot}">+${yen(first?0:tot)}</div>`:`<h1 class="miss">${tickets.length||ku?'残念…':'結果発表'}</h1>`;
+  const bon=[]; if(r.pay>0&&r.du) bon.push('<span class="bn du">✨ダブルアップ!オッズ2倍</span>');
+  if(r.sb>0) bon.push(`<span class="bn st">🔥${r.streak}連チャン +${Math.round(STREAK_B(r.streak)*100)}% (+${yen(r.sb)})</span>`);
+  if(r.kb>0) bon.push(`<span class="bn kg">👑馬券王 +${Math.round(KING_B*100)}% (+${yen(r.kb)})</span>`);
+  if(r.kingGot) bon.push('<span class="bn kg">👑 あなたが新しい馬券王!次から払い戻し+5%</span>');
+  else if(r.pay>0&&r.kingNow&&r.king) bon.push('<span class="bn kg">👑 馬券王を防衛!</span>');
+  if(r.pay>0&&r.base<tkTotal(tickets)&&tickets.length) bon.push('<span class="bn off">トリガミ(賭けた額より少ない)は連チャンに数えません</span>');
+  if(tickets.length&&r.ps>=2&&!r.streak) bon.push(`<span class="bn off">🔥連チャンが${r.ps}で止まりました…</span>`);
+  const head=(tot>0?`<h1>${r.pay>0?'的中!!':'賞金ゲット!'}</h1><div class="pay" id="payCount" data-to="${tot}">+${yen(first?0:tot)}</div>`:`<h1 class="miss">${tickets.length||ku?'残念…':'結果発表'}</h1>`)
+    +(bon.length?`<div class="bons">${bon.join('')}</div>`:'')+(st.du&&!r.pay?'<div class="bons"><span class="bn du">✨このレースはダブルアップでした</span></div>':'');
   const od=st.order||[], all=od.map((no,k)=>`<li class="${k<3?'hit':''}"><span class="ps">${k+1}着</span>${aNum(no)}<span>${esc(st.horses[no-1].name)}</span><span class="am" style="color:#9aa4d6">${st.horses[no-1].pop}番人気</span></li>`).join('');
   let pay='';
   if(od.length>=3){ const w=st.horses[od[0]-1], wkeys=winKeys(od), O=P.odds||{};
@@ -4507,7 +4555,7 @@ function padResult(st,pv){
     <span class="hx">${x.ek?(x.ea>0?`<b class="up">経験:${sn(x.ek)}+${x.ea}</b>`:`経験:${sn(x.ek)}は限界`):''}${x.f1!=null?`<span>疲れ:${fatW(x.f0)}→<b class="${x.f1>=4?'warn':''}">${fatW(x.f1)}</b></span>`:''}${x.f1>=4?'<span class="warn">次は休ませるのがおすすめ</span>':''}${x.bl?`<b class="bloom">✨個性「${esc(x.bl)}」が開花!</b>`:x.hn?`<span class="sprout">🌱${esc(x.hn)}の素質が見えてきた…</span>`:''}</span></li>`).join('')}</ul></div>`:'';
   const kuHTML=ku?`<div class="a-panel"><h3>一口馬主</h3><ul class="a-list"><li class="${ku.pay>0?'hit':''}"><span class="ps">${ku.place}着</span>${aNum(ku.no)}<span>${esc(ku.name)}</span><span class="am">${ku.pay>0?'賞金 +'+yen(ku.pay):'賞金なし'}</span></li></ul><div class="a-sum">購入 ${yen(ku.price)} → 収支 ${ku.pay-ku.price>=0?'+':''}${yen(ku.pay-ku.price)}</div></div>`:'';
   $('#padMain').innerHTML=`<div class="a-res">${head}<div class="cols">${hsHTML}${kuHTML}<div class="a-panel"><h3>買った馬券</h3>${tkList(st,tickets,r.tk,false)}</div>
-    <div class="a-panel"><h3>着順</h3><ul class="a-list">${all}</ul></div><div class="a-panel"><h3>払い戻し(オッズ)</h3>${pay}</div></div>
+    <div class="a-panel"><h3>着順</h3><ul class="a-list">${all}</ul></div><div class="a-panel"><h3>払い戻し(オッズ)${st.du?'<small class="dun"> ✨ダブルアップ:この2倍</small>':''}</h3>${pay}</div></div>
     <p class="wait">次のレースの出走表を待っています…(このあいだに厩舎や市場も見られます)</p></div>`;
   if(tot>0&&first) celebrate(tot);
 }
@@ -4588,6 +4636,9 @@ function padInfo(st,pv){
       ・馬の年齢と子馬の誕生は、あなたが参加していた(iPadをつないでいた・馬券を買った)レースの数で進みます。休んでいる間は年をとりません<br>
       ・一口馬主:1レース1頭まで。5着までに入ると、その着順の賞金がもらえます(プレイヤーの馬なら、本物の馬主に売れた分の1割のファンボーナス)<br>
       ・個性(1頭に1つ):${Object.values(TRAIT).map(x=>x.name).join('・')}。買った馬にはまれに付いています。「特訓」をくり返したり、レースで目立つ勝ち方をしたりすると「個性の芽」が育ち、まれに開花します<br>
+      ・ダブルアップチャンス:レースが始まった直後に、まれに発動。そのレースの払い戻しがオッズの2倍になります<br>
+      ・連チャンボーナス:馬券を続けて当てると払い戻しが増えます(2連+2%・3連+5%・4連+8%・5連以上+10%)。払い戻しが賭けた額以上のときだけ「当たり」に数えます(トリガミは数えない)。外れると0にもどります。馬券を買わなかったレースは数えません<br>
+      ・馬券王:そのレースで払い戻しが一番多かった人が「馬券王」。誰も当たらなければそのまま。馬券王のあいだは払い戻し+${Math.round(KING_B*100)}%<br>
       ・馬券は1点${MAXBET}枚まで。コインが${AID.under}枚未満になると${AID.amount}枚の支給(${AID.every}レースに1回)</div></div>
     <div class="a-panel" style="margin-top:10px"><h3>ニュース</h3><ul class="a-list">${st.news.slice(0,8).map(n=>`<li><span class="dim">第${n.R}戦</span><span>${esc(n.t)}</span></li>`).join('')}</ul></div></div></div>`;
 }
@@ -4930,15 +4981,19 @@ function pdkFrame(now){
   c.strokeStyle='#c8102e'; c.lineWidth=Math.max(2,u*0.015); c.beginPath(); c.moveTo(hx+14*hk,hy-78*hk); c.quadraticCurveTo(x-u*0.9,y-u*0.12,x-u*0.79,y-u*0.36); c.stroke();
   pdkRank();
 }
-// 右下:最高配当ランキングと馬主ランキングを6秒ごとに交互に(上位3人)
+// 右下:最高配当ランキング・馬主ランキング・馬券王と連チャンを6秒ごとに順番に(上位3人)
 function pdkRank(force){
-  if(!W) return; const mode=Math.floor(performance.now()/6000)%2, rk=rankLists();
-  const key=mode+'|'+JSON.stringify(mode?rk.prize.slice(0,3):rk.best.slice(0,3)); if(!force&&key===PDK.rkKey) return; PDK.rkKey=key;
+  if(!W) return; const mode=Math.floor(performance.now()/6000)%3, rk=rankLists();
+  const kingP=W.king&&W.players[W.king], hot=Object.values(W.players).filter(p=>(p.streak||0)>=1).sort((a,b)=>b.streak-a.streak).slice(0,kingP?2:3);
+  const key=mode+'|'+JSON.stringify(mode===1?rk.prize.slice(0,3):mode===2?[kingP&&kingP.name,hot.map(p=>p.name+p.streak)]:rk.best.slice(0,3)); if(!force&&key===PDK.rkKey) return; PDK.rkKey=key;
   const medal=i=>`<span class="md md${i}">${i+1}</span>`;
-  const rows=mode
+  const rows=mode===2
+    ? (kingP?`<li><span class="md md0">👑</span><span class="n">${esc(kingP.name)}</span><b>馬券王</b><em>払い戻し+${Math.round(KING_B*100)}%</em></li>`:'')
+      +hot.map(p=>`<li><span class="md md2">🔥</span><span class="n">${esc(p.name)}</span><b>${p.streak}連チャン</b><em>次 +${Math.round(STREAK_B(p.streak+1)*100)}%</em></li>`).join('')
+    : mode===1
     ? rk.prize.slice(0,3).filter(x=>x.v>0).map((x,i)=>`<li>${medal(i)}<span class="n">${esc(x.name)}</span><b>${yen(x.v)}</b>${x.g1?`<em>G1 ${x.g1}勝</em>`:''}</li>`).join('')
     : rk.best.slice(0,3).map((x,i)=>`<li>${medal(i)}<span class="n">${esc(x.name)}</span><b>${yen(x.pay)}</b><em>${esc(x.bt)} ${x.odds}倍</em></li>`).join('');
-  const el=$('#pdkRank'); el.innerHTML=`<div class="h">${mode?'馬主ランキング':'最高配当ランキング'}</div><ol>${rows||'<li class="none">まだ記録はありません</li>'}</ol>`;
+  const el=$('#pdkRank'); el.innerHTML=`<div class="h">${['最高配当ランキング','馬主ランキング','👑 馬券王・🔥連チャン'][mode]}</div><ol>${rows||`<li class="none">${mode===2?'まだ馬券王はいません':'まだ記録はありません'}</li>`}</ol>`;
   el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
 }
 $('#paperBtn').onclick=()=>{ if(!S) return; S.paper=!S.paper; $('#paperBtn').textContent=S.paper?'パドックを表示':'出馬表を表示'; render(); };
