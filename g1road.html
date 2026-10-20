@@ -1037,7 +1037,7 @@ html.padmode{-webkit-text-size-adjust:100%}
       <label>参加のしかた<select id="f-net"><option value="firebase">iPadで参加する</option><option value="local">お試し(このPCの別タブをiPadの代わりにする)</option></select></label>
       <label>最初のコイン(枚)<input type="number" id="f-coins" min="100" step="100" value="1000"></label>
       <label>馬券の受付時間<select id="f-bet"><option value="60">60秒</option><option value="90" selected>90秒</option><option value="120">120秒</option><option value="180">180秒</option></select></label>
-      <label>結果を見せる時間<select id="f-res"><option value="15">15秒</option><option value="25" selected>25秒</option><option value="40">40秒</option><option value="60">60秒</option></select></label>
+      <label>結果を見せる時間<select id="f-res"><option value="15" selected>15秒</option><option value="25">25秒</option><option value="40">40秒</option><option value="60">60秒</option></select></label>
     </div>
     <p id="netNote" class="note"></p>
     <button id="newBtn" class="btn primary big">新しいワールドではじめる</button>
@@ -2594,7 +2594,7 @@ let tmLoop=null, tmBeep=-1;
 const nowS=()=>Date.now()+(NET&&NET.off||0);
 const tmLeft=()=>!S||!S.tm?0:S.tm.paused?S.tm.left:Math.max(0,S.tm.end-nowS());
 function armTimer(){
-  clearInterval(tmLoop); tmLoop=null; const sec=S.phase==='result'?+W.cfg.resSec||25:+W.cfg.betSec||90;
+  clearInterval(tmLoop); tmLoop=null; const sec=S.phase==='result'?+W.cfg.resSec||15:+W.cfg.betSec||90;
   if(!sec||!TPH[S.phase]){ S.tm=null; showTimer(); return; }
   S.tm={left:sec*1000,end:null,paused:true};
   if(!$('#qrModal').hidden) S.tmWait=true;    // 1レース目はQRコードを閉じてから数え始める
@@ -2917,7 +2917,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=36;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=37;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -4972,7 +4972,7 @@ function renderAdmin(){
     <section><h3>参加者(${ps.length}人)<button class="btn" data-adm="all">全員にコインを配る</button></h3>
       <div class="admtbl"><table><tr><th>名前</th><th>コイン</th><th>現役 / 牧場</th><th>獲得賞金</th><th>操作</th></tr>${rows||'<tr><td colspan="5">まだ誰も参加していません</td></tr>'}</table></div>
       <p class="note">●は接続中のiPad。「外す」を押すと、その人の馬もすべて消えます(元にもどせません)。</p></section>
-    <section><h3>時間の設定</h3><div class="row"><label>馬券の受付時間${sel('admBet',W.cfg.betSec||90,[60,90,120,180])}</label><label>結果を見せる時間${sel('admRes',W.cfg.resSec||25,[15,25,40,60])}</label></div>
+    <section><h3>時間の設定</h3><div class="row"><label>馬券の受付時間${sel('admBet',W.cfg.betSec||90,[60,90,120,180])}</label><label>結果を見せる時間${sel('admRes',W.cfg.resSec||15,[15,25,40,60])}</label></div>
       <p class="note">次のレースから反映されます。</p></section>
     <section><h3>バックアップ</h3><div class="row"><button class="btn" data-adm="save">ワールドをファイルに保存</button><label class="btn filebtn">ファイルから読み込む<input id="admFile" type="file" accept=".json,application/json" hidden></label></div>
       <p class="note">ふだんは自動で保存されています。念のため、遊び終わりにファイルにも保存しておくと安心です。読み込むと、いまのワールドはファイルの内容に置きかわります。</p></section>`;
@@ -5147,7 +5147,10 @@ function bannerFrame(now){
   // 馬(奥のレーンから)
   [...R.horses].sort((a,b)=>a.lane-b.lane).forEach(h=>{ const x=h.x-cam; if(x<-u*1.2||x>W+u*1.2) return;
     const sc=0.82+h.lane*0.045, y=top+u*0.5+h.lane*(H-top-u*0.75)/4.2, [bg,fg]=WAKU[h.no-1], win=R.winner===h.no&&now-R.winT>350;
-    drawHorse2(c,x,y,u*sc,h.ph,{type:'cool',coat:h.coat[1],mane:h.coat[2],silk:bg,silkFg:fg,no:h.no,push:win?0:1,win,dir:1});   // 奥の馬は少し小さく
+    if(REAL){ // リアル調:レースと同じ馬と騎手。ゴール前は追ってムチ、勝った馬はゴール後に手綱をゆるめる
+      const L=h.rl||(h.rl=realLook({name:'banner'+h.no+'-'+h.coat[0],coat:h.coat,no:h.no})), drv=!win&&h.x+u*0.78<R.goal&&h.x>R.goal-W*0.5;
+      drawRealHorse(c,x,y,u*sc*0.0135,h.ph,{...L,dir:1,push:win?0.15:0.8,drive:drv,wp:((h.ph/RH.TAU)/2%1+1)%1}); }
+    else drawHorse2(c,x,y,u*sc,h.ph,{type:'cool',coat:h.coat[1],mane:h.coat[2],silk:bg,silkFg:fg,no:h.no,push:win?0:1,win,dir:1});   // 奥の馬は少し小さく
     if(win){ const a=Math.min(1,(now-R.winT-350)/300); c.globalAlpha=a; c.font=`900 ${Math.round(u*0.22)}px sans-serif`; c.lineWidth=4; c.strokeStyle='#7a2a00'; c.fillStyle='#ffcf3a';
       const lx=x+u*0.95, ly=y-u*0.55; c.textAlign='left'; c.strokeText('1着!',lx,ly); c.fillText('1着!',lx,ly);
       for(let q=0;q<6;q++){ const an=now/300+q*1.05, rr=u*0.32+Math.sin(now/200+q)*4; c.fillStyle='#fff6c8'; c.beginPath(); c.arc(x+u*0.25+Math.cos(an)*rr,y-u*0.75+Math.sin(an)*rr*0.6,2.5,0,Math.PI*2); c.fill(); }   // キラキラ
