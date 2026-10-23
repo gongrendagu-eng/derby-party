@@ -1070,6 +1070,124 @@ table.hist .pz{color:var(--led);font-family:var(--arc)}table.hist .du{font-size:
 .bigwin.me .bw-box{animation:lvhot .6s ease-in-out infinite alternate}
 @keyframes bwin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.bigwin,.bigwin.me .bw-box{animation:none}}
+
+/* ---------- スマホ(版43):画面の幅が狭いときだけ。iPadの画面は変えない ---------- */
+html.phone .a-top{padding:6px 10px 6px;gap:4px 8px}
+html.phone .a-top .a-logo{display:none}
+html.phone .a-top .a-race{font-size:13px;flex:1 1 0}
+html.phone .a-top .a-timer{font-size:15px}
+html.phone .a-top .a-who{flex-basis:100%;gap:6px;flex-wrap:wrap}
+html.phone .a-who .a-team{font-size:13px;padding:2px 10px}
+html.phone .a-who .chg{margin-left:auto}
+html.phone .a-who .chg+.chg{margin-left:0}
+html.phone .a-who .led{font-size:16px}
+html.phone .a-who{flex-wrap:nowrap}
+html.phone .a-who>small{display:none}
+html.phone .a-who .chg{font-size:11px;padding:2px 6px;white-space:nowrap}
+html.phone .a-king,html.phone .a-streak{font-size:12px;padding:2px 8px;white-space:nowrap}
+html.phone .toast{bottom:auto;top:42%;max-width:calc(100vw - 32px)}
+html.phone #padTabs{position:fixed;left:0;right:0;bottom:0;z-index:12;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0;overflow:visible;background:#0f1430;border-top:2px solid #2c3566;padding-bottom:env(safe-area-inset-bottom,0px)}
+html.phone #padTabs[hidden]{display:none}
+html.phone .a-tab{border:0;border-radius:0;background:none;padding:8px 0;min-height:54px;font-size:12px;color:#9aa4d6;white-space:normal;line-height:1.3}
+html.phone .a-tab.on{background:none;color:var(--gl);box-shadow:inset 0 3px 0 var(--gl)}
+html.phone .a-main{padding:6px 8px 72px}
+html.phone #padSlip{bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+html.phone #padMain.sp-on{padding:0 0 8px}
+html.phone .a-msg{padding:6vh 6px 3vh}
+.sp-modes{position:sticky;top:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 8px 6px;background:var(--cab);scrollbar-width:none}
+.sp-modes::-webkit-scrollbar{display:none}
+.sp-mb{flex:none;height:38px;padding:0 14px;border-radius:999px;border:2px solid #3a4580;background:#1a2048;color:#c9d0f2;font-weight:800;font-size:14px;font-family:var(--body,inherit)}
+.sp-mb.on{background:var(--cy);color:#06202c;border-color:#fff}
+.sp-info{padding:0 8px 6px;display:flex;flex-direction:column;gap:6px}
+.sp-desc{font-size:12px;color:#b8c0ea;font-family:"M PLUS 1p",sans-serif}
+.sp-subs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.sp-sc{flex:none;height:34px;padding:0 12px;border-radius:8px;border:2px solid #5a66a8;background:#2a3266;color:#e4e8ff;font-weight:800;font-size:12px}
+.sp-sc.on{background:var(--gl);color:#1a1200;border-color:#fff}
+.sp-list{border-top:1px solid #2c3566;font-family:"M PLUS 1p",sans-serif}
+.sp-list.fixed{opacity:.45;pointer-events:none}
+.sp-row{border-bottom:1px solid #222a55;background:#0e1330}
+.sp-row.own{background:#12301f}.sp-row.sel{background:#2b2610}
+.sp-line{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 8px;min-height:60px}
+.sp-line .a-num{width:30px;height:30px;font-size:16px}
+.sp-nm{background:none;border:0;color:inherit;text-align:left;padding:0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:46px;font-family:inherit}
+.sp-nm b{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-row.own .sp-nm b{color:var(--gr)}
+.sp-nm small{font-size:12px;font-weight:700;color:#c9d0f2;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.sp-nm small .jk{color:#fff}
+.sp-nm em{font-style:normal;font-size:10px;font-weight:800;padding:0 5px;border-radius:3px;background:#3a3510;color:var(--gl);flex:none}
+.sp-nm em.me{background:var(--gr);color:#062010}.sp-nm em.ko{background:var(--gl);color:#1a1606}
+.sp-r{display:flex;gap:5px;align-items:center}
+.sp-cell{width:84px;height:48px;border-radius:9px;border:2px solid #34407a;background:#0a0d1f;color:#fff;display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr 1fr;align-items:center;padding:2px 7px;column-gap:4px}
+.sp-cell .lb{white-space:nowrap;font-size:10px;font-weight:800;color:#9aa4d6;grid-row:1/3;font-family:"M PLUS 1p",sans-serif}
+.sp-cell .od{font-size:16px;white-space:nowrap;color:var(--led);text-align:right;line-height:1}
+.sp-cell .am{font-size:12px;color:#8a93c2;text-align:right;line-height:1}
+.sp-cell.lit{border:3px solid var(--gr);background:#123a22}.sp-cell.lit .am{color:var(--gr)}
+.sp-cell.ku{width:118px}.sp-cell.ku .od{color:var(--gl)}.sp-cell.ku.lit{border-color:var(--gl);background:#3a3510}.sp-cell.ku.lit .am{color:var(--gl)}
+.sp-wo{font-size:14px;color:var(--led);min-width:34px;text-align:right}
+.sp-sb{width:44px;height:44px;border-radius:8px;border:2px solid #34407a;background:#0a0d1f;color:#7f88b8;font-weight:900;font-size:12px;font-family:"M PLUS 1p",sans-serif;padding:0}
+.sp-sb.on{color:#fff;border-color:#fff}
+.sp-det{margin:0 8px 8px 46px;font-size:12px;color:#dfe4ff;background:#1b2350;border-radius:8px;padding:7px 10px;line-height:1.6}
+.sp-det b{color:#fff}.sp-det .m0{color:#ff6aa0}.sp-det .m1{color:var(--cy)}
+.sp-deck{display:flex;flex-direction:column;align-items:stretch!important;gap:6px;padding:0 0 6px!important;flex-wrap:nowrap!important}
+.sp-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px;min-height:42px;width:100%;background:#1d2350;border:0;border-bottom:2px solid var(--gl);color:var(--gl);font-weight:800;font-size:13px;font-family:"M PLUS 1p",sans-serif;text-align:left}
+.sp-sheet{max-height:min(42vh,400px);display:flex;flex-direction:column;background:#141a3e;border-bottom:2px solid #2c3566}
+.sp-shl{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.sp-cb{flex:none;display:flex;align-items:center;gap:4px;min-height:46px;border-radius:9px;padding:0 10px;border:2px solid #4a5590;background:#0a0d1f;color:#fff}
+.sp-cb .a-num{width:22px;height:22px;font-size:12px}
+.sp-cb i{font-style:normal;color:#8d96c8;font-size:12px}
+.sp-cb .od{font-size:17px;color:var(--led);margin-left:8px}
+.sp-cb .am{margin-left:auto;font-size:14px;color:#8a93c2}
+.sp-cb.lit{border:3px solid var(--gr);background:#123a22}.sp-cb.lit .am{color:var(--gr)}
+.sp-empty{color:#b8c0ea;font-size:13px;padding:6px 2px;font-family:"M PLUS 1p",sans-serif}
+.sp-all{margin:0 10px 10px;min-height:48px;border-radius:10px;border:3px solid #fff;background:#d81e3c;color:#fff;font-weight:900;font-size:14px;font-family:"M PLUS 1p",sans-serif}
+.sp-coins{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;align-items:center;padding:0 10px}
+.sp-coins small{flex:none;font-size:11px;color:#c9d0f2;font-weight:700;width:30px;line-height:1.2}
+.sp-coins .ab-coin{flex:none;width:44px;height:44px;border-width:3px}
+.sp-coins .ab-coin b{font-size:14px}.sp-coins .ab-coin span{font-size:8px}
+.sp-drow{display:flex;align-items:center;gap:8px;padding:0 10px}
+.sp-drow .bx-btn{min-width:0;height:48px;padding:0 10px;font-size:12px}
+.sp-leds{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.sp-leds div{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.sp-leds small{font-size:11px;color:#c9d0f2;font-weight:700}
+.sp-leds .led{font-size:17px;min-width:88px;text-align:right;padding:0 8px}
+.sp-leds .led.g{color:var(--gr);text-shadow:0 0 6px rgba(61,255,140,.8)}
+.sp-go{height:52px;padding:0 16px;border-radius:12px;background:#22b862;border:3px solid #eafff1;color:#062a14;font-family:var(--arc);font-size:16px}
+.sp-fix{flex:1;display:flex;flex-direction:column;gap:2px}
+.sp-fix b{font-family:var(--arc);font-weight:400;font-size:16px;color:var(--gr)}
+.sp-fix span{font-size:12px;color:#cfd5f5}
+/* 横向きのスマホ(高さが低い):操作盤を1段にまとめ、下のタブを低く */
+@media (max-height:500px){
+  html.phone .sp-deck{flex-direction:row!important;flex-wrap:wrap!important;align-items:center!important;column-gap:10px!important}
+  html.phone .sp-bar,html.phone .sp-sheet{flex-basis:100%}
+  html.phone .sp-sheet{max-height:48vh}
+  html.phone .sp-coins{flex:1 1 0;min-width:0;padding-top:6px!important}
+  html.phone .sp-drow{flex:none;padding:6px 10px 0 0}
+  html.phone .sp-desc{display:none}
+  html.phone .a-tab{min-height:40px;padding:4px 0}
+  html.phone #padSlip{bottom:calc(42px + env(safe-area-inset-bottom,0px))}
+  html.phone .pr-video{height:min(56vw,78vh)}
+}
+/* スマホのレース中:映像を上、その下に実況・このままなら・順位・馬券を縦に */
+html.phone .pr-wrap{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto!important}
+html.phone .pr-video{height:min(56vw,62vh);flex:none;min-height:0;border-radius:8px}
+html.phone .pr-cap em{display:none}
+html.phone .pr-rem{font-size:20px}
+html.phone .pr-bottom{display:contents}
+html.phone .pr-sum{order:1}
+html.phone .pr-tk{order:4}
+html.phone .pr-sum{width:auto;height:auto;flex-direction:row;justify-content:space-between;padding:6px 12px}
+html.phone .pr-sum b{font-size:26px}
+html.phone .pr-tk{grid-template-columns:1fr;max-height:none;overflow:visible}
+html.phone .pr-side{order:3}
+html.phone .pr-rank li{flex:none;min-height:34px;max-height:none}
+html.phone .pr-rank .pp{display:inline}
+.pr-light{display:none}
+html.phone .pr-light{display:block;align-self:flex-end;height:36px;padding:0 14px;border-radius:999px;border:2px solid #5a66a8;background:#2a3266;color:#e4e8ff;font-weight:800;font-size:12px;font-family:"M PLUS 1p",sans-serif;order:-1}
+html.phone .pr-wrap.light .pr-video{height:64px}
+html.phone .pr-wrap.light .pr-video canvas{display:none}
+html.phone .pr-wrap.light .pr-video{background:#141a38}
+html.phone .pr-wrap.light .pr-rank li{min-height:42px}
+html.phone .pr-wrap.light .pr-video .intro{display:none}
 </style>
 </head>
 <body>
@@ -1279,6 +1397,9 @@ let S=null, raf=null, soundOn=true, actx=null;
 // 見えていない間は、間引かれない Web Worker の時計(約30ms)で、レースの計算とタイマーを進める(絵は描かない)
 const BG={w:null,n:0,p:new Map(),q:[]};
 const isPad=()=>document.documentElement.classList.contains('padmode');
+// スマホ(版43):iPadの画面で、幅が狭い(700px未満)か高さが低い(横向きのスマホ)とき
+const isPhone=()=>isPad()&&(window.innerWidth<700||window.innerHeight<500);
+function phoneChk(){ const ph=isPhone(); document.documentElement.classList.toggle('phone',ph); return ph; }
 const quiet=()=>document.hidden&&!isPad();      // 先生のPCが裏に回っている間は音を出さない
 function bgStart(){ if(BG.w) return; try{ BG.w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),30)'],{type:'text/javascript'}))); BG.w.onmessage=bgTick; }catch(e){ BG.w=null; } }
 function bgTick(){
@@ -1573,7 +1694,7 @@ function buildCourse(crs,rh,W,H,pad,top,tw){
 
 function layout(cvEl){
   csCache={};
-  const cv=cvEl||$('#cv'), box=cv.parentElement.getBoundingClientRect(), dpr=REAL?1:(window.devicePixelRatio||1);   // リアル調は描く量が多いので解像度を少し抑える
+  const cv=cvEl||$('#cv'), box=cv.parentElement.getBoundingClientRect(), dpr=REAL?(isPhone()&&box.width<720?Math.min(2,window.devicePixelRatio||1):1):(window.devicePixelRatio||1);   // リアル調は描く量が多いので解像度を少し抑える
   cv.width=Math.max(1,box.width*dpr); cv.height=Math.max(1,box.height*dpr);
   const W=box.width, H=box.height;
   const pad=Math.max(12,Math.min(W,H)*0.04);
@@ -3007,7 +3128,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=42;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=43;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -4284,7 +4405,7 @@ async function padStart(room,kind){
   ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
   const vp=document.querySelector('meta[name=viewport]'); if(vp) vp.content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
   P.room=room; P.kind=kind; P.base=`rooms/${room}`; P.dev=devId();
-  try{ soundOn=localStorage.getItem('g1.snd')!=='0'; }catch(e){}
+  try{ soundOn=localStorage.getItem('g1.snd')!=='0'; P.light=localStorage.getItem('g1.light')==='1'; }catch(e){}
   if(kind==='firebase'&&!fbReady()){ padMsg('準備ができていません','このページにはFirebaseの設定がありません。先生に伝えてください。'); return; }
   padMsg('接続しています…','');
   try{ P.be=await withTimeout(connectNet(kind),12000,'timeout'); }
@@ -4382,6 +4503,7 @@ const TABS=[['bet','🎫 馬券'],['stable','🐴 厩舎'],['market','🏪 市�
 function padRender(){
   const st=P.st, m=$('#padMain'), who=$('#padWho');
   if(st===undefined) return;
+  phoneChk(); m.classList.remove('sp-on');
   if(!st||!st.phase){
     who.innerHTML=''; $('#padRace').textContent=''; $('#padSlip').hidden=true; $('#padTicker').hidden=true; $('#padTabs').hidden=true; P.tickerKey='';
     m.innerHTML=P.had?`<div class="a-msg"><h2>休けい中</h2><p>先生のPCがゲームを止めています。再開するとこの画面が自動で切り替わります。</p></div>`
@@ -4487,6 +4609,7 @@ function betSend(done){
 function padBet(st,pv){
   const m=$('#padMain');
   if(!P.odds||P.odds.race!==st.R){ padMsg('オッズを受信中…',''); return; }
+  if(isPhone()) return padBetPhone(st,pv);
   const H=st.horses.length, fixed=!!(P.my&&P.my.done&&!(P.opt&&P.optRace===st.R&&P.unfix)), mine=myTickets(), cols=bcols(), tf=P.mode==='tf', ku=P.mode==='ku', myk=myKu(), kup=kuP(), MCOL={'◎':'m0','○':'m1','▲':'m2','△':'m3','×':'m4'};
   const KC={'↑':'k0','↗':'k1','→':'k2','↘':'k3','↓':'k4'}, rh=H>11?40:H>9?47:55;   // 最大12頭。頭数が少ないほど1行を高くする
   const narrow=(window.innerWidth||1180)<1150;   // 幅1080pxなどのiPadでは列を詰めて、横に並べたまま収める
@@ -4541,25 +4664,73 @@ function padBet(st,pv){
     <div class="bx-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>`;
   fitBet();
 }
+
+// ---------- スマホの馬券画面(版43) ----------
+// 1頭1行。単勝・複勝(または軸・相手などのボタン)を右に並べ、騎手は馬名の下に出す。印・短評は馬名をタッチすると開く
+// 組み合わせの一覧は下の帯から開く。タッチした操作は iPad と同じ(betClick)で処理する
+function padBetPhone(st,pv){
+  const m=$('#padMain'), H=st.horses.length, fixed=!!(P.my&&P.my.done&&!(P.opt&&P.optRace===st.R&&P.unfix)), mine=myTickets(), cols=bcols(), tf=P.mode==='tf', ku=P.mode==='ku', cb=!tf&&!ku, myk=myKu(), kup=kuP();
+  const SB={'軸':'#c8102e','相手':'#1f6fd8','1着':'#c8102e','2着':'#1f6fd8','3着':'#1f8a43','BOX':'#a86400'}, MC={'◎':'m0','○':'m1'};
+  const sub=bsub(), subs=BSUB[P.mode]||[];
+  const DESC={tf:'単勝は1着、複勝は3着以内の馬。オッズの枠をタッチするとすぐBET',ku:'5着までに入ると、その着順の賞金がもらえる。1レース1頭まで'};
+  const rows=st.horses.map(h=>{
+    const own=h.pid===P.pid, sel=cols.some(c=>selOf(c).includes(h.no)), open=P.hopen===h.no;
+    const tag=own?'<em class="me">自分の馬</em>':h.owner?`<em>${esc(h.owner)}</em>`:'';
+    let right='';
+    if(tf) right=['win','plc'].map(t=>{ const a=amtIn(mine,t,[h.no]); return `<button class="sp-cell${a?' lit':''}" data-bet1="${t}" data-no="${h.no}"><span class="lb">${t==='win'?'単勝':'複勝'}</span><span class="od">${(t==='win'?h.win:h.plc).toFixed(1)}</span><span class="am">${a?yen(a):'0'}</span></button>`; }).join('');
+    else if(ku){ const on=myk===h.no; right=`<button class="sp-cell ku${on?' lit':''}" data-kuno="${h.no}"><span class="lb">一口</span><span class="od">${yen(h.ku||0)}</span><span class="am">${on?'購入中':'タッチで買う'}</span></button>`; }
+    else right=`<span class="sp-wo">${h.win.toFixed(1)}</span>`+cols.map(c=>{ const on=selOf(c).includes(h.no); return `<button class="sp-sb${on?' on':''}" style="${on?`background:${SB[c]}`:''}" data-selc="${c}" data-no="${h.no}" aria-label="${h.no}番を${c}に">${c}</button>`; }).join('');
+    const mk=(h.marks||[]).map((x,j)=>x?`${WRITERS[j]} <b class="${MC[x]||''}">${x}</b>`:'').filter(Boolean).join(' ');
+    return `<div class="sp-row${sel?' sel':own?' own':''}"><div class="sp-line">${aNum(h.no)}
+      <button class="sp-nm" data-hopen="${h.no}" aria-expanded="${open}"><b>${esc(h.name)}</b><small><span class="jk">${esc(h.jockey||'')}</span><span>${h.style}・${h.pop}人気</span>${myk===h.no?'<em class="ko">一口</em>':''}${tag}</small></button>
+      <div class="sp-r">${right}</div></div>
+      ${open?`<div class="sp-det"><b>${h.sa}・${h.kg}kg・気配 ${h.kh||''}</b><br>${mk||'印なし'}<br>${esc(h.comment||'')}</div>`:''}</div>`; }).join('');
+  const ol=m.querySelector('.sp-shl'), keep=P.spKey===P.mode+'|'+sub&&ol?ol.scrollTop:0;
+  m.classList.add('sp-on');
+  m.innerHTML=`<nav class="sp-modes" aria-label="券種">${BTABS.map(([k,n])=>`<button class="sp-mb${P.mode===k?' on':''}" data-btab="${k}">${n}</button>`).join('')}</nav>
+    <div class="sp-info"><span class="sp-desc">${DESC[P.mode]||BDESC[P.mode][1]}</span>${subs.length?`<div class="sp-subs">${subs.map(x=>`<button class="sp-sc${x===sub?' on':''}" data-sub="${x}">${x}</button>`).join('')}</div>`:''}</div>
+    <div class="sp-list${fixed?' fixed':''}">${rows}</div>`;
+  // 下の操作盤(組み合わせの帯・BET単位・合計・確定)
+  const slip=$('#padSlip'); slip.hidden=false; slip.className='a-ctrl sp-deck';
+  const total=tkTotal(mine)+kup, list=cb&&!fixed?bcombos():[], shown=list.slice(0,60);
+  let top='';
+  if(cb&&!fixed){
+    const bar=list.length?`組み合わせ ${list.length}点 ・ タッチでBET`:sub==='人気順'?'人気の組み合わせ':bhint();
+    top=`<button class="sp-bar" data-spdrawer><span>${bar}</span><span>${P.drawer?'閉じる ▼':'開く ▲'}</span></button>`;
+    if(P.drawer) top+=`<div class="sp-sheet"><div class="sp-shl">${list.length?'':`<div class="sp-empty">${bhint()}</div>`}${shown.map(c=>{ const a=amtIn(mine,P.mode,c.hs);
+      return `<button class="sp-cb${a?' lit':''}" data-betk="${c.k}">${c.hs.map(aNum).join(BT[P.mode].ord?'<i>→</i>':'<i>-</i>')}<span class="od">×${c.o.toFixed(1)}</span><span class="am">${a?yen(a):'0'}</span></button>`; }).join('')}
+      ${list.length>60?'<div class="sp-empty">上位60点を表示しています</div>':''}</div>
+      ${list.length&&sub!=='人気順'?`<button class="sp-all" data-betall>全部に${P.unit}枚ずつBET(${list.length}点 ${yen(list.length*P.unit)})</button>`:''}</div>`;
+  }
+  if(fixed) slip.innerHTML=`<div class="sp-drow" style="padding-top:8px"><div class="sp-fix"><b>投票を確定しました</b><span>${mine.length}点${myk?'+一口馬主':''} ${yen(total)}。レースが始まるのを待ちましょう</span></div><button class="bx-btn" data-undo>修正する</button></div>`;
+  else slip.innerHTML=top+`<div class="sp-coins" style="padding-top:${top?0:8}px"><small>BET単位</small>${DENOM.map(v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}" data-denom="${v}" aria-label="BET単位 ${v}枚"><b>${v}</b><span>枚</span></button>`).join('')}</div>
+    <div class="sp-drow"><button class="bx-btn" data-cancel ${P.hist.length?'':'disabled'}>キャンセル<small>1つ戻す</small></button>
+    <div class="sp-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>
+    <button class="sp-go" data-done>確定</button></div>`;
+  const tb=$('.a-top'), md=m.querySelector('.sp-modes'); if(tb&&md) md.style.top=tb.offsetHeight+'px';
+  P.spKey=P.mode+'|'+sub; const nl=slip.querySelector('.sp-shl'); if(nl&&keep) nl.scrollTop=keep;
+}
 // 投票画面の高さを、実際に見えている範囲(下の操作盤の上まで)に合わせる。iPadのSafariは100vhが当てにならないため
 function fitBet(){
-  const el=document.querySelector('.bx'); if(!el) return;
+  const el=document.querySelector('.bx'); if(!el||isPhone()) return;
   const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight, slip=$('#padSlip');
   const top=el.getBoundingClientRect().top, foot=slip&&!slip.hidden?slip.offsetHeight:0;
   el.style.height=Math.max(240,Math.floor(vh-top-foot-14))+'px';
   if(P.bxScroll){ const [sb,sl]=P.bxScroll, nb=el.querySelector('.bx-body'), nl=el.querySelector('.bx-list'); if(nb) nb.scrollTop=sb; if(nl) nl.scrollTop=sl; P.bxScroll=null; }
 }
 let bxW=window.innerWidth;
-['resize','orientationchange'].forEach(t=>addEventListener(t,()=>setTimeout(()=>{ if(P.st&&P.tab==='bet'&&(window.innerWidth<1150)!==(bxW<1150)){ bxW=window.innerWidth; padRender(); } else fitBet(); },60)));
+['resize','orientationchange'].forEach(t=>addEventListener(t,()=>setTimeout(()=>{ if(isPad()&&isPhone()!==document.documentElement.classList.contains('phone')){ bxW=window.innerWidth; padRender(); return; } if(P.st&&P.tab==='bet'&&(window.innerWidth<1150)!==(bxW<1150)){ bxW=window.innerWidth; padRender(); } else fitBet(); },60)));
 if(window.visualViewport) window.visualViewport.addEventListener('resize',()=>setTimeout(fitBet,60));
 // 馬券画面のタッチ(処理したら true)
 function betClick(t,d){
   if(!P.st||P.st.phase!=='bet'||!P.pid||P.tab!=='bet') return false;
   const st=P.st;
+  if(d.hopen){ P.hopen=P.hopen===+d.hopen?0:+d.hopen; padRender(); return true; }
+  if(d.spdrawer!==undefined){ P.drawer=!P.drawer; padRender(); return true; }
   if(d.undo!==undefined){ P.unfix=true; P.opt=myTickets(); P.optRace=st.R; betSend(false); padRender(); return true; }
   if(P.my&&P.my.done&&!P.unfix) return true;
   if(d.mkmode){ P.mkMode=d.mkmode; padRender(); return true; }
-  if(d.btab){ P.mode=d.btab; sfx(880,0.05); padRender(); return true; }
+  if(d.btab){ P.mode=d.btab; P.drawer=false; sfx(880,0.05); padRender(); return true; }
   if(d.sub){ P.sub[P.mode]=d.sub; sfx(880,0.04); padRender(); return true; }
   if(d.denom){ P.unit=+d.denom; sfx(990,0.05); padRender(); return true; }
   if(d.selc){ const c=d.selc, n=+d.no, ms=P.sel[P.mode]||(P.sel[P.mode]={}), a=ms[c]||(ms[c]=[]); const i=a.indexOf(n);
@@ -4602,7 +4773,7 @@ function padRaceView(st,pv){
   const mine=(pv.bet||[]), ku=pv.ku;
   if(PR.on&&$('#prCv')&&st.phase==='result') return;     // ゴール直後:映像はそのまま(順位・馬券もそのまま)
   if(!(PR.on&&PR.R===st.R&&$('#prCv'))){
-    $('#padMain').innerHTML=`<div class="pr-wrap" id="prWrap">
+    $('#padMain').innerHTML=`<div class="pr-wrap${P.light?' light':''}" id="prWrap"><button class="pr-light" data-prlight>${P.light?'映像を流す':'軽い表示にする'}</button>
       <div class="pr-video"><canvas id="prCv"></canvas>
         <div class="pr-top"><span class="pr-rem" id="liveRem"></span><span class="pr-live"><i></i>LIVE</span></div>
         <div class="pr-cap"><b>実況</b><span id="prCap"></span><em>金色に光る馬 = あなたの馬券・持ち馬</em></div>
@@ -4656,6 +4827,7 @@ function padRaceStop(){ if(PR.raf) cancelAnimationFrame(PR.raf); PR.raf=0; if(PR
 // 画面の高さに合わせて映像の大きさを決める
 function prFit(){
   const w=$('#prWrap'); if(!w) return;
+  if(isPhone()){ w.style.height=''; return; }
   const vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
   w.style.height=Math.max(420,Math.floor(vh-w.getBoundingClientRect().top-10))+'px';
 }
@@ -4687,8 +4859,8 @@ function prSample(){
 function prFrame(){
   PR.raf=0;
   const cv=$('#prCv'); if(!PR.on||!cv||!S||!S.padView){ padRaceStop(); return; }
-  const box=cv.parentElement.getBoundingClientRect();
-  if(Math.abs(box.width-PR.w)>1||Math.abs(box.height-PR.h)>1){ layout(cv); PR.w=G.W; PR.h=G.H; S.ocam=null; }
+  const box=cv.parentElement.getBoundingClientRect(), lite=P.light&&isPhone();
+  if(!lite&&box.width>20&&(Math.abs(box.width-PR.w)>1||Math.abs(box.height-PR.h)>1)){ layout(cv); PR.w=G.W; PR.h=G.H; S.ocam=null; }
   const sm=prSample(), now=performance.now(); S.padCam=sm&&sm.cam||null;
   const run=sm?sm.run:S.horses.map((h,i)=>({x:0,ph:0,lane:i/Math.max(1,S.H-1),state:'cruise',place:null,fin:null}));
   const lead=Math.max(...run.map(r=>r.x)), rem=S.dist-lead;
@@ -4702,7 +4874,7 @@ function prFrame(){
   if(!PR.shobu&&!PR.cam&&lead>0&&rem<=Math.min(G.sw+400,S.dist*0.65)){ PR.shobu=true; S.fx.telop={text:'勝負どころ!',sub:`残り${Math.round(rem/100)*100}m 各馬が動き出す`,t0:now}; }
   if(!PR.warmS&&rem<=G.sw+500){ PR.warmS=true; warmSprites(sprScale(straightU(),true),1,[1]); }
   if(!PR.cam&&lead>0&&(rem<=G.sw||run.some(r=>r.place))){ PR.cam=true; S.cam={}; S.camT0=now; S.camClean=false; S.fx.telop={text:'最後の直線!',sub:`${S.crs.full} 直線 約${G.sw}m`,t0:now}; }
-  drawRace(stretchV(run));
+  if(!lite) drawRace(stretchV(run));   // 軽い表示(スマホ)では絵を描かない
   // 残り距離と実況
   const nf=run.filter(r=>r.place).length, rt=!sm?'ゲートイン…':nf?'ゴール!':!PR.gate?'ゲートイン…':`残り ${Math.max(0,Math.ceil(rem/50)*50)}m`;
   if(rt!==PR.remT){ PR.remT=rt; const e=$('#liveRem'); if(e) e.textContent=rt; }
@@ -5195,6 +5367,7 @@ $('#pad').addEventListener('click',e=>{
     try{ localStorage.setItem('g1.auth',JSON.stringify({name,pin})); }catch(e){}
     sendAct({type:'login',name,pin}); padRender(); return;
   }
+  if(d.prlight!==undefined){ P.light=!P.light; try{ localStorage.setItem('g1.light',P.light?'1':'0'); }catch(e){} const w=$('#prWrap'); if(w) w.classList.toggle('light',P.light); t.textContent=P.light?'映像を流す':'軽い表示にする'; PR.w=0; return; }
   if(t.id==='padSnd'){ soundOn=!soundOn; try{ localStorage.setItem('g1.snd',soundOn?'1':'0'); }catch(e){} if(soundOn) sfx(1320,0.06); toast(soundOn?'音を出します':'音を消しました'); padRender(); return; }
   if(t.id==='padLogout'){ if(confirm('ログアウトしますか?(同じ名前と合言葉でまたログインできます)')) sendAct({type:'logout'}); return; }
   if(d.a){ const h=findH(d.hid);
