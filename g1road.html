@@ -1091,7 +1091,9 @@ html.phone #padTabs[hidden]{display:none}
 html.phone .a-tab{border:0;border-radius:0;background:none;padding:8px 0;min-height:54px;font-size:12px;color:#9aa4d6;white-space:normal;line-height:1.3}
 html.phone .a-tab.on{background:none;color:var(--gl);box-shadow:inset 0 3px 0 var(--gl)}
 html.phone .a-main{padding:6px 8px 72px}
-html.phone #padSlip{bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+/* 下のタブの分だけ余白を取る(いちばん下の馬が操作盤に隠れないように) */
+html.phone .pad{padding-bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-anchor:none}
+html.phone #padSlip{bottom:0}   /* 余白の上で止まる(stickyは余白の内側が基準) */
 html.phone #padMain.sp-on{padding:0 0 8px}
 html.phone .a-msg{padding:6vh 6px 3vh}
 .sp-modes{position:sticky;top:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 8px 6px;background:var(--cab);scrollbar-width:none}
@@ -1164,7 +1166,7 @@ html.phone .a-msg{padding:6vh 6px 3vh}
   html.phone .sp-drow{flex:none;padding:6px 10px 0 0}
   html.phone .sp-desc{display:none}
   html.phone .a-tab{min-height:40px;padding:4px 0}
-  html.phone #padSlip{bottom:calc(42px + env(safe-area-inset-bottom,0px))}
+  html.phone .pad{padding-bottom:calc(42px + env(safe-area-inset-bottom,0px))}
   html.phone .pr-video{height:min(56vw,78vh)}
 }
 /* スマホのレース中:映像を上、その下に実況・このままなら・順位・馬券を縦に */
@@ -3128,7 +3130,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=43;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=44;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -4500,7 +4502,14 @@ function padTicker(st){
   tk.hidden=!txt; const sp=tk.querySelector('span'); sp.textContent=txt; sp.style.setProperty('--dur',Math.max(18,txt.length*0.35)+'s');
 }
 const TABS=[['bet','🎫 馬券'],['stable','🐴 厩舎'],['market','🏪 市場'],['farm','🌾 牧場'],['info','📅 情報']];
+// 画面を作り直しても、同じタブ・同じ場面ならスクロールの位置を保つ(タッチするたびに一番上へ戻らないように)
 function padRender(){
+  const pad=$('#pad'), y=pad?pad.scrollTop:0, k=P.tab+'|'+(P.st&&P.st.phase)+'|'+(P.st&&P.st.R);
+  padRender0();
+  if(pad&&P.keepK===k&&pad.scrollTop!==y) pad.scrollTop=y;
+  P.keepK=k;
+}
+function padRender0(){
   const st=P.st, m=$('#padMain'), who=$('#padWho');
   if(st===undefined) return;
   phoneChk(); m.classList.remove('sp-on');
@@ -5360,7 +5369,7 @@ $('#pad').addEventListener('click',e=>{
   const t=e.target.closest('button,[data-horse]'); if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ closeModal(); return; }
-  if(d.tab){ P.tab=d.tab; closeModal(); padRender(); window.scrollTo(0,0); $('#padMain').scrollTop=0; return; }
+  if(d.tab){ P.tab=d.tab; closeModal(); padRender(); window.scrollTo(0,0); $('#padMain').scrollTop=0; $('#pad').scrollTop=0; return; }
   if(t.id==='lgGo'){
     const name=($('#lgName').value||'').replace(/\s+/g,' ').trim().slice(0,10), pin=($('#lgPin').value||'').replace(/\D/g,'');
     if(!name) return toast('名前を入れてください'); if(pin.length!==4) return toast('合言葉は4桁の数字です');
