@@ -3046,7 +3046,7 @@ function runRace(){
   S.tickS=Math.max(16.6/0.45,STRAIGHT_SEC*1000/(600/S.step));   // 直線(とゴール後)の1コマの長さ
   stakeBets();
   S.phase='race'; render();
-  $('#pay').hidden=true; S.cam=null; S.camPrev=null; S.camOutT0=0; S.fx={}; S.photo=null; S.gate={open:null}; S.after=false; S.win=null;
+  $('#pay').hidden=true; S.cam=null; S.camPrev=null; S.camOutT0=0; S.fx={}; S.photo=null; S.du=false; S.gate={open:null};   // ダブルアップは前のレースの分を消してから(iPadに前のレースのダブルアップが届かないように) S.after=false; S.win=null;
   layout();
   SPR.sets.clear(); SPR.queue=[]; warmSprites(sprScale(G.u,false),0,[1,-1]); S.warmS=false;   // ファンファーレの間に馬の画像を作っておく
   const run=newRun(), me=S; S.lastRun=run; S.ocam=null; run.forEach((r,i)=>r.lane=i/Math.max(1,S.H-1)); drawRace(run); renderOrder(run); sendLive(run,true); sendTrk(run);
@@ -3201,7 +3201,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=45;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=46;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
