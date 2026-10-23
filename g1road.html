@@ -1169,6 +1169,76 @@ html.phone .a-msg{padding:6vh 6px 3vh}
   html.phone .pad{padding-bottom:calc(42px + env(safe-area-inset-bottom,0px))}
   html.phone .pr-video{height:min(56vw,78vh)}
 }
+
+/* VIPモード(版45) */
+.a-vip{font-family:var(--arc);font-size:13px;color:#1a0f00;background:linear-gradient(135deg,#fff3b0,#e6b422 45%,#fff6c8 55%,#c08a10);padding:2px 10px;border-radius:999px;border:1px solid #fff;letter-spacing:.08em;box-shadow:0 0 10px rgba(255,207,58,.7)}
+.ab-coin.c2000{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#0f7d7a}
+.ab-coin.c4000{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#3b4fd0}
+.ab-coin.c5000{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45) 0,transparent 45%),#a0177a}
+.ab-coin.c9999{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.6) 0,transparent 45%),linear-gradient(135deg,#1a1a1a,#4a3a00);color:#ffe27a;border-color:#ffcf3a}
+.ab-coin.vip b{font-size:12px;letter-spacing:-.04em}
+.bx-denom.vipd small{color:var(--gl)}
+.bx-deck .bx-denom.vipd .ab-coin{width:38px;height:38px}
+.bx-deck .bx-denom.vipd .ab-coin b{font-size:12px}
+.bx-deck .bx-denom.vipd>div{gap:3px}
+.bx-deck:has(.vipd) .bx-hint{display:none}
+/* スマホ:厩舎・市場・牧場・情報・ポップアップ(版45) */
+html.phone .ptitle{font-size:19px;gap:4px 10px;margin:4px 2px 8px}
+html.phone .ptitle small{font-size:12px;flex-basis:100%}
+html.phone .hcards{grid-template-columns:1fr;gap:10px}
+html.phone .hcard{padding:10px;border-width:2px}
+html.phone .hhead{align-items:flex-start}
+html.phone .hcv{width:96px;height:54px}
+html.phone .hcard h4{font-size:17px;flex-wrap:wrap}
+html.phone .hcard .btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+html.phone .hcard .btns .price{grid-column:1/-1;margin:0}
+html.phone .hb{min-height:44px;font-size:13px;padding:6px 8px}
+html.phone .ikbars{font-size:13px}
+html.phone .iksub{font-size:13px;line-height:1.6}
+html.phone #padModal{padding:0;align-items:flex-end}
+html.phone #padModal .box{max-width:none;max-height:90vh;border-radius:16px 16px 0 0;border-width:3px 0 0;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}
+html.phone .mbtns{position:sticky;bottom:-12px;background:#141a38;padding:8px 0 4px;margin-top:8px}
+html.phone .mbtns .hb{flex:1}
+html.phone .sakrow{grid-template-columns:1fr;gap:6px}
+html.phone .sakb{display:grid;grid-template-columns:28px auto 1fr;grid-template-areas:"i n f" "d d d";align-items:center;text-align:left;padding:8px 10px;column-gap:8px}
+html.phone .sakb .ic{grid-area:i}html.phone .sakb b{grid-area:n}html.phone .sakb .fitl{grid-area:f;text-align:right}html.phone .sakb small{grid-area:d;font-size:12px}
+html.phone .elist li{flex-wrap:wrap;gap:6px}
+html.phone .elist li .rname2{flex:1 1 60%;min-width:0}
+html.phone .elist .why{max-width:none;flex-basis:100%;text-align:left;margin-left:2.4em}
+html.phone .elist li button{min-height:44px}
+html.phone .ikmenu.tr{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+html.phone .ikm{padding:8px 4px}
+html.phone .ikm .ic{font-size:28px}
+html.phone .ikm b{font-size:15px}
+html.phone .trnow{font-size:12px}
+html.phone .aggs .ag{font-size:13px}
+html.phone table.hist{font-size:12px}
+html.phone .farmbar{flex-direction:column;align-items:stretch}
+html.phone .farmbar .hb{width:100%}
+html.phone .fcards{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+html.phone .fcard{padding:7px 8px;min-height:84px}
+html.phone .fcard .hd{font-size:13px}
+html.phone .flist{grid-template-columns:1fr}
+html.phone .flvl div{flex-direction:column;gap:2px}
+html.phone .info{grid-template-columns:1fr}
+html.phone .ical{font-size:14px}
+html.phone .ical li small{margin-left:0;flex-basis:100%}
+html.phone .ical.best1 li{flex-wrap:wrap}
+html.phone .ical.best1 small.bd{flex-basis:100%;order:3;text-align:left;margin-left:2.4em}
+html.phone .rulebox{font-size:13px}
+html.phone .a-list li{flex-wrap:wrap}
+html.phone .nmbox input{font-size:20px}
+html.phone .a-res h1{font-size:clamp(48px,14vw,72px)}
+html.phone .a-res .pay{font-size:clamp(34px,10vw,48px)}
+html.phone .a-res .cols{grid-template-columns:1fr}
+html.phone .bw-box{min-width:0;width:calc(100vw - 24px)}
+html.phone .bw-t{font-size:22px}
+/* 作戦の「合う・合わない」は、先生の画面の .g(班カード)の見た目と名前がぶつかっていたので打ち消す */
+.sakb .fitl{background:none;border:0;padding:0;border-radius:0;display:block;position:static;opacity:1}
+.bx-cell .am,.sp-cell .am{white-space:nowrap}
+html.phone .a-panel h3{flex-wrap:wrap;gap:2px 8px}
+html.phone .a-panel h3 small{flex-basis:100%}
+html.phone .hcard .btns .price~.hb{grid-column:1/-1}
 /* スマホのレース中:映像を上、その下に実況・このままなら・順位・馬券を縦に */
 html.phone .pr-wrap{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto!important}
 html.phone .pr-video{height:min(56vw,62vh);flex:none;min-height:0;border-radius:8px}
@@ -1613,13 +1683,14 @@ const remain=g=>g.money-tkTotal(g.tickets);
 function addTicket(list,t){ const s=list.find(x=>tkSame(x,t)); if(s){ s.amt+=t.amt; return; }
   list.push({type:t.type,hs:BT[t.type].ord?[...t.hs]:[...t.hs].sort((a,b)=>a-b),amt:t.amt}); }
 // 届いた馬券を確かめる(おかしなものは捨て、所持金を超える分は受け付けない)
-function cleanTickets(arr,money,H){
+function cleanTickets(arr,money,H,max){
+  const MX=max||MAXBET;
   const out=[]; let sum=0; const ok=n=>Number.isInteger(n)&&n>=1&&n<=H;
   (Array.isArray(arr)?arr:Object.values(arr||{})).slice(0,200).forEach(t=>{
     if(!t||!BT[t.type]) return;
     const hs=(Array.isArray(t.hs)?t.hs:Object.values(t.hs||{})).map(Number), amt=Math.floor(+t.amt||0);
     if(hs.length!==BT[t.type].k||!hs.every(ok)||new Set(hs).size!==hs.length||amt<1) return;
-    const ex=out.find(x=>tkSame(x,{type:t.type,hs})), a=Math.min(amt,MAXBET-(ex?ex.amt:0),money-sum);
+    const ex=out.find(x=>tkSame(x,{type:t.type,hs})), a=Math.min(amt,MX-(ex?ex.amt:0),money-sum);
     if(a<1) return;
     addTicket(out,{type:t.type,hs,amt:a}); sum+=a;
   });
@@ -3130,7 +3201,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=44;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=45;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3451,6 +3522,11 @@ const WRITERS=['本紙','A記者','B記者','C記者'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=n=>Math.floor(Math.random()*n);
 const MAXBET=999;            // 1点あたりの上限(枚)
+// VIPモード(版45):コインが VIP_LINE 枚を超えている人は、1点 VIP_MAX 枚までBETできる
+// 判定は投票中のコイン(馬券の代金はレース開始で引くので、投票のあいだは変わらない)
+const VIP_LINE=100000, VIP_MAX=9999;
+const isVip=coins=>(coins||0)>VIP_LINE;
+const maxBetOf=coins=>isVip(coins)?VIP_MAX:MAXBET;
 // 払い戻しのボーナス
 const DU_P=0.08;                              // ダブルアップチャンス(レース開始直後に発動。払い戻しがオッズの2倍)の確率
 const STREAK_B=n=>n>=5?0.10:n===4?0.08:n===3?0.05:n===2?0.02:0;   // 馬券の連チャンボーナス(2連2%・3連5%・4連8%・5連以上10%)
@@ -3864,7 +3940,7 @@ function stakeBets(){
   Object.keys(S.bets).forEach(pid=>{ const p=W.players[pid], b=S.bets[pid];
     if(!p){ delete S.bets[pid]; return; }
     let ku=kuNo(b.ku), kp=ku?S.horses[ku-1].ku:0; if(kp>p.coins){ ku=0; kp=0; }
-    const ts=cleanTickets(b.tickets,p.coins-kp,S.H), st=tkTotal(ts);
+    const ts=cleanTickets(b.tickets,p.coins-kp,S.H,maxBetOf(p.coins)), st=tkTotal(ts);
     if(!ts.length&&!ku){ delete S.bets[pid]; return; }
     p.coins-=st+kp; S.bets[pid]={tickets:ts,staked:st,ku,kp}; });
 }
@@ -4278,7 +4354,7 @@ function onRemoteBets(v){
   if(!S||!W||S.phase!=='bet'||!v) return; let ch=false;
   Object.entries(v).forEach(([pid,b])=>{ const p=W.players[pid]; if(!p||!b||b.race!==W.R||W.devs[b.dev]!==pid) return;
     let ku=kuNo(b.ku); if(ku&&S.horses[ku-1].ku>p.coins) ku=0;
-    const ts=cleanTickets(b.tickets,p.coins-(ku?S.horses[ku-1].ku:0),S.H), done=!!b.done, cur=S.bets[pid];
+    const ts=cleanTickets(b.tickets,p.coins-(ku?S.horses[ku-1].ku:0),S.H,maxBetOf(p.coins)), done=!!b.done, cur=S.bets[pid];
     if(!ts.length&&!done&&!ku){ if(cur){ delete S.bets[pid]; ch=true; } return; }
     if(!cur||JSON.stringify(cur.tickets)!==JSON.stringify(ts)||cur.done!==done||(cur.ku||0)!==ku){ S.bets[pid]={tickets:ts,done,ku}; ch=true; } });
   if(ch){ renderPaper(); $('#phase').textContent=`投票受付中!iPadで馬券を購入できます(投票 ${Object.keys(S.bets).length}人)`; pushState(); }
@@ -4491,7 +4567,7 @@ const tkName=t=>`${BT[t.type].name} ${t.hs.map(aNum).join(BT[t.type].ord?'→':'
 // 一口馬主:選んだ馬番(押した直後はiPadの選択、そうでなければ先生のPCに届いている選択)と値段
 function myKu(){ if(!P.st) return 0; const n=P.ku&&P.ku.R===P.st.R?P.ku.no:(P.my&&+P.my.ku)||0; return n&&P.st.horses[n-1]?n:0; }
 function kuP(){ const n=myKu(); return n?(P.st.horses[n-1].ku||0):0; }
-function myTickets(){ if(!P.pv||!P.st) return []; const src=P.opt&&P.optRace===P.st.R?P.opt:P.my?P.my.tickets:[]; return cleanTickets(src,Math.max(0,P.pv.coins-kuP()),P.st.horses.length); }
+function myTickets(){ if(!P.pv||!P.st) return []; const src=P.opt&&P.optRace===P.st.R?P.opt:P.my?P.my.tickets:[]; return cleanTickets(src,Math.max(0,P.pv.coins-kuP()),P.st.horses.length,maxBetOf(P.pv.coins)); }
 function padTicker(st){
   const tk=$('#padTicker'), key=st.phase+st.R+(st.news[0]?st.news[0].t:'');
   if(P.tickerKey===key) return; P.tickerKey=key;
@@ -4539,7 +4615,7 @@ function padRender0(){
   // 投票受付中の馬券画面では、下の操作盤にCREDIT(のこり)があるので上には出さない
   const deck=bet&&P.tab==='bet';
   const nb=STREAK_B((pv.streak||0)+1);
-  who.innerHTML=`${pv.king?'<span class="a-king" title="馬券王:払い戻し+5%">👑馬券王</span>':''}${pv.streak>=1?`<span class="a-streak">🔥${pv.streak}連${nb?` 次+${Math.round(nb*100)}%`:''}</span>`:''}<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg snd" id="padSnd" aria-label="音">${soundOn?'🔊':'🔇'}</button><button class="chg" id="padLogout">ログアウト</button>`;
+  who.innerHTML=`${isVip(pv.coins)?'<span class="a-vip" title="コイン10万枚超え:1点9999枚までBETできます">VIP</span>':''}${pv.king?'<span class="a-king" title="馬券王:払い戻し+5%">👑馬券王</span>':''}${pv.streak>=1?`<span class="a-streak">🔥${pv.streak}連${nb?` 次+${Math.round(nb*100)}%`:''}</span>`:''}<span class="a-team">${esc(pv.name)}</span>${deck?'':`<small>コイン</small><span class="led">${yen(left)}</span>`}<button class="chg snd" id="padSnd" aria-label="音">${soundOn?'🔊':'🔇'}</button><button class="chg" id="padLogout">ログアウト</button>`;
   const tabs=$('#padTabs'); tabs.hidden=false;
   tabs.innerHTML=TABS.map(([k,n])=>`<button class="a-tab ${P.tab===k?'on':''}" data-tab="${k}">${n}${k==='stable'&&(P.newMsg||pv.horses.some(h=>h.status==='active'&&!h.trained&&!h.inCard))?'<i class="dotn"></i>':''}</button>`).join('');
   $('#padSlip').hidden=true;
@@ -4563,7 +4639,10 @@ function tkList(st,list,res,del){
     <div class="a-sum">合計 ${yen(tkTotal(list))}</div>`;
 }
 /* 馬券(アーケード風):出馬表とオッズが1つの表。オッズの枠をタッチすると、その場でBETされる */
-const DENOM=[1,10,50,100,200,500,999];
+const DENOM=[1,10,50,100,200,500,999], DENOM_VIP=[...DENOM,2000,4000,5000,9999];
+// いま使えるBET単位(VIPでなくなったら、大きい単位は999にもどす)
+function denoms(){ const v=P.pv&&isVip(P.pv.coins), L=v?DENOM_VIP:DENOM; if(!L.includes(P.unit)) P.unit=P.unit>999?999:10; return L; }
+const coinBtn=v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}${v>999?' vip':''}" data-denom="${v}" aria-label="BET単位 ${v}枚"><b>${v}</b><span>枚</span></button>`;
 const BTABS=[['tf','単・複'],['qn','馬連'],['ex','馬単'],['wd','ワイド'],['t3f','3連複'],['t3','3連単'],['ku','一口馬主']];
 // 券種ごとの選び方(列)と切りかえ
 const BSUB={qn:['流し','ボックス','人気順'],wd:['流し','ボックス','人気順'],ex:['フォーメーション','ボックス','人気順'],t3f:['1頭軸','2頭軸','ボックス','人気順'],t3:['フォーメーション','ボックス','人気順']};
@@ -4599,8 +4678,8 @@ function bhint(){ const m=P.mode, s=bsub();
 function betAdd(items){
   const st=P.st, base=myTickets(); let n=0, w='';
   const before=JSON.stringify(base);
-  items.forEach(t=>{ const cur=amtIn(base,t.type,t.hs), left=P.pv.coins-tkTotal(base)-kuP(), a=Math.min(t.amt,MAXBET-cur,left);
-    if(a<1){ w=left<1?'コインが足りません':`同じ買い目は${MAXBET}枚までです`; return; } addTicket(base,{type:t.type,hs:t.hs,amt:a}); n++; });
+  items.forEach(t=>{ const cur=amtIn(base,t.type,t.hs), left=P.pv.coins-tkTotal(base)-kuP(), a=Math.min(t.amt,maxBetOf(P.pv.coins)-cur,left);
+    if(a<1){ w=left<1?'コインが足りません':`同じ買い目は${maxBetOf(P.pv.coins)}枚までです`; return; } addTicket(base,{type:t.type,hs:t.hs,amt:a}); n++; });
   if(!n){ sfx(160,0.12,0.06); toast(w); return; }
   P.hist.push(before); P.opt=base; P.optRace=st.R; betSend(); sfx(1320,0.06);
   if(w) toast(`${n}点をBETしました(${w})`);
@@ -4615,8 +4694,9 @@ function betSend(done){
     .catch(()=>toast('送信できませんでした。もう一度タッチしてください。'))
     .finally(()=>{ clearTimeout(slow); P.sending=false; if(P.dirty) betSend(); });
 }
+function vipNote(pv){ const v=isVip(pv.coins); if(P.vipWas!=null&&v!==P.vipWas) toast(v?'VIPモード!1点9999枚までBETできます(BET単位も増えました)':'コインが10万枚以下になったので、VIPモードは終わりました(1点999枚まで)'); P.vipWas=v; }
 function padBet(st,pv){
-  const m=$('#padMain');
+  const m=$('#padMain'); vipNote(pv);
   if(!P.odds||P.odds.race!==st.R){ padMsg('オッズを受信中…',''); return; }
   if(isPhone()) return padBetPhone(st,pv);
   const H=st.horses.length, fixed=!!(P.my&&P.my.done&&!(P.opt&&P.optRace===st.R&&P.unfix)), mine=myTickets(), cols=bcols(), tf=P.mode==='tf', ku=P.mode==='ku', myk=myKu(), kup=kuP(), MCOL={'◎':'m0','○':'m1','▲':'m2','△':'m3','×':'m4'};
@@ -4668,7 +4748,7 @@ function padBet(st,pv){
   const total=tkTotal(mine)+kup;
   if(fixed){ slip.innerHTML=`<div class="a-fixed"><b>✅ 投票を確定しました(${mine.length}点${myk?' ＋一口馬主':''} ${yen(total)})</b><span>前のスクリーンでレースが始まるのを待ちましょう(そのあいだに厩舎で調教もできます)</span></div><button class="bx-btn" data-undo>修正する</button>`; fitBet(); return; }
   slip.innerHTML=`<button class="bx-btn" data-cancel ${P.hist.length?'':'disabled'}>キャンセル<small>直前のBETを取り消す</small></button>
-    <div class="bx-denom"><small>BET単位</small><div>${DENOM.map(v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}" data-denom="${v}"><b>${v}</b><span>枚</span></button>`).join('')}</div></div>
+    <div class="bx-denom${isVip(pv.coins)?' vipd':''}"><small>${isVip(pv.coins)?'VIP BET単位':'BET単位'}</small><div>${denoms().map(coinBtn).join('')}</div></div>
     <span class="bx-hint">${tf?'オッズの枠をタッチするとすぐBET':ku?'一口馬主の枠をタッチすると購入':'組み合わせの枠をタッチするとすぐBET'}<br>締め切りまで何度でも追加・取り消しできます</span>
     <div class="bx-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>`;
   fitBet();
@@ -4686,7 +4766,7 @@ function padBetPhone(st,pv){
     const own=h.pid===P.pid, sel=cols.some(c=>selOf(c).includes(h.no)), open=P.hopen===h.no;
     const tag=own?'<em class="me">自分の馬</em>':h.owner?`<em>${esc(h.owner)}</em>`:'';
     let right='';
-    if(tf) right=['win','plc'].map(t=>{ const a=amtIn(mine,t,[h.no]); return `<button class="sp-cell${a?' lit':''}" data-bet1="${t}" data-no="${h.no}"><span class="lb">${t==='win'?'単勝':'複勝'}</span><span class="od">${(t==='win'?h.win:h.plc).toFixed(1)}</span><span class="am">${a?yen(a):'0'}</span></button>`; }).join('');
+    if(tf) right=['win','plc'].map(t=>{ const a=amtIn(mine,t,[h.no]); return `<button class="sp-cell${a?' lit':''}" data-bet1="${t}" data-no="${h.no}"><span class="lb">${t==='win'?'単勝':'複勝'}</span><span class="od">${(t==='win'?h.win:h.plc).toFixed(1)}</span><span class="am">${a?(a>=1000?a.toLocaleString('ja-JP'):yen(a)):'0'}</span></button>`; }).join('');
     else if(ku){ const on=myk===h.no; right=`<button class="sp-cell ku${on?' lit':''}" data-kuno="${h.no}"><span class="lb">一口</span><span class="od">${yen(h.ku||0)}</span><span class="am">${on?'購入中':'タッチで買う'}</span></button>`; }
     else right=`<span class="sp-wo">${h.win.toFixed(1)}</span>`+cols.map(c=>{ const on=selOf(c).includes(h.no); return `<button class="sp-sb${on?' on':''}" style="${on?`background:${SB[c]}`:''}" data-selc="${c}" data-no="${h.no}" aria-label="${h.no}番を${c}に">${c}</button>`; }).join('');
     const mk=(h.marks||[]).map((x,j)=>x?`${WRITERS[j]} <b class="${MC[x]||''}">${x}</b>`:'').filter(Boolean).join(' ');
@@ -4712,7 +4792,7 @@ function padBetPhone(st,pv){
       ${list.length&&sub!=='人気順'?`<button class="sp-all" data-betall>全部に${P.unit}枚ずつBET(${list.length}点 ${yen(list.length*P.unit)})</button>`:''}</div>`;
   }
   if(fixed) slip.innerHTML=`<div class="sp-drow" style="padding-top:8px"><div class="sp-fix"><b>投票を確定しました</b><span>${mine.length}点${myk?'+一口馬主':''} ${yen(total)}。レースが始まるのを待ちましょう</span></div><button class="bx-btn" data-undo>修正する</button></div>`;
-  else slip.innerHTML=top+`<div class="sp-coins" style="padding-top:${top?0:8}px"><small>BET単位</small>${DENOM.map(v=>`<button class="ab-coin c${v}${P.unit===v?' on':''}" data-denom="${v}" aria-label="BET単位 ${v}枚"><b>${v}</b><span>枚</span></button>`).join('')}</div>
+  else slip.innerHTML=top+`<div class="sp-coins" style="padding-top:${top?0:8}px"><small>${isVip(pv.coins)?'VIP<br>単位':'BET<br>単位'}</small>${denoms().map(coinBtn).join('')}</div>
     <div class="sp-drow"><button class="bx-btn" data-cancel ${P.hist.length?'':'disabled'}>キャンセル<small>1つ戻す</small></button>
     <div class="sp-leds"><div><small>BET合計</small><span class="led g">${yen(total)}</span></div><div><small>CREDIT</small><span class="led">${yen(pv.coins-total)}</span></div></div>
     <button class="sp-go" data-done>確定</button></div>`;
@@ -5285,7 +5365,7 @@ function padInfo(st,pv){
       ・ダブルアップチャンス:レースが始まった直後に、まれに発動。そのレースの払い戻しがオッズの2倍になります<br>
       ・連チャンボーナス:馬券を続けて当てると払い戻しが増えます(2連+2%・3連+5%・4連+8%・5連以上+10%)。払い戻しが賭けた額以上のときだけ「当たり」に数えます(トリガミは数えない)。外れると0にもどります。馬券を買わなかったレースは数えません<br>
       ・馬券王:そのレースで払い戻しが一番多かった人が「馬券王」。誰も当たらなければそのまま。馬券王のあいだは払い戻し+${Math.round(KING_B*100)}%<br>
-      ・馬券は1点${MAXBET}枚まで。コインが${AID.under}枚未満になると${AID.amount}枚の支給(${AID.every}レースに1回)</div></div>
+      ・馬券は1点${MAXBET}枚まで。コインが${VIP_LINE.toLocaleString('ja-JP')}枚を超えている人は「VIPモード」で1点${VIP_MAX}枚まで(BET単位に2000・4000・5000・9999が増えます)。コインが${AID.under}枚未満になると${AID.amount}枚の支給(${AID.every}レースに1回)</div></div>
     <div class="a-panel" style="margin-top:10px"><h3>🏛️ 歴代の名馬<small>引退したときにG1を勝っていた馬(殿堂入り:G1を3勝以上など)</small></h3><ol class="ical hofl">${(st.hof||[]).map((x,i)=>`<li><span class="rn">${i+1}</span><span class="tt">${TTL[x.ttl].ic}${TTL[x.ttl].n}</span><span>${esc(x.name)}<small> ${esc(x.owner)}さん ・ ${x.runs}戦${x.wins}勝${(x.big||[]).length?' ・ '+x.big.map(esc).join('・'):''}</small></span><b>${yen(x.prize)}</b></li>`).join('')||'<li>まだいません。G1を勝った馬が引退すると、ここに名前が残ります</li>'}</ol></div>
     <div class="a-panel" style="margin-top:10px"><h3>ニュース</h3><ul class="a-list">${st.news.slice(0,8).map(n=>`<li><span class="dim">第${n.R}戦</span><span>${esc(n.t)}</span></li>`).join('')}</ul></div></div></div>`;
 }
