@@ -1239,6 +1239,12 @@ html.phone .bw-t{font-size:22px}
 html.phone .a-panel h3{flex-wrap:wrap;gap:2px 8px}
 html.phone .a-panel h3 small{flex-basis:100%}
 html.phone .hcard .btns .price~.hb{grid-column:1/-1}
+/* 次の年齢まで(版48) */
+.nyage{margin-top:4px;font-size:13px;color:#cfd5f5}
+.nyage b{font-family:var(--arc);font-weight:400;font-size:17px;color:var(--gl);margin:0 2px}
+.nyage small{font-size:11px;color:#9aa4d6;margin-left:4px}
+.nyage.rf b{color:#7dffb0}
+html.phone .nyage small{display:block;margin-left:0}
 /* スマホのレース中:映像を上、その下に実況・このままなら・順位・馬券を縦に */
 html.phone .pr-wrap{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto!important}
 html.phone .pr-video{height:min(56vw,62vh);flex:none;min-height:0;border-radius:8px}
@@ -3204,7 +3210,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=47;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=49;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -3608,6 +3614,7 @@ const TRAIN={
   g1awase:{g:'施設',name:'G1馬と併せ',ic:'👑',up:ALL5(5),fat:5,cost:100,seed:'bg',sx:2,key:'gt',fac:['pair',3],desc:'全部↑↑ 大舞台の芽が2倍'},
   suichu:{g:'施設',name:'水中ウォーク',ic:'🫧',up:{sta:6,pw:3},fat:-1,cost:40,fac:['pool',2],desc:'スタミナ↑ パワー↑(少し) 疲れ少し回復'},
   capsule:{g:'施設',name:'酸素カプセル',ic:'💊',up:{},fat:-4,cond:2,cost:50,fac:['onsen',2],desc:'疲れがかなり取れて調子↑↑'},
+  refresh:{g:'施設',name:'リフレッシュ放牧',ic:'🍃',up:{},fat:-2,cond:1,cost:150,fac:['pasture',2],desc:'ピーク後の衰えが12レース分 半分に(下り坂の馬に効く)'},
   beach:{g:'特訓',name:'砂浜トレーニング',ic:'🏖️',up:{pw:6,sta:5},fat:2,cost:55,seed:'iron',key:'pw',desc:'パワー↑↑ スタミナ↑↑'}};
 const TIER={cheap:{name:'お手頃',price:150,base:40,cap:63},mid:{name:'中堅',price:400,base:45,cap:72},blue:{name:'良血',price:1000,base:49,cap:82},
   up:{name:'上級',price:2500,base:52,cap:86},top:{name:'最上級',price:6000,base:55,cap:90},sel:{name:'セレクトセール',price:12000,base:58,cap:94}};   // 上級〜は馬主会館の人だけ
@@ -3622,7 +3629,7 @@ const FAC={
   pool:{n:'屋内プール',ic:'🏊',g:'調教',lv:['プール・海で遠泳の伸び+15%','伸び+30%、新メニュー「水中ウォーク」(疲れを取りながらスタミナ↑)','伸び+50%、プール・海で遠泳が半額']},
   onsen:{n:'温泉施設',ic:'♨️',g:'ケア',lv:['温泉療養・マッサージが半額','新メニュー「酸素カプセル」(疲れ−4、調子↑↑)','調教しなかった馬の疲れの回復が1→2に']},
   clinic:{n:'診療所',ic:'🩺',g:'ケア',lv:['ケガの確率−30%','ケガの確率−50%、ケガが1レース早く治る','ケガの確率−70%、ケガが2レース早く治る']},
-  pasture:{n:'広い放牧地',ic:'🌿',g:'ケア',lv:['放牧が半額','調教しなかった馬の調子が下がらない','6歳からの衰えがゆるやかに']},
+  pasture:{n:'広い放牧地',ic:'🌿',g:'ケア',lv:['放牧が半額','調教しなかった馬の調子が下がらない、新メニュー「リフレッシュ放牧」(ピーク後の衰えを12レース分 半分に)','6歳からの衰えがゆるやかに']},
   club:{n:'馬主会館',ic:'🏛️',g:'経営',lv:['自分の市場に「上級」の馬(素質86前後・約2,500枚)','「最上級」の馬(素質90前後・約6,000枚)も並ぶ','「セレクトセール」(素質94前後・約12,000枚)が入れ替えごとに1頭']},
   info:{n:'情報室',ic:'🔍',g:'経営',lv:['市場の馬の成長型が見える','市場の馬の素質(どこまで伸びるか)の目安が見える','市場の馬の個性が買う前に分かる']},
   breed:{n:'繁殖センター',ic:'🧬',g:'経営',lv:['上級の種牡馬・繁殖牝馬と配合できる','最上級とも配合できる、種付け料−20%','子馬の素質が上ブレしやすい']},
@@ -3764,7 +3771,11 @@ function msg(pid,t){ const p=W.players[pid]; if(!p) return; p.msgs.unshift({R:W.
 const ageAt=(h,R)=>2+((h.lv||0)+Math.max(0,R-W.R))/YEAR;
 // そのレースに参加していたプレイヤー(馬券・一口を買った人と、iPadがつながっていた人)
 function activePids(){ const s=new Set(Object.keys((S&&S.bets)||{})); if(NET) Object.keys(NET.pres||{}).forEach(d=>{ const pid=W.devs[d]; if(pid&&W.players[pid]) s.add(pid); }); return s; }
-const effOf=(h,R)=>{ const a=ageAt(h,R); let k=curve(h.grow,a); if(a>=6&&k<1&&facOf(h.owner,'pasture')>=3) k+=(1-k)*0.35; const e={}; SK.forEach(s=>e[s]=Math.round(h.st[s]*k)); return e; };
+// 体の年齢(版49):リフレッシュ放牧の効果のぶん、能力の曲線だけ若く数える(年齢の表示はそのまま)
+const bodyAge=(h,R)=>ageAt(h,R)-(h.rfOff||0);
+// その成長型のピークの終わり(能力の倍率が1の最後の年齢)。これを過ぎると下り坂
+const peakEnd=g=>{ const p=(GROW[g]||GROW.normal).pts; let e=p[0][0]; p.forEach(([x,y])=>{ if(y>=1) e=x; }); return e; };
+const effOf=(h,R)=>{ const a=bodyAge(h,R); let k=curve(h.grow,a); if(a>=6&&k<1&&facOf(h.owner,'pasture')>=3) k+=(1-k)*0.35; const e={}; SK.forEach(s=>e[s]=Math.round(h.st[s]*k)); return e; };
 const activeOf=pid=>Object.values(W.horses).filter(h=>h.owner===pid&&h.status==='active');
 const slotsUsed=pid=>activeOf(pid).length+((W.players[pid]||{}).preg||[]).length;
 const growShown=h=>h.rec.runs>=4||ageAt(h,W.R)>=3.5;
@@ -4057,7 +4068,10 @@ function nextRound(){
   if(!S||S.waitNext) return;
   S.after=false; S.win=null; cafX(raf); crowd(0,0.5); hideIntro(); stopTimer();
   const ran=new Set(S.horses.filter(h=>h.hid).map(h=>h.hid)), act=activePids();
-  Object.values(W.horses).forEach(h=>{ if(act.has(h.owner)) h.lv=(h.lv||0)+1; });   // 参加していた馬主の馬だけ年をとる
+  Object.values(W.horses).forEach(h=>{ if(!act.has(h.owner)) return;
+    // リフレッシュ放牧:下り坂の馬は、このレースぶんの体の年齢の進み方が半分(ピーク前は回数を減らさずに取っておく)
+    if(h.status==='active'&&h.rfLeft>0&&bodyAge(h,W.R)>=peakEnd(h.grow)){ h.rfOff=(h.rfOff||0)+0.5/YEAR; h.rfLeft--; }
+    h.lv=(h.lv||0)+1; });   // 参加していた馬主の馬だけ年をとる
   Object.values(W.horses).forEach(h=>{ if(h.inj>0&&act.has(h.owner)){ h.inj--; if(!h.inj) msg(h.owner,`🩹 ${h.name}のケガが治りました!また出走できます`); } });   // ケガも参加したレースの数で治る
   Object.values(W.horses).forEach(h=>{ if(h.status!=='active') return;
     const idle=h.trainedR!==W.R&&!ran.has(h.id);
@@ -4128,7 +4142,7 @@ function doAct(dev,a){
       if(inCard) return {ok:false,msg:'いまのレースに出走中です'};
       if(h.trainedR===W.R) return {ok:false,msg:'この馬はこのレースの間にもう調教しました'};
       if(h.nn) return {ok:false,msg:'先に名前を付けてください'};
-      if(h.inj>0&&M.g!=='休む'&&a.menu!=='capsule') return {ok:false,msg:'ケガで休養中です。「休む」の調教だけできます'};
+      if(h.inj>0&&M.g!=='休む'&&a.menu!=='capsule'&&a.menu!=='refresh') return {ok:false,msg:'ケガで休養中です。「休む」の調教だけできます'};
       const lk=trainLock(p.farm,M); if(lk) return {ok:false,msg:lk.replace('🔒 ','')+'されるメニューです'};
       const cost=trainCost(p.farm,a.menu); if(p.coins<cost) return {ok:false,msg:'コインが足りません'};
       p.coins-=cost; return {ok:true,msg:doTrain(h,a.menu)}; }
@@ -4212,7 +4226,8 @@ function doTrain(h,menu){
       else if(r2&&r2.hint) note=` 🌱${SEEDN[M.seed]}の素質が見えてきた…`; } }
   // ケガ:疲れが多いままハード・特訓をすると、まれに軽いケガ。放牧・温泉療養はケガの治りを1レース早める
   if(injOn()&&f0>=4&&(M.fat>=4||M.g==='特訓')&&!inNextCard(h)&&Math.random()<INJ.tr*(h.tr==='iron'?0.5:1)*CLINIC[facOf(h.owner,'clinic')]){ hurt(h,'調教'); note+=` 🩹ケガをしてしまった…あと${h.inj}レース休養`; }
-  if(h.inj>0&&(menu==='farm'||menu==='onsen')){ h.inj--; note+=h.inj?` 🩹ケガの治りが早まった(あと${h.inj}レース)`:' 🩹ケガが治りました!'; if(!h.inj) msg(h.owner,`🩹 ${h.name}のケガが治りました!また出走できます`); }
+  if(menu==='refresh'){ const before=h.rfLeft||0; h.rfLeft=Math.min(24,before+12); note+=` 🍃衰えを半分にする効果:あと${h.rfLeft}レース分${before+12>24?'(たくわえは24レース分まで)':''}`; }
+  if(h.inj>0&&(menu==='farm'||menu==='onsen'||menu==='refresh')){ h.inj--; note+=h.inj?` 🩹ケガの治りが早まった(あと${h.inj}レース)`:' 🩹ケガが治りました!'; if(!h.inj) msg(h.owner,`🩹 ${h.name}のケガが治りました!また出走できます`); }
   if(M.cond) h.cond=Math.min(2,h.cond+M.cond); else if(h.fat>=4) h.cond=Math.max(-2,h.cond-1);
   else if(Math.random()<0.2) h.cond=clamp(h.cond+(Math.random()<0.5?1:-1),-2,2);
   h.trainedR=W.R;
@@ -4335,7 +4350,7 @@ function pushState(){
 // 一人ひとりの画面用の情報(合言葉は送らない)
 function hView(h){
   const R=W.R, inCard=!!(S.horses&&S.phase!=='result'&&S.horses.some(x=>x.hid===h.id)); const inNext=inNextCard(h);
-  const v={id:h.id,tr:trOk(h.tr,h.style)?h.tr:'',sd:h.sd||{},sdr:Object.fromEntries(SK.map(k=>[k,(h.st[k]||0)>=SEED_MIN])),name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
+  const v={id:h.id,tr:trOk(h.tr,h.style)?h.tr:'',sd:h.sd||{},sdr:Object.fromEntries(SK.map(k=>[k,(h.st[k]||0)>=SEED_MIN])),name:h.name,sex:h.sex,age:Math.floor(ageAt(h,R)),ny:YEAR-((h.lv||0)%YEAR),rf:h.rfLeft||0,coat:h.coat,style:h.style,apt:h.apt,sf:h.sf,grow:growShown(h)?h.grow:'',
     e:h.status==='active'?effOf(h,R):h.peak,fat:h.fat,cond:h.cond,status:h.status,entry:h.entry,ex:h.ex||null,inCard,inNext,nextR:inNext?S.next.R:null,trained:h.trainedR===R,rec:h.rec,
     room:roomWord(h),sell:sellPrice(h),sire:h.sire||'',dam:h.dam||'',sak:h.sak||'',inj:h.inj||0,nn:!!h.nn,ttl:h.ttl||''};
   if(h.status==='active') v.elig=Array.from({length:6},(_,k)=>{ const sp=specOf(R+1+k); return {R:sp.R,why:S.next&&S.next.R===sp.R?'出走表が決まりました(受付終了)':canEnter(h,sp),kg:kgOf(h.sex,h.rec.wins,sp)}; });
@@ -5070,7 +5085,7 @@ function padStable(st,pv){
     const ent=h.entry!=null?specOf(h.entry):null;
     const state=h.nn?'<b class="hot">🐣 名前を付けてあげましょう</b>':h.inj>0?`<b class="hot">🩹 ケガで休養中(あと${h.inj}レース)</b>`:h.inCard?'<b class="hot">🏇 いまのレースに出走中</b>':h.inNext?`<b class="hot">🏇 次のレース(第${h.nextR}戦)に出走決定!調教の成果も反映されます</b>`:ent?`出走予定:第${ent.R}戦 ${esc(ent.name)} <span class="a-grade ${ent.g}">${ent.g}</span>`:'<span class="dim">出走予定なし</span>';
     const exHTML=h.ex&&!h.inCard&&!h.inNext&&h.entry==null?`<div class="exw">⚠ 第${h.ex.R}戦 ${esc(h.ex.name)}は除外(${esc(h.ex.why)})<small>登録料は返しました。ほかのレースに登録しましょう</small></div>`:'';
-    return `<div class="hcard ${h.sex==='牝'?'f':''}"><div class="hhead">${horseCanvas(h,i)}<div><h4>${esc(h.name)}<small>${h.sex}${h.age}</small></h4><div>${horseTags(h)}</div>
+    return `<div class="hcard ${h.sex==='牝'?'f':''}"><div class="hhead">${horseCanvas(h,i)}<div><h4>${esc(h.name)}<small>${h.sex}${h.age}</small></h4><div>${horseTags(h)}</div>${h.status==='active'&&h.ny?`<div class="nyage">🎂 ${h.age+1}歳まで あと<b>${h.ny}</b>レース<small>(あなたが参加したレースで数えます)</small></div>`:''}${h.status==='active'&&h.rf?`<div class="nyage rf">🍃 衰え半分 あと<b>${h.rf}</b>レース分<small>(下り坂のときだけ減ります)</small></div>`:''}
       <div class="meta">${recText(h.rec)}${h.rec.big.length?`<br>🏆 ${h.rec.big.slice(-3).map(esc).join('・')}`:''}</div></div></div>
       ${statBars(h.e)}
       <div class="meta">疲れ:<b>${fatW(h.fat)}</b> 調子:<b>${COND[h.cond+2]}</b> 伸びしろ:<b>${h.room}</b>${h.sire?`<br>父 ${esc(h.sire)} × 母 ${esc(h.dam)}`:''}</div>
@@ -5423,7 +5438,7 @@ function trainModal(h){
     <div class="trnow">${h.tr&&TRAIT[h.tr]?`この馬の個性:<b>★${TRAIT[h.tr].name}</b> ${TRAIT[h.tr].desc}(個性は1頭に1つ)`:'個性:まだなし。「特訓」をくり返すと個性の芽が育ち、まれに開花します'}</div>
     ${['基本','軽め','ハード','特訓','施設','休む'].map(g=>`<h3 class="mh">${g}${g==='ハード'?'<small>(よく伸びるけど疲れる・失敗しやすい)</small>':g==='軽め'?'<small>(疲れにくい)</small>':g==='特訓'?'<small>(個性の芽が育つ。開花はめったにない)</small>':g==='施設'?'<small>(牧場の施設で増えるメニュー)</small>':''}</h3>
     <div class="ikmenu tr">${Object.entries(TRAIN).filter(([,M])=>M.g===g).map(([k,M])=>`${(()=>{ const fm=P.pv.farm, c=trainCost(fm,k), ft=trainFat(fm,k), lk=trainLock(fm,M), fg=FACM[k]?FGAIN[fLv(fm,FACM[k])]:1;
-      return `<button class="ikm" data-train="${k}" data-hid="${h.id}" ${P.pv.coins<c||lk||(h.inj>0&&M.g!=='休む'&&k!=='capsule')?'disabled':''}><span class="ic">${M.ic}</span><b>${M.name}</b><span class="up">${M.desc}</span>${lk?`<span class="lk">${lk}</span>`:fg>1?`<span class="lk">施設で伸び+${Math.round((fg-1)*100)}%</span>`:''}${M.seed&&!lk?seedTag(h,M):''}<span class="ft">${ft>0?'疲れ '+'●'.repeat(ft):ft===0?'疲れ なし':'疲れ 回復'}</span><span class="cost">${c?yen(c):'無料'}${c<M.cost?' (半額)':''}</span></button>`; })()}`).join('')}</div>`).join('')}
+      return `<button class="ikm" data-train="${k}" data-hid="${h.id}" ${P.pv.coins<c||lk||(h.inj>0&&M.g!=='休む'&&k!=='capsule'&&k!=='refresh')?'disabled':''}><span class="ic">${M.ic}</span><b>${M.name}</b><span class="up">${M.desc}</span>${lk?`<span class="lk">${lk}</span>`:fg>1?`<span class="lk">施設で伸び+${Math.round((fg-1)*100)}%</span>`:''}${M.seed&&!lk?seedTag(h,M):''}<span class="ft">${ft>0?'疲れ '+'●'.repeat(ft):ft===0?'疲れ なし':'疲れ 回復'}</span><span class="cost">${c?yen(c):'無料'}${c<M.cost?' (半額)':''}</span></button>`; })()}`).join('')}</div>`).join('')}
     <p class="iksub" style="margin-top:10px">疲れが「多い」のまま調教すると伸びが悪く、調子も落ちます。年をとるほど伸びにくくなります。</p>`);
 }
 function entryModal(h){
