@@ -2329,23 +2329,26 @@ function realPathPt(m){
   let nx=g.NX[k]+(g.NX[k2]-g.NX[k])*t, ny=g.NY[k]+(g.NY[k2]-g.NY[k])*t; const l=Math.hypot(nx,ny)||1;
   return {x,y,nx:nx/l,ny:ny/l};
 }
+// レース映像のアップ(版47):1=標準、0.8=アップ(約1.25倍)、0.65=大アップ(約1.5倍)。iPadは先生のPCから受け取る
+const ZOOMS=[[1,'標準'],[0.8,'アップ(約1.25倍)'],[0.65,'大アップ(約1.5倍)']];
+function camZ(){ const v=S&&S.padView?(P.st&&P.st.zm):(W&&W.cfg&&W.cfg.zoom); return ZOOMS.some(z=>z[0]===v)?v:1; }
 const RND=new Map(); const rnd=m=>{ let v=RND.get(m); if(v===undefined){ v=rkHash('r'+m); if(RND.size>20000) RND.clear(); RND.set(m,v); } return v; };
 // リアル調のカメラ:どこを(c)どのくらいの幅で(v)映すか。先生のPCで計算し、iPadには同じ値を送る
 function realCam(run,now){
   run=realSmooth(run,now);
-  const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs);
+  const xs=run.map(r=>r.x), lead=Math.max(...xs), last=Math.min(...xs), z=camZ();   // z:アップの倍率(管理パネルで選ぶ。1=標準)
   // ---- カメラ:コースの外側から、馬群に合わせて動きながら映す(コーナーではコースが奥へ曲がって見える) ----
   let tv,tc,to=0; const straight=!!S.cam&&!S.win;     // to:大逃げのときに馬群へ向ける分(速さの計算には入れず、別になめらかに動かす)
   if(S.win){ tv=26; tc=run[S.win.i].x-3; }
-  else if(!S.gate||!S.gate.open||lead<1){ tv=38; tc=-2; }
-  else if(run.every(r=>r.fin!==null)){ tv=44; tc=(lead+last)/2+2; }
+  else if(!S.gate||!S.gate.open||lead<1){ tv=38*z; tc=-2; }
+  else if(run.every(r=>r.fin!==null)){ tv=44*z; tc=(lead+last)/2+2; }
   else {
     // 大逃げで先頭が離れているとき:道中は先頭と馬群を交互に映し(テレビ中継のように)、直線では両方が入るように引く
     const sec=Math.max(...xs.filter((x,i)=>i!==xs.indexOf(lead))), gap=lead-sec;
     if(gap>14&&straight){ tv=Math.min(72,gap+28); tc=lead-7; to=7-gap/2; }
-    else if(gap>14){ tv=42; tc=lead-9; to=Math.floor(now/1000)%10<4?0:-gap; }
-    else if(straight){ tv=33; tc=lead-7; }               // 最後の直線は少し寄る
-    else { tv=42; tc=lead-9; }
+    else if(gap>14){ tv=42*z; tc=lead-9; to=Math.floor(now/1000)%10<4?0:-gap; }
+    else if(straight){ tv=33*z; tc=lead-7; }               // 最後の直線は少し寄る
+    else { tv=42*z; tc=lead-9; }
   }
   const RC=S.rcam&&S.rcam.race===S.race?S.rcam:(S.rcam={race:S.race,v:tv,c:tc,t:now,hist:[],bgx:0,pfw:null,o:0});
   if(S.padView&&S.padCam){ RC.c=S.padCam.c; RC.v=S.padCam.v; RC.t=now; RC.hist=[]; return {run,RC,straight,lead,last}; }   // iPad:先生のPCと同じカメラ
@@ -2449,7 +2452,7 @@ function drawReal(run,c,cs){
   list.sort((a,b)=>DL[a.i]-DL[b.i]||b.p[3]-a.p[3]);
   const shd=rspShadow();
   list.forEach(o=>{ const [x,y,s]=o.p, k=0.025*HX*s; c.drawImage(shd,x-50*k+sg*2*k,y-11*k,100*k,22*k); if(S.glow&&S.glow.has(o.h.no)) glowAt(c,x,y+k*2,k*55); });
-  const kb=0.025*HX*(W/34)*(G.dpr||1);      // 絵の細かさ(最後の直線で寄ったときの手前の馬に合わせて固定)
+  const kb=Math.min(1.7,0.025*HX*(W/(34*camZ()))*(G.dpr||1));      // 絵の細かさ(最後の直線で寄ったときの手前の馬に合わせて固定)
   let budget=(!S.gate||!S.gate.open)?40:6;          // ゲートにいる間にまとめて絵を用意する
   list.forEach(o=>{
     const [x,y,s]=o.p, k=0.025*HX*s, r=o.r, L=realLook(o.h);
@@ -3201,7 +3204,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=46;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=47;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -4324,7 +4327,7 @@ function pushState(){
     timer:S.tm&&TPH[S.phase]?(S.tm.paused?{paused:true,left:S.tm.left}:{end:S.tm.end}):null,
     order:S.order?S.order.map(i=>i+1):null,
     rank:rankLists(), news:W.news.slice(0,12), market:W.market, np:Object.keys(W.players).length, hof:W.hof||[], fame:W.fame&&W.fame.R===W.R?W.fame:null,
-    du:S.phase!=='bet'&&!!S.du, king:W.king&&W.players[W.king]?W.players[W.king].name:'', prize:S.spec?S.spec.prize:0, intro:S.phase==='race'&&S.intro?S.intro:null, big:S.phase==='result'&&S.big&&S.big.length?S.big:null};
+    du:S.phase!=='bet'&&!!S.du, zm:camZ(), king:W.king&&W.players[W.king]?W.players[W.king].name:'', prize:S.spec?S.spec.prize:0, intro:S.phase==='race'&&S.intro?S.intro:null, big:S.phase==='result'&&S.big&&S.big.length?S.big:null};
   if(NET.oddsRace!==W.R){ NET.oddsRace=W.R; NET.be.set(NET.base+'/odds',{race:W.R,...S.odds}).catch(netErr); }
   const j=JSON.stringify(st); if(j!==NET.last){ NET.last=j; NET.be.set(NET.base+'/state',st).catch(netErr); }
   pushPVs();
@@ -5817,6 +5820,8 @@ function renderAdmin(){
       <p class="note">●は接続中のiPad。「外す」を押すと、その人の馬もすべて消えます(元にもどせません)。</p></section>
     <section><h3>時間の設定</h3><div class="row"><label>馬券の受付時間${sel('admBet',W.cfg.betSec||90,[60,90,120,180])}</label><label>結果を見せる時間${sel('admRes',W.cfg.resSec||15,[15,25,40,60])}</label></div>
       <p class="note">次のレースから反映されます。</p></section>
+    <section><h3>レース映像のアップ</h3><div class="row"><label>カメラの寄り方<select id="admZoom">${ZOOMS.map(([v,n])=>`<option value="${v}"${camZ()===v?' selected':''}>${n}</option>`).join('')}</select></label></div>
+      <p class="note">馬を大きく映します。先生の画面とiPad・スマホの映像が同じように変わります。大アップでは、馬群が縦に長いと後ろの馬が画面の外に出ることがあります。次のレースから反映されます。</p></section>
     <section><h3>ケガ</h3><div class="row"><label><input type="checkbox" id="admInj" ${W.cfg.inj===false?'':'checked'}> ケガあり(疲れたまま走る・ハードな調教で、まれに軽いケガ)</label></div>
       <p class="note">外すと、新しいケガは起きなくなります(いまケガをしている馬はそのまま治るのを待ちます)。</p></section>
     <section><h3>バックアップ</h3><div class="row"><button class="btn" data-adm="save">ワールドをファイルに保存</button><label class="btn filebtn">ファイルから読み込む<input id="admFile" type="file" accept=".json,application/json" hidden></label></div>
@@ -5856,6 +5861,7 @@ $('#adminBody').addEventListener('change',e=>{
   if(!W) return;
   if(e.target.id==='admBet'){ W.cfg.betSec=+e.target.value; saveWorld(); toast(`馬券の受付時間を${W.cfg.betSec}秒にしました(次のレースから)`); }
   if(e.target.id==='admInj'){ W.cfg.inj=!!e.target.checked; saveWorld(); toast(W.cfg.inj?'ケガありにしました':'ケガなしにしました'); }
+  if(e.target.id==='admZoom'){ W.cfg.zoom=+e.target.value; saveWorld(); pushState(); toast(`レース映像を「${ZOOMS.find(z=>z[0]===W.cfg.zoom)[1]}」にしました`); }
   if(e.target.id==='admRes'){ W.cfg.resSec=+e.target.value; saveWorld(); toast(`結果を見せる時間を${W.cfg.resSec}秒にしました(次のレースから)`); }
   if(e.target.id==='admFile'){ const file=e.target.files&&e.target.files[0]; if(!file) return;
     const rd=new FileReader(); rd.onload=()=>{ let v=null; try{ v=JSON.parse(rd.result); }catch(err){}
