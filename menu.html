@@ -89,16 +89,29 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-ro
 .fan b{display:flex;align-items:center;justify-content:center;height:100%;border-radius:calc(var(--cw)*.09);font:400 clamp(16px,2vw,30px)/1 var(--f-disp);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.4)}
 .fan i{display:block;width:62%;aspect-ratio:1;border-radius:50%;background:conic-gradient(#e5322d 0 25%,#1f6bd0 0 50%,#f2bd0c 0 75%,#1c9c49 0);box-shadow:0 0 0 2px #fff}
 
+/* ルーレットパーク:昼の遊園地 */
+.rpark{background:#fff6e3;color:#2b2a5a}
+.rpark .art{background:linear-gradient(180deg,#8fdcff,#d6f3ff)}
+.rpark h2{font-family:var(--f-disp);color:#ff5f8f;-webkit-text-stroke:1.5px #2b2a5a;paint-order:stroke fill}
+.rpark .tag{background:#ffcf33;color:#2b2a5a;border:2px solid #2b2a5a}
+.wheel{position:relative;width:min(56%,19vh);aspect-ratio:1;border-radius:50%;border:5px solid #ffcf33;box-shadow:0 0 0 3px #2b2a5a,0 6px 0 3px rgba(43,42,90,.35);
+  background:conic-gradient(#ff5f8f 0 12.5%,#3a9bff 0 25%,#22c79a 0 37.5%,#ffcf33 0 50%,#ff9a3c 0 62.5%,#8a6cff 0 75%,#3a9bff 0 87.5%,#ff5f8f 0);
+  display:grid;place-items:center;animation:rspin 14s linear infinite}
+.wheel b{width:44%;aspect-ratio:1;border-radius:50%;background:#fff;border:3px solid #2b2a5a;display:grid;place-items:center;
+  font:400 clamp(14px,1.7vw,26px)/1 var(--f-disp);color:#2b2a5a;animation:rspin 14s linear infinite reverse}
+.wheel i{position:absolute;top:8%;left:50%;width:11%;aspect-ratio:1;margin-left:-5.5%;border-radius:50%;background:#fff;border:2px solid #2b2a5a}
+@keyframes rspin{to{transform:rotate(360deg)}}
+
 footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,16px);text-align:right}
 
 @media (max-width:760px){ main{grid-template-columns:1fr} .g{grid-template-columns:32% 1fr} }
-@media (prefers-reduced-motion:reduce){ .g{transition:none} }
+@media (prefers-reduced-motion:reduce){ .g{transition:none} .wheel,.wheel b{animation:none} }
 </style>
 </head>
 <body>
 <header>
   <h1>今日のゲーム</h1>
-  <p>遊ぶゲームを選んでください。キーボードの 1〜5 でも選べます。</p>
+  <p>遊ぶゲームを選んでください。キーボードの 1〜6 でも選べます。</p>
 </header>
 
 <main id="list">
@@ -133,9 +146,14 @@ footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,1
     <div class="txt"><h2>ラストワン</h2><p>色か数字をそろえて出すカードゲーム。手札は各班のiPadに配られる。</p><span class="tag">iPadに手札</span></div>
     <span class="key">5</span>
   </a>
+  <a class="g rpark" href="roulettepark.html" data-k="6">
+    <div class="art" aria-hidden="true"><div class="wheel"><i></i><b>+2</b></div></div>
+    <div class="txt"><h2>ルーレットパーク</h2><p>3つのゲームにメダルを分けて賭けるルーレットゲーム。</p><span class="tag">iPadでBET</span></div>
+    <span class="key">6</span>
+  </a>
 </main>
 
-<footer>教室ダービーとラストワンは独自のiPad画面を使うため、開いている間は「iPadに映す」の配信が止まります。メニューにもどると自動で再開します。</footer>
+<footer>教室ダービー・ラストワン・ルーレットパークは独自のiPad画面を使うため、開いている間は「iPadに映す」の配信が止まります。メニューにもどると自動で再開します。</footer>
 
 <script>
 window.MV_IS_MENU = true;
