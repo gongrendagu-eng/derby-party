@@ -264,6 +264,46 @@ button,select,input{font:inherit;color:inherit}
 .floor .sign{font-family:var(--f-display);font-size:14px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;text-align:center;padding:1px 4px}
 .floor .sign:empty{visibility:hidden}
 .floor.just{animation:stamp .5s ease-out}
+/* 3つの盤面を横並び */
+#pBody:has(.trio){width:min(1240px,100%)}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
+.gcol{container-type:inline-size;background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);
+  padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.gcol.nobet .board{opacity:.55}
+.ghead{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.gbet{font-family:var(--f-display);font-size:16px;font-variant-numeric:tabular-nums}
+.gbet.none{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:800}
+.gstat{min-height:28px;display:flex;justify-content:center;align-items:center;text-align:center}
+.gstat .chip{white-space:normal}
+.trio .card,.trio .chain,.trio .gems,.trio .tree{width:100%}
+.trio .card{padding:2.5cqi;gap:1.6cqi;border-radius:12px}
+.trio .card div{font-size:7.5cqi;border-radius:8px}
+.trio .card div.free{font-size:4.5cqi}
+.trio .card div.need{box-shadow:0 0 0 3px var(--pink)}
+.trio .chain{padding:2.5cqi;gap:1.4cqi;border-radius:12px}
+.trio .chain div{font-size:6.2cqi;border-radius:6px}
+.trio .gems{padding:0 2.5cqi;gap:1.4cqi}
+.trio .gem i{width:5cqi;height:5cqi}
+.trio .gem span{font-size:3.6cqi;min-height:3.6cqi}
+.trio .tree{padding:2cqi;gap:1cqi;border-radius:12px}
+.trio .floor{grid-template-columns:15cqi minmax(0,1fr) 12cqi;gap:1.5cqi;padding:1cqi 1.5cqi;border-radius:8px}
+.trio .floor .fl{font-size:5cqi}
+.trio .floor .fl small{font-size:2.8cqi;padding:0 1cqi}
+.trio .floor .nums{gap:1.2cqi}
+.trio .floor .nums span{width:11cqi;font-size:4.6cqi;border-width:1.5px}
+.trio .floor .sign{font-size:3.8cqi;border-radius:5px}
+.trio .floor.summit .nums em{font-size:5cqi}
+.gcol.nobet .board.tapme{opacity:.85}
+.board.tapme{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:14px}
+.board.tapme:active{transform:scale(.97)}
+.board.shuf{animation:shuf .4s ease-out}
+@keyframes shuf{0%{transform:rotate(-3deg) scale(.92);filter:brightness(1.3)}60%{transform:rotate(2deg) scale(1.02)}100%{transform:none}}
+.gtools{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.gtools .btn{flex:1;min-width:0}
+.rrc{text-align:center;font-size:12px}
+.rules summary{font-family:var(--f-display);cursor:pointer}
+.rules[open] summary{margin-bottom:8px}
+@media (max-width:640px){.trio{grid-template-columns:1fr}.gcol{width:100%;max-width:460px;justify-self:center}}
 /* 結果 */
 .restable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .restable td{padding:8px 6px;border-bottom:2px dashed var(--line)}
@@ -282,7 +322,7 @@ button,select,input{font:inherit;color:inherit}
 
 @media (max-width:900px){.hmain{grid-template-columns:1fr}.wheelbox{min-height:60vh}}
 @media (prefers-reduced-motion:reduce){
-  .flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
+  .board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
   .flash.show,.callout.show{opacity:1}
 }
 </style>
@@ -362,7 +402,7 @@ button,select,input{font:inherit;color:inherit}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=1;
+const APP_VER=3;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -503,10 +543,12 @@ const RULES={
 };
 const ZERO=()=>({bingo:0,chain:0,tree:0});
 const totalOf=b=>GKEYS.reduce((a,g)=>a+((b&&b[g])||0),0);
-function boardsFor(seed,pid){
-  const r=mulberry32(hstr(seed+':'+pid));
-  return{bingo:newCard(r),chain:newChain(r),tree:newTree(r)};
+/* rr＝ゲームごとの「並べかえ回数」。同じ回数なら先生PCとiPadで同じ盤面になる */
+const rngFor=(seed,pid,g,rr)=>mulberry32(hstr(seed+':'+pid+':'+g+':'+((rr&&rr[g])||0)));
+function boardsFor(seed,pid,rr){
+  return{bingo:newCard(rngFor(seed,pid,'bingo',rr)),chain:newChain(rngFor(seed,pid,'chain',rr)),tree:newTree(rngFor(seed,pid,'tree',rr))};
 }
+function cleanRr(x){const r=ZERO();GKEYS.forEach(g=>r[g]=Math.max(0,Math.min(9999,Math.floor(Number(x&&x[g])||0))));return r}
 function applyNum(b,n,rec){
   markCard(b.bingo,n);
   const c=chainHit(b.chain,n,rec);
@@ -1044,6 +1086,7 @@ function startGame(){
     const r=H.roster[p];r.out=r.b<=0?1:0;r.conf=0;r.res=0;r.pt=0;
     r.bet=r.out?ZERO():fixBet(r.lastBet||{bingo:MIN_BET},r.b); // 前回の配分をたたき台に
     r.bet0=1; // まだ本人が送っていない印
+    r.rr=ZERO(); // 盤面の並べかえ回数
   });
   H.net.set('bets',null);
   H.phase='bet';H.betLeft=H.cfg.betSec>0?H.cfg.betSec:-1;
@@ -1060,8 +1103,8 @@ function onBets(v){
   for(const pid of Object.keys(v)){
     const x=v[pid],r=H.roster[pid];
     if(!x||!r||r.out||x.gid!==H.gid)continue;
-    const b=sanitizeBet(x.b,r.b),conf=x.conf&&betOk(b,r.b)?1:0;
-    if(JSON.stringify(b)!==JSON.stringify(r.bet)||conf!==r.conf||r.bet0){r.bet=b;r.conf=conf;r.bet0=0;changed=true}
+    const b=sanitizeBet(x.b,r.b),conf=x.conf&&betOk(b,r.b)?1:0,rr=cleanRr(x.rr);
+    if(JSON.stringify(b)!==JSON.stringify(r.bet)||conf!==r.conf||r.bet0||JSON.stringify(rr)!==JSON.stringify(r.rr)){r.bet=b;r.conf=conf;r.rr=rr;r.bet0=0;changed=true}
   }
   if(changed){
     renderSide();pubState();
@@ -1143,7 +1186,7 @@ async function runDraw(){
 function settleGame(){
   const nums=numsOf(H.drawn);
   actives().forEach(pid=>{
-    const r=H.roster[pid],b=boardsFor(H.seed,pid);
+    const r=H.roster[pid],b=boardsFor(H.seed,pid,r.rr);
     nums.forEach(n=>applyNum(b,n,false));
     const cats={};GKEYS.forEach(g=>cats[g]=GAMES[g].cat(b[g]));
     const {res,tot}=payFor(r.bet,cats,H.dbl);
@@ -1371,7 +1414,7 @@ function renderSide(){
 }
 
 /* ===================== iPad（参加者） ===================== */
-const P={net:null,st:null,pid:'',name:'',key:'',boards:null,bgid:'',applied:0,view:'bingo',draft:ZERO(),dgid:'',sentConf:false,
+const P={net:null,st:null,pid:'',name:'',key:'',boards:null,bgid:'',rr:ZERO(),applied:0,view:'bingo',draft:ZERO(),dgid:'',sentConf:false,
   animTok:0,animBusy:false,justNum:0,justClimb:false,note:'',sdSent:0};
 const ST=LOCAL?sessionStorage:localStorage;
 const meKey='rpark.me.'+ROOM;
@@ -1472,7 +1515,7 @@ function renderOut(){
 function renderBet(){
   const st=P.st,m=me(),bal=m.b,key='bet:'+st.gid;
   if(P.dgid!==st.gid){
-    P.dgid=st.gid;P.sentConf=false;
+    P.dgid=st.gid;P.sentConf=false;P.rr=cleanRr(m.rr);
     P.draft=st.gno>1&&m.lastBet?sanitizeBet(m.lastBet,bal):ZERO();
     if(bal<MIN_BET)P.draft=sanitizeBet({bingo:bal},bal);
   }
@@ -1492,7 +1535,16 @@ function renderBet(){
         <div class="bettotal" id="betTotal"></div>
         <div class="confirm"><button class="btn go" id="confBtn" type="button">このBETで決定</button><span class="hint" id="confHint"></span></div>
       </div>
-      <div class="panel"><h3 style="margin-bottom:8px">ゲームのルール</h3>${howtoHtml()}</div>`;
+      <div class="panel" style="display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center">
+        <h3>自分の盤面をつくろう</h3><p class="hint">盤面をタップすると数字が並べかわります（BET受付中だけ）。気に入った並びで勝負！</p></div>
+      ${trioHtml(true)}
+      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml()}</details>`;
+    $('pBody').querySelectorAll('[data-rr]').forEach(b=>b.onclick=()=>reroll(b.dataset.rr,+b.dataset.d));
+    $('pBody').querySelectorAll('[data-rrb]').forEach(el=>{
+      el.onclick=()=>reroll(el.dataset.rrb,1);
+      el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reroll(el.dataset.rrb,1)}};
+    });
+    ensureBoards(P.rr);P.justNum=0;P.justClimb=false;drawBoards(false);updateRrTools();
     $('pBody').querySelectorAll('.betrow button').forEach(b=>b.onclick=()=>{const g=b.dataset.g;setDraft(g,P.draft[g]+(+b.dataset.d))});
     GKEYS.forEach(g=>{$('bi_'+g).onchange=e=>setDraft(g,+e.target.value)});
     $('confBtn').onclick=()=>{if(!betOk(P.draft,me().b))return;P.sentConf=true;sendBet();updateBet()};
@@ -1505,7 +1557,27 @@ function setDraft(g,v){
   P.draft[g]=Math.max(0,Math.min(Math.floor(v)||0,bal-others));
   P.sentConf=false;sendBet();updateBet();
 }
-function sendBet(){P.net.set('bets/'+P.pid,{gid:P.st.gid,b:P.draft,conf:P.sentConf,ts:Date.now()})}
+function sendBet(){P.net.set('bets/'+P.pid,{gid:P.st.gid,b:P.draft,conf:P.sentConf,rr:P.rr,ts:Date.now()})}
+/* 盤面を用意（ゲームIDと並べかえ回数が変わったら作り直し） */
+function ensureBoards(rr){
+  const st=P.st,k=st.gid+':'+JSON.stringify(cleanRr(rr));
+  if(P.bgid!==k){P.bgid=k;P.boards=boardsFor(st.seed,P.pid,rr);P.applied=0;P.animTok++;P.animBusy=false;P.note=''}
+}
+function reroll(g,d){
+  const m=me();if(!m||P.st.phase!=='bet')return;
+  P.rr[g]=Math.max(0,P.rr[g]+d);
+  sendBet();ensureBoards(P.rr);P.justNum=0;P.justClimb=false;
+  drawBoards(false);
+  const el=$('bd_'+g);if(el){el.classList.remove('shuf');void el.offsetWidth;el.classList.add('shuf')}
+  updateRrTools();
+}
+function updateRrTools(){
+  GKEYS.forEach(g=>{
+    const n=P.rr[g],u=$('rru_'+g),c=$('rrc_'+g);
+    if(u)u.disabled=n<=0;
+    if(c)c.textContent=n?`${n}回 並べかえた`:'まだ最初の並び';
+  });
+}
 function updateBet(){
   const st=P.st,m=me();if(!m)return;
   const bal=m.b,tot=totalOf(P.draft),ok=betOk(P.draft,bal),conf=m.conf&&P.sentConf;
@@ -1519,6 +1591,7 @@ function updateBet(){
   if(bal<MIN_BET)warn=`メダルが${MIN_BET}枚未満なので、${bal}枚全部を賭けます`;
   else if(tot<MIN_BET)warn=`合計${MIN_BET}枚以上賭けてください`;
   $('betTotal').innerHTML=`<span>BET合計<b>${tot}</b>枚 ／ 残り<b>${bal-tot}</b>枚</span>${warn?`<span class="warn">${warn}</span>`:''}`;
+  GKEYS.forEach(g=>{if($('gc_'+g))setCol(g,P.draft,P.draft[g]?'<span class="chip t-low">この盤面で勝負</span>':'<span class="chip t-none">タップで並べかえ</span>')});
   $('confBtn').disabled=!ok;
   $('confBtn').textContent=conf?'決定しました！':'このBETで決定';
   $('confHint').textContent=conf?'締め切りまでは変更できます（変えたらもう一度「決定」）':(P.sentConf?'送信しています…':'');
@@ -1526,13 +1599,13 @@ function updateBet(){
 
 /* ---- 抽選中・結果：盤面 ---- */
 function syncBoards(){
-  const st=P.st;
-  if(P.bgid!==st.gid){P.bgid=st.gid;P.boards=boardsFor(st.seed,P.pid);P.applied=0;P.animTok++;P.animBusy=false;P.note=''}
+  const st=P.st,m=me();
+  ensureBoards(m&&m.rr);
   const nums=numsOf(parseDrawn(st.drawn));
   let anim=null;P.justNum=0;P.justClimb=false;
   while(P.applied<nums.length){
     const n=nums[P.applied],last=P.applied===nums.length-1;
-    const r=applyNum(P.boards,n,last&&P.view==='chain');
+    const r=applyNum(P.boards,n,last);
     if(last){P.justNum=n;if(r.c.steps)anim=r.c.steps;if(r.t.climbed){P.justClimb=true;if(r.t.climbed>1)P.note=`ラダー 一気に${r.t.climbed}階アップ！`}
       if(r.c.chains>=1)P.note=`ドロップ ${r.c.chains}連鎖！`}
     P.applied++;
@@ -1540,18 +1613,30 @@ function syncBoards(){
   return anim;
 }
 function catsNow(){const c={};GKEYS.forEach(g=>c[g]=GAMES[g].cat(P.boards[g]));return c}
+function trioHtml(edit){
+  return `<div class="trio">${GKEYS.map(g=>`<section class="gcol" id="gc_${g}" aria-label="${GAMES[g].name}">
+    <div class="ghead"><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><span class="gbet" id="gb_${g}"></span></div>
+    <div class="gstat" id="gs_${g}"></div>
+    <div class="board${edit?' tapme':''}" id="bd_${g}" ${edit?`data-rrb="${g}" role="button" tabindex="0" aria-label="${GAMES[g].name}の数字を並べかえる"`:''}></div>
+    ${edit?`<div class="gtools"><button type="button" class="btn small" data-rr="${g}" data-d="1">並べかえ</button>
+      <button type="button" class="btn small" id="rru_${g}" data-rr="${g}" data-d="-1">ひとつ前</button></div><span class="hint rrc" id="rrc_${g}"></span>`:''}</section>`).join('')}</div>`;
+}
+function setCol(g,bet,statHtml){
+  const b=bet[g]||0;
+  $('gc_'+g).classList.toggle('nobet',!b);
+  const e=$('gb_'+g);e.textContent=b?`${b}枚`:'BETなし';e.classList.toggle('none',!b);
+  $('gs_'+g).innerHTML=statHtml;
+}
 function renderPlay(){
-  const st=P.st,m=me();
+  const st=P.st;
   const anim=syncBoards();
   const key='play:'+st.gid;
   if(P.key!==key){
-    P.key=key;
+    P.key=key;P.animTok++;P.animBusy=false;
     $('pBody').innerHTML=`<div class="status" id="plStatus"></div><div id="plDbl"></div><div class="lastnums" id="plNums"></div>
-      <div class="panel" style="display:flex;flex-direction:column;gap:10px">
-        <div id="plRows" class="bets"></div>
-        <div class="vtabs" id="plTabs" role="tablist"></div><p class="rule" id="plRule"></p><div class="board" id="plBoard"></div>
-      </div>`;
-    $('plTabs').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;P.view=b.dataset.v;P.animTok++;P.animBusy=false;updatePlay(null)};
+      ${trioHtml()}
+      <div class="panel bettotal" id="plTotal"></div>
+      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml()}</details>`;
   }
   updatePlay(anim);
 }
@@ -1565,30 +1650,33 @@ function updatePlay(anim){
   $('plDbl').innerHTML=st.dbl?'<div class="dblbanner">ダブルアップ！ 配当2倍</div>':'';
   $('plNums').innerHTML=list.map((x,i)=>`<b class="${x==='p'?'plus':''}${i===list.length-1?' new':''}">${x==='p'?'+2':x}</b>`).join('');
   const cats=catsNow(),{res,tot}=payFor(bet,cats,st.dbl);
-  $('plRows').innerHTML=GKEYS.map(g=>{
-    const b=bet[g]||0,c=catOf(g,cats[g]);
-    const st2=b?(res[g]&&res[g].p>0?`<span class="chip ${TIER[c.t]}">${c.name}　このままなら +${res[g].p}</span>`:`<span class="chip t-none">${c.t==='none'?'まだ配当なし':c.name}</span>`):'<span class="hint">BETなし</span>';
-    return `<div class="bettotal" style="background:var(--paper2);border:2px solid var(--ink);border-radius:12px;padding:6px 10px">
-      <span><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span> <b>${b}</b>枚</span>${st2}</div>`;
-  }).join('')+`<div class="bettotal"><span>BET ${totalOf(bet)}枚</span><span>このままなら <b>${tot}</b>枚${P.note?` ／ <span style="color:var(--pink)">${esc(P.note)}</span>`:''}</span></div>`;
-  $('plTabs').innerHTML=GKEYS.map(g=>`<button type="button" role="tab" data-v="${g}" aria-selected="${g===P.view}" style="--g:${GAMES[g].color}">${GAMES[g].name}${bet[g]?`<small>${bet[g]}枚</small>`:''}</button>`).join('');
-  $('plRule').textContent=RULES[P.view];
-  $('plBoard').classList.toggle('nobet',!bet[P.view]);
-  if(anim&&P.view==='chain')animateChain(anim);
-  else if(!P.animBusy)drawBoard();
+  GKEYS.forEach(g=>{
+    const c=catOf(g,cats[g]),b=bet[g]||0;
+    let h;
+    if(c.t==='none')h='<span class="chip t-none">まだ配当なし</span>';
+    else if(b)h=`<span class="chip ${TIER[c.t]}">${c.name}　+${res[g]?res[g].p:0}</span>`;
+    else h=`<span class="chip ${TIER[c.t]}">${c.name}</span>`;
+    setCol(g,bet,h);
+  });
+  $('plTotal').innerHTML=`<span>BET ${totalOf(bet)}枚</span><span>このままなら <b>${tot}</b>枚${P.note?` ／ <span style="color:var(--pink)">${esc(P.note)}</span>`:''}</span>`;
+  if(anim){animateChain(anim);drawBoards(true)}
+  else drawBoards(P.animBusy);
 }
 const TIER={top:'t-top',mid:'t-mid',low:'t-low',none:'t-none'};
-function drawBoard(){
-  const el=$('plBoard');if(!el)return;
-  const b=P.boards;
-  el.innerHTML=P.view==='bingo'?bigBingo(b.bingo,P.justNum):P.view==='chain'?bigChain(b.chain.cols,null):bigTree(b.tree,P.justClimb);
+function drawBoards(skipChain){
+  const b=P.boards;if(!b)return;
+  const set=(g,h)=>{const el=$('bd_'+g);if(el)el.innerHTML=h};
+  set('bingo',bigBingo(b.bingo,P.justNum));
+  if(!skipChain)set('chain',bigChain(b.chain.cols,null));
+  set('tree',bigTree(b.tree,P.justClimb));
 }
 function animateChain(steps){
   const tok=++P.animTok;P.animBusy=true;let i=0;
   const next=()=>{
-    if(tok!==P.animTok||!$('plBoard'))return;
-    const sp=steps[i];$('plBoard').innerHTML=bigChain(sp.cols,sp.pop);i++;
-    if(i<steps.length)setTimeout(next,360);else{P.animBusy=false;drawBoard()}
+    const el=$('bd_chain');
+    if(tok!==P.animTok||!el){if(tok===P.animTok)P.animBusy=false;return}
+    const sp=steps[i];el.innerHTML=bigChain(sp.cols,sp.pop);i++;
+    if(i<steps.length)setTimeout(next,360);else{P.animBusy=false;el.innerHTML=bigChain(P.boards.chain.cols,null)}
   };
   next();
 }
@@ -1643,10 +1731,16 @@ function renderResult(){
       <p style="font-weight:800;margin:0">いまのメダル <span style="font-family:var(--f-display);font-size:24px;color:var(--orange)">${m.b}</span> 枚</p>
       ${m.b<=0?'<p class="err">メダルがなくなりました。次のゲームからは見学です。</p>':''}
       <p class="hint">${st.gno>=st.cfg.games?'全ゲーム終了！ 結果発表を待ってね。':'次のゲームを待っています…'}</p></div>
-    <div class="panel" style="display:flex;flex-direction:column;gap:10px"><div class="vtabs" id="plTabs"></div><div class="board" id="plBoard"></div></div>`;
-  const tabs=()=>{$('plTabs').innerHTML=GKEYS.map(g=>`<button type="button" data-v="${g}" aria-selected="${g===P.view}" style="--g:${GAMES[g].color}">${GAMES[g].name}</button>`).join('');drawBoard()};
-  $('plTabs').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;P.view=b.dataset.v;tabs()};
-  tabs();
+    ${trioHtml()}`;
+  P.animTok++;P.animBusy=false;P.justNum=0;P.justClimb=false;
+  GKEYS.forEach(g=>{
+    const r=res[g],k=r?r.k:GAMES[g].cat(P.boards[g]),c=catOf(g,k);
+    let h;
+    if(bet[g])h=`<span class="chip ${r&&r.p>0?TIER[c.t]:'t-none'}">${r&&r.p>0?`${c.name}　+${r.p}`:'はずれ'}</span>`;
+    else h=`<span class="chip ${TIER[c.t]}">${c.t==='none'?'はずれ':c.name}</span>`;
+    setCol(g,bet,h);
+  });
+  drawBoards(false);
 }
 
 /* ---- 結果発表・サドンデス ---- */
