@@ -323,7 +323,7 @@ button,select,input{font:inherit;color:inherit}
 .trio .gem{gap:.6cqi}
 /* ダブルタップで拡大しない（連打はそのままタップとして数える） */
 html,body,button,input,.board,.board *{touch-action:manipulation}
-/* 宝さがし：宝島の地図。番号つきの盛り土を掘る。サイズは cqi（列の幅）基準 */
+/* トレジャーアイランド：宝島の地図。番号つきの盛り土を掘る。サイズは cqi（列の幅）基準 */
 .isle{position:relative;width:min(440px,100%);aspect-ratio:1/1;border:3px solid var(--ink);border-radius:4cqi;overflow:hidden;background:#5cc9ee}
 .isle>svg.imap{position:absolute;inset:0;width:100%;height:100%}
 .isle .palm{position:absolute;width:7cqi;transform:translate(-50%,-80%);z-index:1}
@@ -387,7 +387,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 @keyframes shine{50%{transform:scale(1.12)}}
 .tbar .ic svg{width:100%;height:auto;display:block}
 .gcol.mini .isle,.gcol.mini .tbar{border-width:2px}
-/* フィッシング：堤防から見下ろした海。サイズは cqi（列の幅）基準で、大きい列でも小さい列でも同じ見た目で縮む */
+/* マリンキャッチ：堤防から見下ろした海。サイズは cqi（列の幅）基準で、大きい列でも小さい列でも同じ見た目で縮む */
 .sea{position:relative;width:min(460px,100%);aspect-ratio:1/1.12;border:3px solid var(--ink);border-radius:4cqi;overflow:hidden;
   background:linear-gradient(180deg,#38b4e4 8%,#0c5aa2 100%)}
 .sea::before{content:"";position:absolute;inset:0 -30%;opacity:.5;pointer-events:none;
@@ -495,6 +495,48 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 .lineup{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .hitinfo .gtag{font-family:var(--f-body);font-size:.62em}
 .rules summary{font-family:var(--f-display);cursor:pointer}
+/* BET画面：列の中のBET欄 */
+.betguide{text-align:center;margin:-6px 0 0}
+.gbetbox{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--paper2);border:2px solid var(--ink);border-radius:12px;padding:6px}
+.gcol.betting .gbetbox{background:#fff4c2}
+.gcol.betting{box-shadow:4px 4px 0 var(--ink),0 0 0 4px var(--yellow)}
+.gcol.lock .gbetbox{opacity:.55}
+.gstep{display:grid;grid-template-columns:38px 38px minmax(44px,1fr) 38px 38px;gap:5px;align-items:center;width:100%}
+.gstep .sb{height:38px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 2px 0 var(--ink);padding:0;color:var(--ink)}
+.gstep .sb:active{transform:translateY(2px);box-shadow:none}
+.gstep .sb:disabled{opacity:.35;cursor:not-allowed}
+.gstep input{width:100%;min-width:0;text-align:center;border:2px solid var(--ink);border-radius:10px;padding:3px 0;background:#fff;font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
+.gstep input:disabled{background:#f1eef9}
+.gstep input::-webkit-outer-spin-button,.gstep input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.gstep input{-moz-appearance:textfield;appearance:textfield}
+.glock{margin:0;font-size:12px;font-weight:800;color:#c2185b}
+.gpay{width:100%;display:flex;flex-direction:column;gap:4px}
+.gdesc{margin:0;font-size:12px;font-weight:800;line-height:1.4;text-align:center}
+.gplist{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.gplist:empty{display:none}
+.gplist .pi{display:inline-flex;align-items:baseline;font-size:11.5px;font-weight:800;border-radius:999px;padding:1px 8px;border:1.5px solid var(--ink);background:#fff;white-space:nowrap}
+.gplist .pi b{font-family:var(--f-display);font-weight:400;font-size:15px;color:var(--orange);margin:0 1px 0 5px}
+.gplist .pi.p-top{background:#fff0a8}
+.gplist .pi.p-mid{background:#ffe9f1}
+.gplist .pnote{width:100%;text-align:center;font-size:11px;color:var(--muted);font-weight:800}
+.gcol.mini .gbetbox{padding:4px;border-radius:10px}
+.gcol.mini .gstep{grid-template-columns:28px 28px minmax(34px,1fr) 28px 28px;gap:3px}
+.gcol.mini .gstep .sb{height:28px;font-size:10px;border-width:1.5px}
+.gcol.mini .gstep input{font-size:15px;padding:1px 0}
+.gcol.mini .gdesc{font-size:10px;line-height:1.35}
+.gcol.mini .gplist .pi{font-size:9.5px;padding:0 5px}
+.gcol.mini .gplist .pi b{font-size:12px;margin-left:3px}
+.gcol.mini .gplist .pnote{font-size:9.5px}
+.sign.med{white-space:nowrap;letter-spacing:-.02em}
+.trio .floor .sign.med{font-size:3.9cqi;padding:1px}
+.trio .floor:has(.sign.med){grid-template-columns:12cqi minmax(0,1fr) 17cqi}
+.betbar{position:sticky;bottom:0;z-index:4;background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);
+  padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:env(safe-area-inset-bottom,0px)}
+.betbar .bettotal{flex:1;min-width:200px}
+.betbar .confirm{flex:0 0 auto}
+.betbar .confirm .btn{width:auto;min-width:220px}
+.betbar .confirm .hint{font-size:11px;max-width:260px;text-align:center}
+@media (max-width:900px){.trio:not(.minis) .gstep{grid-template-columns:32px 32px minmax(40px,1fr) 32px 32px;gap:3px}.trio:not(.minis) .gstep .sb{height:32px;font-size:11px}.trio:not(.minis) .gstep input{font-size:17px}}
 .rules[open] summary{margin-bottom:8px}
 @media (max-width:640px){.trio{grid-template-columns:1fr}.trio.minis{grid-template-columns:repeat(2,minmax(0,1fr))}.gcol{width:100%;max-width:460px;justify-self:center}}
 /* 結果 */
@@ -597,7 +639,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=9;
+const APP_VER=11;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -630,7 +672,7 @@ const MULT={
   chain:{c0:0,c1:1.5,c2:2,c3:5,c4:15,c5:30},
   tree:{f0:0,f4:0.5,f5:1,f6:1.5,f7:2,f8:3.5,top:15},
   treasure:{t0:0,t1:0.5,t2:1.5,t3:2.5,t4:8,t5:30,t0s:0,t1s:0.25,t2s:0.75,t3s:1.25,t4s:4,t5s:15}, // ドクロを掘ると半分
-  fish:{p0:0} // フィッシングは「BET×釣った魚のポイント合計」（fishPt）
+  fish:{p0:0} // マリンキャッチは「BET×釣った魚のポイント合計」（fishPt）
 };
 const LINES=[];
 for(let r=0;r<5;r++)LINES.push([0,1,2,3,4].map(c=>r*5+c));
@@ -722,7 +764,7 @@ function treeHit(st,n){
 }
 const ladderKey=f=>f>=9?'top':f>=4?'f'+f:'f0'; // 9＝頂上
 
-/* 宝さがし：宝島の25か所に1〜25を重複なく置き、宝が5つ・ドクロが1つ（掘るまで見えない）
+/* トレジャーアイランド：宝島の25か所に1〜25を重複なく置き、宝が5つ・ドクロが1つ（掘るまで見えない）
    はずれのうち4か所は笑える物（見た目だけ。配当には関係しない） */
 const TR_T=5;
 function newTreasure(r){
@@ -736,7 +778,7 @@ function newTreasure(r){
 function treasureHit(st,n){const i=st.cells.indexOf(n);if(i<0)return'';st.open.add(i);return st.kind[i]}
 function treasureCount(st){let t=0,s=false;st.open.forEach(i=>{if(st.kind[i]==='T')t++;else if(st.kind[i]==='S')s=true});return{t,s}}
 
-/* フィッシング：堤防から見た海に魚の影が10匹。影の番号が全部出たら釣り上げ。中身は釣るまで分からない
+/* マリンキャッチ：堤防から見た海に魚の影が10匹。影の番号が全部出たら釣り上げ。中身は釣るまで分からない
    特大(5)・大(4)＝ブリ（12%でマグロ）、中(3)×2＝タイ、小(2)×4＝アジ（12%でタイ）、ちび(1)×2＝長靴（15%でアジ） */
 const FISH_SLOTS=[
   {sz:'xl',n:5,x:30,y:26},{sz:'s',n:2,x:81,y:22},{sz:'xs',n:1,x:52,y:41},{sz:'m',n:3,x:76,y:42},{sz:'s',n:2,x:17,y:47},
@@ -774,12 +816,12 @@ const GAMES={
   tree:{name:'スカイラダー',short:'ラダー',color:'#22c79a',
     cats:[{k:'top',name:'頂上',t:'top'},{k:'f8',name:'8F',t:'top'},{k:'f7',name:'7F',t:'mid'},{k:'f6',name:'6F',t:'mid'},{k:'f5',name:'5F',t:'low'},{k:'f4',name:'4F',t:'low'},{k:'f0',name:'3F以下',t:'none'}],
     cat:st=>ladderKey(1+st.climbs)},
-  treasure:{name:'宝さがし',short:'宝さがし',color:'#8a6cff',
+  treasure:{name:'トレジャーアイランド',short:'トレジャー',color:'#8a6cff',
     cats:[{k:'t5',name:'宝5つ',t:'top'},{k:'t5s',name:'宝5つ（ドクロ）',t:'top'},{k:'t4',name:'宝4つ',t:'top'},{k:'t4s',name:'宝4つ（ドクロ）',t:'top'},
       {k:'t3',name:'宝3つ',t:'mid'},{k:'t3s',name:'宝3つ（ドクロ）',t:'mid'},{k:'t2',name:'宝2つ',t:'mid'},{k:'t2s',name:'宝2つ（ドクロ）',t:'mid'},
       {k:'t1',name:'宝1つ',t:'low'},{k:'t1s',name:'宝1つ（ドクロ）',t:'low'},{k:'t0',name:'はずれ',t:'none'},{k:'t0s',name:'はずれ',t:'none'}],
     cat:st=>{const c=treasureCount(st);return't'+Math.min(TR_T,c.t)+(c.s?'s':'')}},
-  fish:{name:'フィッシング',short:'フィッシング',color:'#0aa5b8',
+  fish:{name:'マリンキャッチ',short:'マリンキャッチ',color:'#0aa5b8',
     cats:[{k:'p0',name:'ボウズ',t:'none'}],
     cat:st=>'p'+fishPt(st)}
 };
@@ -1797,26 +1839,12 @@ function renderBet(){
   if(P.key!==key){
     P.key=key;
     $('pBody').innerHTML=`<div class="status" id="betStatus"></div>
-      <div class="panel" style="display:flex;flex-direction:column;gap:12px">
-        <h2 style="font-size:22px">どのゲームに何枚賭ける？</h2>
-        <div class="bets">${ln.map(g=>`<div class="betrow">
-          <span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span>
-          <button type="button" data-g="${g}" data-d="-10" aria-label="${GAMES[g].name}を10枚減らす">−10</button>
-          <button type="button" data-g="${g}" data-d="-1" aria-label="${GAMES[g].name}を1枚減らす">−1</button>
-          <input id="bi_${g}" type="number" min="0" inputmode="numeric" aria-label="${GAMES[g].name}のBET枚数">
-          <button type="button" data-g="${g}" data-d="1" aria-label="${GAMES[g].name}を1枚増やす">＋1</button>
-          <button type="button" data-g="${g}" data-d="10" aria-label="${GAMES[g].name}を10枚増やす">＋10</button>
-          <span class="bst hint" id="bh_${g}"></span></div>`).join('')}</div>
-        <div class="bettotal" id="betTotal"></div>
-        <div class="confirm"><button class="btn go" id="confBtn" type="button">このBETで決定</button><span class="hint" id="confHint"></span></div>
-      </div>
-      <div class="panel" style="display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center">
-        <h3>自分の盤面をつくろう</h3><p class="hint">BETしたゲームが大きく出ます。盤面をタップすると数字が並べかわります（BET受付中だけ）。気に入った並びで勝負！</p></div>
+      <p class="hint betguide">賭けたいゲームに直接枚数を入れよう（${MAX_PICK}つまで）。BETしたゲームは上に大きく出ます。盤面をタップすると数字が並べかわるよ（BET受付中だけ）。</p>
       <div class="boards" id="boardsWrap"></div>
-      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml(ln)}</details>`;
-    P.layout='';ensureBoards(P.rr);P.justNum=0;P.justClimb=false;P.justFish=[];
-    $('pBody').querySelectorAll('.betrow button').forEach(b=>b.onclick=()=>{const g=b.dataset.g;setDraft(g,P.draft[g]+(+b.dataset.d))});
-    ln.forEach(g=>{$('bi_'+g).onchange=e=>setDraft(g,+e.target.value)});
+      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml(ln)}</details>
+      <div class="betbar" id="betBar"><div class="bettotal" id="betTotal"></div>
+        <div class="confirm"><button class="btn go" id="confBtn" type="button">このBETで決定</button><span class="hint" id="confHint"></span></div></div>`;
+    P.layout='';P.treeBetShown=-1;ensureBoards(P.rr);P.justNum=0;P.justClimb=false;P.justFish=[];
     $('confBtn').onclick=()=>{if(!betOk(P.draft,me().b))return;P.sentConf=true;sendBet();updateBet()};
   }
   updateBet();
@@ -1838,10 +1866,18 @@ function ensureBoards(rr){
 function reroll(g,d){
   const m=me();if(!m||P.st.phase!=='bet')return;
   P.rr[g]=Math.max(0,P.rr[g]+d);
+  const y=window.scrollY;
   sendBet();ensureBoards(P.rr);P.justNum=0;P.justClimb=false;
   drawBoards(false);
+  keepScroll(y);
   const el=$('bd_'+g);if(el){el.classList.remove('shuf');void el.offsetWidth;el.classList.add('shuf')}
   updateRrTools();
+}
+/* iPadで盤面を描き直したときに画面が上に戻らないよう、元の位置に戻す */
+function keepScroll(y){
+  const a=document.activeElement;
+  if(a&&a!==document.body&&a.tagName!=='INPUT'&&a.blur)a.blur();
+  window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y));setTimeout(()=>window.scrollTo(0,y),80);
 }
 function updateRrTools(){
   lineupNow().forEach(g=>{
@@ -1854,21 +1890,24 @@ function updateBet(){
   const st=P.st,m=me();if(!m)return;
   const bal=m.b,tot=totalOf(P.draft),ok=betOk(P.draft,bal),conf=m.conf&&P.sentConf,ln=lineupNow();
   const picked=pickedOf(P.draft).length;
-  ln.forEach(g=>{
-    const i=$('bi_'+g),lock=!P.draft[g]&&picked>=MAX_PICK;
-    if(document.activeElement!==i)i.value=P.draft[g];
-    i.disabled=lock;i.closest('.betrow').classList.toggle('lock',lock);
-    i.closest('.betrow').querySelectorAll('button').forEach(b=>{if(+b.dataset.d>0)b.disabled=lock});
-    const mx=MULT[g],best=Math.max(...Object.values(mx));
-    $('bh_'+g).textContent=P.draft[g]?(g==='fish'?'BET×釣った魚のpt（マグロ30pt）':`最大 ×${best}（${Math.ceil(P.draft[g]*best)}枚）`):lock?`BETは${MAX_PICK}つまで`:'';
-  });
   mountBoards(true,pickedOf(P.draft).filter(g=>ln.includes(g)));
+  ln.forEach(g=>{
+    const i=$('bi_'+g);if(!i)return;
+    const v=P.draft[g],lock=!v&&picked>=MAX_PICK,col=$('gc_'+g);
+    if(document.activeElement!==i)i.value=v;
+    i.disabled=lock;
+    col.querySelectorAll('.gstep .sb').forEach(b=>{const d=+b.dataset.d;b.disabled=d<0?v<=0:(lock||tot>=bal)});
+    col.classList.toggle('betting',!!v);col.classList.toggle('nobet',!v);col.classList.toggle('lock',lock);
+    $('bl_'+g).hidden=!lock;
+    const e=$('gb_'+g);e.textContent=v?`${v}枚`:'BETなし';e.classList.toggle('none',!v);
+    const bh=$('bh_'+g),ph=payListHtml(g,v);if(bh.dataset.h!==ph){bh.dataset.h=ph;bh.innerHTML=ph}
+    if(g==='tree'&&P.treeBetShown!==v&&P.boards){P.treeBetShown=v;$('bd_tree').innerHTML=bigTree(P.boards.tree,false,(P.chance&&P.chance.tree)||new Set(),v)}
+  });
   $('betStatus').innerHTML=`BET受付中${st.betLeft>=0?` <span class="cd">あと${st.betLeft}秒</span>`:''}`;
   let warn='';
   if(bal<MIN_BET)warn=`メダルが${MIN_BET}枚未満なので、${bal}枚全部を賭けます`;
   else if(tot<MIN_BET)warn=`合計${MIN_BET}枚以上賭けてください`;
   $('betTotal').innerHTML=`<span>BET合計<b>${tot}</b>枚 ／ 残り<b>${bal-tot}</b>枚 ／ ゲーム<b>${picked}</b>/${MAX_PICK}</span>${warn?`<span class="warn">${warn}</span>`:''}`;
-  ln.forEach(g=>{if($('gc_'+g))setCol(g,P.draft,P.draft[g]?'<span class="chip t-low">この盤面で勝負</span>':'<span class="chip t-none">タップで並べかえ</span>')});
   $('confBtn').disabled=!ok;
   $('confBtn').textContent=conf?'決定しました！':'このBETで決定';
   $('confHint').textContent=conf?'締め切りまでは変更できます（変えたらもう一度「決定」）':(P.sentConf?'送信しています…':'');
@@ -1887,23 +1926,51 @@ function syncBoards(){
     if(last){P.justNum=n;P.justFish=r.f;
       if(on('chain')&&r.c.steps)anim=r.c.steps;
       if(r.t.climbed){P.justClimb=true;if(on('tree')&&r.t.climbed>1)P.note=`ラダー 一気に${r.t.climbed}階アップ！`}
-      if(on('treasure')&&r.tr==='T')P.note='宝さがし 宝を発見！';
-      if(on('treasure')&&r.tr==='S')P.note='宝さがし ドクロが出た…';
+      if(on('treasure')&&r.tr==='T')P.note='トレジャー 宝を発見！';
+      if(on('treasure')&&r.tr==='S')P.note='トレジャー ドクロが出た…';
       if(on('chain')&&r.c.chains>=1)P.note=`ドロップ ${r.c.chains}連鎖！`;
       if(on('fish')&&r.f.length){const f=P.boards.fish.fish[r.f[r.f.length-1]];
-        P.note=f.k==='boot'?'フィッシング 長靴でした…':f.sp?`サプライズ！ ${FISH_NAME[f.k]}だった`:`${FISH_NAME[f.k]}が釣れた！`}}
+        P.note=f.k==='boot'?'マリンキャッチ 長靴でした…':f.sp?`サプライズ！ ${FISH_NAME[f.k]}だった`:`${FISH_NAME[f.k]}が釣れた！`}}
     P.applied++;
   }
   return anim;
 }
 function catsNow(){const c={};GKEYS.forEach(g=>c[g]=GAMES[g].cat(P.boards[g]));return c}
+/* 列の中のBET欄。配当は倍率ではなく「もらえる枚数」で見せる */
+const PAYDESC={
+  bingo:'縦・横・ななめに5つそろうと1ライン。あと1つで「リーチ」。',
+  chain:'番号のブロックが消え、同じ色3つで連鎖。縦1列ぜんぶ消すと1列。',
+  tree:'出た番号の階にはしご。のぼった階で、右の枚数がもらえます。',
+  treasure:'出た番号の場所を掘る。見つけた宝箱の数で配当。ドクロを掘ると半分に！',
+  fish:'影の番号が全部出たら釣り上げ。釣った魚ごとに下の枚数がもらえます。'
+};
+const payOf=(g,k,b)=>Math.ceil(b*(MULT[g][k]||0)); // 切り上げ。ダブルアップ前
+function payListHtml(g,b){
+  if(g==='tree')return '';
+  const base=b||10,chip=(t,name,v)=>`<span class="pi p-${t}">${name}<b>${v}</b>枚</span>`;
+  let items;
+  if(g==='fish')items=['aji','tai','buri','maguro'].map(k=>chip(FISH_PT[k]>=10?'top':FISH_PT[k]>=5?'mid':'low',FISH_NAME[k],base*FISH_PT[k])).join('');
+  else items=GAMES[g].cats.filter(c=>c.t!=='none'&&!/s$/.test(c.k)).slice().reverse().map(c=>chip(c.t,c.name,payOf(g,c.k,base))).join('');
+  return (b?'':'<span class="pnote">10枚BETなら</span>')+items;
+}
+function betStepHtml(g){
+  const N=GAMES[g].name;
+  return `<div class="gbetbox"><div class="gstep">
+      <button type="button" class="sb" data-g="${g}" data-d="-10" aria-label="${N}を10枚減らす">−10</button>
+      <button type="button" class="sb" data-g="${g}" data-d="-1" aria-label="${N}を1枚減らす">−1</button>
+      <input id="bi_${g}" type="number" min="0" inputmode="numeric" aria-label="${N}のBET枚数">
+      <button type="button" class="sb" data-g="${g}" data-d="1" aria-label="${N}を1枚増やす">＋1</button>
+      <button type="button" class="sb" data-g="${g}" data-d="10" aria-label="${N}を10枚増やす">＋10</button>
+    </div><p class="glock" id="bl_${g}" hidden>BETは${MAX_PICK}つまで</p>
+    <div class="gpay"><p class="gdesc">${PAYDESC[g]}</p><div class="gplist" id="bh_${g}"></div></div></div>`;
+}
 /* BETしたゲームは上に大きく、BETしていないゲームは下に小さく並べる */
 function colHtml(g,edit,mini){
   return `<section class="gcol${mini?' mini':''}" id="gc_${g}" aria-label="${GAMES[g].name}">
     <div class="ghead"><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><span class="gbet" id="gb_${g}"></span></div>
-    <div class="gstat" id="gs_${g}"></div>
+    ${edit?betStepHtml(g):`<div class="gstat" id="gs_${g}"></div>`}
     <div class="gchance" id="gch_${g}"></div>
-    <div class="board${edit?' tapme':''}" id="bd_${g}" ${edit?`data-rrb="${g}" role="button" tabindex="0" aria-label="${GAMES[g].name}の数字を並べかえる"`:''}></div>
+    <div class="board${edit?' tapme':''}" id="bd_${g}" ${edit?`data-rrb="${g}" role="button" aria-label="${GAMES[g].name}の数字を並べかえる"`:''}></div>
     ${edit?`<div class="gtools"><button type="button" class="btn small" data-rr="${g}" data-d="1">並べかえ</button>
       <button type="button" class="btn small" id="rru_${g}" data-rr="${g}" data-d="-1">ひとつ前</button></div><span class="hint rrc" id="rrc_${g}"></span>`:''}</section>`;
 }
@@ -1916,16 +1983,20 @@ function boardsHtml(edit,big){
 function mountBoards(edit,big){
   const key=(edit?'e:':'v:')+big.join(','),w=$('boardsWrap');if(!w)return;
   if(P.layout===key&&w.firstChild)return;
-  P.layout=key;w.innerHTML=boardsHtml(edit,big);
+  const y=window.scrollY;
+  P.layout=key;w.innerHTML=boardsHtml(edit,big);P.treeBetShown=-1;
   if(edit){
+    w.querySelectorAll('.gstep .sb').forEach(b=>b.onclick=()=>{const g=b.dataset.g;setDraft(g,P.draft[g]+(+b.dataset.d))});
+    w.querySelectorAll('.gstep input').forEach(i=>{const g=i.id.slice(3);i.onchange=e=>setDraft(g,+e.target.value)});
     w.querySelectorAll('[data-rr]').forEach(b=>b.onclick=()=>reroll(b.dataset.rr,+b.dataset.d));
     w.querySelectorAll('[data-rrb]').forEach(el=>{
-      el.onclick=()=>reroll(el.dataset.rrb,1);
+      el.onclick=e=>{e.preventDefault();reroll(el.dataset.rrb,1)};
       el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reroll(el.dataset.rrb,1)}};
     });
     updateRrTools();
   }
   drawBoards(false);
+  keepScroll(y);
 }
 function setCol(g,bet,statHtml){
   const b=bet[g]||0;
@@ -1979,7 +2050,7 @@ function updatePlay(anim){
 }
 const TIER={top:'t-top',mid:'t-mid',low:'t-low',none:'t-none'};
 /* あと1つ：盤面をコピーして、まだ出ていない番号を1つずつ当ててみる。
-   宝さがしは宝の場所が秘密なので出さない。フィッシングは中身が秘密なので「釣り上げになる番号」だけ出す */
+   トレジャーアイランドは宝の場所が秘密なので出さない。マリンキャッチは中身が秘密なので「釣り上げになる番号」だけ出す */
 const SZ_NAME={xl:'大きい影',l:'大きい影',m:'中くらいの影',s:'小さい影',xs:'ちびの影'};
 function cloneBoard(g,st){
   if(g==='bingo')return{cells:st.cells,hit:new Set(st.hit)};
@@ -2017,13 +2088,14 @@ function chanceHtml(g,groups){
   }
   return h;
 }
+function curBet(){const st=P.st;if(st&&st.phase==='bet')return P.draft||ZERO();const m=me();return (m&&m.bet)||ZERO()}
 function drawBoards(skipChain){
   const b=P.boards;if(!b)return;
   const set=(g,h)=>{const el=$('bd_'+g);if(el)el.innerHTML=h};
   const ch=g=>(P.chance&&P.chance[g])||new Set();
   set('bingo',bigBingo(b.bingo,P.justNum,ch('bingo')));
   if(!skipChain)set('chain',bigChain(b.chain.cols,null,ch('chain')));
-  set('tree',bigTree(b.tree,P.justClimb,ch('tree')));
+  set('tree',bigTree(b.tree,P.justClimb,ch('tree'),curBet().tree));
   set('treasure',bigTreasure(b.treasure,P.justNum));
   set('fish',bigFish(b.fish,P.justFish,P.justNum));
 }
@@ -2189,9 +2261,9 @@ function bigChain(cols,pop,chn){
   for(let x=0;x<CH_W;x++){const won=cols[x].length===0;h+=`<div class="gem${won?' won':''}" style="--bc:${CH_C[x%4]}"><i></i><span>${won?'GET':''}</span></div>`}
   return h+'</div>';
 }
-function bigTree(st,just,chn){
+function bigTree(st,just,chn,bet){
   const cur=st.climbs,F=st.floors.length;
-  const sign=f=>{const m=MULT.tree[ladderKey(f)]||0;return `<span class="sign">${m?'×'+m:''}</span>`};
+  const sign=f=>{const k=ladderKey(f),m=MULT.tree[k]||0;return `<span class="sign${bet?' med':''}">${m?(bet?payOf('tree',k,bet)+'枚':'×'+m):''}</span>`};
   let h='<div class="tree">';
   h+=`<div class="floor summit ${cur>=F?'cur':'up'}${cur>=F&&just?' just':''}"><b class="fl">頂上${cur>=F?'<small>とうちゃく</small>':''}</b><div class="nums"><em>GOAL</em></div>${sign(F+1)}</div>`;
   for(let f=F;f>=1;f--){
