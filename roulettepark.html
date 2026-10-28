@@ -301,6 +301,15 @@ button,select,input{font:inherit;color:inherit}
 .gtools{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
 .gtools .btn{flex:1;min-width:0}
 .rrc{text-align:center;font-size:12px}
+/* 高さ合わせ：ドロップ（9段・正方形）に合わせてスカイラダーを縦に伸ばす */
+.trio{align-items:stretch}
+.trio #gc_bingo{align-self:start}
+.trio #bd_tree{flex:1;align-items:stretch}
+.trio #bd_tree .tree{flex:1}
+.trio #bd_tree .floor{flex:1}
+.trio .chain{gap:1.1cqi}
+.trio .gems{gap:1.1cqi}
+.trio .gem{gap:.6cqi}
 .rules summary{font-family:var(--f-display);cursor:pointer}
 .rules[open] summary{margin-bottom:8px}
 @media (max-width:640px){.trio{grid-template-columns:1fr}.gcol{width:100%;max-width:460px;justify-self:center}}
@@ -402,7 +411,7 @@ button,select,input{font:inherit;color:inherit}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=3;
+const APP_VER=4;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -431,7 +440,7 @@ const GKEYS=['bingo','chain','tree'];
 const MIN_BET=10;
 const MULT={
   bingo:{none:0,r1:1,r2:2.5,l1:8,l2:30,l3:60},
-  chain:{c0:0,c1:1,c2:2,c3:5,c4:15,c5:30},
+  chain:{c0:0,c1:1.5,c2:2,c3:5,c4:15,c5:30},
   tree:{f0:0,f4:0.5,f5:1,f6:1.5,f7:2,f8:3.5,top:15}
 };
 const LINES=[];
@@ -461,7 +470,7 @@ function bingoKey(e){
 }
 
 /* カラフルドロップ */
-const CH_W=6,CH_H=5,CH_C=['#ff5f8f','#3a9bff','#22c79a','#ff9a3c'];
+const CH_W=6,CH_H=9,CH_C=['#ff5f8f','#3a9bff','#22c79a','#ff9a3c'];
 function findGroups(cols){
   const seen=new Set(),groups=[];
   for(let x=0;x<cols.length;x++)for(let y=0;y<cols[x].length;y++){
