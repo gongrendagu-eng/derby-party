@@ -342,46 +342,93 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 .tinfo i.tk{margin-left:8px}
 .tinfo i.tk.on{background:#3b2f7a;color:#fff;animation:none}
 @keyframes shine2{50%{transform:scale(1.15)}}
-/* フィッシング */
-.pond{display:flex;flex-direction:column;gap:5px;width:min(460px,100%);border:3px solid var(--ink);border-radius:18px;padding:10px;
-  background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.25),transparent 60%),linear-gradient(180deg,#47b6e8,#1b6fb4)}
-.frow{display:grid;grid-template-columns:76px minmax(0,1fr) 50px;align-items:center;gap:8px;padding:4px 8px;border-radius:12px;background:rgba(255,255,255,.12)}
-.frow .fic{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
-.frow .fic svg{display:block;height:auto}
-.frow .fnm{font-size:11px;font-weight:800;color:#fff;display:flex;gap:3px;align-items:center;white-space:nowrap;line-height:1.2}
-.frow .fnm small{font-size:9px;background:var(--pink);border-radius:999px;padding:0 5px}
-.frow .fnm small.atari{background:var(--yellow);color:var(--ink);animation:blink2 .6s infinite}
-@keyframes blink2{50%{opacity:.3}}
-.frow .nums{display:flex;gap:5px;justify-content:center}
-.frow .nums span{width:clamp(28px,6vw,36px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);background:#fff;
-  border:2px solid var(--ink);font-size:clamp(13px,2.6vw,16px)}
-.frow .nums span.by{background:var(--yellow)}
-.frow .sign{font-family:var(--f-display);font-size:14px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;text-align:center;padding:1px 4px}
-.frow.bite{background:rgba(255,255,255,.32);box-shadow:inset 0 0 0 2px var(--yellow)}
-.frow.bite svg{animation:wiggle .5s ease-in-out infinite}
-@keyframes wiggle{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
-.frow.got{background:var(--yellow)}
-.frow.got .fnm{color:var(--ink)}
-.frow.got .nums span{background:var(--mint);color:#fff}
-.frow.just{animation:catch .7s ease-out}
-@keyframes catch{0%{transform:translateY(10px) scale(.9)}40%{transform:translateY(-8px) scale(1.06)}100%{transform:none}}
+/* フィッシング：堤防から見下ろした海。サイズは cqi（列の幅）基準で、大きい列でも小さい列でも同じ見た目で縮む */
+.sea{position:relative;width:min(460px,100%);aspect-ratio:1/1.12;border:3px solid var(--ink);border-radius:4cqi;overflow:hidden;
+  background:linear-gradient(180deg,#38b4e4 8%,#0c5aa2 100%)}
+.sea::before{content:"";position:absolute;inset:0 -30%;opacity:.5;pointer-events:none;
+  background:radial-gradient(ellipse 5cqi 1.2cqi at 50% 50%,rgba(255,255,255,.55) 45%,transparent 60%) 0 0/24cqi 13cqi,
+    radial-gradient(ellipse 4cqi 1cqi at 50% 50%,rgba(255,255,255,.55) 45%,transparent 60%) 12cqi 6.5cqi/24cqi 13cqi;
+  animation:waves 9s linear infinite}
+@keyframes waves{to{transform:translateX(24cqi)}}
+.sea .sky{position:absolute;inset:0 0 auto;height:10%;background:linear-gradient(180deg,#bfeaff,#e8f8ff);border-bottom:.5cqi solid #2f8fca;z-index:1}
+.sea .cl{position:absolute;top:22%;height:3.4cqi;width:12cqi;border-radius:2cqi;background:#fff;box-shadow:4cqi -1.4cqi 0 .4cqi #fff}
+.sea .sky svg{position:absolute;bottom:0;right:6%;height:70%}
+.sea .lines{position:absolute;inset:0;width:100%;height:100%;z-index:6;pointer-events:none}
+.sea .lines line{stroke:rgba(255,255,255,.9);stroke-width:1.2;vector-effect:non-scaling-stroke}
+.sea .lines line.rod{stroke:#2b2a5a;stroke-width:3;stroke-linecap:round}
+.gcol.mini .sea .lines line.rod{stroke-width:2}
+.sea .shore{position:absolute;inset:auto 0 0;height:14%;z-index:5;border-top:.6cqi solid var(--ink);
+  background:repeating-linear-gradient(90deg,transparent 0 15.6cqi,#a9a6b8 15.6cqi 16.2cqi),linear-gradient(180deg,#e7e5ef 0 14%,#c9c7d3 14% 100%)}
+.sea .shore svg{position:absolute;bottom:12%;left:3%;width:9cqi}
+.sea .ifl{position:absolute;width:2cqi;height:4.4cqi;margin:-2.2cqi 0 0 -1cqi;border-radius:1cqi;border:.35cqi solid var(--ink);z-index:6;
+  background:linear-gradient(180deg,#ff3d6e 0 50%,#fff 50%);animation:idle 2.4s ease-in-out infinite}
+@keyframes idle{50%{transform:translateY(.6cqi)}}
+.fsh{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:.6cqi;z-index:3}
+.fsh .tags{display:flex;gap:.8cqi;position:relative;z-index:3}
+.fsh .tags span{width:6.6cqi;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-size:3.3cqi;
+  background:#fff;border:.45cqi solid var(--ink);font-variant-numeric:tabular-nums}
+.fsh .tags span.by{background:var(--yellow)}
+.fsh .tags span.nw{animation:tagpop .45s ease-out}
+@keyframes tagpop{0%{transform:scale(1.6)}100%{transform:none}}
+.fsh .fb{position:relative;display:grid;place-items:center}
+.fsh .sh{display:block;height:auto;filter:blur(.25cqi);transition:transform .5s ease;animation:swim 1.4s ease-in-out infinite}
+.fsh .sh path{fill:rgba(8,30,80,.5)}
+.fsh.r .sh,.fsh.r .real{transform:scaleX(-1)}
+@keyframes swim{50%{translate:0 .6cqi}}
+.fsh.xl .sh{width:31cqi}.fsh.l .sh{width:27cqi}.fsh.m .sh{width:20cqi}.fsh.s .sh{width:14cqi}.fsh.xs .sh{width:10cqi}
+.fsh .real{position:absolute;opacity:0;width:100%;display:grid;place-items:center}
+.fsh .real svg{width:100%;height:auto}
+.fsh.xs .real svg{width:120%}
+.fsh .uki{position:absolute;left:50%;top:-12cqi;width:2.6cqi;height:6cqi;margin-left:-1.3cqi;border-radius:1.3cqi;border:.4cqi solid var(--ink);
+  background:linear-gradient(180deg,#ff3d6e 0 50%,#fff 50%);opacity:0;z-index:4}
+.fsh .say{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-family:var(--f-display);white-space:nowrap;font-size:4.2cqi;
+  color:#fff;-webkit-text-stroke:.5cqi var(--ink);paint-order:stroke fill;opacity:0;z-index:7;margin-bottom:1cqi}
+.fsh.bite .uki{opacity:1;animation:bob .9s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}40%{transform:translateY(2.4cqi)}55%{transform:translateY(.6cqi)}}
+.fsh.bite .sh{animation:jitter .35s ease-in-out infinite}
+@keyframes jitter{50%{translate:.8cqi 0;rotate:-4deg}}
+.fsh.bite .fb::after{content:"";position:absolute;width:150%;aspect-ratio:2/1;border:.5cqi solid rgba(255,255,255,.75);border-radius:50%;animation:ring 1.3s ease-out infinite}
+@keyframes ring{from{transform:scale(.5);opacity:1}to{transform:scale(1.35);opacity:0}}
+.fsh.caught{z-index:7}
+.fsh.caught .sh,.fsh.caught .tags{opacity:0;transition:opacity .3s}
+.fsh.caught .real{animation:leap 1.9s cubic-bezier(.2,.8,.3,1) forwards}
+.fsh.r.caught .real{animation-name:leapr}
+.fsh.caught .say{animation:sayin 1.9s ease-out forwards}
+.fsh.caught .fb::before{content:"";position:absolute;width:170%;aspect-ratio:2.2/1;border-radius:50%;border:.8cqi solid #fff;animation:splash .7s ease-out forwards}
+.fsh.caught.done{display:none}
+@keyframes splash{from{transform:scale(.3);opacity:1}to{transform:scale(1.5);opacity:0}}
+@keyframes leap{0%{opacity:1;transform:translateY(0) scale(.9)}30%{opacity:1;transform:translateY(-12cqi) scale(1.45) rotate(-14deg)}
+  70%{opacity:1;transform:translateY(-10cqi) scale(1.4) rotate(6deg)}100%{opacity:0;transform:translateY(-16cqi) scale(1.1)}}
+@keyframes leapr{0%{opacity:1;transform:scaleX(-1) translateY(0) scale(.9)}30%{opacity:1;transform:scaleX(-1) translateY(-12cqi) scale(1.45) rotate(14deg)}
+  70%{opacity:1;transform:scaleX(-1) translateY(-10cqi) scale(1.4) rotate(-6deg)}100%{opacity:0;transform:scaleX(-1) translateY(-16cqi) scale(1.1)}}
+@keyframes sayin{0%{opacity:0;transform:translate(-50%,2cqi) scale(.6)}25%{opacity:1;transform:translate(-50%,-8cqi) scale(1.1)}80%{opacity:1;transform:translate(-50%,-8cqi) scale(1)}100%{opacity:0;transform:translate(-50%,-10cqi)}}
+.fsh.surprise .say{color:var(--yellow);font-size:5cqi}
+.fsh.boot .say{color:#cfe9ff}
+.sea .surp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:8;opacity:0;animation:surp 1.8s ease-out .3s forwards}
+.sea .surp b{font-family:var(--f-display);font-weight:400;font-size:9cqi;color:var(--yellow);-webkit-text-stroke:.8cqi var(--ink);paint-order:stroke fill;
+  text-shadow:0 1cqi 0 var(--ink);background:radial-gradient(circle,rgba(255,95,143,.9) 0 40%,transparent 41%);padding:6cqi;rotate:-8deg}
+@keyframes surp{0%{opacity:0;transform:scale(.3)}20%{opacity:1;transform:scale(1.15)}75%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+.cooler{width:min(460px,100%);border:3px solid var(--ink);border-radius:3.5cqi;background:linear-gradient(180deg,#e9f7ff 0 22%,#fff 22%);padding:1.6cqi 2cqi 2cqi}
+.gcol.mini .cooler,.gcol.mini .sea{border-width:2px}
+.cooler h4{margin:0 0 1.2cqi;font-family:var(--f-display);font-weight:400;font-size:3.6cqi;color:#1f78b9;display:flex;justify-content:space-between}
+.cooler h4 span{color:#e07b00}
+.catch{display:flex;flex-wrap:wrap;gap:1.6cqi;min-height:11cqi;align-items:center}
+.catch .c{display:flex;flex-direction:column;align-items:center;font-size:2.8cqi;font-weight:800;line-height:1.2}
+.catch .c.late{animation:inbox .5s ease-out 1.7s backwards}
+.catch .c svg{width:13cqi;height:auto}
+.catch .c.big svg{width:18cqi}
+.catch .c.boot svg{width:7cqi}
+.catch .c em{font-style:normal;font-family:var(--f-display);color:#e07b00;font-size:3cqi}
+.catch .c.sp{background:#fff3c4;border-radius:2cqi;padding:.4cqi 1cqi;box-shadow:0 0 0 .5cqi var(--yellow)}
+.catch .none{font-size:3cqi;color:var(--muted);font-weight:800}
+@keyframes inbox{from{transform:translateY(-4cqi) scale(.7);opacity:0}}
+.trio .sea,.trio .cooler{width:100%}
+.trio #bd_fish{gap:1.6cqi}
 .trio .tmap{padding:2.5cqi;gap:1.6cqi;border-radius:12px}
 .trio .tmap div{font-size:7.5cqi;border-radius:8px}
 .trio .tinfo{gap:1.4cqi}
 .trio .tinfo i{width:7cqi;height:7cqi;font-size:3.8cqi;border-radius:5px}
-.trio .pond{padding:2cqi;gap:1cqi;border-radius:12px}
-.trio .frow{grid-template-columns:19cqi minmax(0,1fr) 11cqi;gap:1.4cqi;padding:.3cqi 1.4cqi;border-radius:8px}
-.trio .frow .fic{gap:0}
-.trio .frow .fic svg{max-height:5.2cqi}
-.trio .frow .fnm{font-size:2.9cqi}
-.trio .frow .fnm small{font-size:2.4cqi}
-.trio .frow .nums{gap:1cqi}
-.trio .frow .nums span{width:8cqi;font-size:3.8cqi;border-width:1.5px}
-.trio .frow .sign{font-size:3.6cqi;border-radius:5px}
 .trio #gc_treasure{align-self:start}
-.trio #bd_fish{flex:1;align-items:stretch}
-.trio #bd_fish .pond{flex:1}
-.trio #bd_fish .frow{flex:1}
 /* 設定：使うゲーム */
 .usebox{display:flex;flex-wrap:wrap;gap:8px}
 .field .usebox label{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;padding:4px 12px 4px 8px;background:#fff;
@@ -410,7 +457,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 @media (max-width:900px){.hmain{grid-template-columns:1fr}.wheelbox{min-height:60vh}}
 @media (prefers-reduced-motion:reduce){
-  .tmap div.just,.tinfo i.on,.frow.just,.frow.bite svg,.frow .fnm small.atari,.board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
+  .tmap div.just,.tinfo i.on,.sea::before,.sea .ifl,.fsh .sh,.fsh.bite .uki,.fsh.bite .fb::after,.board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
   .flash.show,.callout.show{opacity:1}
 }
 </style>
@@ -492,7 +539,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=6;
+const APP_VER=7;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -525,7 +572,7 @@ const MULT={
   chain:{c0:0,c1:1.5,c2:2,c3:5,c4:15,c5:30},
   tree:{f0:0,f4:0.5,f5:1,f6:1.5,f7:2,f8:3.5,top:15},
   treasure:{t0:0,t1:1,t2:2.5,t3:12,t0s:0,t1s:0.5,t2s:1.25,t3s:6}, // ドクロが開くと半分
-  fish:{none:0,aji1:1,aji2:3,tai:5,buri:20,maguro:50}
+  fish:{p0:0} // フィッシングは「BET×釣った魚のポイント合計」（fishPt）
 };
 const LINES=[];
 for(let r=0;r<5;r++)LINES.push([0,1,2,3,4].map(c=>r*5+c));
@@ -628,29 +675,33 @@ function newTreasure(r){
 function treasureHit(st,n){const i=st.cells.indexOf(n);if(i<0)return'';st.open.add(i);return st.kind[i]}
 function treasureCount(st){let t=0,s=false;st.open.forEach(i=>{if(st.kind[i]==='T')t++;else if(st.kind[i]==='S')s=true});return{t,s}}
 
-/* フィッシング：池に9匹。魚についている番号が全部出たら釣り上げ（1〜25を重複なく割り振り） */
-const FISH_KINDS=[
-  {k:'maguro',name:'マグロ',n:5,col:'#2f4a8a',w:1},
-  {k:'buri',name:'ブリ',n:4,col:'#3d86b8',w:.88},
-  {k:'tai',name:'タイ',n:3,col:'#ff6f8f',w:.76},{k:'tai',name:'タイ',n:3,col:'#ff6f8f',w:.76},
-  {k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},{k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},{k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},
-  {k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},{k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6}
-]; // 番号の合計 5+4+3+3+2×5＝25
+/* フィッシング：堤防から見た海に魚の影が10匹。影の番号が全部出たら釣り上げ。中身は釣るまで分からない
+   特大(5)・大(4)＝ブリ（12%でマグロ）、中(3)×2＝タイ、小(2)×4＝アジ（12%でタイ）、ちび(1)×2＝長靴（15%でアジ） */
+const FISH_SLOTS=[
+  {sz:'xl',n:5,x:30,y:26},{sz:'s',n:2,x:81,y:22},{sz:'xs',n:1,x:52,y:41},{sz:'m',n:3,x:76,y:42},{sz:'s',n:2,x:17,y:47},
+  {sz:'s',n:2,x:37,y:60},{sz:'l',n:4,x:71,y:62},{sz:'m',n:3,x:22,y:75},{sz:'xs',n:1,x:50,y:80},{sz:'s',n:2,x:82,y:80}
+]; // 番号の合計 5+2+1+3+2+2+4+3+1+2＝25
+const FISH_SURP=0.12,BOOT_AJI=0.15;
+const FISH_PT={aji:1,tai:5,buri:10,maguro:30,boot:0};
+const FISH_NAME={aji:'アジ',tai:'タイ',buri:'ブリ',maguro:'マグロ',boot:'長靴'};
 function newFish(r){
   const d=shuffleR(range25(),r);
-  return{fish:FISH_KINDS.map(f=>d.splice(0,f.n).sort((a,b)=>a-b)),drawn:new Set(),got:FISH_KINDS.map(()=>false)};
+  const fish=FISH_SLOTS.map(s=>{
+    const u=r();let k;
+    if(s.sz==='xl'||s.sz==='l')k=u<FISH_SURP?'maguro':'buri';
+    else if(s.sz==='m')k='tai';
+    else if(s.sz==='s')k=u<FISH_SURP?'tai':'aji';
+    else k=u<BOOT_AJI?'aji':'boot';
+    return{k,sp:(s.sz==='s'&&k==='tai')||k==='maguro',nums:d.splice(0,s.n).sort((a,b)=>a-b),p1:r()*6.283,p2:r()*6.283,w:.00026+r()*.00016};
+  });
+  return{fish,drawn:new Set(),got:fish.map(()=>false),order:[]};
 }
 function fishHit(st,n){
   st.drawn.add(n);const caught=[];
-  st.fish.forEach((nums,i)=>{if(!st.got[i]&&nums.every(x=>st.drawn.has(x))){st.got[i]=true;caught.push(i)}});
+  st.fish.forEach((f,i)=>{if(!st.got[i]&&f.nums.every(x=>st.drawn.has(x))){st.got[i]=true;st.order.push(i);caught.push(i)}});
   return caught;
 }
-function fishKey(st){
-  const has=k=>st.got.some((g,i)=>g&&FISH_KINDS[i].k===k);
-  if(has('maguro'))return'maguro';if(has('buri'))return'buri';if(has('tai'))return'tai';
-  const a=st.got.filter((g,i)=>g&&FISH_KINDS[i].k==='aji').length;
-  return a>=2?'aji2':a===1?'aji1':'none';
-}
+const fishPt=st=>st.fish.reduce((a,f,i)=>a+(st.got[i]?FISH_PT[f.k]:0),0);
 
 const GAMES={
   bingo:{name:'BINGO',short:'BINGO',color:'#3a9bff',
@@ -667,16 +718,20 @@ const GAMES={
       {k:'t1',name:'宝1つ',t:'low'},{k:'t1s',name:'宝1つ（ドクロ）',t:'low'},{k:'t0',name:'はずれ',t:'none'},{k:'t0s',name:'はずれ',t:'none'}],
     cat:st=>{const c=treasureCount(st);return't'+Math.min(TR_T,c.t)+(c.s?'s':'')}},
   fish:{name:'フィッシング',short:'フィッシング',color:'#0aa5b8',
-    cats:[{k:'maguro',name:'マグロ',t:'top'},{k:'buri',name:'ブリ',t:'top'},{k:'tai',name:'タイ',t:'mid'},{k:'aji2',name:'アジ2匹以上',t:'mid'},{k:'aji1',name:'アジ1匹',t:'low'},{k:'none',name:'ボウズ',t:'none'}],
-    cat:fishKey}
+    cats:[{k:'p0',name:'ボウズ',t:'none'}],
+    cat:st=>'p'+fishPt(st)}
 };
-const catOf=(g,k)=>GAMES[g].cats.find(c=>c.k===k)||{name:'',t:'none'};
+const fishPtOfKey=k=>parseInt(String(k).slice(1),10)||0;
+const catOf=(g,k)=>{
+  if(g==='fish'){const p=fishPtOfKey(k);return{name:p?`釣果 ${p}pt`:'ボウズ',t:p>=10?'top':p>=5?'mid':p>=1?'low':'none'}}
+  return GAMES[g].cats.find(c=>c.k===k)||{name:'',t:'none'};
+};
 const RULES={
   bingo:'5×5のカード。出た番号に穴があき、縦・横・斜めがそろうとライン。リーチ（あと1つ）にも配当があります。',
   chain:'出た番号のブロックが消え、上のブロックが落ちます。同じ色が3つ以上つながると連鎖で消えます。縦1列が全部消えると宝石を獲得。消した列の数で配当。',
   tree:'出た番号がある階に、はしごがかかります。今いる階にはしごがかかると、上にかかっているはしごを一気にのぼります。上の階ほど数字が少なく登りにくい。4F以上で配当、頂上は15倍！',
   treasure:'5×5の地図のどこかに宝が3つ、ドクロが1つ埋まっています（開くまで見えません）。出た番号のマスが開き、見つけた宝の数で配当。ドクロが開くと配当が半分に！',
-  fish:'池に9匹の魚。魚についている番号が全部出たら釣り上げ。いちばん大きい魚で配当が決まります（アジは2匹以上でアップ）。マグロは50倍！'
+  fish:'堤防から見た海に魚の影が10匹。影についている番号が全部出たら釣り上げ。中身は釣るまで分かりません。アジ1pt・タイ5pt・ブリ10pt・マグロ30pt、長靴は0pt。配当はBET×釣った魚のポイント合計（10枚BETでアジ2匹とタイ1匹なら70枚）。小さい影がタイ、大きい影がマグロのサプライズも！'
 };
 const ZERO=()=>{const z={};GKEYS.forEach(g=>z[g]=0);return z};
 const ALL_USE=GKEYS.join(',');
@@ -704,7 +759,7 @@ function payFor(bet,cats,dbl){
   const res={};let tot=0;
   GKEYS.forEach(g=>{
     const b=(bet&&bet[g])||0;if(!b)return;
-    const k=cats[g],m=(MULT[g][k]||0)*(dbl?2:1);
+    const k=cats[g],m=(g==='fish'?fishPtOfKey(k):(MULT[g][k]||0))*(dbl?2:1);
     const p=Math.ceil(b*m-1e-9);
     res[g]={k,p,b};tot+=p;
   });
@@ -1579,6 +1634,7 @@ function saveMe(){try{ST.setItem(meKey,JSON.stringify({pid:P.pid,name:P.name}))}
 
 async function padInit(){
   $('pad').hidden=false;
+  requestAnimationFrame(seaLoop);
   if(!ROOM){renderCodeEntry();return}
   const me=loadMe();P.pid=me&&me.pid||newId(10);P.name=me&&me.name||'';
   $('pBody').innerHTML='<div class="pmsg"><h2>接続しています…</h2></div>';
@@ -1742,7 +1798,7 @@ function updateBet(){
     i.disabled=lock;i.closest('.betrow').classList.toggle('lock',lock);
     i.closest('.betrow').querySelectorAll('button').forEach(b=>{if(+b.dataset.d>0)b.disabled=lock});
     const mx=MULT[g],best=Math.max(...Object.values(mx));
-    $('bh_'+g).textContent=P.draft[g]?`最大 ×${best}（${Math.ceil(P.draft[g]*best)}枚）`:lock?`BETは${MAX_PICK}つまで`:'';
+    $('bh_'+g).textContent=P.draft[g]?(g==='fish'?'BET×釣った魚のpt（マグロ30pt）':`最大 ×${best}（${Math.ceil(P.draft[g]*best)}枚）`):lock?`BETは${MAX_PICK}つまで`:'';
   });
   mountBoards(true,pickedOf(P.draft).filter(g=>ln.includes(g)));
   $('betStatus').innerHTML=`BET受付中${st.betLeft>=0?` <span class="cd">あと${st.betLeft}秒</span>`:''}`;
@@ -1772,7 +1828,8 @@ function syncBoards(){
       if(on('treasure')&&r.tr==='T')P.note='宝さがし 宝を発見！';
       if(on('treasure')&&r.tr==='S')P.note='宝さがし ドクロが出た…';
       if(on('chain')&&r.c.chains>=1)P.note=`ドロップ ${r.c.chains}連鎖！`;
-      if(on('fish')&&r.f.length)P.note=`${FISH_KINDS[r.f[r.f.length-1]].name}が釣れた！`}
+      if(on('fish')&&r.f.length){const f=P.boards.fish.fish[r.f[r.f.length-1]];
+        P.note=f.k==='boot'?'フィッシング 長靴でした…':f.sp?`サプライズ！ ${FISH_NAME[f.k]}だった`:`${FISH_NAME[f.k]}が釣れた！`}}
     P.applied++;
   }
   return anim;
@@ -1859,7 +1916,7 @@ function drawBoards(skipChain){
   set('tree',bigTree(b.tree,P.justClimb));
   const reveal=P.st&&P.st.phase==='result';
   set('treasure',bigTreasure(b.treasure,P.justNum,reveal));
-  set('fish',bigFish(b.fish,P.justFish));
+  set('fish',bigFish(b.fish,P.justFish,P.justNum));
 }
 function bigTreasure(st,justNum,reveal){
   const c=treasureCount(st);let h='<div class="tmap">';
@@ -1874,23 +1931,79 @@ function bigTreasure(st,justNum,reveal){
   for(let i=0;i<TR_T;i++)h+=`<i class="${i<c.t?'on':''}">宝</i>`;
   return h+`<i class="tk${c.s?' on':''}">☠</i></div>`;
 }
-function fishSvg(f){
-  const w=Math.round(f.w*100);
-  return `<svg viewBox="0 0 64 32" style="width:${w}%" aria-hidden="true"><path d="M3,16 Q20,1 44,11 L60,3 L55,16 L60,29 L44,21 Q20,31 3,16Z" fill="${f.col}" stroke="#2b2a5a" stroke-width="2.5" stroke-linejoin="round"/>`+
-    (f.k==='buri'?'<path d="M9,17 Q27,15 45,16" stroke="#ffcf33" stroke-width="2.6" fill="none" stroke-linecap="round"/>':'')+
-    (f.k==='maguro'?'<path d="M18,7 L24,1 L29,7Z M20,25 L25,30 L29,25Z" fill="#2f4a8a" stroke="#2b2a5a" stroke-width="1.5" stroke-linejoin="round"/>':'')+
-    `<circle cx="13" cy="14" r="2.8" fill="#fff" stroke="#2b2a5a" stroke-width="1.5"/></svg>`;
+/* 釣った魚の絵（左向き） */
+const FISH_BODY='M2,16 C8,6 24,3 40,9 L56,2 C53,10 53,22 56,30 L40,23 C24,29 8,26 2,16Z';
+const FISH_COL={aji:['#9db6cf','#e6eef6'],tai:['#ff6f8f','#ffd0db'],buri:['#3d86b8','#d7ecf7'],maguro:['#2f4a8a','#c9d4ee']};
+function fishArt(k){
+  if(k==='boot')return `<svg viewBox="0 0 30 34" aria-hidden="true"><path d="M8,2 H19 V20 L27,23 C29,24 29,31 27,32 H5 C3,32 3,30 3,28 L6,20 Z" fill="#3f8f5a" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/><path d="M6,8 H19" stroke="${INK}" stroke-width="1.6"/><path d="M14,4 C20,0 24,6 20,9" stroke="#7ec850" stroke-width="2" fill="none"/></svg>`;
+  const [c,b]=FISH_COL[k];
+  return `<svg viewBox="0 0 58 32" aria-hidden="true"><path d="${FISH_BODY}" fill="${c}" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>`+
+    `<path d="M8,19 C18,25 30,25 40,21 C30,22 18,22 8,19Z" fill="${b}"/>`+
+    (k==='buri'?`<path d="M8,16 C20,14 30,14 42,15" stroke="#ffcf33" stroke-width="2.6" fill="none" stroke-linecap="round"/>`:'')+
+    (k==='maguro'?`<path d="M20,7 L26,0 L31,7Z M22,25 L27,31 L31,25Z" fill="${c}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`:
+      `<path d="M22,7 C25,2 31,2 33,8Z" fill="${c}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`)+
+    `<circle cx="11" cy="14" r="2.8" fill="#fff" stroke="${INK}" stroke-width="1.5"/><circle cx="10.5" cy="14" r="1.1" fill="${INK}"/></svg>`;
 }
-function bigFish(st,just){
-  let h='<div class="pond">';
-  st.fish.forEach((nums,i)=>{
-    const f=FISH_KINDS[i],got=st.got[i],rem=nums.filter(n=>!st.drawn.has(n)).length,bite=!got&&rem===1;
-    const m=MULT.fish[f.k==='aji'?'aji1':f.k];
-    h+=`<div class="frow${got?' got':''}${bite?' bite':''}${just&&just.includes(i)?' just':''}"><div class="fic">${fishSvg(f)}`+
-       `<span class="fnm">${f.name}${got?'<small>GET</small>':bite?'<small class="atari">アタリ</small>':''}</span></div>`+
-       `<div class="nums">${nums.map(n=>`<span class="${st.drawn.has(n)?'by':''}">${n}</span>`).join('')}</div><span class="sign">×${m}</span></div>`;
+/* 堤防に固定の竿（根もとx・竿先x、％）。アタリの魚には近い竿から糸とウキがのびる */
+const RODS=[{b:7,t:13},{b:29,t:32},{b:50,t:50},{b:71,t:68},{b:93,t:87}];
+const ROD_BASE=97,ROD_TIP=81;
+const SEA_SKY=`<div class="sky"><i class="cl" style="left:8%"></i><i class="cl" style="left:58%;transform:scale(.7)"></i>
+  <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M12,30 L14,6 H18 L20,30Z" fill="#fff" stroke="${INK}" stroke-width="1.5"/><path d="M13.2,14 H18.8 M12.6,22 H19.4" stroke="#ff5f8f" stroke-width="4"/><path d="M13,6 H19 L16,1Z" fill="#ff5f8f" stroke="${INK}" stroke-width="1.2"/></svg></div>`;
+const SEA_SHORE=`<div class="shore"><svg viewBox="0 0 30 30" aria-hidden="true"><path d="M4,28 L8,14 H22 L26,28Z" fill="#3a9bff" stroke="${INK}" stroke-width="2"/><path d="M8,14 C8,6 22,6 22,14" fill="none" stroke="${INK}" stroke-width="2"/></svg></div>`;
+const fishXY=(f,s,t)=>{
+  const a=REDUCED?0:t*f.w,ax=s.sz==='xl'||s.sz==='l'?4:5.5;
+  return{x:Math.max(12,Math.min(88,s.x+ax*Math.sin(a+f.p1))),y:Math.max(22,Math.min(80,s.y+3*Math.sin(a*1.6+f.p2))),r:Math.cos(a+f.p1)>0};
+};
+function bigFish(st,just,justNum){
+  const t=performance.now();let surp=false,h=`<div class="sea">${SEA_SKY}<svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">`+
+    RODS.map(r=>`<line class="rod" x1="${r.b}" y1="${ROD_BASE}" x2="${r.t}" y2="${ROD_TIP}"/>`).join('')+`<g class="dyn"></g></svg>`;
+  st.fish.forEach((f,i)=>{
+    const s=FISH_SLOTS[i],got=st.got[i],jc=!!(just&&just.includes(i));
+    if(got&&!jc)return;
+    const bite=!got&&f.nums.filter(n=>!st.drawn.has(n)).length===1,p=fishXY(f,s,t);
+    if(jc&&f.sp)surp=true;
+    const say=f.k==='boot'?'長靴でしたー':f.sp?`${FISH_NAME[f.k]}だった！`:s.sz==='xs'?'アジだ！ラッキー':`${FISH_NAME[f.k]}が釣れた！`;
+    h+=`<div class="fsh ${s.sz}${p.r?' r':''}${bite?' bite':''}${jc?' caught':''}${jc&&f.sp?' surprise':''}${jc&&f.k==='boot'?' boot':''}" data-i="${i}" style="left:${p.x}%;top:${p.y}%">
+      <div class="tags">${f.nums.map(n=>`<span class="${st.drawn.has(n)?'by':''}${n===justNum?' nw':''}">${n}</span>`).join('')}</div>
+      <div class="fb"><svg class="sh" viewBox="0 0 58 32" aria-hidden="true"><path d="${FISH_BODY}"/></svg>${jc?`<div class="real">${fishArt(f.k)}</div><div class="say">${say}</div>`:''}<div class="uki"></div></div></div>`;
   });
-  return h+'</div>';
+  h+=RODS.map((r,i)=>`<i class="ifl" data-r="${i}" style="left:${r.t}%;top:76%"></i>`).join('');
+  if(surp)h+='<div class="surp"><b>サプライズ！</b></div>';
+  const pt=fishPt(st);
+  h+=`${SEA_SHORE}</div><div class="cooler"><h4>クーラーボックス<span>${pt?`合計 ${pt}pt`:''}</span></h4><div class="catch">`+
+    (st.order.length?st.order.map(i=>{const f=st.fish[i];
+      return `<div class="c${f.sp?' sp':''}${f.k==='boot'?' boot':''}${f.k==='buri'||f.k==='maguro'?' big':''}${just&&just.includes(i)?' late':''}">${fishArt(f.k)}<span>${FISH_NAME[f.k]}</span><em>${FISH_PT[f.k]}pt</em></div>`}).join('')
+      :'<span class="none">まだ釣れていません</span>')+'</div></div>';
+  return h;
+}
+/* 魚の回遊と、竿から魚のウキへの糸（iPadだけで動かす） */
+const REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function seaLoop(t){
+  document.querySelectorAll('.sea').forEach(sea=>{
+    const bd=sea.closest('.board');if(!bd||!P.boards)return;
+    const st=P.boards.fish,R=sea.getBoundingClientRect();if(!R.width)return;
+    const busy=new Set(),lines=[];
+    sea.querySelectorAll('.fsh').forEach(el=>{
+      if(el.classList.contains('caught'))return;
+      const i=+el.dataset.i,f=st.fish[i],s=FISH_SLOTS[i];if(!f)return;
+      const p=fishXY(f,s,t);
+      el.style.left=p.x+'%';el.style.top=p.y+'%';el.classList.toggle('r',p.r);
+      if(el.classList.contains('bite')){
+        let ri=el.dataset.rod!==undefined?+el.dataset.rod:-1;
+        if(ri<0||busy.has(ri)){ // いちばん近い、空いている竿
+          let bestD=1e9;RODS.forEach((r,k)=>{const d=Math.abs(r.t-p.x)+(busy.has(k)?1000:0);if(d<bestD){bestD=d;ri=k}});
+          el.dataset.rod=ri;
+        }
+        busy.add(ri);
+        const u=el.querySelector('.uki').getBoundingClientRect();
+        lines.push(`<line x1="${RODS[ri].t}" y1="${ROD_TIP}" x2="${((u.left+u.width/2-R.left)/R.width*100).toFixed(2)}" y2="${((u.top-R.top)/R.height*100).toFixed(2)}"/>`);
+      }else if(el.dataset.rod!==undefined)delete el.dataset.rod;
+    });
+    RODS.forEach((r,k)=>{if(!busy.has(k))lines.push(`<line x1="${r.t}" y1="${ROD_TIP}" x2="${r.t}" y2="76"/>`)});
+    sea.querySelectorAll('.ifl').forEach(e=>{e.hidden=busy.has(+e.dataset.r)});
+    const g=sea.querySelector('.dyn'),html=lines.join('');if(g&&g.dataset.h!==html){g.innerHTML=html;g.dataset.h=html}
+  });
+  requestAnimationFrame(seaLoop);
 }
 function animateChain(steps){
   const tok=++P.animTok;P.animBusy=true;let i=0;
