@@ -186,7 +186,7 @@ button,select,input{font:inherit;color:inherit}
 
 /* BET */
 .bets{display:flex;flex-direction:column;gap:8px}
-.betrow{display:grid;grid-template-columns:132px 40px 40px 70px 40px 40px minmax(0,1fr);align-items:center;gap:6px;
+.betrow{display:grid;grid-template-columns:140px 40px 40px 70px 40px 40px minmax(0,1fr);align-items:center;gap:6px;
   background:var(--paper2);border:2px solid var(--ink);border-radius:14px;padding:8px 10px}
 .betrow .gtag{text-align:center;font-size:12px;padding:1px 6px}
 .betrow button{width:40px;height:40px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 2px 0 var(--ink);padding:0}
@@ -266,7 +266,18 @@ button,select,input{font:inherit;color:inherit}
 .floor.just{animation:stamp .5s ease-out}
 /* 3つの盤面を横並び */
 #pBody:has(.trio){width:min(1240px,100%)}
-.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
+.boards{display:flex;flex-direction:column;gap:12px}
+.trio{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,440px));justify-content:center;gap:10px;align-items:start}
+.trio[style="--n:1"]{grid-template-columns:minmax(0,500px)}
+.trio.minis{grid-template-columns:repeat(var(--n),minmax(0,226px))}
+.gcol.mini{padding:5px;gap:4px;border-width:2.5px;box-shadow:3px 3px 0 var(--ink);border-radius:14px}
+.gcol.mini .gtag{font-size:10px;padding:0 7px}
+.gcol.mini .gbet{font-size:12px}
+.gcol.mini .gstat{min-height:20px}
+.gcol.mini .gstat .chip{font-size:10px;padding:0 6px;border-width:1.5px}
+.gcol.mini .gtools .btn{font-size:11px;padding:3px 4px;box-shadow:0 2px 0 var(--ink)}
+.gcol.mini .rrc{font-size:10px}
+.betrow.lock{opacity:.5}
 .gcol{container-type:inline-size;background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);
   padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .gcol.nobet .board{opacity:.55}
@@ -312,9 +323,75 @@ button,select,input{font:inherit;color:inherit}
 .trio .gem{gap:.6cqi}
 /* ダブルタップで拡大しない（連打はそのままタップとして数える） */
 html,body,button,input,.board,.board *{touch-action:manipulation}
+/* 宝さがし */
+.tmap{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px;border-radius:18px;border:3px solid var(--ink);width:min(440px,100%);
+  background:radial-gradient(circle at 20% 30%,rgba(255,255,255,.35) 0 2px,transparent 3px) 0 0/22px 22px,#e7b960}
+.tmap div{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;position:relative;font-family:var(--f-display);font-size:clamp(18px,4.4vw,28px);
+  background:#fff4d8;border:2px solid var(--ink);color:#7a4f12;font-variant-numeric:tabular-nums}
+.tmap div.op{background:#c99447;color:rgba(43,42,90,.38);border-style:dashed}
+.tmap div.tr{background:var(--yellow);color:var(--ink);box-shadow:0 0 0 3px #fff6c2,0 0 16px #ffd84d}
+.tmap div.sk{background:#3b2f7a;color:#fff}
+.tmap div.hid{color:rgba(43,42,90,.45)}
+.tmap div.hid::after{content:attr(data-k);position:absolute;right:6%;top:4%;font-size:.5em;color:var(--pink)}
+.tmap div.just{animation:dig .6s ease-out}
+@keyframes dig{0%{transform:scale(.6) rotate(-10deg)}50%{transform:scale(1.25) rotate(4deg)}100%{transform:none}}
+.tinfo{display:flex;gap:6px;justify-content:center;align-items:center}
+.tinfo i{font-style:normal;font-family:var(--f-display);width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;
+  border:2px solid var(--ink);background:#fff4d8;opacity:.35}
+.tinfo i.on{opacity:1;background:var(--yellow);animation:shine2 1s ease-in-out infinite}
+.tinfo i.tk{margin-left:8px}
+.tinfo i.tk.on{background:#3b2f7a;color:#fff;animation:none}
+@keyframes shine2{50%{transform:scale(1.15)}}
+/* フィッシング */
+.pond{display:flex;flex-direction:column;gap:5px;width:min(460px,100%);border:3px solid var(--ink);border-radius:18px;padding:10px;
+  background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.25),transparent 60%),linear-gradient(180deg,#47b6e8,#1b6fb4)}
+.frow{display:grid;grid-template-columns:76px minmax(0,1fr) 50px;align-items:center;gap:8px;padding:4px 8px;border-radius:12px;background:rgba(255,255,255,.12)}
+.frow .fic{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.frow .fic svg{display:block;height:auto}
+.frow .fnm{font-size:11px;font-weight:800;color:#fff;display:flex;gap:3px;align-items:center;white-space:nowrap;line-height:1.2}
+.frow .fnm small{font-size:9px;background:var(--pink);border-radius:999px;padding:0 5px}
+.frow .fnm small.atari{background:var(--yellow);color:var(--ink);animation:blink2 .6s infinite}
+@keyframes blink2{50%{opacity:.3}}
+.frow .nums{display:flex;gap:5px;justify-content:center}
+.frow .nums span{width:clamp(28px,6vw,36px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);background:#fff;
+  border:2px solid var(--ink);font-size:clamp(13px,2.6vw,16px)}
+.frow .nums span.by{background:var(--yellow)}
+.frow .sign{font-family:var(--f-display);font-size:14px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;text-align:center;padding:1px 4px}
+.frow.bite{background:rgba(255,255,255,.32);box-shadow:inset 0 0 0 2px var(--yellow)}
+.frow.bite svg{animation:wiggle .5s ease-in-out infinite}
+@keyframes wiggle{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+.frow.got{background:var(--yellow)}
+.frow.got .fnm{color:var(--ink)}
+.frow.got .nums span{background:var(--mint);color:#fff}
+.frow.just{animation:catch .7s ease-out}
+@keyframes catch{0%{transform:translateY(10px) scale(.9)}40%{transform:translateY(-8px) scale(1.06)}100%{transform:none}}
+.trio .tmap{padding:2.5cqi;gap:1.6cqi;border-radius:12px}
+.trio .tmap div{font-size:7.5cqi;border-radius:8px}
+.trio .tinfo{gap:1.4cqi}
+.trio .tinfo i{width:7cqi;height:7cqi;font-size:3.8cqi;border-radius:5px}
+.trio .pond{padding:2cqi;gap:1cqi;border-radius:12px}
+.trio .frow{grid-template-columns:19cqi minmax(0,1fr) 11cqi;gap:1.4cqi;padding:.3cqi 1.4cqi;border-radius:8px}
+.trio .frow .fic{gap:0}
+.trio .frow .fic svg{max-height:5.2cqi}
+.trio .frow .fnm{font-size:2.9cqi}
+.trio .frow .fnm small{font-size:2.4cqi}
+.trio .frow .nums{gap:1cqi}
+.trio .frow .nums span{width:8cqi;font-size:3.8cqi;border-width:1.5px}
+.trio .frow .sign{font-size:3.6cqi;border-radius:5px}
+.trio #gc_treasure{align-self:start}
+.trio #bd_fish{flex:1;align-items:stretch}
+.trio #bd_fish .pond{flex:1}
+.trio #bd_fish .frow{flex:1}
+/* 設定：使うゲーム */
+.usebox{display:flex;flex-wrap:wrap;gap:8px}
+.field .usebox label{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;padding:4px 12px 4px 8px;background:#fff;
+  font-weight:800;font-size:14px;color:var(--ink);letter-spacing:0;cursor:pointer}
+.usebox input{width:18px;height:18px;accent-color:var(--pink);margin:0}
+.lineup{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.hitinfo .gtag{font-family:var(--f-body);font-size:.62em}
 .rules summary{font-family:var(--f-display);cursor:pointer}
 .rules[open] summary{margin-bottom:8px}
-@media (max-width:640px){.trio{grid-template-columns:1fr}.gcol{width:100%;max-width:460px;justify-self:center}}
+@media (max-width:640px){.trio{grid-template-columns:1fr}.trio.minis{grid-template-columns:repeat(2,minmax(0,1fr))}.gcol{width:100%;max-width:460px;justify-self:center}}
 /* 結果 */
 .restable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .restable td{padding:8px 6px;border-bottom:2px dashed var(--line)}
@@ -333,7 +410,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 @media (max-width:900px){.hmain{grid-template-columns:1fr}.wheelbox{min-height:60vh}}
 @media (prefers-reduced-motion:reduce){
-  .board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
+  .tmap div.just,.tinfo i.on,.frow.just,.frow.bite svg,.frow .fnm small.atari,.board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
   .flash.show,.callout.show{opacity:1}
 }
 </style>
@@ -357,9 +434,11 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
             <select id="c_speed"><option value="drama" selected>じっくり（1球 約13秒）</option><option value="normal">標準（1球 約8秒）</option><option value="fast">速い（1球 約3秒）</option><option value="instant">一瞬（テスト用）</option></select></div>
           <div class="field"><label for="c_net">つなぎ方</label>
             <select id="c_net"><option value="firebase" selected>iPad（本番・Firebase）</option><option value="local">お試し（このPCの別タブ）</option></select></div>
+          <div class="field" style="grid-column:1/-1"><label>使うゲーム（ふだんは全部。BETできるのは1ゲームにつき3つまで）</label>
+            <div class="usebox" id="c_use"></div></div>
         </form>
       </div>
-      <p class="hint" style="text-align:center">最低BETは10枚。メダルが10枚未満の人は全部賭けます。0枚になった人は見学です。</p>
+      <p class="hint" style="text-align:center">BETできるのは3つのゲームまで。最低BETは10枚。メダルが10枚未満の人は全部賭けます。0枚になった人は見学です。</p>
       <div class="setupact">
         <button class="btn go" id="openBtn" type="button">参加者を集める</button>
         <button class="btn" id="resumeBtn" type="button" hidden>前回の続きから</button>
@@ -413,7 +492,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=5;
+const APP_VER=6;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -438,12 +517,15 @@ const ROOM=(params.get('room')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const LOCAL=params.get('local')==='1';
 
 /* ===================== ゲームの中身 ===================== */
-const GKEYS=['bingo','chain','tree'];
+const GKEYS=['bingo','chain','tree','treasure','fish']; // 全アトラクション
+const MAX_PICK=3; // 1ゲームでBETできるのは3つまで
 const MIN_BET=10;
 const MULT={
   bingo:{none:0,r1:1,r2:2.5,l1:8,l2:30,l3:60},
   chain:{c0:0,c1:1.5,c2:2,c3:5,c4:15,c5:30},
-  tree:{f0:0,f4:0.5,f5:1,f6:1.5,f7:2,f8:3.5,top:15}
+  tree:{f0:0,f4:0.5,f5:1,f6:1.5,f7:2,f8:3.5,top:15},
+  treasure:{t0:0,t1:1,t2:2.5,t3:12,t0s:0,t1s:0.5,t2s:1.25,t3s:6}, // ドクロが開くと半分
+  fish:{none:0,aji1:1,aji2:3,tai:5,buri:20,maguro:50}
 };
 const LINES=[];
 for(let r=0;r<5;r++)LINES.push([0,1,2,3,4].map(c=>r*5+c));
@@ -535,6 +617,41 @@ function treeHit(st,n){
 }
 const ladderKey=f=>f>=9?'top':f>=4?'f'+f:'f0'; // 9＝頂上
 
+/* 宝さがし：5×5のマスに1〜25を重複なく置き、うち3マスが宝・1マスがドクロ（開くまで見えない） */
+const TR_T=3;
+function newTreasure(r){
+  const cells=shuffleR(range25(),r),pos=shuffleR(Array.from({length:25},(_,i)=>i),r);
+  const kind=Array(25).fill('');
+  pos.slice(0,TR_T).forEach(i=>kind[i]='T');kind[pos[TR_T]]='S';
+  return{cells,kind,open:new Set()};
+}
+function treasureHit(st,n){const i=st.cells.indexOf(n);if(i<0)return'';st.open.add(i);return st.kind[i]}
+function treasureCount(st){let t=0,s=false;st.open.forEach(i=>{if(st.kind[i]==='T')t++;else if(st.kind[i]==='S')s=true});return{t,s}}
+
+/* フィッシング：池に9匹。魚についている番号が全部出たら釣り上げ（1〜25を重複なく割り振り） */
+const FISH_KINDS=[
+  {k:'maguro',name:'マグロ',n:5,col:'#2f4a8a',w:1},
+  {k:'buri',name:'ブリ',n:4,col:'#3d86b8',w:.88},
+  {k:'tai',name:'タイ',n:3,col:'#ff6f8f',w:.76},{k:'tai',name:'タイ',n:3,col:'#ff6f8f',w:.76},
+  {k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},{k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},{k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},
+  {k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6},{k:'aji',name:'アジ',n:2,col:'#8fa6bf',w:.6}
+]; // 番号の合計 5+4+3+3+2×5＝25
+function newFish(r){
+  const d=shuffleR(range25(),r);
+  return{fish:FISH_KINDS.map(f=>d.splice(0,f.n).sort((a,b)=>a-b)),drawn:new Set(),got:FISH_KINDS.map(()=>false)};
+}
+function fishHit(st,n){
+  st.drawn.add(n);const caught=[];
+  st.fish.forEach((nums,i)=>{if(!st.got[i]&&nums.every(x=>st.drawn.has(x))){st.got[i]=true;caught.push(i)}});
+  return caught;
+}
+function fishKey(st){
+  const has=k=>st.got.some((g,i)=>g&&FISH_KINDS[i].k===k);
+  if(has('maguro'))return'maguro';if(has('buri'))return'buri';if(has('tai'))return'tai';
+  const a=st.got.filter((g,i)=>g&&FISH_KINDS[i].k==='aji').length;
+  return a>=2?'aji2':a===1?'aji1':'none';
+}
+
 const GAMES={
   bingo:{name:'BINGO',short:'BINGO',color:'#3a9bff',
     cats:[{k:'l3',name:'3ライン以上',t:'top'},{k:'l2',name:'2ライン',t:'top'},{k:'l1',name:'1ライン',t:'top'},{k:'r2',name:'リーチ2本以上',t:'mid'},{k:'r1',name:'リーチ1本',t:'low'},{k:'none',name:'はずれ',t:'none'}],
@@ -544,27 +661,42 @@ const GAMES={
     cat:st=>{const c=clearedCols(st);return c>=5?'c5':'c'+c}},
   tree:{name:'スカイラダー',short:'ラダー',color:'#22c79a',
     cats:[{k:'top',name:'頂上',t:'top'},{k:'f8',name:'8F',t:'top'},{k:'f7',name:'7F',t:'mid'},{k:'f6',name:'6F',t:'mid'},{k:'f5',name:'5F',t:'low'},{k:'f4',name:'4F',t:'low'},{k:'f0',name:'3F以下',t:'none'}],
-    cat:st=>ladderKey(1+st.climbs)}
+    cat:st=>ladderKey(1+st.climbs)},
+  treasure:{name:'宝さがし',short:'宝さがし',color:'#8a6cff',
+    cats:[{k:'t3',name:'宝3つ',t:'top'},{k:'t3s',name:'宝3つ（ドクロ）',t:'top'},{k:'t2',name:'宝2つ',t:'mid'},{k:'t2s',name:'宝2つ（ドクロ）',t:'mid'},
+      {k:'t1',name:'宝1つ',t:'low'},{k:'t1s',name:'宝1つ（ドクロ）',t:'low'},{k:'t0',name:'はずれ',t:'none'},{k:'t0s',name:'はずれ',t:'none'}],
+    cat:st=>{const c=treasureCount(st);return't'+Math.min(TR_T,c.t)+(c.s?'s':'')}},
+  fish:{name:'フィッシング',short:'フィッシング',color:'#0aa5b8',
+    cats:[{k:'maguro',name:'マグロ',t:'top'},{k:'buri',name:'ブリ',t:'top'},{k:'tai',name:'タイ',t:'mid'},{k:'aji2',name:'アジ2匹以上',t:'mid'},{k:'aji1',name:'アジ1匹',t:'low'},{k:'none',name:'ボウズ',t:'none'}],
+    cat:fishKey}
 };
 const catOf=(g,k)=>GAMES[g].cats.find(c=>c.k===k)||{name:'',t:'none'};
 const RULES={
   bingo:'5×5のカード。出た番号に穴があき、縦・横・斜めがそろうとライン。リーチ（あと1つ）にも配当があります。',
   chain:'出た番号のブロックが消え、上のブロックが落ちます。同じ色が3つ以上つながると連鎖で消えます。縦1列が全部消えると宝石を獲得。消した列の数で配当。',
-  tree:'出た番号がある階に、はしごがかかります。今いる階にはしごがかかると、上にかかっているはしごを一気にのぼります。上の階ほど数字が少なく登りにくい。4F以上で配当、頂上は15倍！'
+  tree:'出た番号がある階に、はしごがかかります。今いる階にはしごがかかると、上にかかっているはしごを一気にのぼります。上の階ほど数字が少なく登りにくい。4F以上で配当、頂上は15倍！',
+  treasure:'5×5の地図のどこかに宝が3つ、ドクロが1つ埋まっています（開くまで見えません）。出た番号のマスが開き、見つけた宝の数で配当。ドクロが開くと配当が半分に！',
+  fish:'池に9匹の魚。魚についている番号が全部出たら釣り上げ。いちばん大きい魚で配当が決まります（アジは2匹以上でアップ）。マグロは50倍！'
 };
-const ZERO=()=>({bingo:0,chain:0,tree:0});
+const ZERO=()=>{const z={};GKEYS.forEach(g=>z[g]=0);return z};
+const ALL_USE=GKEYS.join(',');
+const parseLineup=s=>{const a=String(s||'').split(',').filter(g=>GAMES[g]);return a.length?a:['bingo','chain','tree']};
+const useOf=cfg=>parseLineup(cfg&&cfg.use||ALL_USE);
 const totalOf=b=>GKEYS.reduce((a,g)=>a+((b&&b[g])||0),0);
 /* rr＝ゲームごとの「並べかえ回数」。同じ回数なら先生PCとiPadで同じ盤面になる */
 const rngFor=(seed,pid,g,rr)=>mulberry32(hstr(seed+':'+pid+':'+g+':'+((rr&&rr[g])||0)));
 function boardsFor(seed,pid,rr){
-  return{bingo:newCard(rngFor(seed,pid,'bingo',rr)),chain:newChain(rngFor(seed,pid,'chain',rr)),tree:newTree(rngFor(seed,pid,'tree',rr))};
+  return{bingo:newCard(rngFor(seed,pid,'bingo',rr)),chain:newChain(rngFor(seed,pid,'chain',rr)),tree:newTree(rngFor(seed,pid,'tree',rr)),
+    treasure:newTreasure(rngFor(seed,pid,'treasure',rr)),fish:newFish(rngFor(seed,pid,'fish',rr))};
 }
 function cleanRr(x){const r=ZERO();GKEYS.forEach(g=>r[g]=Math.max(0,Math.min(9999,Math.floor(Number(x&&x[g])||0))));return r}
 function applyNum(b,n,rec){
   markCard(b.bingo,n);
   const c=chainHit(b.chain,n,rec);
   const t=treeHit(b.tree,n);
-  return{c,t};
+  const tr=treasureHit(b.treasure,n);
+  const f=fishHit(b.fish,n);
+  return{c,t,tr,f};
 }
 const parseDrawn=s=>(s?String(s).split(','):[]).filter(Boolean);
 const numsOf=list=>list.filter(x=>x!=='p').map(Number);
@@ -580,24 +712,31 @@ function payFor(bet,cats,dbl){
 }
 /* BETの決まり：最低10枚。10枚未満の人は全部 */
 const minFor=bal=>Math.min(MIN_BET,bal);
-function sanitizeBet(b,bal){
-  const r=ZERO();GKEYS.forEach(g=>r[g]=Math.max(0,Math.floor(Number(b&&b[g])||0)));
+function sanitizeBet(b,bal,ln){
+  ln=ln||GKEYS;
+  const r=ZERO();ln.forEach(g=>r[g]=Math.max(0,Math.floor(Number(b&&b[g])||0)));
+  // 4つ以上に賭けていたら、枚数の多い3つだけ残す
+  const on=ln.filter(g=>r[g]>0).sort((a,c)=>r[c]-r[a]||GKEYS.indexOf(a)-GKEYS.indexOf(c));
+  on.slice(MAX_PICK).forEach(g=>r[g]=0);
   let over=totalOf(r)-Math.max(0,bal);
-  for(const g of ['tree','chain','bingo']){if(over<=0)break;const cut=Math.min(r[g],over);r[g]-=cut;over-=cut}
+  for(const g of ln.slice().reverse()){if(over<=0)break;const cut=Math.min(r[g],over);r[g]-=cut;over-=cut}
   return r;
 }
-function fixBet(b,bal){
+function fixBet(b,bal,ln){
   // 足りない分を一番多く賭けているゲームに足す（BETなしならランダムなゲームに）
-  const r=sanitizeBet(b,bal);const need=minFor(bal)-totalOf(r);
+  ln=ln||GKEYS;
+  const r=sanitizeBet(b,bal,ln);const need=minFor(bal)-totalOf(r);
+  const top=()=>ln.reduce((a,k)=>r[k]>r[a]?k:a,ln[0]);
   if(need>0){
-    let g=GKEYS.reduce((a,k)=>r[k]>r[a]?k:a,'bingo');
-    if(totalOf(r)===0)g=pick(GKEYS);
+    let g=top();
+    if(totalOf(r)===0)g=pick(ln);
     r[g]+=need;
   }
-  if(bal<MIN_BET&&totalOf(r)<bal){r[GKEYS.reduce((a,k)=>r[k]>r[a]?k:a,'bingo')]+=bal-totalOf(r)}
+  if(bal<MIN_BET&&totalOf(r)<bal){r[top()]+=bal-totalOf(r)}
   return r;
 }
-const betOk=(b,bal)=>{const t=totalOf(b);return bal<MIN_BET?t===bal:(t>=MIN_BET&&t<=bal)};
+const pickedOf=b=>GKEYS.filter(g=>(b&&b[g])>0);
+const betOk=(b,bal)=>{const t=totalOf(b);if(pickedOf(b).length>MAX_PICK)return false;return bal<MIN_BET?t===bal:(t>=MIN_BET&&t<=bal)};
 
 /* ===================== 通信 ===================== */
 // Firebase の設定は、教室ダービーなどと共通の firebase-config.js を読み込む（同じフォルダ → ひとつ上の順に探す）
@@ -943,11 +1082,13 @@ function commentary(info){
 const H={
   cfg:null,code:'',net:null,phase:'setup',roster:{},err:{},online:{},
   gno:0,gid:'',seed:0,dbl:false,drawn:[],ball:0,left:0,spinning:0,betLeft:-1,
-  rev:null,sd:null,busy:false,timer:null,joinIdx:0
+  rev:null,sd:null,busy:false,timer:null,joinIdx:0,lineup:[]
 };
+const tagsHtml=ln=>`<span class="lineup">${ln.map(g=>`<span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span>`).join('')}</span>`;
 const CFG_KEY='rpark.cfg',SAVE_KEY='rpark.save';
 function readCfg(){
-  return{
+  const use=Array.from(document.querySelectorAll('#c_use input:checked')).map(i=>i.value);
+  return{use:(use.length?use:GKEYS).join(','),
     games:+$('c_games').value||5,betSec:+$('c_bet').value||0,start:Math.max(10,+$('c_start').value||100),
     clean:Math.max(1,Math.min(20,+$('c_clean').value||5)),dblp:+$('c_dbl').value||0,speed:$('c_speed').value,net:$('c_net').value
   };
@@ -955,6 +1096,7 @@ function readCfg(){
 function fillCfg(c){
   if(!c)return;
   const set=(id,v)=>{if(v!=null&&$(id))$(id).value=String(v)};
+  if(c.use){const u=parseLineup(c.use);document.querySelectorAll('#c_use input').forEach(i=>i.checked=u.includes(i.value))}
   set('c_games',c.games);set('c_bet',c.betSec);set('c_start',c.start);set('c_clean',c.clean);set('c_dbl',c.dblp);set('c_speed',c.speed);set('c_net',c.net);
 }
 const actives=()=>Object.keys(H.roster).filter(p=>!H.roster[p].out);
@@ -972,7 +1114,7 @@ function pubState(){
   pubTimer=setTimeout(()=>{
     pubTimer=null;if(!H.net)return;
     const st={v:APP_VER,phase:H.phase,ts:Date.now(),
-      cfg:{games:H.cfg.games,betSec:H.cfg.betSec,start:H.cfg.start,clean:H.cfg.clean},
+      cfg:{games:H.cfg.games,betSec:H.cfg.betSec,start:H.cfg.start,clean:H.cfg.clean,use:H.cfg.use||ALL_USE},lineup:H.lineup.join(','),
       gno:H.gno,gid:H.gid||'-',seed:H.seed||0,dbl:H.dbl?1:0,drawn:H.drawn.join(','),ball:H.ball,left:H.left,spinning:H.spinning?1:0,
       betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0};
     const j=JSON.stringify(st);if(j===lastPub)return;lastPub=j;
@@ -981,12 +1123,13 @@ function pubState(){
 }
 function saveHost(){
   if(['setup'].includes(H.phase))return;
-  lsSet(SAVE_KEY,{cfg:H.cfg,code:H.code,roster:H.roster,gno:H.gno,phase:H.phase==='lobby'?'lobby':'result',joinIdx:H.joinIdx,ts:Date.now()});
+  lsSet(SAVE_KEY,{cfg:H.cfg,code:H.code,roster:H.roster,gno:H.gno,lineup:H.lineup,phase:H.phase==='lobby'?'lobby':'result',joinIdx:H.joinIdx,ts:Date.now()});
 }
 
 /* ---- 起動 ---- */
 function hostInit(){
   $('host').hidden=false;
+  $('c_use').innerHTML=GKEYS.map(g=>`<label><input type="checkbox" value="${g}" checked>${GAMES[g].name}</label>`).join('');
   fillCfg(lsGet(CFG_KEY,null));
   $('verLine').textContent=`版 ${APP_VER}`;
   const sv=lsGet(SAVE_KEY,null);
@@ -1016,7 +1159,7 @@ async function openRoom(sv){
   }catch(e){
     $('setupErr').textContent=e.message||String(e);$('setupErr').hidden=false;$('openBtn').disabled=false;return;
   }
-  if(sv){H.roster=sv.roster||{};H.gno=sv.gno||0;H.joinIdx=sv.joinIdx||0;H.phase=sv.phase==='result'&&H.gno>0?'result':'lobby'}
+  if(sv){H.roster=sv.roster||{};H.gno=sv.gno||0;H.lineup=Array.isArray(sv.lineup)?sv.lineup.filter(g=>GAMES[g]):[];H.joinIdx=sv.joinIdx||0;H.phase=sv.phase==='result'&&H.gno>0?'result':'lobby'}
   else{H.net.set('join',null);H.net.set('bets',null);H.net.set('sdpick',null);H.phase='lobby'}
   H.err={};
   $('setup').hidden=true;$('stage').hidden=false;
@@ -1090,12 +1233,13 @@ function enterLobby(){
 function startGame(){
   if(!actives().length)return;
   H.gno++;H.gid=newId(6);H.seed=rint(1e9);H.dbl=false;H.drawn=[];H.ball=0;H.left=0;H.spinning=0;
+  H.lineup=useOf(H.cfg); // 設定で選んだゲームすべてが遊べる
   drawnSet=new Set();
   $('ov').hidden=true;$('drawn').innerHTML='';renderTray(0,0,0,false);
   $('hGame').hidden=false;$('hGame').textContent=`第${H.gno}ゲーム／全${H.cfg.games}`;$('hDbl').hidden=true;
   Object.keys(H.roster).forEach(p=>{
     const r=H.roster[p];r.out=r.b<=0?1:0;r.conf=0;r.res=0;r.pt=0;
-    r.bet=r.out?ZERO():fixBet(r.lastBet||{bingo:MIN_BET},r.b); // 前回の配分をたたき台に
+    r.bet=r.out?ZERO():fixBet(r.lastBet||{},r.b,H.lineup); // 前回の配分をたたき台に
     r.bet0=1; // まだ本人が送っていない印
     r.rr=ZERO(); // 盤面の並べかえ回数
   });
@@ -1103,7 +1247,7 @@ function startGame(){
   H.phase='bet';H.betLeft=H.cfg.betSec>0?H.cfg.betSec:-1;
   hubText='BET';hubSmall='受付中';
   showCallout(`第${H.gno}ゲーム`,'BET受付中！',2200,false);
-  setHitInfo('iPadでBETしてください（最低10枚）');
+  setHitInfo(`iPadでBETしてください（最低${MIN_BET}枚・${MAX_PICK}つのゲームまで）`);
   clearInterval(H.timer);
   if(H.betLeft>0)H.timer=setInterval(()=>{H.betLeft--;if(H.betLeft<=0){clearInterval(H.timer);closeBets()}renderSide();pubState()},1000);
   renderSide();pubState();
@@ -1114,7 +1258,7 @@ function onBets(v){
   for(const pid of Object.keys(v)){
     const x=v[pid],r=H.roster[pid];
     if(!x||!r||r.out||x.gid!==H.gid)continue;
-    const b=sanitizeBet(x.b,r.b),conf=x.conf&&betOk(b,r.b)?1:0,rr=cleanRr(x.rr);
+    const b=sanitizeBet(x.b,r.b,H.lineup),conf=x.conf&&betOk(b,r.b)?1:0,rr=cleanRr(x.rr);
     if(JSON.stringify(b)!==JSON.stringify(r.bet)||conf!==r.conf||r.bet0||JSON.stringify(rr)!==JSON.stringify(r.rr)){r.bet=b;r.conf=conf;r.rr=rr;r.bet0=0;changed=true}
   }
   if(changed){
@@ -1128,7 +1272,7 @@ async function closeBets(){
   clearInterval(H.timer);H.betLeft=-1;
   actives().forEach(p=>{
     const r=H.roster[p];
-    r.bet=r.bet0?fixBet({[pick(GKEYS)]:MIN_BET},r.b):fixBet(r.bet,r.b);
+    r.bet=r.bet0?fixBet({[pick(H.lineup)]:MIN_BET},r.b,H.lineup):fixBet(r.bet,r.b,H.lineup);
     r.lastBet=r.bet;r.b-=totalOf(r.bet);r.conf=1;delete r.bet0;
   });
   H.phase='dbl';hideCallout();hubText='GO!';hubSmall='';renderSide();pubState();
@@ -1374,7 +1518,8 @@ function renderSide(){
   let h='',k='';
   if(H.phase==='lobby'){
     h=`<h2>参加者</h2><div class="stat"><span>参加人数</span><b>${n}人</b></div>${chipsHtml('lobby')}
-       <p class="hint">ゲーム数 ${H.cfg.games}／最初のメダル ${H.cfg.start}枚／掃除当番 ${H.cfg.clean}人</p>`;
+       <p class="hint">ゲーム数 ${H.cfg.games}／最初のメダル ${H.cfg.start}枚／掃除当番 ${H.cfg.clean}人</p>
+       <div><p class="hint" style="margin-bottom:4px">アトラクション（BETは1ゲームにつき${MAX_PICK}つまで）</p>${tagsHtml(useOf(H.cfg))}</div>`;
     k=`<button class="btn go" type="button" data-main id="bStart" ${n?'':'disabled'}>ゲームスタート</button><div class="keyhint">Enterキーでも進めます</div>`;
   }else if(H.phase==='bet'){
     const conf=act.filter(p=>H.roster[p].conf).length;
@@ -1452,6 +1597,7 @@ function renderCodeEntry(){
 }
 
 const me=()=>P.st&&P.st.roster&&P.st.roster[P.pid];
+const lineupNow=()=>useOf(P.st&&P.st.cfg);
 function padRender(){
   const st=P.st;
   if(!st){setBody('wait','<div class="pmsg panel"><h2>先生のPCを待っています…</h2><p class="hint">プロジェクターに参加コードが出ているか確認してください。</p></div>');return}
@@ -1508,15 +1654,15 @@ function renderJoin(err){
   if(err==='dup'){e.textContent='その名前はもう使われています。別の名前にしてください。';e.hidden=false;$('joinBtn').disabled=false;$('joinBtn').textContent='参加する'}
   else if(err==='kick'){e.textContent='先生が参加を取り消しました。もう一度参加してください。';e.hidden=false}
 }
-function howtoHtml(){
-  return `<div class="howto">${GKEYS.map(g=>`<div><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><p>${RULES[g]}</p></div>`).join('')}</div>`;
+function howtoHtml(keys){
+  return `<div class="howto">${(keys||GKEYS).map(g=>`<div><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><p>${RULES[g]}</p></div>`).join('')}</div>`;
 }
 function renderLobby(){
-  const st=P.st;
+  const st=P.st,use=useOf(st.cfg),k=Math.min(MAX_PICK,use.length);
   setBody('lobby',`<div class="pmsg panel"><h2>参加しました！</h2><p>先生がスタートするまで待っていてください。</p>
     <p class="hint">全${st.cfg.games}ゲーム／最初のメダル ${st.cfg.start}枚。最後にメダルが少なかった ${st.cfg.clean}人 が掃除当番です。</p></div>
-    <div class="panel"><h3 style="margin-bottom:8px">3つのゲーム</h3>${howtoHtml()}
-    <p class="hint" style="margin-top:10px">毎ゲーム、3つのゲームに好きな枚数を分けてBETします（合計10枚以上。10枚未満の人は全部）。ルーレットの球は1ゲーム8球。金色の「+2」に入ると球が2つ増えます。</p></div>`);
+    <div class="panel"><h3 style="margin-bottom:8px">${use.length}つのアトラクション</h3>${howtoHtml(use)}
+    <p class="hint" style="margin-top:10px">毎ゲーム、好きなゲーム（${k}つまで）に枚数を分けてBETします（合計10枚以上。10枚未満の人は全部）。ルーレットの球は1ゲーム8球。金色の「+2」に入ると球が2つ増えます。</p></div>`);
 }
 function renderOut(){
   setBody('out','<div class="pmsg panel"><h2>メダルがなくなりました</h2><p>ここからは見学です。プロジェクターのルーレットを楽しもう！</p></div>');
@@ -1524,18 +1670,18 @@ function renderOut(){
 
 /* ---- BET ---- */
 function renderBet(){
-  const st=P.st,m=me(),bal=m.b,key='bet:'+st.gid;
+  const st=P.st,m=me(),bal=m.b,key='bet:'+st.gid,ln=lineupNow();
   if(P.dgid!==st.gid){
     P.dgid=st.gid;P.sentConf=false;P.rr=cleanRr(m.rr);
-    P.draft=st.gno>1&&m.lastBet?sanitizeBet(m.lastBet,bal):ZERO();
-    if(bal<MIN_BET)P.draft=sanitizeBet({bingo:bal},bal);
+    P.draft=st.gno>1&&m.lastBet?sanitizeBet(m.lastBet,bal,ln):ZERO();
+    if(bal<MIN_BET)P.draft=sanitizeBet({[ln[0]]:bal},bal,ln);
   }
   if(P.key!==key){
     P.key=key;
     $('pBody').innerHTML=`<div class="status" id="betStatus"></div>
       <div class="panel" style="display:flex;flex-direction:column;gap:12px">
         <h2 style="font-size:22px">どのゲームに何枚賭ける？</h2>
-        <div class="bets">${GKEYS.map(g=>`<div class="betrow">
+        <div class="bets">${ln.map(g=>`<div class="betrow">
           <span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span>
           <button type="button" data-g="${g}" data-d="-10" aria-label="${GAMES[g].name}を10枚減らす">−10</button>
           <button type="button" data-g="${g}" data-d="-1" aria-label="${GAMES[g].name}を1枚減らす">−1</button>
@@ -1547,23 +1693,20 @@ function renderBet(){
         <div class="confirm"><button class="btn go" id="confBtn" type="button">このBETで決定</button><span class="hint" id="confHint"></span></div>
       </div>
       <div class="panel" style="display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center">
-        <h3>自分の盤面をつくろう</h3><p class="hint">盤面をタップすると数字が並べかわります（BET受付中だけ）。気に入った並びで勝負！</p></div>
-      ${trioHtml(true)}
-      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml()}</details>`;
-    $('pBody').querySelectorAll('[data-rr]').forEach(b=>b.onclick=()=>reroll(b.dataset.rr,+b.dataset.d));
-    $('pBody').querySelectorAll('[data-rrb]').forEach(el=>{
-      el.onclick=()=>reroll(el.dataset.rrb,1);
-      el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reroll(el.dataset.rrb,1)}};
-    });
-    ensureBoards(P.rr);P.justNum=0;P.justClimb=false;drawBoards(false);updateRrTools();
+        <h3>自分の盤面をつくろう</h3><p class="hint">BETしたゲームが大きく出ます。盤面をタップすると数字が並べかわります（BET受付中だけ）。気に入った並びで勝負！</p></div>
+      <div class="boards" id="boardsWrap"></div>
+      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml(ln)}</details>`;
+    P.layout='';ensureBoards(P.rr);P.justNum=0;P.justClimb=false;P.justFish=[];
     $('pBody').querySelectorAll('.betrow button').forEach(b=>b.onclick=()=>{const g=b.dataset.g;setDraft(g,P.draft[g]+(+b.dataset.d))});
-    GKEYS.forEach(g=>{$('bi_'+g).onchange=e=>setDraft(g,+e.target.value)});
+    ln.forEach(g=>{$('bi_'+g).onchange=e=>setDraft(g,+e.target.value)});
     $('confBtn').onclick=()=>{if(!betOk(P.draft,me().b))return;P.sentConf=true;sendBet();updateBet()};
   }
   updateBet();
 }
 function setDraft(g,v){
   const m=me();if(!m||P.st.phase!=='bet')return;
+  if(!lineupNow().includes(g))return;
+  if(!P.draft[g]&&v>0&&pickedOf(P.draft).length>=MAX_PICK)return; // 4つ目は賭けられない
   const bal=m.b,others=totalOf(P.draft)-P.draft[g];
   P.draft[g]=Math.max(0,Math.min(Math.floor(v)||0,bal-others));
   P.sentConf=false;sendBet();updateBet();
@@ -1583,7 +1726,7 @@ function reroll(g,d){
   updateRrTools();
 }
 function updateRrTools(){
-  GKEYS.forEach(g=>{
+  lineupNow().forEach(g=>{
     const n=P.rr[g],u=$('rru_'+g),c=$('rrc_'+g);
     if(u)u.disabled=n<=0;
     if(c)c.textContent=n?`${n}回 並べかえた`:'まだ最初の並び';
@@ -1591,18 +1734,23 @@ function updateRrTools(){
 }
 function updateBet(){
   const st=P.st,m=me();if(!m)return;
-  const bal=m.b,tot=totalOf(P.draft),ok=betOk(P.draft,bal),conf=m.conf&&P.sentConf;
-  GKEYS.forEach(g=>{
-    const i=$('bi_'+g);if(document.activeElement!==i)i.value=P.draft[g];
+  const bal=m.b,tot=totalOf(P.draft),ok=betOk(P.draft,bal),conf=m.conf&&P.sentConf,ln=lineupNow();
+  const picked=pickedOf(P.draft).length;
+  ln.forEach(g=>{
+    const i=$('bi_'+g),lock=!P.draft[g]&&picked>=MAX_PICK;
+    if(document.activeElement!==i)i.value=P.draft[g];
+    i.disabled=lock;i.closest('.betrow').classList.toggle('lock',lock);
+    i.closest('.betrow').querySelectorAll('button').forEach(b=>{if(+b.dataset.d>0)b.disabled=lock});
     const mx=MULT[g],best=Math.max(...Object.values(mx));
-    $('bh_'+g).textContent=P.draft[g]?`最大 ×${best}（${Math.ceil(P.draft[g]*best)}枚）`:'';
+    $('bh_'+g).textContent=P.draft[g]?`最大 ×${best}（${Math.ceil(P.draft[g]*best)}枚）`:lock?`BETは${MAX_PICK}つまで`:'';
   });
+  mountBoards(true,pickedOf(P.draft).filter(g=>ln.includes(g)));
   $('betStatus').innerHTML=`BET受付中${st.betLeft>=0?` <span class="cd">あと${st.betLeft}秒</span>`:''}`;
   let warn='';
   if(bal<MIN_BET)warn=`メダルが${MIN_BET}枚未満なので、${bal}枚全部を賭けます`;
   else if(tot<MIN_BET)warn=`合計${MIN_BET}枚以上賭けてください`;
-  $('betTotal').innerHTML=`<span>BET合計<b>${tot}</b>枚 ／ 残り<b>${bal-tot}</b>枚</span>${warn?`<span class="warn">${warn}</span>`:''}`;
-  GKEYS.forEach(g=>{if($('gc_'+g))setCol(g,P.draft,P.draft[g]?'<span class="chip t-low">この盤面で勝負</span>':'<span class="chip t-none">タップで並べかえ</span>')});
+  $('betTotal').innerHTML=`<span>BET合計<b>${tot}</b>枚 ／ 残り<b>${bal-tot}</b>枚 ／ ゲーム<b>${picked}</b>/${MAX_PICK}</span>${warn?`<span class="warn">${warn}</span>`:''}`;
+  ln.forEach(g=>{if($('gc_'+g))setCol(g,P.draft,P.draft[g]?'<span class="chip t-low">この盤面で勝負</span>':'<span class="chip t-none">タップで並べかえ</span>')});
   $('confBtn').disabled=!ok;
   $('confBtn').textContent=conf?'決定しました！':'このBETで決定';
   $('confHint').textContent=conf?'締め切りまでは変更できます（変えたらもう一度「決定」）':(P.sentConf?'送信しています…':'');
@@ -1613,24 +1761,51 @@ function syncBoards(){
   const st=P.st,m=me();
   ensureBoards(m&&m.rr);
   const nums=numsOf(parseDrawn(st.drawn));
-  let anim=null;P.justNum=0;P.justClimb=false;
+  let anim=null;P.justNum=0;P.justClimb=false;P.justFish=[];
+  const ln=lineupNow(),on=g=>ln.includes(g);
   while(P.applied<nums.length){
     const n=nums[P.applied],last=P.applied===nums.length-1;
     const r=applyNum(P.boards,n,last);
-    if(last){P.justNum=n;if(r.c.steps)anim=r.c.steps;if(r.t.climbed){P.justClimb=true;if(r.t.climbed>1)P.note=`ラダー 一気に${r.t.climbed}階アップ！`}
-      if(r.c.chains>=1)P.note=`ドロップ ${r.c.chains}連鎖！`}
+    if(last){P.justNum=n;P.justFish=r.f;
+      if(on('chain')&&r.c.steps)anim=r.c.steps;
+      if(r.t.climbed){P.justClimb=true;if(on('tree')&&r.t.climbed>1)P.note=`ラダー 一気に${r.t.climbed}階アップ！`}
+      if(on('treasure')&&r.tr==='T')P.note='宝さがし 宝を発見！';
+      if(on('treasure')&&r.tr==='S')P.note='宝さがし ドクロが出た…';
+      if(on('chain')&&r.c.chains>=1)P.note=`ドロップ ${r.c.chains}連鎖！`;
+      if(on('fish')&&r.f.length)P.note=`${FISH_KINDS[r.f[r.f.length-1]].name}が釣れた！`}
     P.applied++;
   }
   return anim;
 }
 function catsNow(){const c={};GKEYS.forEach(g=>c[g]=GAMES[g].cat(P.boards[g]));return c}
-function trioHtml(edit){
-  return `<div class="trio">${GKEYS.map(g=>`<section class="gcol" id="gc_${g}" aria-label="${GAMES[g].name}">
+/* BETしたゲームは上に大きく、BETしていないゲームは下に小さく並べる */
+function colHtml(g,edit,mini){
+  return `<section class="gcol${mini?' mini':''}" id="gc_${g}" aria-label="${GAMES[g].name}">
     <div class="ghead"><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><span class="gbet" id="gb_${g}"></span></div>
     <div class="gstat" id="gs_${g}"></div>
     <div class="board${edit?' tapme':''}" id="bd_${g}" ${edit?`data-rrb="${g}" role="button" tabindex="0" aria-label="${GAMES[g].name}の数字を並べかえる"`:''}></div>
     ${edit?`<div class="gtools"><button type="button" class="btn small" data-rr="${g}" data-d="1">並べかえ</button>
-      <button type="button" class="btn small" id="rru_${g}" data-rr="${g}" data-d="-1">ひとつ前</button></div><span class="hint rrc" id="rrc_${g}"></span>`:''}</section>`).join('')}</div>`;
+      <button type="button" class="btn small" id="rru_${g}" data-rr="${g}" data-d="-1">ひとつ前</button></div><span class="hint rrc" id="rrc_${g}"></span>`:''}</section>`;
+}
+function boardsHtml(edit,big){
+  const small=lineupNow().filter(g=>!big.includes(g));
+  return (big.length?`<div class="trio" style="--n:${big.length}">${big.map(g=>colHtml(g,edit,false)).join('')}</div>`:'')+
+    (small.length?`<div class="trio minis" style="--n:${small.length}">${small.map(g=>colHtml(g,edit,true)).join('')}</div>`:'');
+}
+/* 並び（大きく出すゲーム）が変わったときだけ作り直す */
+function mountBoards(edit,big){
+  const key=(edit?'e:':'v:')+big.join(','),w=$('boardsWrap');if(!w)return;
+  if(P.layout===key&&w.firstChild)return;
+  P.layout=key;w.innerHTML=boardsHtml(edit,big);
+  if(edit){
+    w.querySelectorAll('[data-rr]').forEach(b=>b.onclick=()=>reroll(b.dataset.rr,+b.dataset.d));
+    w.querySelectorAll('[data-rrb]').forEach(el=>{
+      el.onclick=()=>reroll(el.dataset.rrb,1);
+      el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reroll(el.dataset.rrb,1)}};
+    });
+    updateRrTools();
+  }
+  drawBoards(false);
 }
 function setCol(g,bet,statHtml){
   const b=bet[g]||0;
@@ -1645,10 +1820,12 @@ function renderPlay(){
   if(P.key!==key){
     P.key=key;P.animTok++;P.animBusy=false;
     $('pBody').innerHTML=`<div class="status" id="plStatus"></div><div id="plDbl"></div><div class="lastnums" id="plNums"></div>
-      ${trioHtml()}
+      <div class="boards" id="boardsWrap"></div>
       <div class="panel bettotal" id="plTotal"></div>
-      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml()}</details>`;
+      <details class="panel rules"><summary>ゲームのルール</summary>${howtoHtml(lineupNow())}</details>`;
+    P.layout='';
   }
+  mountBoards(false,pickedOf(me().bet));
   updatePlay(anim);
 }
 function updatePlay(anim){
@@ -1661,7 +1838,7 @@ function updatePlay(anim){
   $('plDbl').innerHTML=st.dbl?'<div class="dblbanner">ダブルアップ！ 配当2倍</div>':'';
   $('plNums').innerHTML=list.map((x,i)=>`<b class="${x==='p'?'plus':''}${i===list.length-1?' new':''}">${x==='p'?'+2':x}</b>`).join('');
   const cats=catsNow(),{res,tot}=payFor(bet,cats,st.dbl);
-  GKEYS.forEach(g=>{
+  lineupNow().forEach(g=>{
     const c=catOf(g,cats[g]),b=bet[g]||0;
     let h;
     if(c.t==='none')h='<span class="chip t-none">まだ配当なし</span>';
@@ -1680,6 +1857,40 @@ function drawBoards(skipChain){
   set('bingo',bigBingo(b.bingo,P.justNum));
   if(!skipChain)set('chain',bigChain(b.chain.cols,null));
   set('tree',bigTree(b.tree,P.justClimb));
+  const reveal=P.st&&P.st.phase==='result';
+  set('treasure',bigTreasure(b.treasure,P.justNum,reveal));
+  set('fish',bigFish(b.fish,P.justFish));
+}
+function bigTreasure(st,justNum,reveal){
+  const c=treasureCount(st);let h='<div class="tmap">';
+  for(let i=0;i<25;i++){
+    const n=st.cells[i],k=st.kind[i];let cl='',txt=n,dk='';
+    if(st.open.has(i)){cl=k==='T'?'tr':k==='S'?'sk':'op';if(k==='T')txt='宝';else if(k==='S')txt='☠'}
+    else if(reveal&&k){cl='hid';dk=k==='T'?'宝':'☠'} // 結果画面では、開かなかった宝とドクロの場所を小さく見せる
+    if(justNum&&n===justNum)cl+=' just';
+    h+=`<div class="${cl}"${dk?` data-k="${dk}"`:''}>${txt}</div>`;
+  }
+  h+='</div><div class="tinfo" aria-label="見つけた宝の数">';
+  for(let i=0;i<TR_T;i++)h+=`<i class="${i<c.t?'on':''}">宝</i>`;
+  return h+`<i class="tk${c.s?' on':''}">☠</i></div>`;
+}
+function fishSvg(f){
+  const w=Math.round(f.w*100);
+  return `<svg viewBox="0 0 64 32" style="width:${w}%" aria-hidden="true"><path d="M3,16 Q20,1 44,11 L60,3 L55,16 L60,29 L44,21 Q20,31 3,16Z" fill="${f.col}" stroke="#2b2a5a" stroke-width="2.5" stroke-linejoin="round"/>`+
+    (f.k==='buri'?'<path d="M9,17 Q27,15 45,16" stroke="#ffcf33" stroke-width="2.6" fill="none" stroke-linecap="round"/>':'')+
+    (f.k==='maguro'?'<path d="M18,7 L24,1 L29,7Z M20,25 L25,30 L29,25Z" fill="#2f4a8a" stroke="#2b2a5a" stroke-width="1.5" stroke-linejoin="round"/>':'')+
+    `<circle cx="13" cy="14" r="2.8" fill="#fff" stroke="#2b2a5a" stroke-width="1.5"/></svg>`;
+}
+function bigFish(st,just){
+  let h='<div class="pond">';
+  st.fish.forEach((nums,i)=>{
+    const f=FISH_KINDS[i],got=st.got[i],rem=nums.filter(n=>!st.drawn.has(n)).length,bite=!got&&rem===1;
+    const m=MULT.fish[f.k==='aji'?'aji1':f.k];
+    h+=`<div class="frow${got?' got':''}${bite?' bite':''}${just&&just.includes(i)?' just':''}"><div class="fic">${fishSvg(f)}`+
+       `<span class="fnm">${f.name}${got?'<small>GET</small>':bite?'<small class="atari">アタリ</small>':''}</span></div>`+
+       `<div class="nums">${nums.map(n=>`<span class="${st.drawn.has(n)?'by':''}">${n}</span>`).join('')}</div><span class="sign">×${m}</span></div>`;
+  });
+  return h+'</div>';
 }
 function animateChain(steps){
   const tok=++P.animTok;P.animBusy=true;let i=0;
@@ -1742,9 +1953,10 @@ function renderResult(){
       <p style="font-weight:800;margin:0">いまのメダル <span style="font-family:var(--f-display);font-size:24px;color:var(--orange)">${m.b}</span> 枚</p>
       ${m.b<=0?'<p class="err">メダルがなくなりました。次のゲームからは見学です。</p>':''}
       <p class="hint">${st.gno>=st.cfg.games?'全ゲーム終了！ 結果発表を待ってね。':'次のゲームを待っています…'}</p></div>
-    ${trioHtml()}`;
-  P.animTok++;P.animBusy=false;P.justNum=0;P.justClimb=false;
-  GKEYS.forEach(g=>{
+    <div class="boards" id="boardsWrap"></div>`;
+  P.layout='';mountBoards(false,pickedOf(bet));
+  P.animTok++;P.animBusy=false;P.justNum=0;P.justClimb=false;P.justFish=[];
+  lineupNow().forEach(g=>{
     const r=res[g],k=r?r.k:GAMES[g].cat(P.boards[g]),c=catOf(g,k);
     let h;
     if(bet[g])h=`<span class="chip ${r&&r.p>0?TIER[c.t]:'t-none'}">${r&&r.p>0?`${c.name}　+${r.p}`:'はずれ'}</span>`;
