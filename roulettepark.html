@@ -471,6 +471,21 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 .trio #bd_fish{gap:1.6cqi}
 .trio .isle,.trio .tbar{width:100%}
 .trio #bd_treasure{gap:1.6cqi}
+/* あと1つ：この番号が来たら配当が上がる */
+.gchance{display:flex;flex-wrap:wrap;gap:1cqi 2cqi;justify-content:center;align-items:center;font-weight:800;font-size:3cqi;
+  background:#fff7d6;border:.5cqi dashed var(--ink);border-radius:2.4cqi;padding:1cqi 1.6cqi}
+.gchance:empty{display:none}
+.gchance .clab{background:var(--pink);color:#fff;border:.45cqi solid var(--ink);border-radius:999px;padding:0 2cqi;font-size:2.9cqi;white-space:nowrap}
+.gchance .cg{display:inline-flex;gap:.8cqi;align-items:center;flex-wrap:wrap}
+.gchance .cg b{min-width:6.4cqi;height:6.4cqi;padding:0 1cqi;border-radius:3.2cqi;background:var(--yellow);border:.45cqi solid var(--ink);display:grid;place-items:center;
+  font-family:var(--f-display);font-weight:400;font-size:3.4cqi;font-variant-numeric:tabular-nums}
+.gchance .cg em{font-style:normal;color:#b4114a;font-size:2.9cqi;white-space:nowrap}
+.gchance .more{color:var(--muted);font-size:2.7cqi}
+.gcol.mini .gchance{border-width:.6cqi}
+.card div.chn{box-shadow:inset 0 0 0 .8cqi var(--yellow)}
+.chain .blk.chn{outline:.7cqi solid var(--yellow);outline-offset:-.2cqi;z-index:1}
+.floor .nums span.chn{background:var(--yellow);border-style:solid;animation:blink 1s infinite;box-shadow:0 0 0 .6cqi var(--pink)}
+.fsh .tags span.chn{box-shadow:0 0 0 .6cqi var(--pink)}
 .trio #gc_treasure{align-self:start}
 /* 設定：使うゲーム */
 .usebox{display:flex;flex-wrap:wrap;gap:8px}
@@ -582,7 +597,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=8;
+const APP_VER=9;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -1887,6 +1902,7 @@ function colHtml(g,edit,mini){
   return `<section class="gcol${mini?' mini':''}" id="gc_${g}" aria-label="${GAMES[g].name}">
     <div class="ghead"><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><span class="gbet" id="gb_${g}"></span></div>
     <div class="gstat" id="gs_${g}"></div>
+    <div class="gchance" id="gch_${g}"></div>
     <div class="board${edit?' tapme':''}" id="bd_${g}" ${edit?`data-rrb="${g}" role="button" tabindex="0" aria-label="${GAMES[g].name}の数字を並べかえる"`:''}></div>
     ${edit?`<div class="gtools"><button type="button" class="btn small" data-rr="${g}" data-d="1">並べかえ</button>
       <button type="button" class="btn small" id="rru_${g}" data-rr="${g}" data-d="-1">ひとつ前</button></div><span class="hint rrc" id="rrc_${g}"></span>`:''}</section>`;
@@ -1942,6 +1958,13 @@ function updatePlay(anim){
   $('plDbl').innerHTML=st.dbl?'<div class="dblbanner">ダブルアップ！ 配当2倍</div>':'';
   $('plNums').innerHTML=list.map((x,i)=>`<b class="${x==='p'?'plus':''}${i===list.length-1?' new':''}">${x==='p'?'+2':x}</b>`).join('');
   const cats=catsNow(),{res,tot}=payFor(bet,cats,st.dbl);
+  const drawnSet=new Set(numsOf(list));P.chance={};
+  const live=st.phase==='draw'&&st.left>0;
+  lineupNow().forEach(g=>{
+    const gr=live?chancesFor(g,P.boards[g],drawnSet):[];
+    P.chance[g]=new Set(gr.flatMap(x=>x.nums));
+    const el=$('gch_'+g);if(el)el.innerHTML=chanceHtml(g,gr);
+  });
   lineupNow().forEach(g=>{
     const c=catOf(g,cats[g]),b=bet[g]||0;
     let h;
@@ -1955,12 +1978,52 @@ function updatePlay(anim){
   else drawBoards(P.animBusy);
 }
 const TIER={top:'t-top',mid:'t-mid',low:'t-low',none:'t-none'};
+/* あと1つ：盤面をコピーして、まだ出ていない番号を1つずつ当ててみる。
+   宝さがしは宝の場所が秘密なので出さない。フィッシングは中身が秘密なので「釣り上げになる番号」だけ出す */
+const SZ_NAME={xl:'大きい影',l:'大きい影',m:'中くらいの影',s:'小さい影',xs:'ちびの影'};
+function cloneBoard(g,st){
+  if(g==='bingo')return{cells:st.cells,hit:new Set(st.hit)};
+  if(g==='chain')return{cols:cloneCols(st.cols)};
+  if(g==='tree')return{floors:st.floors,climbs:st.climbs,by:st.by.slice(),drawn:new Set(st.drawn)};
+  return null;
+}
+function hitOne(g,st,n){if(g==='bingo')markCard(st,n);else if(g==='chain')chainHit(st,n,false);else if(g==='tree')treeHit(st,n)}
+const multNow=(g,st)=>MULT[g][GAMES[g].cat(st)]||0;
+function chancesFor(g,st,drawn){
+  if(g==='treasure')return[];
+  if(g==='fish'){
+    const out=[];
+    st.fish.forEach((f,i)=>{if(st.got[i])return;const rest=f.nums.filter(n=>!st.drawn.has(n));if(rest.length===1)out.push({n:rest[0],label:SZ_NAME[FISH_SLOTS[i].sz],m:{xl:4,l:4,m:3,s:2,xs:1}[FISH_SLOTS[i].sz]})});
+    const groups={};out.forEach(o=>{(groups[o.label]=groups[o.label]||{label:o.label,m:o.m,nums:[]}).nums.push(o.n)});
+    return Object.values(groups).sort((a,b)=>b.m-a.m);
+  }
+  const m0=multNow(g,st),groups={};
+  for(let n=1;n<=25;n++){
+    if(drawn.has(n))continue;
+    const c=cloneBoard(g,st);hitOne(g,c,n);
+    const k=GAMES[g].cat(c),m=MULT[g][k]||0;
+    if(m>m0)(groups[k]=groups[k]||{label:catOf(g,k).name,m,nums:[]}).nums.push(n);
+  }
+  return Object.values(groups).sort((a,b)=>b.m-a.m);
+}
+function chanceHtml(g,groups){
+  if(!groups.length)return'';
+  let left=8,h='<span class="clab">あと1つ</span>';
+  for(const gr of groups){
+    if(left<=0){h+='<span class="more">ほかにも</span>';break}
+    const ns=gr.nums.slice(0,left);left-=ns.length;
+    h+=`<span class="cg">${ns.map(n=>`<b>${n}</b>`).join('')}<em>${g==='fish'?gr.label+'が釣れる':'→ '+esc(gr.label)}</em></span>`;
+    if(ns.length<gr.nums.length){h+='<span class="more">ほかにも</span>';break}
+  }
+  return h;
+}
 function drawBoards(skipChain){
   const b=P.boards;if(!b)return;
   const set=(g,h)=>{const el=$('bd_'+g);if(el)el.innerHTML=h};
-  set('bingo',bigBingo(b.bingo,P.justNum));
-  if(!skipChain)set('chain',bigChain(b.chain.cols,null));
-  set('tree',bigTree(b.tree,P.justClimb));
+  const ch=g=>(P.chance&&P.chance[g])||new Set();
+  set('bingo',bigBingo(b.bingo,P.justNum,ch('bingo')));
+  if(!skipChain)set('chain',bigChain(b.chain.cols,null,ch('chain')));
+  set('tree',bigTree(b.tree,P.justClimb,ch('tree')));
   set('treasure',bigTreasure(b.treasure,P.justNum));
   set('fish',bigFish(b.fish,P.justFish,P.justNum));
 }
@@ -2052,7 +2115,7 @@ function bigFish(st,just,justNum){
     if(jc&&f.sp)surp=true;
     const say=f.k==='boot'?'長靴でしたー':f.sp?`${FISH_NAME[f.k]}だった！`:s.sz==='xs'?'アジだ！ラッキー':`${FISH_NAME[f.k]}が釣れた！`;
     h+=`<div class="fsh ${s.sz}${p.r?' r':''}${bite?' bite':''}${jc?' caught':''}${jc&&f.sp?' surprise':''}${jc&&f.k==='boot'?' boot':''}" data-i="${i}" style="left:${p.x}%;top:${p.y}%">
-      <div class="tags">${f.nums.map(n=>`<span class="${st.drawn.has(n)?'by':''}${n===justNum?' nw':''}">${n}</span>`).join('')}</div>
+      <div class="tags">${f.nums.map(n=>`<span class="${st.drawn.has(n)?'by':''}${n===justNum?' nw':''}${bite&&!st.drawn.has(n)?' chn':''}">${n}</span>`).join('')}</div>
       <div class="fb"><svg class="sh" viewBox="0 0 58 32" aria-hidden="true"><path d="${FISH_BODY}"/></svg>${jc?`<div class="real">${fishArt(f.k)}</div><div class="say">${say}</div>`:''}<div class="uki"></div></div></div>`;
   });
   h+=RODS.map((r,i)=>`<i class="ifl" data-r="${i}" style="left:${r.t}%;top:76%"></i>`).join('');
@@ -2099,33 +2162,34 @@ function animateChain(steps){
     const el=$('bd_chain');
     if(tok!==P.animTok||!el){if(tok===P.animTok)P.animBusy=false;return}
     const sp=steps[i];el.innerHTML=bigChain(sp.cols,sp.pop);i++;
-    if(i<steps.length)setTimeout(next,360);else{P.animBusy=false;el.innerHTML=bigChain(P.boards.chain.cols,null)}
+    if(i<steps.length)setTimeout(next,360);else{P.animBusy=false;el.innerHTML=bigChain(P.boards.chain.cols,null,(P.chance&&P.chance.chain)||new Set())}
   };
   next();
 }
-function bigBingo(st,justNum){
+function bigBingo(st,justNum,chn){
   const e=evalCard(st);let h='<div class="card">';
   for(let i=0;i<25;i++){
     const n=st.cells[i];let cl=i===12?'free':'';
     if(i!==12&&st.hit.has(i))cl='hit';
     if(e.lineCells.has(i))cl+=' line';
     if(e.need.has(i))cl+=' need';
+    else if(chn&&chn.has(n)&&!st.hit.has(i))cl+=' chn';
     if(justNum&&n===justNum)cl+=' justhit';
     h+=`<div class="${cl}">${i===12?'FREE':n}</div>`;
   }
   return h+'</div>';
 }
-function bigChain(cols,pop){
+function bigChain(cols,pop,chn){
   let h='<div class="chain">';
   for(let y=CH_H-1;y>=0;y--)for(let x=0;x<CH_W;x++){
     const b=cols[x][y];
-    h+=b?`<div class="blk${pop&&pop.has(b.id)?' pop':''}" style="--bc:${CH_C[b.c]}">${b.n}</div>`:'<div class="emp"></div>';
+    h+=b?`<div class="blk${pop&&pop.has(b.id)?' pop':''}${!pop&&chn&&chn.has(b.n)?' chn':''}" style="--bc:${CH_C[b.c]}">${b.n}</div>`:'<div class="emp"></div>';
   }
   h+='</div><div class="gems">';
   for(let x=0;x<CH_W;x++){const won=cols[x].length===0;h+=`<div class="gem${won?' won':''}" style="--bc:${CH_C[x%4]}"><i></i><span>${won?'GET':''}</span></div>`}
   return h+'</div>';
 }
-function bigTree(st,just){
+function bigTree(st,just,chn){
   const cur=st.climbs,F=st.floors.length;
   const sign=f=>{const m=MULT.tree[ladderKey(f)]||0;return `<span class="sign">${m?'×'+m:''}</span>`};
   let h='<div class="tree">';
@@ -2134,12 +2198,12 @@ function bigTree(st,just){
     const idx=f-1,nums=st.floors[idx],state=idx<cur?'done':idx===cur?'cur':'up';
     const lad=state==='up'&&nums.some(n=>st.drawn.has(n));
     h+=`<div class="floor ${state}${lad?' lad':''}${state==='cur'&&just?' just':''}"><b class="fl">${f}F${state==='cur'?'<small>いま</small>':lad?'<small class="ladtag">はしご</small>':''}</b>`+
-       `<div class="nums">${nums.map(n=>`<span class="${(state==='done'&&st.by[idx]===n)||(state==='up'&&st.drawn.has(n))?'by':''}">${n}</span>`).join('')}</div>${sign(f)}</div>`;
+       `<div class="nums">${nums.map(n=>`<span class="${(state==='done'&&st.by[idx]===n)||(state==='up'&&st.drawn.has(n))?'by':chn&&chn.has(n)&&!st.drawn.has(n)?'chn':''}">${n}</span>`).join('')}</div>${sign(f)}</div>`;
   }
   return h+'</div>';
 }
 function renderResult(){
-  const st=P.st,m=me();
+  const st=P.st,m=me();P.chance={};
   syncBoards();
   const res=m.res||{},bet=m.bet||ZERO(),tb=totalOf(bet),net=m.pt-tb;
   const rows=GKEYS.filter(g=>bet[g]).map(g=>{const r=res[g]||{k:'',p:0},c=catOf(g,r.k);
