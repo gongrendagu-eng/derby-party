@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ルーレットパーク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -310,6 +310,8 @@ button,select,input{font:inherit;color:inherit}
 .trio .chain{gap:1.1cqi}
 .trio .gems{gap:1.1cqi}
 .trio .gem{gap:.6cqi}
+/* ダブルタップで拡大しない（連打はそのままタップとして数える） */
+html,body,button,input,.board,.board *{touch-action:manipulation}
 .rules summary{font-family:var(--f-display);cursor:pointer}
 .rules[open] summary{margin-bottom:8px}
 @media (max-width:640px){.trio{grid-template-columns:1fr}.gcol{width:100%;max-width:460px;justify-self:center}}
@@ -411,7 +413,7 @@ button,select,input{font:inherit;color:inherit}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=4;
+const APP_VER=5;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
