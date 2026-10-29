@@ -163,6 +163,22 @@ button,select,input{font:inherit;color:inherit}
 .revlist span{font-family:var(--f-display);font-size:clamp(20px,3.4vh,32px);background:var(--yellow);border:3px solid var(--ink);border-radius:16px;padding:4px 16px;box-shadow:0 4px 0 var(--ink)}
 .revlist span.sd{background:#ffd3e0}
 .revlist span.safe{background:var(--mint);color:#fff}
+/* 最終順位（プロジェクター） */
+.ov:has(.ranklist){place-items:stretch}
+#ovCard:has(.ranklist){justify-content:center;gap:10px;padding:16px 20px}
+.ranklist{list-style:none;margin:0;padding:0;width:100%;display:grid;grid-auto-flow:column;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),auto);gap:6px 18px;text-align:left}
+.ranklist li{display:flex;align-items:center;gap:10px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:3px 12px;box-shadow:0 3px 0 var(--ink);
+  font-size:clamp(15px,min(3.6vh,2.2vw),30px);font-weight:800;line-height:1.25;animation:rankin .45s cubic-bezier(.2,.9,.3,1.2) both;animation-delay:calc(var(--i,0)*60ms)}
+@keyframes rankin{0%{opacity:0;transform:translateY(12px) scale(.9)}100%{opacity:1;transform:none}}
+.ranklist .rk{font-family:var(--f-display);font-weight:400;min-width:2.6em;font-variant-numeric:tabular-nums}
+.ranklist .rk small,.ranklist .rm small{font-size:.6em;margin-left:2px}
+.ranklist .rn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ranklist .rm{font-family:var(--f-display);font-weight:400;color:var(--orange);font-variant-numeric:tabular-nums}
+.ranklist .rc{font-size:.62em;background:var(--pink);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:0 8px;white-space:nowrap}
+.ranklist li.cl{background:#ffd3e0}
+.ranklist li.t1{background:#ffe36b}
+.ranklist li.t2{background:#e6e9f2}
+.ranklist li.t3{background:#f4c79a}
 
 /* ===== iPad ===== */
 #pad{min-height:100%;display:flex;flex-direction:column}
@@ -547,6 +563,16 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 .bigres{font-family:var(--f-display);font-size:clamp(40px,10vw,72px);text-align:center;line-height:1.1;-webkit-text-stroke:2.5px var(--ink);paint-order:stroke fill;text-shadow:0 5px 0 var(--ink)}
 .bigres.safe{color:var(--mint)}
 .bigres.clean{color:var(--pink)}
+/* 最終結果（iPad） */
+.finalme{padding-block:26px}
+.frank{display:flex;align-items:baseline;justify-content:center;gap:6px;font-family:var(--f-display);line-height:1}
+.frank .fr{font-size:clamp(80px,22vw,150px);color:var(--yellow);-webkit-text-stroke:3px var(--ink);paint-order:stroke fill;text-shadow:0 6px 0 var(--ink)}
+.frank .fu{font-size:clamp(30px,7vw,48px)}
+.fmed{margin:0;font-weight:800;font-size:clamp(20px,4.5vw,30px)}
+.fmed b{font-family:var(--f-display);font-weight:400;color:var(--orange);font-size:1.5em}
+.ftag{font-family:var(--f-display);font-size:clamp(20px,4.5vw,28px);border:3px solid var(--ink);border-radius:999px;padding:4px 22px;box-shadow:0 4px 0 var(--ink)}
+.ftag.clean{background:var(--pink);color:#fff}
+.ftag.safe{background:var(--mint);color:#fff}
 .numgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:min(420px,100%)}
 .numgrid button{aspect-ratio:1;border-radius:14px;border:2.5px solid var(--ink);background:#fff;font-family:var(--f-display);font-size:22px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .numgrid button.mine{background:var(--yellow)}
@@ -557,7 +583,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 @media (max-width:900px){.hmain{grid-template-columns:1fr}.wheelbox{min-height:60vh}}
 @media (prefers-reduced-motion:reduce){
-  .spot.open.t::before,.spot.open.s .item svg,.tbar .ic.on,.sea::before,.sea .ifl,.fsh .sh,.fsh.bite .uki,.fsh.bite .fb::after,.board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl{animation:none}
+  .spot.open.t::before,.spot.open.s .item svg,.tbar .ic.on,.sea::before,.sea .ifl,.fsh .sh,.fsh.bite .uki,.fsh.bite .fb::after,.board.shuf,.flash.show,.drawn b.new,.card div.need,.card div.justhit,.hitinfo.pop,.callout.show,.chain .pop,.gem.won i,.floor.just,.revname.wait,.hchip.dbl,.ranklist li{animation:none}
   .flash.show,.callout.show{opacity:1}
 }
 </style>
@@ -639,7 +665,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=11;
+const APP_VER=12;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -1275,7 +1301,7 @@ function pubState(){
     const st={v:APP_VER,phase:H.phase,ts:Date.now(),
       cfg:{games:H.cfg.games,betSec:H.cfg.betSec,start:H.cfg.start,clean:H.cfg.clean,use:H.cfg.use||ALL_USE},lineup:H.lineup.join(','),
       gno:H.gno,gid:H.gid||'-',seed:H.seed||0,dbl:H.dbl?1:0,drawn:H.drawn.join(','),ball:H.ball,left:H.left,spinning:H.spinning?1:0,
-      betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0};
+      betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0,rank:H.rank?1:0};
     const j=JSON.stringify(st);if(j===lastPub)return;lastPub=j;
     H.net.set('state',st);
   },60);
@@ -1555,7 +1581,7 @@ async function revealNext(){
     if(!R.queue.length)R.step=R.step==='sure'&&R.tie.length?'sdIntro':'done';
     if(R.step==='done'){H.phase='end'}
     revealBusy=false;renderSide();pubState();
-    if(H.phase==='end')setTimeout(()=>{renderReveal('end');renderSide()},fast?100:2600);
+    if(H.phase==='end')setTimeout(()=>{if(!H.rank)renderReveal('end');renderSide()},fast?100:2600);
   }else if(R.step==='sdIntro'){
     startSd();
   }
@@ -1577,6 +1603,8 @@ function renderReveal(mode){
        <div class="revlist">${R.tie.map(p=>`<span class="sd">${esc(nameOf(p))}</span>`).join('')}</div>
        <p class="hint">iPadで1〜25の数字を1つ選びます。ルーレットで自分の数字が出たらセーフ。最後まで残った ${R.slots}人 が掃除当番です。</p>
        <div class="revlist">${list}</div>`;
+  }else if(mode==='rank'){
+    h=rankHtml();
   }else if(mode==='end'){
     h=`<div class="revtitle">今日の掃除当番</div><div class="revlist">${R.shown.map(p=>`<span>${esc(nameOf(p))}</span>`).join('')}</div>
        <p style="font-weight:800;margin:0">よろしくお願いします！ ほかのみなさんはセーフです。</p>`;
@@ -1584,6 +1612,21 @@ function renderReveal(mode){
   $('ovCard').innerHTML=h;
 }
 
+/* ---- 全体の順位（プロジェクターとiPadに同時に出す） ---- */
+function showRank(){
+  if(H.phase!=='end'||!H.rev)return;
+  H.rank=1;sfx.doom();renderReveal('rank');renderSide();pubState();
+}
+function rankHtml(){
+  const clean=new Set(H.rev.shown);
+  const ps=Object.keys(H.roster).sort((a,b)=>H.roster[b].b-H.roster[a].b||(clean.has(a)-clean.has(b))||H.roster[a].o-H.roster[b].o);
+  const n=ps.length,cols=n>24?3:n>10?2:1,rows=Math.ceil(n/cols);
+  const items=ps.map((p,i)=>{
+    const r=H.roster[p],k=rankOf(H.roster,p),c=clean.has(p);
+    return `<li style="--i:${n-1-i}" class="${c?'cl':''}${k<=3?' t'+k:''}"><span class="rk">${k}<small>位</small></span><span class="rn">${esc(r.n)}</span><span class="rm">${r.b}<small>枚</small></span>${c?'<span class="rc">🧹掃除</span>':''}</li>`;
+  }).join('');
+  return `<div class="revtitle">最終結果</div><ol class="ranklist" style="--cols:${cols};--rows:${rows}">${items}</ol>`;
+}
 /* ---- サドンデス ---- */
 function startSd(){
   const R=H.rev;
@@ -1652,7 +1695,7 @@ async function sdSpin(){
 /* ---- もう一回 ---- */
 function playAgain(){
   Object.values(H.roster).forEach(r=>{r.b=H.cfg.start;r.out=0;r.bet=ZERO();r.conf=0;r.res=0;r.pt=0;delete r.lastBet});
-  H.gno=0;H.rev=null;H.sd=null;H.dbl=false;H.drawn=[];buildWheel(2);drawnSet=new Set();
+  H.gno=0;H.rev=null;H.sd=null;H.rank=0;H.dbl=false;H.drawn=[];buildWheel(2);drawnSet=new Set();
   $('drawn').innerHTML='';
   enterLobby();
 }
@@ -1705,7 +1748,7 @@ function renderSide(){
     const R=H.rev;
     h=`<h2>結果発表</h2><div class="stat"><span>掃除当番</span><b>${R.shown.length}／${R.need}人</b></div>
        <div class="names">${R.shown.map(p=>`<span class="nm ok"><i class="dot"></i>${esc(nameOf(p))}</span>`).join('')}</div>`;
-    if(H.phase==='end')k=`<button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
+    if(H.phase==='end')k=`${H.rank?'':`<button class="btn go pink" type="button" data-main id="bRank">全体の順位を発表</button>`}<button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
     else if(R.step==='sdIntro')k=`<button class="btn go pink" type="button" data-main id="bSd" ${revealBusy?'disabled':''}>サドンデス開始</button>`;
     else k=`<button class="btn go pink" type="button" data-main id="bRev" ${revealBusy||!R.queue.length?'disabled':''}>発表する</button>`;
   }else if(H.phase==='sd_pick'){
@@ -1725,7 +1768,7 @@ function renderSide(){
   const on=(id,f)=>{const b=$(id);if(b)b.onclick=f};
   on('bStart',startGame);on('bClose',closeBets);on('bNext',startGame);on('bReveal',startReveal);
   on('bRev',revealNext);on('bSd',revealNext);on('bSdGo',()=>{clearInterval(H.timer);sdSpinStart()});on('bSpin',sdSpin);
-  on('bAgain',playAgain);on('bQuit2',quitAsk);
+  on('bAgain',playAgain);on('bQuit2',quitAsk);on('bRank',showRank);
 }
 
 /* ===================== iPad（参加者） ===================== */
@@ -1901,7 +1944,7 @@ function updateBet(){
     $('bl_'+g).hidden=!lock;
     const e=$('gb_'+g);e.textContent=v?`${v}枚`:'BETなし';e.classList.toggle('none',!v);
     const bh=$('bh_'+g),ph=payListHtml(g,v);if(bh.dataset.h!==ph){bh.dataset.h=ph;bh.innerHTML=ph}
-    if(g==='tree'&&P.treeBetShown!==v&&P.boards){P.treeBetShown=v;$('bd_tree').innerHTML=bigTree(P.boards.tree,false,(P.chance&&P.chance.tree)||new Set(),v)}
+    if(g==='tree'&&P.treeBetShown!==v&&P.boards){P.treeBetShown=v;setBd($('bd_tree'),bigTree(P.boards.tree,false,(P.chance&&P.chance.tree)||new Set(),v))}
   });
   $('betStatus').innerHTML=`BET受付中${st.betLeft>=0?` <span class="cd">あと${st.betLeft}秒</span>`:''}`;
   let warn='';
@@ -2002,7 +2045,7 @@ function setCol(g,bet,statHtml){
   const b=bet[g]||0;
   $('gc_'+g).classList.toggle('nobet',!b);
   const e=$('gb_'+g);e.textContent=b?`${b}枚`:'BETなし';e.classList.toggle('none',!b);
-  $('gs_'+g).innerHTML=statHtml;
+  const s=$('gs_'+g);if(s._h!==statHtml){s._h=statHtml;s.innerHTML=statHtml}
 }
 function renderPlay(){
   const st=P.st;
@@ -2022,19 +2065,22 @@ function renderPlay(){
 function updatePlay(anim){
   const st=P.st,m=me(),bet=m.bet||ZERO();
   const list=parseDrawn(st.drawn);
-  if(st.phase==='dbl')$('plStatus').innerHTML='まもなく抽選スタート！';
-  else if(st.spinning)$('plStatus').innerHTML=`${st.ball}球目 抽選中…`;
-  else if(list.length){const l=list[list.length-1];$('plStatus').innerHTML=l==='p'?'+2 ボーナス！ 球が2つ増えた':`<span class="cd">${l}</span> 番！`}
-  else $('plStatus').innerHTML='抽選スタート！';
-  $('plDbl').innerHTML=st.dbl?'<div class="dblbanner">ダブルアップ！ 配当2倍</div>':'';
-  $('plNums').innerHTML=list.map((x,i)=>`<b class="${x==='p'?'plus':''}${i===list.length-1?' new':''}">${x==='p'?'+2':x}</b>`).join('');
+  const put=(id,h)=>{const el=$(id);if(el&&el._h!==h){el._h=h;el.innerHTML=h}};
+  let sh;
+  if(st.phase==='dbl')sh='まもなく抽選スタート！';
+  else if(st.spinning)sh=`${st.ball}球目 抽選中…`;
+  else if(list.length){const l=list[list.length-1];sh=l==='p'?'+2 ボーナス！ 球が2つ増えた':`<span class="cd">${l}</span> 番！`}
+  else sh='抽選スタート！';
+  put('plStatus',sh);
+  put('plDbl',st.dbl?'<div class="dblbanner">ダブルアップ！ 配当2倍</div>':'');
+  put('plNums',list.map((x,i)=>`<b class="${x==='p'?'plus':''}${i===list.length-1?' new':''}">${x==='p'?'+2':x}</b>`).join(''));
   const cats=catsNow(),{res,tot}=payFor(bet,cats,st.dbl);
   const drawnSet=new Set(numsOf(list));P.chance={};
   const live=st.phase==='draw'&&st.left>0;
   lineupNow().forEach(g=>{
     const gr=live?chancesFor(g,P.boards[g],drawnSet):[];
     P.chance[g]=new Set(gr.flatMap(x=>x.nums));
-    const el=$('gch_'+g);if(el)el.innerHTML=chanceHtml(g,gr);
+    const el=$('gch_'+g),ch=chanceHtml(g,gr);if(el&&el._h!==ch){el._h=ch;el.innerHTML=ch}
   });
   lineupNow().forEach(g=>{
     const c=catOf(g,cats[g]),b=bet[g]||0;
@@ -2044,7 +2090,8 @@ function updatePlay(anim){
     else h=`<span class="chip ${TIER[c.t]}">${c.name}</span>`;
     setCol(g,bet,h);
   });
-  $('plTotal').innerHTML=`<span>BET ${totalOf(bet)}枚</span><span>このままなら <b>${tot}</b>枚${P.note?` ／ <span style="color:var(--pink)">${esc(P.note)}</span>`:''}</span>`;
+  const tt=`<span>BET ${totalOf(bet)}枚</span><span>このままなら <b>${tot}</b>枚${P.note?` ／ <span style="color:var(--pink)">${esc(P.note)}</span>`:''}</span>`;
+  if($('plTotal')._h!==tt){$('plTotal')._h=tt;$('plTotal').innerHTML=tt}
   if(anim){animateChain(anim);drawBoards(true)}
   else drawBoards(P.animBusy);
 }
@@ -2089,9 +2136,28 @@ function chanceHtml(g,groups){
   return h;
 }
 function curBet(){const st=P.st;if(st&&st.phase==='bet')return P.draft||ZERO();const m=me();return (m&&m.bet)||ZERO()}
+/* iPadのSafariは、盤面を描き直す一瞬に画面の高さが縮むと一番上に戻ってしまう。
+   中身が同じなら描き直さない。描き直すときは高さを固定し、位置がずれたら戻す */
+function setBd(el,h){
+  if(!el||el._h===h)return false;
+  const y=window.scrollY,ht=el.offsetHeight;
+  if(ht)el.style.minHeight=ht+'px';
+  el.innerHTML=h;el._h=h;
+  if(Math.abs(window.scrollY-y)>2)window.scrollTo(0,y);
+  holdScroll(y);
+  clearTimeout(el._mh);el._mh=setTimeout(()=>{el.style.minHeight=''},400);
+  return true;
+}
+let holdY=-1,holdT=null;
+function holdScroll(y){
+  if(holdY<0)holdY=y;
+  const fix=()=>{if(holdY>60&&window.scrollY<holdY-60&&window.scrollY<40)window.scrollTo(0,holdY)};
+  requestAnimationFrame(()=>{fix();requestAnimationFrame(fix)});
+  clearTimeout(holdT);holdT=setTimeout(()=>{fix();holdY=-1},150);
+}
 function drawBoards(skipChain){
   const b=P.boards;if(!b)return;
-  const set=(g,h)=>{const el=$('bd_'+g);if(el)el.innerHTML=h};
+  const set=(g,h)=>setBd($('bd_'+g),h);
   const ch=g=>(P.chance&&P.chance[g])||new Set();
   set('bingo',bigBingo(b.bingo,P.justNum,ch('bingo')));
   if(!skipChain)set('chain',bigChain(b.chain.cols,null,ch('chain')));
@@ -2233,8 +2299,8 @@ function animateChain(steps){
   const next=()=>{
     const el=$('bd_chain');
     if(tok!==P.animTok||!el){if(tok===P.animTok)P.animBusy=false;return}
-    const sp=steps[i];el.innerHTML=bigChain(sp.cols,sp.pop);i++;
-    if(i<steps.length)setTimeout(next,360);else{P.animBusy=false;el.innerHTML=bigChain(P.boards.chain.cols,null,(P.chance&&P.chance.chain)||new Set())}
+    const sp=steps[i];setBd(el,bigChain(sp.cols,sp.pop));i++;
+    if(i<steps.length)setTimeout(next,360);else{P.animBusy=false;setBd(el,bigChain(P.boards.chain.cols,null,(P.chance&&P.chance.chain)||new Set()))}
   };
   next();
 }
@@ -2304,11 +2370,19 @@ function renderResult(){
 }
 
 /* ---- 結果発表・サドンデス ---- */
+function rankOf(roster,pid){const me=roster[pid];if(!me)return 0;return 1+Object.values(roster).filter(r=>r.b>me.b).length}
 function renderFinal(){
   const st=P.st,m=me(),R=st.rev||{},sd=st.sd||{};
   const shown=R.shown||[],safe=R.safe||[],cands=sd.cands||[];
   let h='',key='final:'+st.phase+':'+shown.length+':'+(R.step||'')+':'+safe.length;
   const amClean=shown.includes(P.pid),inSd=cands.includes(P.pid);
+  if(st.phase==='end'&&st.rank){
+    h=`<div class="panel pmsg finalme"><h2>最終結果</h2>
+      <div class="frank"><span class="fr">${rankOf(st.roster,P.pid)}</span><span class="fu">位</span></div>
+      <p class="fmed">最終 <b>${m.b}</b> 枚</p>
+      <span class="ftag ${amClean?'clean':'safe'}">${amClean?'🧹 掃除当番':'セーフ'}</span></div>`;
+    setBody('final:rank',h);return;
+  }
   if(st.phase==='sd_pick'&&inSd){
     key='sdpick';
     if(P.key!==key){
