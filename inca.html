@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>インカの黄金</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ジャングルの遺跡:苔むした石と黄金 */
+:root{
+  --bg:#13241a; --panel:#22362a; --field:#1a2c21; --bar:#0e1b13; --line:#3d5a45;
+  --ink:#f3eedb; --dim:#a9b8a0; --acc:#f2c14e; --accink:#2a1d05; --accsh:#9a6f12;
+  --btn:#2f4a39; --bad:#e8553c; --good:#5fd38a;
+  --disp:"Reggae One","BIZ UDPGothic",sans-serif;
+}
+body{background:radial-gradient(ellipse at 50% -10%,#2b4a33 0,#13241a 60%) fixed}
+/* 先生の画面 */
+.ic{display:grid;grid-template-rows:auto 1fr auto;height:100%;padding:1.6vmin 2.4vmin;gap:1.4vmin}
+.ic-top{display:flex;align-items:center;gap:2vmin;flex-wrap:wrap}
+.ic-rd{font-family:var(--disp);font-size:3.6vmin;color:var(--acc)}
+.ic-rd small{font-size:.55em;color:var(--dim);margin-left:1vmin}
+.ic-hz{display:flex;gap:1vmin;align-items:center;font-size:2.2vmin;color:var(--dim)}
+.ic-hz b{display:inline-flex;align-items:center;gap:.4vmin;background:rgba(232,85,60,.18);border:2px solid var(--bad);color:#ffd5cc;border-radius:99px;padding:.3vmin 1.2vmin;font-size:2.2vmin}
+.ic-clock{margin-left:auto;display:flex;align-items:center;gap:1.6vmin;font-size:2.4vmin;font-weight:700}
+.ic-clock .cd{font-family:var(--disp);font-size:7vmin;color:var(--acc);min-width:9vmin;text-align:center;line-height:1}
+.ic-clock .cd.low{color:var(--bad);animation:pul .5s infinite alternate}
+@keyframes pul{to{transform:scale(1.12)}}
+.ic-msg{font-family:var(--disp);font-size:3.4vmin;color:var(--ink);background:rgba(0,0,0,.35);border-radius:1.4vmin;padding:.6vmin 2vmin}
+.ic-msg.bad{color:#fff;background:var(--bad)}
+.cave{position:relative;border-radius:2.4vmin;padding:2vmin;overflow:hidden;
+  background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.15)),repeating-linear-gradient(90deg,#3a3a2e 0 9vmin,#34352a 9vmin 18vmin);
+  border:.5vmin solid #5b5a44;box-shadow:inset 0 0 6vmin rgba(0,0,0,.7)}
+.cave.boom{animation:quake .6s 3}
+@keyframes quake{0%,100%{transform:none}20%{transform:translate(-1vmin,.5vmin)}40%{transform:translate(1vmin,-.5vmin)}60%{transform:translate(-.6vmin,-.3vmin)}80%{transform:translate(.6vmin,.3vmin)}}
+.path{display:flex;flex-wrap:wrap;gap:1.4vmin;align-content:flex-start;height:100%;overflow:hidden}
+.cd2{width:12.5vmin;height:17vmin;border-radius:1.4vmin;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4vmin;position:relative;
+  background:linear-gradient(160deg,#6b6650,#4b4836);border:.4vmin solid #8e8762;box-shadow:0 .6vmin 0 #2a2920,0 1vmin 2vmin rgba(0,0,0,.5)}
+.cd2.anim{animation:cin .45s ease both}
+@keyframes cin{from{transform:translateY(-4vmin) rotateY(90deg);opacity:0}to{transform:none;opacity:1}}
+.cd2 .ic2{font-size:6.4vmin;line-height:1}
+.cd2 .lb{font-size:1.8vmin;font-weight:700;color:#eee6c8}
+.cd2 .gm{font-family:var(--disp);font-size:3.4vmin;color:var(--acc);text-shadow:0 .3vmin 0 #000}
+.cd2 .orig{position:absolute;top:.6vmin;right:.9vmin;font-size:1.5vmin;color:#cfc6a0;opacity:.8}
+.cd2.t{background:linear-gradient(160deg,#7a6a2f,#4f441c);border-color:#d6aa3c}
+.cd2.t.empty .gm{color:#9a916a}
+.cd2.a{background:linear-gradient(160deg,#6a3a8a,#3e2156);border-color:#c79bf0}
+.cd2.a .gm{color:#ffe28a}
+.cd2.h{background:linear-gradient(160deg,#5c3030,#3a1d1d);border-color:#b25a4a}
+.cd2.h.bad{border-color:#ff6a4a;box-shadow:0 0 0 .5vmin #ff6a4a,0 0 4vmin #ff3a1a}
+.cd2.h.bad.anim{animation:cin .45s ease both,shake .25s .45s 6}
+@keyframes shake{50%{transform:rotate(4deg) scale(1.06)}}
+.cd2.new{outline:.5vmin solid var(--acc);outline-offset:.4vmin}
+.camp{display:grid;grid-template-columns:1fr 26%;gap:1.4vmin;min-height:0}
+.zone{background:rgba(0,0,0,.28);border:2px solid var(--line);border-radius:1.6vmin;padding:1vmin 1.4vmin;min-height:0}
+.zone h3{margin:0 0 .8vmin;font-size:2vmin;color:var(--dim);font-weight:700}
+.zone h3 b{color:var(--ink);font-family:var(--disp);font-weight:400;font-size:2.6vmin;margin-left:.6vmin}
+.chips{display:flex;flex-wrap:wrap;gap:.7vmin;max-height:18vmin;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:.6vmin;background:var(--panel);border:2px solid var(--line);border-radius:99px;padding:.4vmin 1.2vmin .4vmin .6vmin;font-size:2vmin;font-weight:700}
+.chip .pk{font-family:var(--disp);font-weight:400;color:var(--acc);font-size:1.9vmin}
+.chip .ok{width:2.4vmin;height:2.4vmin;border-radius:50%;background:#33473a;display:grid;place-items:center;font-size:1.5vmin;color:transparent}
+.chip.dec .ok{background:var(--good);color:#063}
+.chip.left{border-color:var(--acc);background:#4a3d14}
+.chip.left.anim{animation:pop .5s ease}
+@keyframes pop{40%{transform:scale(1.15)}}
+.chip.gone{opacity:.45}
+.chip.dead{border-color:var(--bad);opacity:.6;text-decoration:line-through}
+.chip .gn{color:var(--good);font-size:1.8vmin}
+.tent .chip{font-size:1.8vmin}
+.sumbox{display:grid;place-items:center;height:100%;text-align:center}
+.sumbox h2{font-family:var(--disp);font-weight:400;font-size:6vmin;color:var(--acc);margin:0}
+.sumbox p{font-size:2.6vmin;margin:1vmin 0 0}
+/* iPad */
+.ip-wallet{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ip-wallet div{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.ip-wallet small{display:block;color:var(--dim);font-size:15px;font-weight:700}
+.ip-wallet b{font-family:var(--disp);font-weight:400;font-size:clamp(30px,6vw,48px);color:var(--acc)}
+.ip-wallet .safe b{color:var(--good)}
+.ip-path{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;background:rgba(0,0,0,.25);border-radius:14px;padding:8px}
+.ip-path span{font-size:clamp(22px,4vw,32px);background:#3a382b;border-radius:8px;padding:2px 6px;display:inline-flex;align-items:center;gap:3px}
+.ip-path span i{font-style:normal;font-size:.55em;color:var(--acc);font-weight:700}
+.ip-path span.bad{background:var(--bad)}
+.ip-danger{text-align:center;color:#ffd5cc;font-weight:700;font-size:clamp(15px,2.4vw,20px)}
+.ip-ch{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:200px}
+.ip-ch button{border:4px solid transparent;border-radius:22px;font-family:var(--disp);font-size:clamp(34px,7vw,64px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 8px 0 rgba(0,0,0,.4)}
+.ip-ch button small{font-family:var(--sys,sans-serif);font-size:clamp(14px,2.2vw,18px);font-weight:700;opacity:.85}
+.ip-ch .go{background:#2f6b45;color:#fff}
+.ip-ch .back{background:#8a5a1c;color:#fff}
+.ip-ch button.sel{border-color:var(--acc);box-shadow:0 0 0 6px var(--acc),0 8px 0 rgba(0,0,0,.4);transform:translateY(-4px)}
+.ip-ch button.dim{opacity:.45}
+.ip-big{flex:1;display:grid;place-items:center;text-align:center;font-family:var(--disp);font-size:clamp(28px,5vw,44px);line-height:1.5;padding:10px}
+.ip-big small{display:block;font-family:var(--sys,sans-serif);font-size:clamp(16px,2.6vw,22px);color:var(--dim);font-weight:700}
+.ptick .cd{font-family:var(--disp);color:var(--acc);font-size:1.3em}
+</style>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=1"></script>
+</head>
+<body>
+<script src="kake-core.js"></script>
+<script>
+(function(){
+'use strict';
+const {esc, shuffle, arr} = KC;
+// 危険カード(5種×3枚)
+const HZ = {
+  snake:{i:'🐍', n:'ヘビ'}, spider:{i:'🕷️', n:'クモ'}, mummy:{i:'🧟', n:'ミイラ'}, fire:{i:'🔥', n:'炎'}, rock:{i:'🪨', n:'落石'},
+};
+const HKEYS = Object.keys(HZ);
+const TREASURE = [1,2,3,4,5,5,7,7,9,11,11,13,14,15,17];   // 宝石カード15枚(人数に合わせて何倍かする)
+const ART = [5,5,5,10,10];                                  // 黄金の像(1ラウンドに1つ追加)
+
+KC.game({
+  key:'kc.inca', ver:1, mode:'solo', minP:2, title:'インカの黄金', tableClass:'incaT',
+  heroHTML:'🏛️', padWaitArt:'🏛️💎',
+  tagline:'進むか、帰るか。欲ばると全部なくなる、遺跡探検の度胸だめし。',
+  defaults:{rounds:3, time:15},
+  setupHTML:()=>`
+    <div><label class="t" for="fRounds">ラウンド数</label><select id="fRounds"><option value="3">3ラウンド(約10分)</option><option value="4">4ラウンド</option><option value="5">5ラウンド(原作どおり・約15分)</option></select></div>
+    <div><label class="t" for="fTime">「進む/帰る」を決める時間</label><select id="fTime"><option value="10">10秒</option><option value="15">15秒</option><option value="20">20秒</option><option value="30">30秒</option></select><div class="hint">時間切れの人は「進む」になります。全員が決めたらすぐ開きます。</div></div>`,
+  fillSetup:c=>{ KC.$('#fRounds').value=String(c.rounds||3); KC.$('#fTime').value=String(c.time||15); },
+  readSetup:()=>({ rounds:+KC.$('#fRounds').value, time:+KC.$('#fTime').value }),
+  rulesHTML:`<ol>
+    <li>全員で遺跡を探検します。カードを1枚ずつめくって奥へ進みます。</li>
+    <li><b>宝石カード</b>が出たら、洞窟にいる人で<b>等分</b>してポケットに入れます。割り切れない分はカードの上に残ります。</li>
+    <li>カードが出るたびに、全員がiPadで<b>「進む」か「帰る」</b>を同時に決めます(時間切れは「進む」)。</li>
+    <li><b>帰る</b>と、ポケットの宝石はテントにしまって<b>確定</b>。そのラウンドはもう探検しません。帰るときに、道に残っている宝石を帰る人で等分してもらえます。</li>
+    <li><b>黄金の像</b>は、<b>1人だけで帰ったとき</b>にもらえます(2人以上だとだれも取れません)。</li>
+    <li><b>危険カード</b>(ヘビ・クモ・ミイラ・炎・落石)の<b>同じ種類が2枚出たら全滅</b>。洞窟に残っていた人は、ポケットの宝石を全部失います。</li>
+    <li>全員が帰るか、全滅したらラウンド終了。テントの宝石の合計が多い人が勝ち。<b>少ない人から掃除当番</b>です。</li>
+  </ol>`,
+
+  newGame(H){
+    const N = H.names.length;
+    H.R = H.cfg.rounds||3; H.T = (H.cfg.time||15)*1000;
+    H.mult = Math.max(1, Math.round(N/4));
+    H.round = 0; H.tent = Array(N).fill(0); H.pocket = Array(N).fill(0);
+    H.removed = {}; H.artDeck = []; H.path = []; H.inCave = []; H.choice = {};
+    H.lastLeft = []; H.lastGain = {}; H.dead = []; H.stage = 'start'; H.msg = '';
+    startRound(H);
+  },
+  onAct(H, gi, a){
+    if(H.stage!=='decide' || !H.inCave.includes(gi)) return false;
+    if(a.t!=='go' && a.t!=='back') return false;
+    H.choice[gi] = a.t;
+    if(H.inCave.every(i=>H.choice[i])) KC.deadline(900, close);
+    return true;
+  },
+  onKey(H, e){
+    if((e.key==='Enter'||e.key===' ') && H.stage==='decide'){ e.preventDefault(); KC.deadline(10, close); }
+  },
+  onResume(H){
+    if(H.stage==='decide'){ KC.deadline(H.T, close); }
+    else if(H.next){ KC.later(1500, STEP[H.next]); }
+  },
+  pub(H){
+    return { R:H.R, round:H.round, mult:H.mult, stage:H.stage, path:H.path, inCave:H.inCave,
+      decided:Object.keys(H.choice).map(Number), lastLeft:H.lastLeft, lastGain:H.lastGain, dead:H.dead,
+      pockets:H.pocket, msg:H.msg };
+  },
+  hand(H, i){ return { tent:H.tent[i], pocket:H.pocket[i], choice:H.choice[i]||'', inCave:H.inCave.includes(i) }; },
+  renderTable, renderPad,
+});
+
+/* ---------------- 進行 ---------------- */
+const STEP = { flip:H=>{ flip(H); }, endRound:H=>{ endRound(H); }, startRound:H=>{ startRound(H); KC.commit(); }, finish:H=>{ finish(H); } };
+function later(H, ms, name){ H.next = name; KC.later(ms, h=>{ h.next=''; STEP[name](h); }); }
+
+function startRound(H){
+  H.round++;
+  const N = H.names.length;
+  H.artDeck.push(ART[Math.min(H.round-1, ART.length-1)] * H.mult);
+  const deck = TREASURE.map((v,i)=>({k:'t', v:v*H.mult, id:'t'+i}));
+  HKEYS.forEach(h => { for(let c=0;c<3-(H.removed[h]||0);c++) deck.push({k:'h', h, id:h+c}); });
+  H.artDeck.forEach((v,i) => deck.push({k:'a', v, id:'a'+i}));
+  H.deck = shuffle(deck);
+  H.path = []; H.inCave = H.names.map((_,i)=>i); H.pocket = Array(N).fill(0);
+  H.choice = {}; H.lastLeft = []; H.lastGain = {}; H.dead = [];
+  H.stage = 'start'; H.msg = `第${H.round}ラウンド 探検開始!`;
+  KC.fx(`第${H.round}ラウンド`, {big:true, k:'big', c:'var(--acc)'});
+  later(H, 2600, 'flip');
+}
+function flip(H){
+  if(!H.deck.length){   // カードが尽きたら、残っている人は全員無事に帰る
+    H.inCave.forEach(i => { H.tent[i] += H.pocket[i]; H.pocket[i]=0; });
+    H.lastLeft = H.inCave.slice(); H.inCave = [];
+    H.msg = '遺跡の奥まで到達!全員無事に帰りました';
+    H.stage = 'reveal'; later(H, 3000, 'endRound'); KC.commit(); return;
+  }
+  const c = H.deck.pop();
+  H.lastLeft = []; H.lastGain = {}; H.choice = {};
+  H.path.forEach(p => p.nw = false);
+  c.nw = true;
+  if(c.k==='t'){
+    const L = H.inCave.length, share = Math.floor(c.v/L);
+    H.inCave.forEach(i => H.pocket[i] += share);
+    c.rem = c.v - share*L;
+    H.path.push(c);
+    H.msg = share ? `宝石 ${c.v}個!ひとり ${share}個ずつ` : `宝石 ${c.v}個…人数が多くて分けられない!`;
+    KC.fx('', {k:'coin'});
+  } else if(c.k==='a'){
+    H.path.push(c);
+    H.msg = `黄金の像を発見!(1人で帰ると 💎${c.v})`;
+    KC.fx('黄金の像!', {big:true, k:'big', c:'#e4c2ff'});
+  } else {
+    const twice = H.path.some(p => p.k==='h' && p.h===c.h);
+    H.path.push(c);
+    if(twice){
+      c.bad = true;
+      H.removed[c.h] = (H.removed[c.h]||0) + 1;
+      H.dead = H.inCave.slice();
+      H.inCave.forEach(i => H.pocket[i] = 0);
+      H.inCave = [];
+      H.stage = 'disaster';
+      H.msg = `${HZ[c.h].n}が2回!洞窟に残った${H.dead.length}人は宝石を失った…`;
+      KC.fx(`${HZ[c.h].i} 全滅!`, {big:true, k:'crash', c:'#ff8a6a'});
+      later(H, 4200, 'endRound');
+      KC.commit(); return;
+    }
+    H.msg = `${HZ[c.h].i} ${HZ[c.h].n}が出た!もう1枚出たら全滅…`;
+    KC.fx('', {k:'bad'});
+  }
+  H.stage = 'decide';
+  KC.deadline(H.T, close);
+  KC.commit();
+}
+function close(H){
+  if(H.stage!=='decide') return;
+  KC.cancelDeadline();
+  const leavers = H.inCave.filter(i => H.choice[i]==='back');
+  const L = leavers.length;
+  H.lastGain = {};
+  if(L){
+    let gain = 0;
+    H.path.forEach(p => { if(p.k==='t' && p.rem){ const s=Math.floor(p.rem/L); gain += s; p.rem -= s*L; } });
+    let art = 0;
+    if(L===1){
+      H.path.filter(p=>p.k==='a' && !p.taken).forEach(p => { art += p.v; p.taken = true; const k=H.artDeck.indexOf(p.v); if(k>=0) H.artDeck.splice(k,1); });
+    }
+    leavers.forEach(i => { const g = gain + (L===1?art:0); H.lastGain[i] = H.pocket[i] + g; H.tent[i] += H.pocket[i] + g; H.pocket[i] = 0; });
+    H.msg = L===1 ? `${H.names[leavers[0]]} さんが1人で帰った!` + (art?` 黄金の像 💎${art} もゲット!`:'') + (gain?` 道の宝石 +${gain}`:'')
+                  : `${L}人が帰った!` + (gain?` 道の宝石をひとり +${gain}`:'');
+    KC.fx(L===1?'1人で帰った!':`${L}人が帰った!`, {big:true, k:'good', c:'var(--acc)'});
+  } else {
+    H.msg = '全員「進む」!さらに奥へ…';
+    KC.fx('全員 進む!', {big:true, k:'big', c:'#9ff0b8'});
+  }
+  H.lastLeft = leavers;
+  H.inCave = H.inCave.filter(i => H.choice[i]!=='back');
+  H.choice = {};
+  H.stage = 'reveal';
+  if(!H.inCave.length){ H.msg += ' だれもいなくなった'; later(H, 3200, 'endRound'); }
+  else later(H, 3200, 'flip');
+  KC.commit();
+}
+function endRound(H){
+  H.stage = 'roundEnd';
+  H.inCave.forEach(i => { H.pocket[i]=0; });
+  if(H.round < H.R){ H.msg = `第${H.round}ラウンド終了`; later(H, 3800, 'startRound'); }
+  else { H.msg = '探検終了!'; later(H, 2600, 'finish'); }
+  KC.commit();
+}
+function finish(H){
+  KC.finish(H, H.names.map((_,i)=>({g:i, score:H.tent[i], info:`💎 ${H.tent[i]}`})), `宝石は人数に合わせて${H.mult}倍にしています`);
+  KC.commit();
+}
+
+/* ---------------- 先生の画面 ---------------- */
+// アニメーションは、はじめて表示するカードだけ(描き直しのたびに動かない)
+const seen = new Set();
+const once = k => seen.has(k) ? '' : (seen.add(k), 'anim');
+let H_KEY = '';
+function cardHTML(p){ return cardInner(p).replace('class="cd2 ', 'class="cd2 '+once(H_KEY+p.id)+' '); }
+function cardInner(p){
+  if(p.k==='t') return `<div class="cd2 t ${p.rem?'':'empty'} ${p.nw?'new':''}"><span class="orig">${p.v}</span><span class="ic2">💎</span><span class="gm">${p.rem}</span><span class="lb">残り</span></div>`;
+  if(p.k==='a') return `<div class="cd2 a ${p.nw?'new':''}"><span class="ic2">${p.taken?'🕳️':'🗿'}</span><span class="gm">${p.taken?'—':p.v}</span><span class="lb">${p.taken?'持ち帰られた':'黄金の像'}</span></div>`;
+  return `<div class="cd2 h ${p.bad?'bad':''} ${p.nw?'new':''}"><span class="ic2">${HZ[p.h].i}</span><span class="lb">${HZ[p.h].n}</span></div>`;
+}
+function renderTable(H, stage, hx){
+  H_KEY = H.gid + '/' + H.round + '/';
+  hx.innerHTML = H.stage==='decide' && H.phase==='play' ? `<button class="hb go" id="closeBtn">⏭ 締め切る</button>` : '';
+  const cb = KC.$('#closeBtn'); if(cb) cb.onclick = () => KC.deadline(10, close);
+  const hzSeen = [...new Set(H.path.filter(p=>p.k==='h' && !p.bad).map(p=>p.h))];
+  const dec = H.inCave.filter(i => H.choice[i]).length;
+  const clock = H.stage==='decide'
+    ? `<div class="ic-clock"><span>決めた人 ${dec}/${H.inCave.length}</span>${KC.cd(H.dl)}</div>`
+    : `<div class="ic-clock"><span>洞窟 ${H.inCave.length}人・テント ${H.names.length-H.inCave.length}人</span></div>`;
+  const inChips = (H.stage==='disaster' ? H.dead : H.inCave).map(i =>
+    `<span class="chip ${H.choice[i]?'dec':''} ${H.stage==='disaster'?'dead':''}"><span class="ok">✓</span>${esc(H.names[i])}<span class="pk">💎${H.stage==='disaster'?0:H.pocket[i]}</span></span>`).join('');
+  const out = H.names.map((_,i)=>i).filter(i => !H.inCave.includes(i) && !(H.stage==='disaster' && H.dead.includes(i)));
+  const lastSet = new Set(H.lastLeft);
+  const tentChips = out.map(i => `<span class="chip ${lastSet.has(i)?'left '+once(H_KEY+'L'+H.path.length+'_'+i):'gone'}">${esc(H.names[i])}${lastSet.has(i)&&H.lastGain[i]!=null?`<span class="gn">+${H.lastGain[i]}</span>`:''}</span>`).join('');
+  let center;
+  if(H.stage==='roundEnd' || (H.stage==='start' && !H.path.length)){
+    center = `<div class="sumbox"><div><h2>${esc(H.msg)}</h2><p>${H.stage==='start'?`洞窟に ${H.names.length}人 が入ります。宝石は ${H.mult}倍。`:(H.round<H.R?'次のラウンドへ…':'結果発表へ…')}</p></div></div>`;
+  } else center = `<div class="path">${H.path.map(cardHTML).join('')}</div>`;
+  stage.innerHTML = `<div class="ic">
+    <div class="ic-top">
+      <div class="ic-rd">第${H.round}ラウンド<small>/ ${H.R} ・ ${H.path.length}枚目</small></div>
+      <div class="ic-hz">${hzSeen.length?'あと1枚で全滅:':''}${hzSeen.map(h=>`<b>${HZ[h].i}${HZ[h].n}</b>`).join('')}</div>
+      ${clock}
+    </div>
+    <div style="display:grid;grid-template-rows:auto 1fr;gap:1vmin;min-height:0">
+      <div><span class="ic-msg ${H.stage==='disaster'?'bad':''}">${esc(H.msg)}</span></div>
+      <div class="cave ${H.stage==='disaster'?'boom':''}">${center}</div>
+    </div>
+    <div class="camp">
+      <div class="zone"><h3>${H.stage==='disaster'?'💥 全滅した人':'🔦 洞窟の中'}<b>${H.stage==='disaster'?H.dead.length:H.inCave.length}人</b>${H.stage==='decide'?'(✓は決めた人)':''}</h3><div class="chips">${inChips||'<span style="color:var(--dim)">だれもいません</span>'}</div></div>
+      <div class="zone tent"><h3>⛺ テント<b>${out.length}人</b></h3><div class="chips">${tentChips}</div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- iPad ---------------- */
+function renderPad(P){
+  const st = P.st, hd = P.hd || {}, me = P.me;
+  const path = arr(st.path);
+  const inCave = arr(st.inCave).includes(me);
+  const dead = arr(st.dead).includes(me);
+  const hzSeen = [...new Set(path.filter(p=>p.k==='h' && !p.bad).map(p=>p.h))];
+  const pathHTML = path.length ? `<div class="ip-path">${path.map(p => p.k==='t' ? `<span>💎<i>${p.rem}</i></span>` : p.k==='a' ? `<span>${p.taken?'🕳️':'🗿'}<i>${p.taken?'':p.v}</i></span>` : `<span class="${p.bad?'bad':''}">${HZ[p.h].i}</span>`).join('')}</div>` : '';
+  const danger = hzSeen.length ? `<div class="ip-danger">⚠ 次に ${hzSeen.map(h=>HZ[h].i+HZ[h].n).join('・')} が出たら全滅!</div>` : '';
+  const top = KC.padTop(P, `第${st.round}/${st.R}ラウンド` + (st.stage==='decide'&&inCave?` 残り ${KC.cd(st.endAt)}秒`:''));
+  const wallet = `<div class="ip-wallet"><div><small>ポケット(まだ危ない)</small><b>💎 ${hd.pocket||0}</b></div><div class="safe"><small>テント(確定)</small><b>💎 ${hd.tent||0}</b></div></div>`;
+  let main;
+  if(st.stage==='decide' && inCave){
+    const c = hd.choice||'';
+    main = `<div class="ip-ch">
+      <button class="go ${c==='go'?'sel':c?'dim':''}" data-c="go">🔦 進む<small>宝石を増やしに奥へ</small></button>
+      <button class="back ${c==='back'?'sel':c?'dim':''}" data-c="back">⛺ 帰る<small>ポケットの宝石を確定</small></button></div>
+      <div class="pmsg">${c?`「${c==='go'?'進む':'帰る'}」を選びました。時間内なら変えられます`:'どちらかをタッチ!時間切れは「進む」になります'}</div>`;
+  } else if(st.stage==='disaster' && dead){
+    main = `<div class="ip-big"><div>💥 全滅…<small>ポケットの宝石を失いました。<br>テントの宝石は無事です。</small></div></div>`;
+  } else if(inCave){
+    const lastL = arr(st.lastLeft).length;
+    main = `<div class="ip-big"><div>🔦 洞窟の中<small>${st.stage==='reveal'?(lastL?`${lastL}人が帰りました。あなたは奥へ進みます`:'全員 進みました'):'次のカードを待っています…'}</small></div></div>`;
+  } else {
+    const gain = st.lastGain && st.lastGain[me]!=null && arr(st.lastLeft).includes(me) ? `<br>+💎${st.lastGain[me]} をテントにしまいました` : '';
+    main = `<div class="ip-big"><div>⛺ テントで休憩中<small>${st.stage==='roundEnd'||st.stage==='start'?'次のラウンドを待っています':'このラウンドの宝石は確定しました'}${gain}<br>先生の画面を見てね</small></div></div>`;
+  }
+  P.el.innerHTML = top + wallet + pathHTML + danger + main;
+  P.el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { if(hd.choice===b.dataset.c) return; P.sendNow(b.dataset.c); });
+}
+})();
+</script>
+</body>
+</html>

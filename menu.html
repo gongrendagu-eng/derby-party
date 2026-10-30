@@ -67,12 +67,12 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-ro
 .lcd .h{color:#ff7a6b}.lcd .bl{color:#7ab8ff}
 
 /* トランプ関連:ホテルのゲームラウンジ */
-.trump{background:#f3ecd9;color:#0f2b23;grid-column:1/-1}
+.trump{background:#f3ecd9;color:#0f2b23}
 .trump .art{background:repeating-linear-gradient(90deg,#0f2b23 0 22px,#0c241d 22px 24px);border-right:6px solid #caa24c}
 .trump h2{font-family:"Shippori Mincho B1",serif;font-weight:800;letter-spacing:.06em}
 .trump .tag{background:#0f2b23;color:#f1d68c}
 .trump .list{display:flex;flex-wrap:wrap;gap:.4em;margin:0}
-.trump .list span{font-size:clamp(12px,1.1vw,17px);font-weight:700;border:1.5px solid #0f2b23;border-radius:6px;padding:.15em .6em}
+.trump .list span{font-size:clamp(11px,.95vw,15px);font-weight:700;border:1.5px solid #0f2b23;border-radius:6px;padding:.1em .5em}
 .suits{display:flex;gap:clamp(6px,1vw,14px)}
 .suits span{width:clamp(36px,4vw,64px);aspect-ratio:1/1.42;border-radius:6px;background:#fffdf8;display:grid;place-items:center;font:clamp(20px,2.4vw,40px)/1 serif;color:#1b1b1f;box-shadow:0 4px 0 rgba(0,0,0,.35);outline:3px solid #caa24c}
 .suits span:nth-child(2),.suits span:nth-child(3){color:#c8102e}
@@ -91,6 +91,19 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-ro
 .wheel i{position:absolute;top:8%;left:50%;width:11%;aspect-ratio:1;margin-left:-5.5%;border-radius:50%;background:#fff;border:2px solid #2b2a5a}
 @keyframes rspin{to{transform:rotate(360deg)}}
 
+/* 駆け引きゲーム:夜のゲームテーブル */
+.kake{background:#efeaff;color:#1b1430}
+.kake .art{background:radial-gradient(ellipse at 50% 120%,#6b4fd8 0,#2a1f52 55%,#1b1430 100%)}
+.kake h2{font-family:var(--f-disp)}
+.kake .tag{background:#1b1430;color:#ffd23e}
+.kake .list{display:flex;flex-wrap:wrap;gap:.4em;margin:0}
+.kake .list span{font-size:clamp(11px,.95vw,15px);font-weight:700;border:1.5px solid #1b1430;border-radius:6px;padding:.1em .5em}
+.kcards{display:flex;gap:clamp(4px,.7vw,10px)}
+.kcards span{width:clamp(30px,3.4vw,56px);aspect-ratio:3/4;border-radius:7px;display:grid;place-items:center;font-size:clamp(16px,1.9vw,30px);box-shadow:0 4px 0 rgba(0,0,0,.4)}
+.kcards span:nth-child(1){background:linear-gradient(160deg,#7a6a2f,#4f441c);border:2px solid #d6aa3c;transform:rotate(-8deg)}
+.kcards span:nth-child(2){background:#fff8ec;border:2px solid #f0c9a0;color:#3a1a00;font:clamp(16px,1.9vw,30px)/1 var(--f-disp)}
+.kcards span:nth-child(3){background:#050820;border:2px solid #3ee6ff;color:#3ee6ff;font:clamp(16px,1.9vw,30px)/1 "DotGothic16",monospace;transform:rotate(8deg)}
+
 footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,16px);text-align:right}
 
 @media (max-width:760px){ main{grid-template-columns:1fr} .g{grid-template-columns:32% 1fr} }
@@ -100,7 +113,7 @@ footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,1
 <body>
 <header>
   <h1>今日のゲーム</h1>
-  <p>遊ぶゲームを選んでください。キーボードの 1〜5 でも選べます。</p>
+  <p>遊ぶゲームを選んでください。キーボードの 1〜6 でも選べます。</p>
 </header>
 
 <main id="list">
@@ -128,13 +141,19 @@ footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,1
   </a>
   <a class="g trump" href="trump.html" data-k="5">
     <div class="art" aria-hidden="true"><div class="suits"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div></div>
-    <div class="txt"><h2>トランプ関連</h2><p style="max-width:none">班対抗のカードゲーム。手札は各班のiPadに配られます。</p>
+    <div class="txt"><h2>トランプ関連</h2><p style="max-width:none">班対抗のカードゲーム。手札は班のiPadに。</p>
       <div class="list"><span>神経衰弱</span><span>7並べ</span><span>ダウト</span><span>大富豪</span><span>ラストワン</span></div></div>
     <span class="key">5</span>
   </a>
+  <a class="g kake" href="kake.html" data-k="6">
+    <div class="art" aria-hidden="true"><div class="kcards"><span>💎</span><span>12</span><span>3</span></div></div>
+    <div class="txt"><h2>駆け引きゲーム</h2><p style="max-width:none">全員同時に選んで、出方を読み合う。</p>
+      <div class="list"><span>インカの黄金</span><span>ハゲタカのえじき</span><span>最小数ゲーム</span></div></div>
+    <span class="key">6</span>
+  </a>
 </main>
 
-<footer>ルーレットパークと「トランプ関連」の各ゲームは独自のiPad画面を使うため、開いている間は「iPadに映す」の配信が止まります。メニューにもどると自動で再開します。</footer>
+<footer>ルーレットパーク・「トランプ関連」・「駆け引きゲーム」の各ゲームは独自のiPad画面を使うため、開いている間は「iPadに映す」の配信が止まります。メニューにもどると自動で再開します。</footer>
 
 <script>
 window.MV_IS_MENU = true;

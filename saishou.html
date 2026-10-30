@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>最小数ゲーム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* クイズ番組のスタジオ:電光掲示板 */
+:root{
+  --bg:#0a0f2c; --panel:#141c4a; --field:#10173d; --bar:#070b22; --line:#2a3678;
+  --ink:#eef2ff; --dim:#9aa6dd; --acc:#3ee6ff; --accink:#04222b; --accsh:#1a8aa0;
+  --btn:#1d2766; --bad:#ff4d7d; --good:#ffd23e;
+  --disp:"Dela Gothic One","BIZ UDPGothic",sans-serif; --dot:"DotGothic16",monospace;
+}
+body{background:radial-gradient(ellipse at 50% 0,#1d2a78 0,#0a0f2c 55%) fixed}
+/* 先生の画面 */
+.sx{display:grid;grid-template-rows:auto 1fr;height:100%;padding:1.6vmin 2.4vmin;gap:1.4vmin}
+.sx-top{display:flex;align-items:center;gap:2vmin;flex-wrap:wrap}
+.sx-rd{font-family:var(--disp);font-size:3.6vmin;color:var(--acc)}
+.sx-rd small{font-size:.55em;color:var(--dim);margin-left:1vmin}
+.sx-msg{font-family:var(--disp);font-size:3vmin;background:rgba(0,0,0,.4);border-radius:1.4vmin;padding:.6vmin 2vmin}
+.sx-msg.win{color:#2a1a00;background:var(--good)}
+.sx-clock{margin-left:auto;display:flex;align-items:center;gap:1.6vmin;font-size:2.4vmin;font-weight:700}
+.sx-clock .cd{font-family:var(--dot);font-size:7vmin;color:var(--acc);min-width:9vmin;text-align:center;line-height:1;text-shadow:0 0 2vmin rgba(62,230,255,.6)}
+.sx-clock .cd.low{color:var(--bad);text-shadow:0 0 2vmin rgba(255,77,125,.7)}
+.sx-main{display:grid;grid-template-columns:1fr 24%;gap:1.6vmin;min-height:0}
+.board{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-auto-rows:1fr;gap:1vmin;padding:1.4vmin;border-radius:2vmin;background:#050820;border:.5vmin solid #222c66;box-shadow:inset 0 0 5vmin rgba(0,0,0,.8),0 0 0 .4vmin #0e1440;min-height:0}
+.cell{border-radius:1vmin;background:#0d1338;border:.25vmin solid #1d2763;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:.4vmin;position:relative;overflow:hidden;min-height:0}
+.cell .n{font-family:var(--dot);font-size:3.6vmin;line-height:1.1;color:#3a4a99}
+.cell .who{font-size:1.45vmin;line-height:1.25;text-align:center;font-weight:700;color:var(--ink);overflow:hidden;max-height:100%;word-break:break-all}
+.cell .ct{position:absolute;top:.3vmin;right:.6vmin;font-family:var(--dot);font-size:1.8vmin;color:var(--dim)}
+.cell.has .n{color:var(--acc);text-shadow:0 0 1.4vmin rgba(62,230,255,.7)}
+.cell.has{border-color:#2f5fb3}
+.cell.has.s0{animation:lit .35s ease both}
+@keyframes lit{from{background:#1f4aa8}to{background:#0d1338}}
+.cell.dup{background:#2a0b1e;border-color:var(--bad)}
+.cell.dup .n{color:var(--bad);text-shadow:none}
+.cell.dup::after{content:"×";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--disp);font-size:9vmin;color:rgba(255,77,125,.55)}
+.cell.dup.s1::after{animation:stampIn .35s ease both}
+@keyframes stampIn{from{transform:scale(2.4);opacity:0}to{transform:none;opacity:1}}
+.cell.uni{background:#0f2a35;border-color:var(--acc)}
+.cell.winner{background:linear-gradient(160deg,#ffe066,#ffb000);border-color:#fff;box-shadow:0 0 0 .5vmin #fff,0 0 5vmin #ffd23e;z-index:2;animation:winp .8s ease infinite alternate}
+.cell.winner .n{color:#3a2400;text-shadow:none}
+.cell.winner .who{color:#3a2400;font-size:2.2vmin}
+@keyframes winp{to{transform:scale(1.08)}}
+.side{display:flex;flex-direction:column;gap:1.2vmin;min-height:0}
+.box{background:rgba(0,0,0,.3);border:2px solid var(--line);border-radius:1.6vmin;padding:1.2vmin 1.4vmin;min-height:0}
+.box h3{margin:0 0 .8vmin;font-size:2vmin;color:var(--dim)}
+.box h3 b{color:var(--ink);font-family:var(--disp);font-weight:400;font-size:2.6vmin;margin-left:.6vmin}
+.pl{display:flex;flex-wrap:wrap;gap:.5vmin;overflow:hidden}
+.pl span{font-size:1.7vmin;font-weight:700;border-radius:99px;padding:.2vmin 1vmin;background:#1a2259;color:var(--dim)}
+.pl span.ok{background:var(--acc);color:var(--accink)}
+.hist{display:flex;flex-direction:column;gap:.6vmin;font-size:1.9vmin;overflow:hidden}
+.hist div{display:flex;gap:1vmin;align-items:center}
+.hist b{font-family:var(--dot);font-size:2.6vmin;color:var(--good);min-width:4vmin;text-align:center}
+.hist .r{color:var(--dim);min-width:5vmin}
+.pts{font-size:1.8vmin;line-height:1.6;color:var(--dim)}
+.pts b{color:var(--good)}
+/* iPad */
+.ip-num{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;flex:1;align-content:start}
+.ip-num button{border:3px solid #2a3678;background:#121a4a;color:var(--acc);border-radius:12px;font-family:var(--dot);font-size:clamp(26px,5vw,44px);padding:8px 0;box-shadow:0 4px 0 rgba(0,0,0,.45)}
+.ip-num button.sel{background:var(--good);color:#3a2400;border-color:#fff;box-shadow:0 0 0 4px var(--good);transform:translateY(-3px)}
+.ip-num button:disabled{opacity:.55}
+.ip-me{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ip-me div{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:8px;text-align:center}
+.ip-me small{display:block;color:var(--dim);font-size:14px;font-weight:700}
+.ip-me b{font-family:var(--dot);font-size:clamp(28px,6vw,44px);color:var(--acc)}
+.ip-me .p b{color:var(--good)}
+.ptick .cd{font-family:var(--dot);color:var(--acc);font-size:1.3em}
+.ip-res{flex:1;display:grid;place-items:center;text-align:center;font-family:var(--disp);font-size:clamp(26px,5vw,44px);line-height:1.5}
+.ip-res small{display:block;font-family:var(--sys,sans-serif);font-size:clamp(16px,2.6vw,22px);color:var(--dim);font-weight:700}
+</style>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=1"></script>
+</head>
+<body>
+<script src="kake-core.js"></script>
+<script>
+(function(){
+'use strict';
+const {esc, arr} = KC;
+const WIN = 3, UNIQ = 1;    // 勝ち +3点、かぶらなかった人 +1点
+
+KC.game({
+  key:'kc.saishou', ver:1, mode:'solo', minP:2, title:'最小数ゲーム', tableClass:'sxT',
+  heroHTML:'🔢', padWaitArt:'1️⃣2️⃣3️⃣',
+  tagline:'ほかの人とかぶらない、いちばん小さい数字を出した人の勝ち。',
+  defaults:{rounds:5, time:30, max:30},
+  setupHTML:()=>`
+    <div><label class="t" for="fRounds">ラウンド数</label><select id="fRounds"><option value="3">3ラウンド</option><option value="5">5ラウンド</option><option value="7">7ラウンド</option></select></div>
+    <div><label class="t" for="fTime">数字を選ぶ時間</label><select id="fTime"><option value="20">20秒</option><option value="30">30秒</option><option value="45">45秒</option></select><div class="hint">時間切れの人は、そのラウンドは0点です。全員が選んだらすぐ開きます。</div></div>
+    <div><label class="t" for="fMax">数字の範囲</label><select id="fMax"><option value="20">1〜20</option><option value="30">1〜30</option><option value="50">1〜50</option></select></div>`,
+  fillSetup:c=>{ KC.$('#fRounds').value=String(c.rounds||5); KC.$('#fTime').value=String(c.time||30); KC.$('#fMax').value=String(c.max||30); },
+  readSetup:()=>({ rounds:+KC.$('#fRounds').value, time:+KC.$('#fTime').value, max:+KC.$('#fMax').value }),
+  rulesHTML:`<ol>
+    <li>全員がiPadで、1〜30(設定による)の中から数字を<b>1つ</b>選びます。</li>
+    <li>ほかの人と<b>同じ数字はアウト</b>(×)。</li>
+    <li>アウトにならなかった数字のうち、<b>いちばん小さい数字</b>を出した人が勝ち。<b>+${WIN}点</b>。</li>
+    <li>勝ちではなくても、ほかの人とかぶらなかった人は<b>+${UNIQ}点</b>。</li>
+    <li>時間切れの人は0点。ラウンドをくり返し、合計点が<b>少ない人から掃除当番</b>です。途中の点数はiPadで自分の分だけ見られます。</li>
+  </ol>`,
+
+  newGame(H){
+    H.R = H.cfg.rounds||5; H.T = (H.cfg.time||30)*1000; H.max = H.cfg.max||30;
+    H.score = H.names.map(()=>0); H.rnd = 0; H.pick = {}; H.open = null; H.stage='start'; H.hist = []; H.msg = ''; H.step = 0;
+    nextRound(H);
+  },
+  onAct(H, gi, a){
+    if(H.stage!=='pick' || a.t!=='pick') return false;
+    const v = +a.v; if(!(v>=1 && v<=H.max)) return false;
+    H.pick[gi] = v;
+    if(H.names.every((_,i)=>H.pick[i])) KC.deadline(900, reveal);
+    return true;
+  },
+  onKey(H, e){
+    if(e.key!=='Enter' && e.key!==' ') return;
+    e.preventDefault();
+    if(H.stage==='pick') KC.deadline(10, reveal);
+    else if(H.stage==='open' && H.step>=3) goNext(H);
+  },
+  onResume(H){
+    if(H.stage==='pick') KC.deadline(H.T, reveal);
+    else if(H.stage==='open' && H.step<3) settle(H);
+  },
+  pub(H){
+    return { stage:H.stage, rnd:H.rnd, R:H.R, max:H.max, picked:Object.keys(H.pick).map(Number), step:H.step,
+      open:H.stage==='open'?H.open:null, msg:H.msg, hist:H.hist };
+  },
+  hand(H, i){ return { pick:H.pick[i]||0, score:H.score[i], gain:H.open&&H.stage==='open'&&H.step>=3?H.open.gain[i]:null }; },
+  renderTable, renderPad,
+});
+
+function nextRound(H){
+  H.rnd++; H.pick = {}; H.open = null; H.stage = 'pick'; H.step = 0;
+  H.msg = '数字を選んでください';
+  KC.fx(`第${H.rnd}ラウンド`, {big:true, k:'big', c:'var(--acc)'});
+  KC.deadline(H.T, reveal);
+}
+function goNext(H){
+  if(H.stage!=='open' || H.step<3) return;
+  if(H.rnd >= H.R){
+    KC.finish(H, H.names.map((_,i)=>({g:i, score:H.score[i], info:`${H.score[i]}点`})));
+    KC.commit(); return;
+  }
+  nextRound(H); KC.commit();
+}
+// 開示:0 数字が光る → 1 かぶりに× → 2 ドラムロール → 3 勝者
+function reveal(H){
+  if(H.stage!=='pick') return;
+  KC.cancelDeadline();
+  const cells = {};
+  H.names.forEach((_,i) => { const v=H.pick[i]; if(v) (cells[v] = cells[v]||[]).push(i); });
+  const uniq = Object.keys(cells).map(Number).filter(v=>cells[v].length===1).sort((a,b)=>a-b);
+  const win = uniq.length ? uniq[0] : 0;
+  const winner = win ? cells[win][0] : -1;
+  const gain = H.names.map((_,i) => { const v=H.pick[i]; if(!v) return 0; if(i===winner) return WIN; return cells[v].length===1 ? UNIQ : 0; });
+  H.open = { cells, win, winner, gain, none:H.names.map((_,i)=>!H.pick[i]) };
+  H.stage = 'open'; H.step = 0;
+  const n = Object.keys(H.pick).length;
+  H.msg = `${n}人の数字を公開!`;
+  KC.fx('', {k:'flip'});
+  KC.commit();
+  KC.later(2200, H => {
+    H.step = 1;
+    const d = Object.keys(cells).filter(v=>cells[v].length>1).length;
+    H.msg = d ? `かぶった数字(${d}個)はアウト!` : 'かぶった数字はなし!';
+    KC.fx('', {k:'stamp'}); KC.commit();
+    KC.later(2200, H => {
+      H.step = 2; H.msg = 'かぶらなかった一番小さい数字は…';
+      KC.fx('', {k:'drum'}); KC.commit();
+      KC.later(1600, H => { settle(H); KC.commit(); });
+    });
+  });
+}
+
+function settle(H){
+  if(H.step>=3) return;
+  const o = H.open;
+  H.step = 3;
+  H.names.forEach((_,i)=>{ H.score[i] += o.gain[i]; });
+  if(o.win){
+    H.msg = `${o.win} の ${H.names[o.winner]} さんの勝ち!`;
+    H.hist.push({r:H.rnd, v:o.win, n:H.names[o.winner]});
+    KC.fx(`${o.win}!${H.names[o.winner]}`, {big:true, k:'win', c:'var(--good)'});
+  } else {
+    H.msg = '全部かぶった!勝ちはなし';
+    H.hist.push({r:H.rnd, v:0, n:''});
+    KC.fx('勝者なし!', {big:true, k:'bad', c:'var(--bad)'});
+  }
+}
+
+/* ---------------- 先生の画面 ---------------- */
+function renderTable(H, stage, hx){
+  const open = H.stage==='open';
+  hx.innerHTML = H.phase!=='play' ? '' : H.stage==='pick' ? `<button class="hb go" id="nx">⏭ 締め切る</button>` : (open && H.step>=3) ? `<button class="hb go" id="nx">${H.rnd>=H.R?'結果発表 ▶':'次のラウンド ▶'}</button>` : '';
+  const nx = KC.$('#nx'); if(nx) nx.onclick = () => H.stage==='pick' ? KC.deadline(10, reveal) : goNext(H);
+  const cols = H.max<=20 ? 5 : H.max<=30 ? 6 : 10;
+  const o = H.open;
+  const cells = [];
+  for(let v=1; v<=H.max; v++){
+    let cls = '', who = '', ct = '';
+    if(open && o.cells[v]){
+      const ids = o.cells[v];
+      cls = 'has s'+H.step;
+      if(H.step>=1) cls += ids.length>1 ? ' dup' : ' uni';
+      if(H.step>=3 && v===o.win) cls += ' winner';
+      who = ids.map(i=>esc(H.names[i])).join('<br>');
+      ct = ids.length>1 ? `×${ids.length}` : '';
+    }
+    cells.push(`<div class="cell ${cls}"><span class="n">${v}</span>${ct?`<span class="ct">${ct}</span>`:''}<span class="who">${who}</span></div>`);
+  }
+  const pk = new Set(Object.keys(H.pick).map(Number));
+  const side = open
+    ? `<div class="box"><h3>時間切れ<b>${o.none.filter(Boolean).length}人</b></h3><div class="pl">${H.names.map((n,i)=>o.none[i]?`<span>${esc(n)}</span>`:'').join('')}</div></div>`
+    : `<div class="box"><h3>選んだ人<b>${pk.size}/${H.names.length}</b></h3><div class="pl">${H.names.map((n,i)=>`<span class="${pk.has(i)?'ok':''}">${esc(n)}</span>`).join('')}</div></div>`;
+  stage.innerHTML = `<div class="sx">
+    <div class="sx-top">
+      <div class="sx-rd">第${H.rnd}ラウンド<small>/ ${H.R}</small></div>
+      <span class="sx-msg ${open&&H.step>=3&&o.win?'win':''}">${esc(H.msg)}</span>
+      ${H.stage==='pick'?`<div class="sx-clock"><span>のこり</span>${KC.cd(H.dl)}</div>`:''}
+    </div>
+    <div class="sx-main">
+      <div class="board" style="--cols:${cols}">${cells.join('')}</div>
+      <div class="side">
+        ${side}
+        <div class="box"><h3>これまでの勝者</h3><div class="hist">${H.hist.map(h=>`<div><span class="r">第${h.r}回</span><b>${h.v||'—'}</b><span>${h.v?esc(h.n):'勝者なし'}</span></div>`).join('')||'<span style="color:var(--dim)">まだいません</span>'}</div></div>
+        <div class="box pts">勝ち <b>+${WIN}点</b><br>かぶらなかった人 <b>+${UNIQ}点</b><br>かぶった・時間切れ 0点</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- iPad ---------------- */
+function renderPad(P){
+  const st = P.st, hd = P.hd || {}, me = P.me;
+  const top = KC.padTop(P, `第${st.rnd}/${st.R}ラウンド` + (st.stage==='pick'?` 残り ${KC.cd(st.endAt)}秒`:''));
+  const mine = `<div class="ip-me"><div><small>選んだ数字</small><b>${hd.pick||'—'}</b></div><div class="p"><small>あなたの合計点</small><b>${hd.score||0}</b></div></div>`;
+  let main;
+  if(st.stage==='pick'){
+    const btn = [];
+    for(let v=1; v<=st.max; v++) btn.push(`<button data-v="${v}" class="${hd.pick===v?'sel':''}">${v}</button>`);
+    main = `<div class="pmsg">${hd.pick?`「${hd.pick}」を選びました。時間内なら変えられます`:'ほかの人とかぶらない、小さい数字を選ぼう!'}</div><div class="ip-num">${btn.join('')}</div>`;
+  } else {
+    const o = st.open || {};
+    let txt = '公開中…<small>先生の画面を見てね</small>';
+    if(st.step>=3){
+      const g = hd.gain;
+      if(!hd.pick) txt = '⏰ 時間切れ<small>このラウンドは0点</small>';
+      else if(o.winner===me) txt = `🏆 勝ち!+${WIN}点<small>${hd.pick} はかぶらない一番小さい数字でした</small>`;
+      else if(g===UNIQ) txt = `⭕ セーフ +${UNIQ}点<small>${hd.pick} はだれともかぶりませんでした${o.win?`(勝ちは ${o.win})`:''}</small>`;
+      else txt = `❌ かぶった…0点<small>${hd.pick} はほかの人と同じでした${o.win?`(勝ちは ${o.win})`:''}</small>`;
+    } else if(st.step>=1 && hd.pick){
+      const ids = arr((o.cells||{})[hd.pick]);
+      txt = ids.length>1 ? `❌ ${hd.pick} はかぶった…<small>${ids.length}人が同じ数字</small>` : `⭕ ${hd.pick} はセーフ!<small>勝てるかな…?</small>`;
+    }
+    main = `<div class="ip-res"><div>${txt}</div></div>`;
+  }
+  P.el.innerHTML = top + mine + main;
+  P.el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { if(+b.dataset.v===hd.pick) return; P.sendNow('pick', {v:+b.dataset.v}); });
+}
+})();
+</script>
+</body>
+</html>

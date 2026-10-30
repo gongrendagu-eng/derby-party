@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ハゲタカのえじき</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Potta+One&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* 夕暮れの荒野:サボテンと赤い大地 */
+:root{
+  --bg:#2a140c; --panel:#40221a; --field:#341b13; --bar:#1e0e08; --line:#6b3a26;
+  --ink:#fff1e0; --dim:#d5ab8c; --acc:#ffb347; --accink:#3a1a00; --accsh:#a8641a;
+  --btn:#5a2f20; --bad:#ff5a4f; --good:#7fe08a; --mouse:#ffd36b; --vult:#a98bff;
+  --disp:"Potta One","BIZ UDPGothic",sans-serif;
+}
+body{background:linear-gradient(180deg,#5b2414 0,#2a140c 55%,#1b0d07 100%) fixed}
+/* 先生の画面 */
+.hg{display:grid;grid-template-columns:34% 1fr;height:100%;gap:2vmin;padding:2vmin 2.4vmin}
+.pot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6vmin;position:relative;border-radius:3vmin;
+  background:radial-gradient(circle at 50% 30%,rgba(255,200,120,.25),transparent 60%),linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.35));border:3px solid var(--line)}
+.pot .sun{position:absolute;top:2vmin;left:50%;width:22vmin;height:22vmin;margin-left:-11vmin;border-radius:50%;background:radial-gradient(circle,#ffcf7a,#ff7a3a 60%,transparent 70%);opacity:.35;pointer-events:none}
+.pot .rd{font-family:var(--disp);font-size:2.6vmin;color:var(--dim)}
+.pc2{width:22vmin;height:31vmin;border-radius:2vmin;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6vmin;position:relative;
+  border:.6vmin solid #fff3dc;box-shadow:0 1vmin 0 rgba(0,0,0,.35),0 2vmin 4vmin rgba(0,0,0,.5)}
+.pc2.anim{animation:pin .5s ease both}
+@keyframes pin{from{transform:translateY(-6vmin) rotate(-12deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
+.pc2.m{background:linear-gradient(160deg,#ffe08a,#f2a93b);color:#4a2500}
+.pc2.v{background:linear-gradient(160deg,#8f74e8,#4c3596);color:#fff}
+.pc2 .an{font-size:10vmin;line-height:1}
+.pc2 .vl{font-family:var(--disp);font-size:7vmin;line-height:1}
+.pc2 .nm{font-size:1.9vmin;font-weight:700;opacity:.85}
+.pot .carry{display:flex;gap:.8vmin;align-items:center;font-size:2vmin;color:var(--dim);font-weight:700}
+.pot .carry .mini{font-family:var(--disp);font-size:2.2vmin;border-radius:.8vmin;padding:.2vmin 1vmin}
+.mini.m{background:var(--mouse);color:#4a2500}.mini.v{background:var(--vult);color:#1c0f40}
+.pot .rule{font-size:2.1vmin;text-align:center;font-weight:700;background:rgba(0,0,0,.35);border-radius:1.2vmin;padding:.8vmin 1.6vmin;max-width:90%}
+.pot .clock{font-size:2.3vmin;font-weight:700;display:flex;align-items:center;gap:1.2vmin}
+.pot .clock .cd{font-family:var(--disp);font-size:6vmin;color:var(--acc);line-height:1}
+.teams{display:grid;gap:1.2vmin;align-content:center;min-height:0}
+.tm{display:grid;grid-template-columns:15vmin 12vmin 1fr 10vmin;align-items:center;gap:1.6vmin;background:rgba(0,0,0,.28);border:2px solid var(--line);border-radius:1.8vmin;padding:1vmin 1.6vmin;position:relative}
+.tm .nm{font-family:var(--disp);font-size:3vmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm .nm small{display:block;font-family:var(--sys,sans-serif);font-size:1.5vmin;color:var(--dim);font-weight:700}
+.tm .sc{font-family:var(--disp);font-size:4vmin;text-align:right;color:var(--acc)}
+.tm .sc small{display:block;font-size:1.4vmin;color:var(--dim);font-family:var(--sys,sans-serif)}
+.bid{width:9vmin;height:12.6vmin;border-radius:1.2vmin;display:grid;place-items:center;font-family:var(--disp);font-size:5.4vmin;justify-self:center;position:relative}
+.bid.none{border:.4vmin dashed var(--line);color:var(--line);font-size:3vmin}
+.bid.back{background:repeating-linear-gradient(45deg,#7a3b22 0 1vmin,#6a321c 1vmin 2vmin);border:.4vmin solid #f0c9a0;color:transparent}
+.bid.anim.back{animation:pop2 .3s ease}
+@keyframes pop2{50%{transform:scale(1.12)}}
+.bid.open{background:#fff8ec;color:#3a1a00;border:.4vmin solid #f0c9a0}
+.bid.anim.open{animation:flipin .45s ease both}
+@keyframes flipin{from{transform:rotateY(90deg)}to{transform:none}}
+.bid.tie{opacity:.8}
+.bid.tie::after{content:"";position:absolute;inset:-.4vmin;background:linear-gradient(55deg,transparent 48.5%,var(--bad) 48.5% 51.5%,transparent 51.5%),linear-gradient(-55deg,transparent 48.5%,var(--bad) 48.5% 51.5%,transparent 51.5%);opacity:.75}
+.bid.win{box-shadow:0 0 0 .6vmin var(--good),0 0 4vmin var(--good)}
+.tm.win{border-color:var(--good);background:rgba(127,224,138,.15)}
+.tm .tag{position:absolute;left:1vmin;top:-1.4vmin;font-size:1.6vmin;font-weight:700;background:var(--good);color:#063;border-radius:99px;padding:.2vmin 1vmin}
+.strip{display:flex;flex-wrap:wrap;gap:.4vmin}
+.strip i{font-style:normal;width:3.4vmin;height:3.4vmin;border-radius:.6vmin;display:grid;place-items:center;font-size:1.7vmin;font-weight:700;background:#5c3122;color:var(--ink)}
+.strip i.u{background:transparent;color:#6b3a26;text-decoration:line-through}
+.taken{display:flex;flex-wrap:wrap;gap:.3vmin;margin-top:.6vmin}
+.taken .mini{font-size:1.5vmin;padding:0 .6vmin;border-radius:.5vmin;font-family:var(--disp)}
+/* iPad */
+.ip-cur{display:flex;align-items:center;gap:14px;justify-content:center;background:rgba(0,0,0,.28);border-radius:16px;padding:10px}
+.ip-cur .pc2{width:96px;height:134px;border-width:4px}
+.ip-cur .pc2 .an{font-size:42px}.ip-cur .pc2 .vl{font-size:32px}.ip-cur .pc2 .nm{font-size:12px}
+.ip-cur .tx{font-size:clamp(16px,2.6vw,22px);font-weight:700;line-height:1.5}
+.ip-cur .tx b{color:var(--acc)}
+.ip-hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;flex:1;align-content:start}
+.ip-hand button{width:100%;height:clamp(64px,13vh,140px);border-radius:14px;border:4px solid #f0c9a0;background:#fff8ec;color:#3a1a00;font-family:var(--disp);font-size:clamp(28px,6vw,52px);box-shadow:0 6px 0 rgba(0,0,0,.4)}
+.ip-hand button:disabled{opacity:.18;box-shadow:none}
+.ip-hand button.sel{border-color:var(--good);box-shadow:0 0 0 5px var(--good),0 6px 0 rgba(0,0,0,.4);transform:translateY(-6px)}
+.ptick .cd{font-family:var(--disp);color:var(--acc);font-size:1.3em}
+.ip-sc{display:flex;gap:8px;overflow-x:auto}
+.ip-sc div{flex:none;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:4px 10px;text-align:center;font-size:14px;font-weight:700}
+.ip-sc div b{display:block;font-family:var(--disp);font-size:20px;color:var(--acc)}
+.ip-sc div.me{border-color:var(--acc)}
+.ip-sc div.ok{border-color:var(--good)}
+</style>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=1"></script>
+</head>
+<body>
+<script src="kake-core.js"></script>
+<script>
+(function(){
+'use strict';
+const {esc, shuffle, arr} = KC;
+const POINTS = [-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10];
+const HAND = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+
+KC.game({
+  key:'kc.hagetaka', ver:1, mode:'team', minG:2, maxG:8, title:'ハゲタカのえじき', tableClass:'hgT',
+  heroHTML:'🦅', padWaitArt:'🐭🦅',
+  tagline:'同じ数字を出したら共倒れ。班で相談して、ほかの班の出方を読め!',
+  defaults:{time:30},
+  setupHTML:()=>`
+    <div><label class="t" for="fTime">カードを出す時間</label><select id="fTime"><option value="20">20秒</option><option value="30">30秒</option><option value="45">45秒</option><option value="60">60秒</option></select><div class="hint">時間切れの班は、残っている手札からランダムに出します。全班が出したらすぐ開きます。</div></div>`,
+  fillSetup:c=>{ KC.$('#fTime').value=String(c.time||30); },
+  readSetup:()=>({ time:+KC.$('#fTime').value }),
+  rulesHTML:`<ol>
+    <li>各班は <b>1〜15</b> のカードを1枚ずつ持っています。得点カード(<b>ネズミ +1〜+10</b>、<b>ハゲタカ −1〜−5</b>)を1枚ずつめくり、全15回戦います。</li>
+    <li>めくられた得点カードを取るために、全班が手札から1枚を<b>同時に</b>出します(班のiPadで相談して選ぶ)。出したカードはもう使えません。</li>
+    <li><b>ネズミ(プラス)</b>は、いちばん<b>大きい</b>数字を出した班がもらえます。</li>
+    <li><b>ハゲタカ(マイナス)</b>は、いちばん<b>小さい</b>数字を出した班が引き取ります。</li>
+    <li><b>同じ数字を出した班どうしは無効</b>(共倒れ)。残った中で一番大きい(小さい)班が取ります。全部かぶったら、得点カードは次の回に<b>持ち越し</b>になり、次に取った班がまとめてもらいます。</li>
+    <li>15回が終わったとき、得点の合計が多い班の勝ち。<b>少ない班から掃除場所</b>が決まります。</li>
+  </ol>`,
+
+  newGame(H){
+    const N = H.names.length;
+    H.T = (H.cfg.time||30)*1000;
+    H.deck = shuffle(POINTS.slice());
+    H.hands = H.names.map(()=>HAND.slice());
+    H.score = Array(N).fill(0); H.taken = H.names.map(()=>[]);
+    H.rnd = 0; H.pot = []; H.cur = null; H.pick = {}; H.open = null; H.stage = 'start'; H.msg = '';
+    nextRound(H);
+  },
+  onAct(H, gi, a){
+    if(H.stage!=='pick' || a.t!=='play') return false;
+    const c = +a.c;
+    if(!H.hands[gi].includes(c)) return false;
+    H.pick[gi] = c;
+    if(H.names.every((_,i)=>H.pick[i])) KC.deadline(900, reveal);
+    return true;
+  },
+  onKey(H, e){
+    if(e.key!=='Enter' && e.key!==' ') return;
+    e.preventDefault();
+    if(H.stage==='pick') KC.deadline(10, reveal);
+    else if(H.stage==='open') goNext(H);
+  },
+  onResume(H){ if(H.stage==='pick') KC.deadline(H.T, reveal); },
+  pub(H){
+    return { stage:H.stage, rnd:H.rnd, cur:H.cur, pot:H.pot, picked:Object.keys(H.pick).map(Number), open:H.open,
+      used:H.hands.map(h=>HAND.filter(c=>!h.includes(c))), score:H.score, taken:H.taken, msg:H.msg };
+  },
+  hand(H, i){ return { hand:H.hands[i], pick:H.pick[i]||0 }; },
+  renderTable, renderPad,
+});
+
+function nextRound(H){
+  if(!H.deck.length){ finish(H); return; }
+  H.rnd++;
+  H.cur = H.deck.pop();
+  H.pick = {}; H.open = null; H.stage = 'pick';
+  H.msg = '';
+  KC.fx('', {k:'card'});
+  KC.deadline(H.T, reveal);
+}
+function goNext(H){
+  if(H.stage!=='open') return;
+  if(!H.deck.length){ finish(H); KC.commit(); return; }
+  nextRound(H); KC.commit();
+}
+function reveal(H){
+  if(H.stage!=='pick') return;
+  KC.cancelDeadline();
+  const auto = H.names.map((_,i)=>!H.pick[i]);
+  H.names.forEach((_,i) => { if(!H.pick[i]){ const h=H.hands[i]; H.pick[i] = h[Math.random()*h.length|0]; } });
+  const bids = H.names.map((_,i)=>H.pick[i]);
+  bids.forEach((c,i) => { const h=H.hands[i]; h.splice(h.indexOf(c),1); });
+  const cnt = {}; bids.forEach(c => cnt[c]=(cnt[c]||0)+1);
+  const uniq = bids.map((c,i)=>({c,i})).filter(x=>cnt[x.c]===1);
+  const all = H.pot.concat([H.cur]);
+  const val = all.reduce((s,v)=>s+v,0);
+  const plus = H.cur > 0;
+  let win = -1;
+  if(uniq.length){
+    uniq.sort((a,b)=> plus ? b.c-a.c : a.c-b.c);
+    win = uniq[0].i;
+  }
+  H.open = { bids, win, tie:bids.map(c=>cnt[c]>1), auto };
+  if(win>=0){
+    H.score[win] += val; H.taken[win].push(...all); H.pot = [];
+    H.msg = plus ? `${H.names[win]} が ${bids[win]} で ネズミ ${val>0?'+':''}${val} をゲット!` : `${H.names[win]} が ${bids[win]} で ハゲタカ ${val} を引き取った…`;
+    KC.fx(plus?`${H.names[win]} +${val}!`:`${H.names[win]} ${val}…`, {big:true, k:plus?'win':'bad', c:plus?'var(--mouse)':'var(--vult)'});
+  } else {
+    H.pot = all;
+    H.msg = '全部かぶった!得点カードは次の回に持ち越し';
+    KC.fx('全部かぶった!', {big:true, k:'stamp', c:'var(--bad)'});
+  }
+  H.stage = 'open';
+  KC.fx('', {k:'flip'});
+  KC.commit();
+}
+function finish(H){
+  KC.finish(H, H.names.map((_,i)=>({g:i, score:H.score[i], info:`${H.score[i]}点`})));
+}
+
+/* ---------------- 先生の画面 ---------------- */
+function bigCard(v){
+  return v>0 ? `<div class="pc2 m"><span class="an">🐭</span><span class="vl">+${v}</span><span class="nm">ネズミ</span></div>`
+             : `<div class="pc2 v"><span class="an">🦅</span><span class="vl">${v}</span><span class="nm">ハゲタカ</span></div>`;
+}
+const mini = v => `<span class="mini ${v>0?'m':'v'}">${v>0?'+':''}${v}</span>`;
+const seen = new Set();
+const once = k => seen.has(k) ? '' : (seen.add(k), 'anim');
+function renderTable(H, stage, hx){
+  const open = H.stage==='open';
+  const RK = H.gid+'/'+H.rnd+'/';
+  hx.innerHTML = H.phase!=='play' ? '' : H.stage==='pick' ? `<button class="hb go" id="nx">⏭ 締め切る</button>` : open ? `<button class="hb go" id="nx">${H.deck.length?'次の得点カード ▶':'結果発表 ▶'}</button>` : '';
+  const nx = KC.$('#nx'); if(nx) nx.onclick = () => H.stage==='pick' ? KC.deadline(10, reveal) : goNext(H);
+  const plus = H.cur > 0;
+  const potHTML = (H.stage==='pick' && H.pot.length) ? `<div class="carry">前の回から持ち越し ${H.pot.map(mini).join('')}(合計 ${H.pot.concat([H.cur]).reduce((a,b)=>a+b,0)>0?'+':''}${H.pot.concat([H.cur]).reduce((a,b)=>a+b,0)})</div>` : '';
+  const left = `<div class="pot"><div class="sun"></div>
+    <div class="rd">第${H.rnd}回 / 15</div>
+    ${H.cur!=null?bigCard(H.cur).replace('class="pc2 ','class="pc2 '+once(RK+'cur')+' '):''}
+    ${potHTML}
+    <div class="rule">${plus?'いちばん<b>大きい</b>数字の班がもらえる':'いちばん<b>小さい</b>数字の班が引き取る'}<br><small>同じ数字は共倒れ</small></div>
+    ${H.stage==='pick'?`<div class="clock">出した班 ${Object.keys(H.pick).length}/${H.names.length}${KC.cd(H.dl)}</div>`:''}
+    ${open?`<div class="rule" style="background:rgba(255,179,71,.2)">${esc(H.msg)}</div>`:''}
+  </div>`;
+  const N = H.names.length;
+  const rows = H.names.map((nm,i) => {
+    let bid;
+    if(open){ const o=H.open; bid = `<div class="bid open ${once(RK+'o'+i)} ${o.tie[i]?'tie':''} ${o.win===i?'win':''}">${o.bids[i]}</div>`; }
+    else bid = H.pick[i] ? `<div class="bid back ${once(RK+'p'+i)}">?</div>` : `<div class="bid none">…</div>`;
+    const used = new Set(HAND.filter(c=>!H.hands[i].includes(c)));
+    return `<div class="tm ${open&&H.open.win===i?'win':''}">${open&&H.open.win===i?`<span class="tag">${plus?'ゲット!':'引き取り'}</span>`:''}
+      <div class="nm">${esc(nm)}<small>${open&&H.open.auto[i]?'⏰ 時間切れ(ランダム)':KC.dev(i)?'📱 接続中':'⚠ 未接続'}</small></div>
+      ${bid}
+      <div><div class="strip">${HAND.map(c=>`<i class="${used.has(c)?'u':''}">${c}</i>`).join('')}</div><div class="taken">${H.taken[i].map(mini).join('')}</div></div>
+      <div class="sc">${H.score[i]}<small>点</small></div></div>`;
+  }).join('');
+  stage.innerHTML = `<div class="hg">${left}<div class="teams" style="grid-template-rows:repeat(${N},minmax(0,1fr))">${rows}</div></div>`;
+}
+
+/* ---------------- iPad ---------------- */
+function renderPad(P){
+  const st = P.st, hd = P.hd || {}, me = P.me;
+  const hand = arr(hd.hand);
+  const cur = st.cur, plus = cur>0;
+  const top = KC.padTop(P, `第${st.rnd}回 / 15` + (st.stage==='pick'?` 残り ${KC.cd(st.endAt)}秒`:''));
+  const pot = st.stage==='pick' ? arr(st.pot) : [];
+  const curHTML = `<div class="ip-cur">${cur!=null?bigCard(cur):''}<div class="tx">${plus?'いちばん<b>大きい</b>数字の班がもらえる':'いちばん<b>小さい</b>数字の班が引き取る'}<br>同じ数字は共倒れ${pot.length?`<br>持ち越し ${pot.map(mini).join(' ')} もいっしょに`:''}</div></div>`;
+  const picked = new Set(arr(st.picked));
+  const sc = `<div class="ip-sc">${arr(st.names).map((nm,i)=>`<div class="${i===me?'me':''} ${st.stage==='pick'&&picked.has(i)?'ok':''}">${esc(nm)}<b>${arr(st.score)[i]}</b></div>`).join('')}</div>`;
+  let main, msg;
+  if(st.stage==='pick'){
+    main = `<div class="ip-hand">${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(c=>`<button data-c="${c}" ${hand.includes(c)?'':'disabled'} class="${hd.pick===c?'sel':''}">${c}</button>`).join('')}</div>`;
+    msg = hd.pick ? `「${hd.pick}」を出しました。時間内なら変えられます` : '班で相談して、出すカードをタッチ!';
+  } else {
+    const o = st.open || {};
+    const mine = arr(o.bids)[me];
+    main = `<div class="ip-hand">${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(c=>`<button disabled class="${mine===c?'sel':''}" style="${mine===c?'opacity:1':''}">${c}</button>`).join('')}</div>`;
+    msg = o.win===me ? (plus?'🎉 ゲット!':'🦅 引き取ってしまった…') : arr(o.tie)[me] ? '💥 ほかの班とかぶって無効' : esc(st.msg||'');
+    msg += '<br><small>先生の画面を見てね</small>';
+  }
+  P.el.innerHTML = top + curHTML + sc + `<div class="pmsg">${msg}</div>` + main;
+  P.el.querySelectorAll('.ip-hand [data-c]').forEach(b => b.onclick = () => { if(+b.dataset.c===hd.pick) return; P.sendNow('play', {c:+b.dataset.c}); });
+}
+})();
+</script>
+</body>
+</html>
