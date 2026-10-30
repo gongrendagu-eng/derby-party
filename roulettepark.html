@@ -192,6 +192,7 @@ button,select,input{font:inherit;color:inherit}
 .edpaste{display:flex;flex-direction:column;gap:6px}
 .edpaste textarea{font:inherit;font-size:15px;border:2.5px solid var(--ink);border-radius:12px;padding:8px 10px;resize:vertical;background:#fff}
 .edpaste .row,.edgrp{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.edchk{display:inline-flex;align-items:center;gap:6px;font-weight:800}.edchk input{width:20px;height:20px}
 .edgrp select{font:inherit;font-weight:800;border:2.5px solid var(--ink);border-radius:10px;padding:2px 8px}
 .edsum{display:flex;flex-wrap:wrap;gap:8px}
 .gsum{display:flex;align-items:baseline;gap:6px;background:#fff;border:3px solid var(--gc);border-radius:14px;padding:4px 12px;font-weight:800}
@@ -250,6 +251,14 @@ button,select,input{font:inherit;color:inherit}
 .pmsg{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
 .pmsg h2{font-size:clamp(22px,4vw,30px)}
 .pjoin{display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
+.namegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;width:100%}
+.namegrid button{border:2.5px solid var(--ink);border-radius:14px;background:#fff;font-weight:800;font-size:18px;padding:10px 6px;cursor:pointer;box-shadow:0 3px 0 var(--ink);display:flex;flex-direction:column;align-items:center;line-height:1.2;word-break:break-all}
+.namegrid button.mine{background:var(--yellow)}
+.namegrid button:disabled{background:var(--grey);color:#9a96b5;cursor:not-allowed;box-shadow:none}
+.namegrid button small{font-size:11px}
+.jconf{background:var(--paper2);border:3px solid var(--ink);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.jconf p{margin:0;font-size:18px}.jconf b{font-family:var(--f-display);font-weight:400;font-size:24px;color:var(--pink)}
+.jconf .row{display:flex;gap:10px}
 .pjoin input{width:min(360px,100%);font-size:22px;text-align:center;border:3px solid var(--ink);border-radius:16px;padding:10px;font-weight:800;background:#fff}
 .err{color:#c2185b;font-weight:800}
 .status{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font-family:var(--f-display);font-size:20px;text-align:center}
@@ -725,7 +734,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=14;
+const APP_VER=15;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -1356,7 +1365,7 @@ const H={
   cfg:null,code:'',net:null,phase:'setup',roster:{},err:{},online:{},
   gno:0,gid:'',seed:0,dbl:false,drawn:[],ball:0,left:0,spinning:0,betLeft:-1,
   rev:null,sd:null,gsd:null,busy:false,timer:null,joinIdx:0,lineup:[],
-  medal:{},pasteText:'',pasteMsg:'',lobView:'qr'
+  medal:{},medalOrder:[],pasteText:'',pasteMsg:'',lobView:'qr'
 };
 /* ---- 人ごとのメダル・グループ ---- */
 const GL='ABCDEFGH',GCOL=['#ff5f8f','#3a9bff','#22c79a','#ff9a3c','#8a6cff','#e0a800','#19b5d6','#e14b4b'];
@@ -1382,31 +1391,35 @@ function applyStart(){
   ps.forEach(p=>{const r=H.roster[p];if(!(r.b0>=10))r.b0=H.cfg.start;r.bonus=0});
   if(isGroup()){
     fixGroups();
-    const gs=Object.values(groupsOf()),mx=Math.max(0,...gs.map(a=>a.length));
+    const gs=H.cfg.noBonus?[]:Object.values(groupsOf()),mx=Math.max(0,...gs.map(a=>a.length));
     gs.forEach(a=>{const bo=Math.ceil(H.cfg.start*(mx-a.length)/a.length);a.forEach(p=>H.roster[p].bonus=bo)});
   }
   ps.forEach(p=>{const r=H.roster[p];r.b=r.b0+r.bonus});
 }
 function refreshLobby(){applyStart();if(H.phase==='lobby'&&H.lobView==='edit')renderEdList()}
 function parseMedals(text){
-  const out={},bad=[];let low=0;
+  const out={},order=[],bad=[];let low=0;
   String(text||'').split(/\r?\n/).forEach(line=>{
-    const t=line.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\u3000/g,' ').trim();
+    const t=line.replace(/[０-９Ａ-Ｈａ-ｈ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\u3000/g,' ').trim();
     if(!t)return;
-    const m=t.match(/^(.+?)[\s,、，:：]+(-?\d+(?:\.\d+)?)\s*(?:点|枚)?\s*$/);
+    const m=t.match(/^(.+?)[\s,、，:：]+(-?\d+(?:\.\d+)?)\s*(?:点|枚)?(?:[\s,、，:：]+([A-Ha-h1-8])\s*(?:班|グループ|組)?)?\s*$/);
     const nm=m&&normName(m[1].replace(/[,、，:：]+$/,''));
     if(!m||!nm){bad.push(line.trim());return}
     let v=Math.round(+m[2]);if(v<10){v=10;low++}
-    out[nm.toLowerCase()]={n:nm,v};
+    const gc=m[3]?m[3].toUpperCase():'',g=gc?(/\d/.test(gc)?+gc-1:GL.indexOf(gc)):-1;
+    const k=nm.toLowerCase();if(!out[k])order.push(k);
+    out[k]={n:nm,v,g};
   });
-  return{out,bad,low};
+  return{out,order,bad,low};
 }
 function applyMedals(){
-  const {out,bad,low}=parseMedals(H.pasteText);
-  H.medal=out;let hit=0;
-  Object.values(H.roster).forEach(r=>{const x=out[r.n.toLowerCase()];if(x){r.b0=x.v;hit++}});
-  const n=Object.keys(out).length;
-  H.pasteMsg=n?`${n}人分を読みこみ、参加中の ${hit}人 に反映しました。${low?`（10枚未満の ${low}件 は10枚にしました）`:''}${bad.length?`<br>読めなかった行：${bad.slice(0,5).map(esc).join('／')}${bad.length>5?' ほか':''}`:''}`
+  const {out,order,bad,low}=parseMedals(H.pasteText);
+  H.medal=out;H.medalOrder=order;let hit=0;
+  const gmax=Math.max(-1,...order.map(k=>out[k].g));
+  if(isGroup()&&gmax>=0&&gmax+1>H.cfg.groups){H.cfg.groups=Math.min(8,gmax+1);lsSet(CFG_KEY,H.cfg)}
+  Object.values(H.roster).forEach(r=>{const x=out[r.n.toLowerCase()];if(x){r.b0=x.v;if(x.g>=0)r.g=x.g;hit++}});
+  const n=order.length;
+  H.pasteMsg=n?`${n}人分を読みこみ、参加中の ${hit}人 に反映しました。iPadの参加画面に、この名前が並びます。${gmax>=0?(isGroup()?`グループも名簿のとおりにします（${H.cfg.groups}グループ）。`:'（グループの列は、掃除の決め方が「グループ」のときに使います）'):''}${low?`（10枚未満の ${low}件 は10枚にしました）`:''}${bad.length?`<br>読めなかった行：${bad.slice(0,5).map(esc).join('／')}${bad.length>5?' ほか':''}`:''}`
     :'名前と枚数が読みとれませんでした。「たろう　85」のように1行に1人ずつ入れてください。';
   refreshLobby();renderSide();pubState();saveHost();
 }
@@ -1427,17 +1440,20 @@ function renderLobbyOv(){
     try{new QRCode($('qr'),{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('qr').textContent='QRコードを表示できません'}
   }else{
     $('ovCard').innerHTML=`${tabs}<div class="edit">
-      <div class="edpaste"><label for="edText"><b>メダル一覧を貼りつけ</b> <span class="hint">1行に1人「名前　枚数」。Excelの2列をコピーしてそのまま貼れます。参加前に貼ってもOK（同じニックネームで参加すると入ります）</span></label>
-        <textarea id="edText" rows="4" placeholder="たろう	85&#10;はなこ	92">${esc(H.pasteText)}</textarea>
+      <div class="edpaste"><label for="edText"><b>メダル一覧を貼りつけ</b> <span class="hint">1行に1人「名前　枚数　グループ」（グループはA〜Hで、なくてもOK）。Excelからコピーしてそのまま貼れます。貼った名前はiPadの参加画面にボタンで並び、学生は自分の名前を選んで参加できます（自分でニックネームを入れて参加することもできます）。</span></label>
+        <textarea id="edText" rows="4" placeholder="たろう	85	A&#10;はなこ	92	B">${esc(H.pasteText)}</textarea>
         <div class="row"><button type="button" class="btn small go" id="edApply">反映する</button><button type="button" class="btn small" id="edClear">一覧を消す</button><span class="hint" id="edMsg">${H.pasteMsg}</span></div></div>
       ${grp?`<div class="edgrp"><label>グループの数 <select id="edG">${[2,3,4,5,6,7,8].map(n=>`<option${n===H.cfg.groups?' selected':''}>${n}</option>`).join('')}</select></label>
-        <button type="button" class="btn small go" id="edAuto">自動で分ける</button><span class="hint">名前の左の色ボタンを押すと、グループが A→B→C… と変わります。人数の少ない班には、合計がそろうようメダルを上乗せします。</span></div>`:''}
+        <button type="button" class="btn small go" id="edAuto">自動で分ける</button>
+        <label class="edchk"><input type="checkbox" id="edBonus" ${H.cfg.noBonus?'':'checked'}>人数の少ない班に上乗せする</label>
+        <span class="hint">名前の左の色ボタンを押すと、グループが A→B→C… と変わります。前回のメダルを引き継ぐ日は、上乗せが二重にならないよう外してください。</span></div>`:''}
       <div id="edList"></div></div>`;
     $('edText').oninput=e=>{H.pasteText=e.target.value};
-    $('edApply').onclick=()=>{H.pasteText=$('edText').value;applyMedals();$('edMsg').innerHTML=H.pasteMsg};
-    $('edClear').onclick=()=>{H.pasteText='';H.medal={};H.pasteMsg='一覧を消しました（入れた枚数はそのままです）';$('edText').value='';$('edMsg').innerHTML=H.pasteMsg;refreshLobby();saveHost()};
+    $('edApply').onclick=()=>{H.pasteText=$('edText').value;applyMedals();renderLobbyOv()};
+    $('edClear').onclick=()=>{H.pasteText='';H.medal={};H.medalOrder=[];H.pasteMsg='一覧を消しました（入れた枚数はそのままです）';$('edText').value='';$('edMsg').innerHTML=H.pasteMsg;refreshLobby();saveHost()};
     if(grp){
       $('edG').onchange=e=>{H.cfg.groups=+e.target.value;lsSet(CFG_KEY,H.cfg);refreshLobby();renderSide();pubState();saveHost()};
+      $('edBonus').onchange=e=>{H.cfg.noBonus=!e.target.checked;lsSet(CFG_KEY,H.cfg);refreshLobby();renderSide();pubState();saveHost()};
       $('edAuto').onclick=()=>{autoGroups();refreshLobby();renderSide();pubState();saveHost();sfx.chime()};
     }
     renderEdList();
@@ -1508,14 +1524,15 @@ function pubState(){
     const st={v:APP_VER,phase:H.phase,ts:Date.now(),
       cfg:{games:H.cfg.games,betSec:H.cfg.betSec,start:H.cfg.start,clean:H.cfg.clean,use:H.cfg.use||ALL_USE,mode:H.cfg.mode||'solo',groups:H.cfg.groups||4},lineup:H.lineup.join(','),
       gno:H.gno,gid:H.gid||'-',seed:H.seed||0,dbl:H.dbl?1:0,drawn:H.drawn.join(','),ball:H.ball,left:H.left,spinning:H.spinning?1:0,
-      betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0,gsd:H.gsd||0,rank:H.rank?1:0};
+      betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0,gsd:H.gsd||0,rank:H.rank?1:0,
+      names:H.phase==='lobby'&&H.medalOrder.length?H.medalOrder.filter(k=>H.medal[k]).map(k=>H.medal[k].n):0};
     const j=JSON.stringify(st);if(j===lastPub)return;lastPub=j;
     H.net.set('state',st);
   },60);
 }
 function saveHost(){
   if(['setup'].includes(H.phase))return;
-  lsSet(SAVE_KEY,{cfg:H.cfg,code:H.code,roster:H.roster,medal:H.medal,gno:H.gno,lineup:H.lineup,phase:H.phase==='lobby'?'lobby':'result',joinIdx:H.joinIdx,ts:Date.now()});
+  lsSet(SAVE_KEY,{cfg:H.cfg,code:H.code,roster:H.roster,medal:H.medal,medalOrder:H.medalOrder,gno:H.gno,lineup:H.lineup,phase:H.phase==='lobby'?'lobby':'result',joinIdx:H.joinIdx,ts:Date.now()});
 }
 
 /* ---- 起動 ---- */
@@ -1551,7 +1568,7 @@ async function openRoom(sv){
   }catch(e){
     $('setupErr').textContent=e.message||String(e);$('setupErr').hidden=false;$('openBtn').disabled=false;return;
   }
-  if(sv){H.roster=sv.roster||{};H.gno=sv.gno||0;H.lineup=Array.isArray(sv.lineup)?sv.lineup.filter(g=>GAMES[g]):[];H.joinIdx=sv.joinIdx||0;H.medal=sv.medal||{};H.phase=sv.phase==='result'&&H.gno>0?'result':'lobby'}
+  if(sv){H.roster=sv.roster||{};H.gno=sv.gno||0;H.lineup=Array.isArray(sv.lineup)?sv.lineup.filter(g=>GAMES[g]):[];H.joinIdx=sv.joinIdx||0;H.medal=sv.medal||{};H.medalOrder=sv.medalOrder||Object.keys(H.medal);H.phase=sv.phase==='result'&&H.gno>0?'result':'lobby'}
   else{H.net.set('join',null);H.net.set('bets',null);H.net.set('sdpick',null);H.phase='lobby'}
   H.err={};
   $('setup').hidden=true;$('stage').hidden=false;
@@ -1588,7 +1605,7 @@ function onJoin(v){
     if(cur){
       if(cur.n!==name&&H.phase==='lobby'){
         const dup=Object.keys(H.roster).some(q=>q!==pid&&H.roster[q].n.toLowerCase()===name.toLowerCase());
-        if(dup){if(H.err[pid]!=='dup'){H.err[pid]='dup';changed=true}}else{cur.n=name;const x=H.medal[name.toLowerCase()];if(x)cur.b0=x.v;delete H.err[pid];changed=true}
+        if(dup){if(H.err[pid]!=='dup'){H.err[pid]='dup';changed=true}}else{cur.n=name;const x=H.medal[name.toLowerCase()];if(x){cur.b0=x.v;if(x.g>=0)cur.g=x.g}delete H.err[pid];changed=true}
       }
       continue;
     }
@@ -1597,7 +1614,7 @@ function onJoin(v){
     const dup=Object.keys(H.roster).some(q=>H.roster[q].n.toLowerCase()===name.toLowerCase());
     if(dup){if(H.err[pid]!=='dup'){H.err[pid]='dup';changed=true}continue}
     const mx=H.medal[name.toLowerCase()];
-    H.roster[pid]={n:name,b:H.cfg.start,b0:mx?mx.v:H.cfg.start,bonus:0,g:-1,out:0,o:++H.joinIdx,bet:ZERO(),conf:0,res:0,pt:0};
+    H.roster[pid]={n:name,b:H.cfg.start,b0:mx?mx.v:H.cfg.start,bonus:0,g:mx&&mx.g>=0?mx.g:-1,out:0,o:++H.joinIdx,bet:ZERO(),conf:0,res:0,pt:0};
     delete H.err[pid];changed=true;
     if(H.phase==='lobby')sfx.bell();
   }
@@ -1844,6 +1861,19 @@ function renderReveal(mode){
   $('ovCard').innerHTML=h;
 }
 
+/* ---- メダル一覧をコピー（次の回の貼りつけにそのまま使える形） ---- */
+function medalListText(){
+  const pos={};H.medalOrder.forEach((k,i)=>pos[k]=i);
+  const ps=Object.keys(H.roster).sort((a,b)=>{const pa=pos[H.roster[a].n.toLowerCase()],pb=pos[H.roster[b].n.toLowerCase()];
+    return (pa==null?1e6+H.roster[a].o:pa)-(pb==null?1e6+H.roster[b].o:pb)});
+  return ps.map(p=>{const r=H.roster[p];return [r.n,r.b].concat(isGroup()&&r.g>=0?[GL[r.g]]:[]).join('\t')}).join('\n');
+}
+async function copyMedals(){
+  const txt=medalListText(),b=$('bCopy');
+  let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}
+  if(!ok){try{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove()}catch(e){}}
+  if(b){b.textContent=ok?'コピーしました！ Excelに貼ってください':'コピーできませんでした';setTimeout(()=>{if($('bCopy'))$('bCopy').textContent='メダル一覧をコピー'},2500)}
+}
 /* ---- グループの結果発表 ---- */
 function startGReveal(){
   const gs=groupsOf(),t={};
@@ -2062,7 +2092,7 @@ async function sdSpin(){
 
 /* ---- もう一回 ---- */
 function playAgain(){
-  H.medal={};H.pasteText='';H.pasteMsg='';H.gsd=null;
+  H.medal={};H.medalOrder=[];H.pasteText='';H.pasteMsg='';H.gsd=null;
   Object.values(H.roster).forEach(r=>{r.b=H.cfg.start;r.b0=H.cfg.start;r.out=0;r.bet=ZERO();r.conf=0;r.res=0;r.pt=0;delete r.lastBet});
   H.gno=0;H.rev=null;H.sd=null;H.rank=0;H.dbl=false;H.drawn=[];buildWheel(2);drawnSet=new Set();
   $('drawn').innerHTML='';
@@ -2120,7 +2150,7 @@ function renderSide(){
     h=`<h2>結果発表（グループ）</h2><div class="stat"><span>セーフ</span><b>${R.safeG.length}グループ</b></div>
        <div class="names">${R.safeG.map(g=>gChip(g)).join('')}</div>
        ${R.cleanG>=0?`<div class="stat"><span>掃除当番</span><b>${gName(R.cleanG)}</b></div><div class="names">${R.shown.map(p=>`<span class="nm ok"><i class="dot"></i>${esc(nameOf(p))}</span>`).join('')}</div>`:''}`;
-    if(H.phase==='end')k=`${H.rank?'':`<button class="btn go pink" type="button" data-main id="bRank">全体の順位を発表</button>`}<button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
+    if(H.phase==='end')k=`${H.rank?'':`<button class="btn go pink" type="button" data-main id="bRank">全体の順位を発表</button>`}<button class="btn" type="button" id="bCopy">メダル一覧をコピー</button><button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
     else if(R.step==='gsdIntro')k=`<button class="btn go pink" type="button" data-main id="bGsd" ${revealBusy?'disabled':''}>サドンデス開始</button>`;
     else k=`<button class="btn go pink" type="button" data-main id="bRev" ${revealBusy?'disabled':''}>発表する</button>`;
   }else if(H.phase==='gsd_pick'){
@@ -2140,7 +2170,7 @@ function renderSide(){
     const R=H.rev;
     h=`<h2>結果発表</h2><div class="stat"><span>掃除当番</span><b>${R.shown.length}／${R.need}人</b></div>
        <div class="names">${R.shown.map(p=>`<span class="nm ok"><i class="dot"></i>${esc(nameOf(p))}</span>`).join('')}</div>`;
-    if(H.phase==='end')k=`${H.rank?'':`<button class="btn go pink" type="button" data-main id="bRank">全体の順位を発表</button>`}<button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
+    if(H.phase==='end')k=`${H.rank?'':`<button class="btn go pink" type="button" data-main id="bRank">全体の順位を発表</button>`}<button class="btn" type="button" id="bCopy">メダル一覧をコピー</button><button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
     else if(R.step==='sdIntro')k=`<button class="btn go pink" type="button" data-main id="bSd" ${revealBusy?'disabled':''}>サドンデス開始</button>`;
     else k=`<button class="btn go pink" type="button" data-main id="bRev" ${revealBusy||!R.queue.length?'disabled':''}>発表する</button>`;
   }else if(H.phase==='sd_pick'){
@@ -2161,6 +2191,7 @@ function renderSide(){
   on('bStart',startGame);on('bClose',closeBets);on('bNext',startGame);on('bReveal',startReveal);
   on('bRev',revealNext);on('bSd',revealNext);on('bSdGo',()=>{clearInterval(H.timer);sdSpinStart()});on('bSpin',sdSpin);
   on('bAgain',playAgain);on('bQuit2',quitAsk);on('bRank',showRank);
+  on('bCopy',copyMedals);
   on('bEdit',()=>{H.lobView=H.lobView==='edit'?'qr':'edit';renderLobbyOv();renderSide()});
   on('bGsd',startGsd);on('bGsdGo',()=>{clearInterval(H.timer);gsdSpinStart()});on('bGspin',gsdSpin);
 }
@@ -2230,19 +2261,41 @@ function head(){
 function setBody(key,html){if(P.key!==key||html!==P.lastHtml){P.key=key;P.lastHtml=html;$('pBody').innerHTML=html}}
 
 /* ---- 参加 ---- */
+function sendJoin(n){P.name=n;saveMe();P.net.set('join/'+P.pid,{n,v:APP_VER})}
 function renderJoin(err){
-  const key='join';
+  const names=(P.st&&P.st.names)||[],hasL=names.length>0;
+  if(!hasL)P.joinView='free';else if(!P.joinFreeChosen)P.joinView='list';
+  const key='join:'+P.joinView;
+  if(P.joinView==='list'){
+    if(P.key!==key){
+      P.key=key;P.pickName='';
+      $('pBody').innerHTML=`<div class="panel pjoin"><h2>自分の名前を選んで参加</h2>
+        <p class="hint">自分の名前をタップしてください。</p>
+        <div class="namegrid" id="nameGrid"></div><div id="joinConf"></div><p class="err" id="joinErr" hidden></p>
+        <button class="btn small" id="toFree" type="button">名簿にない人・自分でニックネームを入れる</button></div>`;
+      $('nameGrid').onclick=e=>{const b=e.target.closest('button[data-nm]');if(!b||b.disabled)return;P.pickName=b.dataset.nm;$('joinErr').hidden=true;updJoinList()};
+      $('toFree').onclick=()=>{P.joinView='free';P.joinFreeChosen=true;renderJoin()};
+    }
+    updJoinList();
+    const e=$('joinErr');
+    const first=err!==P.lastJoinErr;P.lastJoinErr=err;
+    if(err==='dup'){e.textContent='その名前は、ほかのiPadで選ばれています。自分の名前を選び直してください。';e.hidden=false;if(first){P.pickName='';P.joinSent=false;updJoinList()}}
+    else if(err==='kick'){e.textContent='先生が参加を取り消しました。もう一度選んでください。';e.hidden=false}
+    return;
+  }
   if(P.key!==key){
     P.key=key;
     $('pBody').innerHTML=`<div class="panel pjoin"><h2>ニックネームを決めて参加</h2>
       <p class="hint">プロジェクターに出る名前です。本名でなくてOK（12文字まで）。</p>
       <input id="nameIn" maxlength="12" autocomplete="off" placeholder="ニックネーム">
-      <button class="btn go" id="joinBtn" type="button">参加する</button><p class="err" id="joinErr" hidden></p></div>`;
+      <button class="btn go" id="joinBtn" type="button">参加する</button><p class="err" id="joinErr" hidden></p>
+      ${hasL?'<button class="btn small" id="toList" type="button">名簿から自分の名前を選ぶ</button>':''}</div>`;
+    if($('toList'))$('toList').onclick=()=>{P.joinView='list';P.joinFreeChosen=false;renderJoin()};
     $('nameIn').value=P.name||'';
     const go=()=>{
       const n=$('nameIn').value.replace(/\s+/g,' ').trim().slice(0,12);
       if(!n){$('joinErr').textContent='ニックネームを入れてください';$('joinErr').hidden=false;return}
-      P.name=n;saveMe();P.net.set('join/'+P.pid,{n,v:APP_VER});
+      sendJoin(n);
       $('joinBtn').disabled=true;$('joinBtn').textContent='参加しています…';
       setTimeout(()=>{if($('joinBtn')){$('joinBtn').disabled=false;$('joinBtn').textContent='参加する'}},4000);
     };
@@ -2251,6 +2304,19 @@ function renderJoin(err){
   const e=$('joinErr');
   if(err==='dup'){e.textContent='その名前はもう使われています。別の名前にしてください。';e.hidden=false;$('joinBtn').disabled=false;$('joinBtn').textContent='参加する'}
   else if(err==='kick'){e.textContent='先生が参加を取り消しました。もう一度参加してください。';e.hidden=false}
+}
+function updJoinList(){
+  const st=P.st,names=(st&&st.names)||[];
+  const taken=new Set(Object.values((st&&st.roster)||{}).map(r=>String(r.n).toLowerCase()));
+  if(P.pickName&&taken.has(P.pickName.toLowerCase())&&!P.joinSent)P.pickName='';
+  const gh=names.map(n=>{const t=taken.has(n.toLowerCase());
+    return `<button type="button" data-nm="${esc(n)}" class="${n===P.pickName?'mine':''}" ${t?'disabled':''}>${esc(n)}${t?'<small>参加済み</small>':''}</button>`}).join('');
+  const g=$('nameGrid');if(g&&g._h!==gh){g._h=gh;g.innerHTML=gh}
+  const ch=P.pickName?`<div class="jconf"><p><b>${esc(P.pickName)}</b> さんで参加しますか？</p>
+    <div class="row"><button type="button" class="btn go" id="jYes" ${P.joinSent?'disabled':''}>${P.joinSent?'参加しています…':'はい'}</button><button type="button" class="btn" id="jNo">やめる</button></div></div>`:'';
+  const c=$('joinConf');if(c&&c._h!==ch){c._h=ch;c.innerHTML=ch;
+    if($('jYes'))$('jYes').onclick=()=>{P.joinSent=true;sendJoin(P.pickName);updJoinList();setTimeout(()=>{P.joinSent=false;if($('joinConf'))updJoinList()},4000)};
+    if($('jNo'))$('jNo').onclick=()=>{P.pickName='';P.joinSent=false;updJoinList()};}
 }
 function howtoHtml(keys){
   return `<div class="howto">${(keys||GKEYS).map(g=>`<div><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><p>${RULES[g]}</p></div>`).join('')}</div>`;
