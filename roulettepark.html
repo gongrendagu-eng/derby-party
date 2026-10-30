@@ -734,7 +734,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=15;
+const APP_VER=16;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -1114,16 +1114,19 @@ const TEASE_P=0.2; // 入りそうで入らない演出の出る割合（じっ�
 const cv=$('wheel'),ctx=cv.getContext('2d');
 let pockets=[];
 const BASE_ORDER=(()=>{const o=[];for(let i=0;i<25;i++)o.push(((i*7)%25)+1);return o})();
+/* ゲームごとに数字の並びと「+2」の場所をランダムに（+2どうしは4マス以上はなす） */
 function buildWheel(k){
-  const nums=BASE_ORDER.map(n=>({t:'n',n}));
+  const nums=shuffle(range25()).map(n=>({t:'n',n}));
   if(!k){pockets=nums;return}
-  const total=25+k,step=total/k,out=[];
-  const plusAt=new Set();for(let i=0;i<k;i++)plusAt.add(Math.round(i*step+step/2)%total);
-  let ni=0,pi=0;
-  for(let i=0;i<total;i++){
-    if((plusAt.has(i)&&pi<k)||ni>=25){out.push({t:'p'});pi++}
-    else out.push(nums[ni++]);
+  const total=25+k,gap=Math.min(4,Math.floor(total/k));
+  let plusAt=[];
+  for(let tries=0;tries<200;tries++){
+    plusAt=[];
+    while(plusAt.length<k){const i=rint(total);if(!plusAt.includes(i))plusAt.push(i)}
+    if(plusAt.every(a=>plusAt.every(b=>a===b||Math.min(mod(a-b,total),mod(b-a,total))>=gap)))break;
   }
+  const P=new Set(plusAt),out=[];let ni=0;
+  for(let i=0;i<total;i++)out.push(P.has(i)?{t:'p'}:nums[ni++]);
   pockets=out;
 }
 function buildSdWheel(list){ // list: [{n, name, col}]
@@ -1639,7 +1642,7 @@ function startGame(){
   if(H.phase==='lobby'){applyStart();H.lobView='qr'}
   H.gno++;H.gid=newId(6);H.seed=rint(1e9);H.dbl=false;H.drawn=[];H.ball=0;H.left=0;H.spinning=0;
   H.lineup=useOf(H.cfg); // 設定で選んだゲームすべてが遊べる
-  drawnSet=new Set();
+  drawnSet=new Set();buildWheel(2);H.wheelGid=H.gid; // このゲームのルーレット（BET中から見える）
   $('ov').hidden=true;$('drawn').innerHTML='';renderTray(0,0,0,false);
   $('hGame').hidden=false;$('hGame').textContent=`第${H.gno}ゲーム／全${H.cfg.games}`;$('hDbl').hidden=true;
   Object.keys(H.roster).forEach(p=>{
@@ -1702,7 +1705,7 @@ async function doubleUpRoll(){
 }
 async function runDraw(){
   const M=MODES[H.cfg.speed],base=8,cap=16;
-  H.phase='draw';H.drawn=[];drawnSet=new Set();buildWheel(2);
+  H.phase='draw';H.drawn=[];drawnSet=new Set();if(H.wheelGid!==H.gid){buildWheel(2);H.wheelGid=H.gid}
   let left=base,total=0,extra=0,afterPlus=false,halfSaid=false;
   $('drawn').innerHTML='';renderTray(left,0,0,false);
   if(M){showCallout(`第${H.gno}ゲーム`,'スタート！',M.call,false);setHitInfo(`第${H.gno}ゲーム スタート！`);sfx.chime();await sleep(M.call*0.9)}
