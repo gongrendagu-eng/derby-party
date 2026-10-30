@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>神経衰弱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* 夜の美術館 */
+:root{
+  --bg:#0c1424; --panel:#141f37; --field:#0f1930; --bar:#09101e; --line:#2a3a5e; --ink:#eef1f7; --dim:#8f9cba;
+  --acc:#e6c36a; --accink:#1b1404; --accsh:#9c7a26; --btn:#1f2d4d; --bad:#ff7b72;
+  --disp:'Shippori Mincho B1','Hiragino Mincho ProN','Yu Mincho',serif; --cf2:'Shippori Mincho B1',serif;
+  --back:#5a1625; --backline:rgba(230,195,106,.75);
+  --backpat:repeating-linear-gradient(45deg,transparent 0 6px,rgba(230,195,106,.13) 6px 7px),repeating-linear-gradient(-45deg,transparent 0 6px,rgba(230,195,106,.13) 6px 7px);
+}
+body{background:radial-gradient(ellipse at 50% -20%,#1d2b4d 0%,#0c1424 60%) fixed}
+.hero h1{letter-spacing:.08em}
+/* 先生の画面:壁と額 */
+#stage{display:grid;grid-template-columns:1fr minmax(220px,24vw);background:
+  linear-gradient(180deg,rgba(0,0,0,.25),transparent 12%),
+  repeating-linear-gradient(90deg,#101a30 0 3px,#0e182c 3px 120px)}
+.wall{position:relative;display:grid;place-items:center;overflow:hidden}
+.wall::before{content:"";position:absolute;left:0;right:0;bottom:0;height:5vmin;background:linear-gradient(#2a1d12,#1a120b);border-top:.5vmin solid #4a3420}
+.gal{display:grid;gap:var(--gap);position:relative;z-index:1;margin-bottom:4vmin}
+.frm{position:relative;padding:calc(var(--cw)*.09);background:linear-gradient(135deg,#b48a3c,#f0d58e 30%,#9b7330 60%,#e8c97a);border-radius:3px;
+  box-shadow:0 calc(var(--cw)*.08) calc(var(--cw)*.14) rgba(0,0,0,.55);cursor:pointer;transition:transform .2s}
+.frm .mat{background:#ece6d6;padding:calc(var(--cw)*.06);position:relative}
+.frm .pc{--cw:var(--cw0);box-shadow:none}
+.frm.up{z-index:3;transform:scale(1.08)}
+.frm.up{box-shadow:0 0 0 calc(var(--cw)*.03) #fff6d0,0 0 calc(var(--cw)*.5) calc(var(--cw)*.12) rgba(255,240,190,.45)}
+.frm.up .pc{animation:flip .35s ease}
+@keyframes flip{0%{transform:rotateY(90deg)}100%{transform:none}}
+.frm.tk{opacity:.42;filter:grayscale(.5);cursor:default}
+.frm .tag{position:absolute;left:50%;bottom:calc(var(--cw)*-.12);transform:translateX(-50%);background:var(--gc);color:#fff;font-size:calc(var(--cw)*.15);
+  font-weight:800;padding:1px calc(var(--cw)*.1);border-radius:3px;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.4);z-index:2;opacity:1}
+.frm.tk .tag{opacity:1}
+.frm.nope{animation:nope .45s}
+@keyframes nope{25%{transform:translateX(-4%)}75%{transform:translateX(4%)}}
+.side{background:linear-gradient(180deg,#121c33,#0d1527);border-left:2px solid var(--line);padding:2vmin 1.6vmin;display:flex;flex-direction:column;gap:1.2vmin;overflow:auto}
+.side h3{font-family:var(--disp);color:var(--acc);margin:0 0 .4vmin;font-size:2.4vmin;letter-spacing:.2em;text-align:center}
+.plq{position:relative;background:linear-gradient(135deg,#2a2213,#3a2f17);border:2px solid #6b5626;border-radius:6px;padding:1vmin 1.4vmin;display:grid;grid-template-columns:1fr auto;align-items:center;gap:.4vmin 1vmin}
+.plq .nm{font-family:var(--disp);font-size:2.6vmin;font-weight:800;color:#f3e3b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plq .nm::before{content:"";display:inline-block;width:1.4vmin;height:1.4vmin;border-radius:50%;background:var(--gc);margin-right:.8vmin;vertical-align:.1em}
+.plq .pt{font-family:var(--disp);font-size:4vmin;font-weight:800;color:var(--acc);line-height:1}
+.plq .pt small{font-size:1.6vmin;color:var(--dim);margin-left:.3vmin}
+.plq .dv{position:absolute;right:.6vmin;top:.3vmin;font-size:1.4vmin}
+.plq.turn{border-color:var(--acc);box-shadow:0 0 0 .4vmin rgba(230,195,106,.35),0 0 3vmin rgba(230,195,106,.35);transform:scale(1.04)}
+.plq.turn::after{content:"▶ この班の番";position:absolute;left:-1vmin;top:-1.3vmin;background:var(--acc);color:var(--accink);font-weight:900;font-size:1.5vmin;padding:.2vmin 1vmin;border-radius:99px}
+.side .info{margin-top:auto;color:var(--dim);font-size:1.7vmin;line-height:1.6;text-align:center}
+/* iPad */
+#pad.myturn{box-shadow:inset 0 0 0 6px var(--acc)}
+.pgal{display:grid;gap:6px;justify-content:center;flex:1;align-content:center}
+.pgal .frm{padding:3px;border-radius:2px}
+.pgal .frm .mat{padding:2px}
+.pgal .frm .tag{font-size:10px;bottom:-6px}
+.pgal .frm.can:hover{transform:translateY(-3px)}
+.pscore{display:flex;gap:6px;overflow-x:auto}
+.pscore .poc span{font-size:20px}
+</style>
+</head>
+<body>
+<script>window.NO_FB_CFG=false</script>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=true"></script>
+<script src="trump-core.js"></script>
+<script>
+'use strict';
+const {$, esc, shuffle, card, rankOf, SUITS, cid, arr, GC} = TC;
+
+/* ---------- ルール ---------- */
+function makeBoard(pairs){
+  // 同じ数字なら色・マークがちがってもペア
+  const out = [];
+  const ranks = shuffle([1,2,3,4,5,6,7,8,9,10,11,12,13]);
+  const need = [];               // [数字, 何ペアか]
+  if(pairs<=13) ranks.slice(0,pairs).forEach(r=>need.push([r,1]));
+  else ranks.forEach((r,i)=>need.push([r, i < pairs-13 ? 2 : 1]));
+  for(const [r,k] of need){ const ss = shuffle(SUITS.slice()).slice(0,k*2); ss.forEach(s=>out.push(cid(s,r))); }
+  return shuffle(out).map(id => ({id, st:0, by:-1}));   // st 0:伏せ 1:表 2:取った
+}
+function nextG(H, g){ return (g+1) % H.names.length; }
+function doFlip(H, gi, i){
+  const b = H.board[i];
+  if(H.phase!=='play' || gi!==H.turn || H.lock || !b || b.st!==0 || H.flips.length>=2) return false;
+  b.st = 1; H.flips.push(i); H.tid++;
+  TC.fx('', {k:'flip'});
+  if(H.flips.length===2){
+    const [a, c] = H.flips.map(k=>H.board[k]);
+    if(rankOf(a.id)===rankOf(c.id)){
+      a.st = c.st = 2; a.by = c.by = gi; H.pairs[gi]++; H.flips = [];
+      TC.fx(`${H.names[gi]} そろった!`, {big:true, k:'good', c:'#e6c36a'});
+      if(H.board.every(x=>x.st===2)) endGame(H);
+    } else {
+      H.lock = true; H.miss = H.flips.slice();
+      TC.fx('', {k:'bad'});
+      TC.later(1800, H => { closeMiss(H); TC.commit(); });
+    }
+  }
+  return true;
+}
+function closeMiss(H){
+  for(const k of H.flips) if(H.board[k].st===1) H.board[k].st = 0;
+  H.flips = []; H.lock = false; H.miss = null; H.turn = nextG(H, H.turn); H.tid++;
+  TC.fx(`${H.names[H.turn]}の番`);
+}
+function endGame(H){
+  TC.finish(H, H.names.map((_,g)=>({g, score:H.pairs[g],
+    info:`<b style="font-family:var(--disp);font-size:3vmin">${H.pairs[g]}ペア</b> <div class="cards" style="display:inline-flex;vertical-align:middle;margin-left:1vmin">${H.board.filter(b=>b.by===g).map(b=>card(b.id)).join('')}</div>`})),
+    '取ったペアが多い班ほど上の順位です');
+}
+
+/* ---------- 先生の画面 ---------- */
+function layout(n){ const cols = n<=24 ? 8 : n<=36 ? 9 : 13; return {cols, rows:Math.ceil(n/cols)}; }
+function galHTML(H, cw, gap, opts){
+  const {cols} = layout(H.board.length);
+  return `<div class="gal ${opts.cls||''}" style="grid-template-columns:repeat(${cols},auto);--gap:${gap}px;--cw:${cw}px;--cw0:${cw}px">${H.board.map((b,i)=>{
+    const cls = b.st===1 ? 'up' : b.st===2 ? 'tk' : '';
+    const can = opts.can && b.st===0;
+    const face = b.st>0 ? card(b.id) : card(null);
+    const nope = H.miss && H.miss.includes(i) ? ' nope' : '';
+    return `<div class="frm ${cls}${nope} ${can?'can':''}" data-i="${i}">${b.st===2?`<span class="tag" style="--gc:${GC[b.by%8]}">${esc(H.names[b.by])}</span>`:''}<div class="mat">${face}</div></div>`;
+  }).join('')}</div>`;
+}
+function renderTable(H, stage){
+  const {cols, rows} = layout(H.board.length);
+  const W = stage.clientWidth - Math.max(220, innerWidth*.24) - 40, Hh = stage.clientHeight * .84;
+  const cw = Math.floor(Math.min(W/cols/1.55, Hh/rows/1.98));
+  stage.innerHTML = `<div class="wall">${galHTML(H, cw, Math.round(cw*.2), {can:H.phase==='play' && !H.lock})}</div>
+    <div class="side"><h3>得 点</h3>${H.names.map((nm,g)=>`<div class="plq ${g===H.turn&&H.phase==='play'?'turn':''}" style="--gc:${GC[g%8]}">
+      <span class="dv">${TC.dev(g)?'📱':'📵'}</span><span class="nm">${esc(nm)}</span><span class="pt">${H.pairs[g]}<small>ペア</small></span></div>`).join('')}
+      <div class="info">残り ${H.board.filter(b=>b.st!==2).length/2} ペア<br>手番の班のiPadでめくります。<br>先生がカードをクリックしても<br>手番の班の代わりにめくれます。</div></div>`;
+  stage.querySelectorAll('.wall .frm').forEach(f => f.onclick = () => { const h=TC.H(); if(doFlip(h, h.turn, +f.dataset.i)) TC.commit(); });
+}
+window.addEventListener('resize', () => { const h=TC.H(); if(h && !$('#table').hidden) TC.commit(); });
+
+/* ---------- iPad ---------- */
+function renderPad(P){
+  const st = P.st, me = P.me, board = arr(st.board), mine = st.turn===me && !st.lock;
+  P.el.className = mine ? 'myturn' : '';
+  const n = board.length, {cols, rows} = layout(n);
+  const W = innerWidth - 30, Hh = innerHeight - 190;
+  const cw = Math.max(26, Math.floor(Math.min(W/cols/1.4, Hh/rows/1.8)));
+  const fake = {board, names:st.names, miss:arr(st.miss)};
+  let tick = st.turn===me ? (st.lock ? '残念…' : arr(st.flips).length===1 ? 'もう1枚めくろう!' : 'あなたの番! 1枚めくろう') : `${st.names[st.turn]}の番`;
+  P.el.innerHTML = TC.padTop(P, tick, st.turn===me) +
+    `<div class="pothers pscore">${st.names.map((nm,g)=>`<div class="poc ${g===st.turn?'turn':''} ${g===me?'me':''}"><b>${esc(nm)}</b><span>${arr(st.pairs)[g]}ペア</span></div>`).join('')}</div>
+     <div class="pgal-wrap" style="flex:1;display:grid;place-items:center">${galHTML(fake, cw, 6, {can:mine && !P.busy, cls:'pgal'})}</div>`;
+  if(mine) P.el.querySelectorAll('.frm.can').forEach(f => f.onclick = () => P.send('flip', {i:+f.dataset.i}));
+}
+
+TC.game({
+  key:'shinkei', title:'神経衰弱', ver:1,
+  tagline:'夜の美術館に飾られたカードを、2枚ずつめくって同じ数字をそろえよう。',
+  heroHTML: card(25)+card(38)+card(null),
+  defaults:{pairs:12},
+  setupHTML: () => `<div><label class="t" for="fPairs">カードの枚数</label>
+      <select id="fPairs"><option value="12">24枚(12ペア・ふつう)</option><option value="18">36枚(18ペア)</option><option value="26">52枚(26ペア・長い)</option></select>
+      <div class="hint">数字が同じならマークがちがってもペアです。</div></div>`,
+  fillSetup: c => { $('#fPairs').value = String(c.pairs||12); },
+  readSetup: () => ({pairs:+$('#fPairs').value}),
+  rulesHTML: `手番の班は、iPadで伏せてあるカードを2枚めくります。<b>同じ数字</b>ならそのペアをもらい、続けてもう一度めくれます。ちがったら元にもどして次の班の番です。<br>
+    全部のペアがなくなったら終わり。取ったペアが多い班ほど上の順位で、少ない班から掃除場所が決まります。`,
+  newGame(H){
+    H.board = makeBoard(H.cfg.pairs||12);
+    H.pairs = H.names.map(()=>0); H.flips = []; H.lock = false; H.miss = null;
+    H.turn = Math.random()*H.names.length|0;
+    TC.fx(`スタート! ${H.names[H.turn]}から`, {big:true, k:'big'});
+  },
+  onAct(H, gi, a){ if(a.t==='flip' && a.tid===H.tid) return doFlip(H, gi, +a.i); return false; },
+  onResume(H){ if(H.lock || H.flips.length===2) closeMiss(H); },
+  pub: H => ({ board:H.board.map(b=>({id:b.st>0?b.id:-1, st:b.st, by:b.by})), turn:H.turn, pairs:H.pairs, flips:H.flips, lock:H.lock, miss:H.miss }),
+  renderTable, renderPad,
+});
+</script>
+</body>
+</html>

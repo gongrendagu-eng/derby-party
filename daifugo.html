@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>大富豪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&display=swap" rel="stylesheet">
+<style>
+/* 王宮・謁見の間 */
+:root{
+  --bg:#240910; --panel:#3a1018; --field:#2c0c13; --bar:#1a060b; --line:#6e2b31; --ink:#fbf1dc; --dim:#cfae8c;
+  --acc:#e9b949; --accink:#2a1600; --accsh:#8e6a1c; --btn:#4a1820; --bad:#ff8a7a;
+  --disp:'Zen Antique','Hiragino Mincho ProN','Yu Mincho',serif; --cf2:'Zen Antique',serif;
+  --back:#6b0f1a; --backline:rgba(233,185,73,.8);
+  --backpat:radial-gradient(circle at 50% 50%,rgba(233,185,73,.35) 0 18%,transparent 19%),repeating-conic-gradient(from 45deg,rgba(233,185,73,.12) 0 25%,transparent 0 50%) 0 0/12px 12px;
+  --carpet:#a3182a; --carpet2:#7c0f1e; --trim:#e9b949;
+}
+body{background:radial-gradient(ellipse at 50% 0%,#4a121d,#240910 65%) fixed}
+/* 先生の画面 */
+#stage{background:radial-gradient(ellipse at 50% 0%,rgba(233,185,73,.16),transparent 55%),
+  repeating-linear-gradient(90deg,#2a0b12 0 6vmin,#25090f 6vmin 12vmin);transition:filter .6s}
+.carpet{position:absolute;left:50%;top:0;bottom:0;width:34vmin;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--trim) 0 .8vmin,var(--carpet2) .8vmin 1.6vmin,var(--carpet) 1.6vmin calc(100% - 1.6vmin),var(--carpet2) calc(100% - 1.6vmin) calc(100% - .8vmin),var(--trim) calc(100% - .8vmin));
+  transition:background .6s}
+.carpet::after{content:"";position:absolute;inset:0 2.4vmin;background:repeating-linear-gradient(180deg,transparent 0 5vmin,rgba(233,185,73,.12) 5vmin 5.4vmin)}
+#stage.rev{--carpet:#1c3a8a;--carpet2:#122a66;--trim:#cfd8e8;--acc:#d6e2f5}
+#stage.rev .chips .rv{animation:shake .5s 2}
+@keyframes shake{25%{transform:translateX(-6px) rotate(-2deg)}75%{transform:translateX(6px) rotate(2deg)}}
+.fieldbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1.4vmin;z-index:2}
+.fcards{display:flex;gap:.8vmin;min-height:20vmin;align-items:center}
+.fcards .pc{--cw:13vmin}
+.fcards .pc.nw{animation:slam .4s cubic-bezier(.2,1.4,.4,1)}
+@keyframes slam{0%{transform:translateY(-30%) scale(1.3);opacity:0}100%{transform:none}}
+.fempty{font-family:var(--disp);font-size:3.4vmin;color:var(--dim);border:.3vmin dashed rgba(233,185,73,.5);border-radius:1.4vmin;padding:4vmin 5vmin}
+.fby{font-family:var(--disp);font-size:2.4vmin;color:var(--acc)}
+.chips{position:absolute;left:2vmin;top:2vmin;display:flex;flex-direction:column;gap:1vmin;z-index:3}
+.chip{font-family:var(--disp);font-size:2.6vmin;padding:.6vmin 1.6vmin;border-radius:99px;background:#1a060b;border:.25vmin solid var(--acc);color:var(--acc)}
+.chip.rv{background:var(--acc);color:#111}
+.board{position:absolute;right:2vmin;top:2vmin;background:rgba(26,6,11,.9);border:.25vmin solid var(--line);border-radius:1.4vmin;padding:1.2vmin 1.6vmin;z-index:3;font-size:1.9vmin;min-width:24vmin}
+.board h4{margin:0 0 .6vmin;font-family:var(--disp);color:var(--acc);font-size:2.2vmin;font-weight:400}
+.board table{border-collapse:collapse;width:100%}
+.board td{padding:.3vmin .6vmin;border-bottom:1px solid rgba(255,255,255,.08)}
+.board td:last-child{text-align:right;font-family:var(--disp);color:var(--acc)}
+.seat{position:absolute;transform:translate(-50%,-50%);width:20vmin;background:linear-gradient(#3e121b,#2a0b12);border:.3vmin solid var(--line);border-radius:1.4vmin;padding:1.4vmin 1.2vmin 1vmin;text-align:center;box-shadow:0 .8vmin 1.6vmin rgba(0,0,0,.5);z-index:2}
+.seat .ttl{position:absolute;left:50%;top:-2.2vmin;transform:translateX(-50%);font-family:var(--disp);font-size:1.9vmin;white-space:nowrap;padding:.2vmin 1.2vmin;border-radius:99px;background:#1a060b;border:.2vmin solid var(--line);color:var(--dim)}
+.seat .ttl.t1{background:var(--acc);color:#2a1600;border-color:var(--acc)}
+.seat .ttl.t2{background:#d9d9e3;color:#222;border-color:#d9d9e3}
+.seat .ttl.t4{background:#6b5a4a;color:#f3e6d0}
+.seat .ttl.t5{background:#3a332c;color:#bfae98;border-style:dashed}
+.seat .nm{font-family:var(--disp);font-size:2.6vmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .cnt{font-family:var(--disp);font-size:4.4vmin;line-height:1.05}
+.seat .cnt small{font-size:1.8vmin;color:var(--dim);margin-left:.3vmin}
+.seat .dv{position:absolute;right:.7vmin;top:.4vmin;font-size:1.5vmin}
+.seat .ps{font-family:var(--disp);font-size:1.9vmin;color:var(--dim)}
+.seat.turn{border-color:var(--acc);box-shadow:0 0 0 .5vmin rgba(233,185,73,.3),0 0 4vmin rgba(233,185,73,.4);transform:translate(-50%,-50%) scale(1.08);z-index:4}
+.seat.turn::after{content:"▶ この班の番";position:absolute;left:50%;bottom:-1.6vmin;transform:translate(-50%,50%);background:var(--acc);color:#2a1600;font-weight:900;font-size:1.7vmin;padding:.2vmin 1.2vmin;border-radius:99px;white-space:nowrap}
+.seat.passed{opacity:.6}
+.seat.done{opacity:.5}
+.seat .fin{font-family:var(--disp);font-size:2vmin;color:var(--acc)}
+.exch{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(26,6,11,.95);border:.3vmin solid var(--acc);border-radius:2vmin;padding:3vmin 4vmin;z-index:5;text-align:center;min-width:60vmin}
+.exch h3{font-family:var(--disp);font-weight:400;color:var(--acc);font-size:4vmin;margin:0 0 2vmin}
+.exch .r{font-size:2.6vmin;margin:1vmin 0;font-family:var(--disp)}
+.exch .r b{color:var(--acc)}
+.mtab{width:100%;border-collapse:collapse;font-size:2.3vmin;margin-top:1vmin}
+.mtab td,.mtab th{padding:.8vmin 1.2vmin;border-bottom:1px solid var(--line);text-align:center}
+.mtab th{color:var(--dim);font-size:1.8vmin}
+.mtab td.n{font-family:var(--disp);text-align:left}
+.mtab td.t{font-family:var(--disp);color:var(--acc);font-size:2.8vmin}
+/* iPad */
+#pad.myturn .ptick{border-color:var(--acc)}
+.pfield{background:linear-gradient(90deg,var(--trim) 0 4px,var(--carpet) 4px calc(100% - 4px),var(--trim) 0);border-radius:14px;padding:10px;display:flex;align-items:center;justify-content:center;gap:12px;min-height:110px}
+#pad.rev{--carpet:#1c3a8a;--trim:#cfd8e8}
+.pfield .pc{--cw:62px}
+.pfield .em{font-family:var(--disp);color:#f3dfb8;font-size:20px}
+.pchips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pchips .chip{font-size:15px}
+.pok{font-weight:700;text-align:center}
+.pok.ng{color:var(--bad)}
+.pok.ok{color:#9be29b}
+.myttl{font-family:var(--disp);color:var(--acc)}
+</style>
+</head>
+<body>
+<script>window.NO_FB_CFG=false</script>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=true"></script>
+<script src="trump-core.js"></script>
+<script>
+'use strict';
+const {$, esc, shuffle, card, rankOf, suitOf, isJk, SYM, RN, cid, arr, cardName} = TC;
+
+/* ---------- 強さと役 ---------- */
+// 3が最弱 … K、A、2 の順。ジョーカーは最強(13)
+const val = id => isJk(id) ? 13 : (r => r>=3 ? r-3 : r===1 ? 11 : 12)(rankOf(id));
+const RULES = [
+  ['rev','革命','同じ数字を4枚以上出すと、強さが逆になる'],
+  ['eight','8切り','8を含めて出すと、場が流れて同じ班からもう一度出せる'],
+  ['shibari','しばり','同じマークが続けて出ると、場が流れるまでそのマークしか出せない'],
+  ['back11','11バック','Jを含めて出すと、場が流れるまで強さが逆になる'],
+  ['spe3','スペ3返し','ジョーカー1枚に対して、♠3を1枚出して勝てる'],
+  ['kaidan','階段','同じマークの3枚以上の連番を出せる'],
+  ['miyako','都落ち','(好きなだけ遊ぶとき)前回の大富豪が1位をのがすと、その場で大貧民'],
+];
+const RN_ = id => isJk(id) ? 'JK' : RN[rankOf(id)];
+function analyze(ids, R){
+  const n = ids.length; if(!n) return null;
+  const nat = ids.filter(id=>!isJk(id)), nj = n - nat.length, vs = nat.map(val);
+  if(!nat.length || vs.every(v=>v===vs[0])) return {t:'set', n, v:nat.length?vs[0]:13, suits:nat.map(suitOf).sort(), nj, ids};
+  if(R.kaidan && n>=3){
+    const s = suitOf(nat[0]);
+    if(nat.every(id=>suitOf(id)===s) && new Set(vs).size===vs.length){
+      const mn = Math.min(...vs), mx = Math.max(...vs), opts = [];
+      for(let lo=Math.max(0, mx-n+1); lo<=Math.min(mn, 12-n+1); lo++) opts.push(lo);
+      if(opts.length) return {t:'seq', n, suit:s, suits:[s], opts, nj, ids};
+    }
+  }
+  return null;
+}
+// S:{field, lock, rev, back, rules} → 出せるなら確定した役、出せないなら null
+function judge(ids, S){
+  const R = S.rules, f = S.field, rv = !!S.rev !== !!S.back;
+  const a = analyze(ids, R); if(!a) return null;
+  if(f && S.lock){ const L = arr(S.lock); if(!a.suits.every(s=>L.includes(s))) return null; }
+  if(a.t==='seq'){
+    let opts = a.opts;
+    if(f){ if(f.t!=='seq' || f.n!==a.n) return null; opts = opts.filter(lo => rv ? lo+a.n-1 < f.lo : lo > f.hi); }
+    if(!opts.length) return null;
+    const lo = rv ? Math.min(...opts) : Math.max(...opts);
+    return {...a, lo, hi:lo+a.n-1};
+  }
+  if(f){
+    if(f.t!=='set' || f.n!==a.n) return null;
+    if(R.spe3 && f.n===1 && f.v===13 && a.n===1 && ids[0]===cid('s',3)) return {...a, spe3:true};
+    if(a.v===13) return f.v===13 ? null : a;
+    if(f.v===13) return null;
+    if(rv ? !(a.v < f.v) : !(a.v > f.v)) return null;
+  }
+  return a;
+}
+function comboName(c){
+  if(c.t==='seq') return `${SYM[c.suit]}の階段(${c.n}枚)`;
+  if(c.v===13) return c.n===1 ? 'ジョーカー' : `ジョーカー${c.n}枚`;
+  const r = c.v<=10 ? String(c.v+3) : c.v===11 ? 'A' : '2';
+  const R2 = {11:'J',12:'Q',13:'K'}[+r] || r;
+  return c.n===1 ? R2 : `${R2}の${['','','ペア','3枚','4枚','5枚','6枚'][c.n]||c.n+'枚'}`;
+}
+function titleOf(idx, N){
+  if(idx===0) return ['大富豪','t1'];
+  if(idx===N-1) return ['大貧民','t5'];
+  if(N>=4 && idx===1) return ['富豪','t2'];
+  if(N>=4 && idx===N-2) return ['貧民','t4'];
+  return ['平民','t3'];
+}
+
+/* ---------- 進行 ---------- */
+const S_of = H => ({field:H.field, lock:H.lock, rev:H.rev, back:H.back, rules:H.cfg.rules});
+const active = H => H.names.map((_,g)=>g).filter(g=>!H.done[g]);
+function nextG(H, g, skipPassed){ const n=H.names.length; for(let k=1;k<=n;k++){ const x=(g+k)%n; if(!H.done[x] && !(skipPassed && H.passed.includes(x))) return x; } return -1; }
+function byStrength(a,b){ return (val(a)-val(b)) || (a-b); }
+function deal(H){
+  const deck = shuffle([...Array(52).keys(), ...(H.cfg.jokers>=1?[52]:[]), ...(H.cfg.jokers>=2?[53]:[])]);
+  const n = H.names.length, s0 = Math.random()*n|0;
+  H.hands = H.names.map(()=>[]);
+  deck.forEach((id,i)=>H.hands[(s0+i)%n].push(id));
+  H.done = H.names.map(()=>false); H.finList = []; H.fallen = -1;
+  H.field = null; H.lock = null; H.rev = false; H.back = false; H.passed = []; H.lastG = -1; H.recv = H.names.map(()=>[]);
+}
+function startRound(H){
+  H.round++; deal(H);
+  const N = H.names.length, prev = H.prevOrder;
+  H.titles = H.names.map(()=>''); H.tcls = H.names.map(()=>'');
+  if(prev){ prev.forEach((g,i)=>{ [H.titles[g], H.tcls[g]] = titleOf(i,N); }); H.prevTop = prev[0]; } else H.prevTop = -1;
+  if(prev && H.cfg.mode==='multi'){
+    // カード交換:下位の班は自動で一番強いカードを渡す。上位の班はiPadで渡すカードを選ぶ
+    H.exch = [{up:prev[0], low:prev[N-1], k:2, done:false}];
+    if(N>=4) H.exch.push({up:prev[1], low:prev[N-2], k:1, done:false});
+    for(const x of H.exch){
+      const give = H.hands[x.low].slice().sort(byStrength).slice(-x.k);
+      give.forEach(id=>{ H.hands[x.low].splice(H.hands[x.low].indexOf(id),1); H.hands[x.up].push(id); });
+      H.recv[x.up] = give.slice(); x.got = give.slice();
+    }
+    H.phase = 'exch';
+    TC.fx(`第${H.round}回戦 カード交換`, {big:true, k:'big'});
+  } else {
+    H.exch = null; H.phase = 'play';
+    H.turn = prev ? prev[N-1] : H.hands.findIndex(h=>h.includes(cid('d',3)));
+    TC.fx(H.round===1 ? `スタート! ♦3を持つ${H.names[H.turn]}から` : `第${H.round}回戦 ${H.names[H.turn]}から`, {big:true, k:'big'});
+  }
+  H.tid++;
+}
+function doGive(H, gi, ids){
+  const x = (H.exch||[]).find(e=>e.up===gi && !e.done); if(!x) return false;
+  ids = arr(ids).map(Number);
+  if(ids.length!==x.k || new Set(ids).size!==ids.length || ids.some(id=>!H.hands[gi].includes(id))) return false;
+  ids.forEach(id=>{ H.hands[gi].splice(H.hands[gi].indexOf(id),1); H.hands[x.low].push(id); });
+  H.recv[x.low] = ids.slice(); x.done = true;
+  TC.fx(`${H.names[gi]}がカードを渡しました`, {k:'card'});
+  if(H.exch.every(e=>e.done)) beginPlay(H);
+  return true;
+}
+function autoGive(H){
+  for(const x of H.exch||[]) if(!x.done){ const ids = H.hands[x.up].slice().sort(byStrength).slice(0,x.k); doGive(H, x.up, ids); }
+}
+function beginPlay(H){
+  const N = H.names.length;
+  H.phase = 'play'; H.turn = H.prevOrder[N-1]; H.tid++;
+  TC.fx(`交換終了! 大貧民の${H.names[H.turn]}から`, {big:true, k:'big'});
+}
+function clearField(H){ H.field = null; H.lock = null; H.back = false; H.passed = []; }
+function doPlay(H, gi, ids){
+  ids = arr(ids).map(Number);
+  const hand = H.hands[gi];
+  if(!ids.length || new Set(ids).size!==ids.length || ids.some(id=>!hand.includes(id))) return false;
+  const c = judge(ids, S_of(H)); if(!c) return false;
+  const R = H.cfg.rules, prev = H.field;
+  ids.forEach(id=>hand.splice(hand.indexOf(id),1));
+  c.g = gi; c.ids = ids; H.recv[gi] = [];
+  H.field = c; H.lastG = gi; H.passed = []; H.tid++;
+  TC.fx(`${H.names[gi]}:${comboName(c)}`, {k:'card'});
+  let clear = false;
+  if(R.shibari && prev && !H.lock && c.nj===0 && prev.nj===0 && c.t===prev.t && c.suits.join()===arr(prev.suits).join()){
+    H.lock = c.suits.slice(); TC.fx(`しばり! ${H.lock.map(s=>SYM[s]).join('')}`, {big:true, k:'alarm', c:'#e9b949'});
+  }
+  if(R.rev && c.t==='set' && c.n>=4 && c.v!==13){ H.rev = !H.rev; TC.fx(H.rev ? '革命!' : '革命返し!', {big:true, k:'alarm', c:'#9ec3ff'}); }
+  const nats = ids.filter(id=>!isJk(id)).map(rankOf);
+  if(R.back11 && nats.includes(11)){ H.back = !H.back; TC.fx('11バック!', {big:true, k:'good', c:'#9ec3ff'}); }
+  if(R.eight && nats.includes(8)){ clear = true; TC.fx('8切り!', {big:true, k:'good', c:'#e9b949'}); }
+  if(c.spe3){ clear = true; TC.fx('スペ3返し!', {big:true, k:'good', c:'#e9b949'}); }
+  if(!hand.length) finishG(H, gi);
+  if(H.phase!=='play') return true;
+  if(active(H).length<=1){ endRound(H); return true; }
+  if(clear){ clearField(H); H.turn = H.done[gi] ? nextG(H, gi) : gi; }
+  else H.turn = nextG(H, gi, true);
+  return true;
+}
+function doPass(H, gi){
+  if(!H.field) return false;
+  H.passed.push(gi); H.tid++;
+  TC.fx(`${H.names[gi]}はパス`, {k:'tick'});
+  const others = active(H).filter(g=>g!==H.lastG);
+  if(others.every(g=>H.passed.includes(g))){
+    const lead = H.done[H.lastG] ? nextG(H, H.lastG) : H.lastG;
+    clearField(H); H.turn = lead; TC.fx('場が流れました');
+  } else H.turn = nextG(H, gi, true);
+  return true;
+}
+function finishG(H, g){
+  H.done[g] = true; H.finList.push(g);
+  TC.fx(`${H.names[g]} あがり!(${H.finList.length}番)`, {big:true, k:'win', c:'#e9b949'});
+  const R = H.cfg.rules;
+  if(H.cfg.mode==='multi' && R.miyako && H.finList.length===1 && H.prevTop>=0 && H.prevTop!==g && !H.done[H.prevTop]){
+    const p = H.prevTop; H.done[p] = true; H.fallen = p; H.hands[p] = [];
+    TC.fx(`都落ち! ${H.names[p]}は大貧民`, {big:true, k:'bad', c:'#ff8a7a'});
+  }
+}
+function endRound(H){
+  active(H).forEach(g=>{ H.done[g]=true; H.finList.push(g); });
+  const order = H.finList.slice(); if(H.fallen>=0) order.push(H.fallen);
+  const N = H.names.length;
+  H.prevOrder = order; H.history.push(order);
+  order.forEach((g,i)=>{ H.totals[g] += N - i; });
+  H.turn = -1; H.field = null; H.tid++;
+  if(H.cfg.mode==='once'){
+    TC.finish(H, order.map((g,i)=>({g, score:N-i, info:`<b style="font-family:var(--disp);font-size:3vmin">${titleOf(i,N)[0]}</b>`})), 'あがった順の順位です');
+  } else {
+    H.phase = 'round';
+    TC.fx(`第${H.round}回戦 終了! 大富豪は${H.names[order[0]]}`, {big:true, k:'win', c:'#e9b949'});
+  }
+}
+function finalize(H){
+  const N = H.names.length;
+  TC.finish(H, H.names.map((_,g)=>({g, score:H.totals[g],
+    info:`<b style="font-family:var(--disp);font-size:3vmin">合計 ${H.totals[g]}点</b> <span style="color:var(--dim);font-size:1.8vmin">${H.history.map(o=>titleOf(o.indexOf(g),N)[0]).join('→')}</span>`})),
+    `${H.round}回戦の合計点(1位 ${N}点 … 最下位 1点)で決めました`);
+}
+
+/* ---------- 先生の画面 ---------- */
+function seatPos(i, n){ const a=(-90 + i*360/n)*Math.PI/180; return {x:50+42*Math.cos(a), y:53+38*Math.sin(a)}; }
+let prevFieldKey = '';
+function chipsHTML(H){
+  const c = [];
+  if(H.rev) c.push('<span class="chip rv">革命中</span>');
+  if(H.back) c.push('<span class="chip rv">11バック中</span>');
+  if(H.lock) c.push(`<span class="chip">しばり ${arr(H.lock).map(s=>SYM[s]).join('')}</span>`);
+  return c.join('');
+}
+function renderTable(H, stage, hx){
+  const multi = H.cfg.mode==='multi';
+  hx.innerHTML = `<button class="hb" id="rescueBtn">${H.phase==='exch'?'⏭ 自動で渡す':'⏭ パスさせる'}</button>` + (multi ? `<button class="hb" id="finBtn">🏁 ここで終わり</button>` : '');
+  $('#rescueBtn').disabled = !(H.phase==='play' || H.phase==='exch');
+  $('#rescueBtn').onclick = () => { const h=TC.H();
+    if(h.phase==='exch'){ if(confirm('まだ渡していない班の代わりに、一番弱いカードを自動で渡しますか?')){ autoGive(h); TC.commit(); } return; }
+    if(h.phase!=='play') return;
+    if(h.field){ if(confirm(`${h.names[h.turn]}を「パス」にしますか?`)){ doPass(h, h.turn); TC.commit(); } }
+    else if(confirm(`${h.names[h.turn]}の代わりに、一番弱いカードを1枚出しますか?`)){ const id=h.hands[h.turn].slice().sort((a,b)=> (h.rev? -1:1)*byStrength(a,b))[0]; doPlay(h, h.turn, [id]); TC.commit(); } };
+  if(multi){ $('#finBtn').disabled = H.phase!=='round'; $('#finBtn').onclick = () => { const h=TC.H(); if(h.phase==='round' && confirm(`${h.round}回戦までの合計点で掃除場所を決めますか?`)){ TC.modal(null); finalize(h); TC.commit(); } }; }
+  stage.classList.toggle('rev', !!H.rev !== !!H.back);
+  const n = H.names.length, N = n;
+  const f = H.field, fk = f ? f.ids.join(',') : '';
+  const nw = fk!==prevFieldKey; prevFieldKey = fk;
+  const field = f ? `<div class="fcards">${f.ids.map(id=>card(id, nw?'nw':'')).join('')}</div><div class="fby">${esc(H.names[f.g])}:${comboName(f)}</div>`
+                  : `<div class="fempty">${H.phase==='play' ? esc(H.names[H.turn])+' が好きなカードを出せます' : ''}</div>`;
+  const board = multi ? `<div class="board"><h4>第${H.round}回戦 ・ 合計点</h4><table>${H.names.map((nm,g)=>`<tr><td>${esc(nm)}</td><td>${H.totals[g]}</td></tr>`).join('')}</table></div>` : '';
+  let exch = '';
+  if(H.phase==='exch') exch = `<div class="exch"><h3>カード交換</h3>${H.exch.map(x=>`<div class="r">${esc(H.names[x.low])} → ${esc(H.names[x.up])}:強いカード${x.k}枚(済)<br>${esc(H.names[x.up])} → ${esc(H.names[x.low])}:好きなカード${x.k}枚 <b>${x.done?'済':'えらび中…'}</b></div>`).join('')}</div>`;
+  stage.innerHTML = `<div class="carpet"></div><div class="chips">${chipsHTML(H)}</div>${board}<div class="fieldbox">${H.phase==='play'?field:''}</div>` +
+    H.names.map((nm,g)=>{ const p=seatPos(g,n); const t = H.titles[g];
+      const tc = (H.tcls||[])[g] || '';
+      const fi = H.finList.indexOf(g);
+      return `<div class="seat ${g===H.turn&&H.phase==='play'?'turn':''} ${H.passed.includes(g)?'passed':''} ${H.done[g]?'done':''}" style="left:${p.x}%;top:${p.y}%">
+        ${t?`<span class="ttl ${tc}">${t}</span>`:''}<span class="dv">${TC.dev(g)?'📱':'📵'}</span><div class="nm">${esc(nm)}</div>
+        <div class="cnt">${H.hands[g].length}<small>枚</small></div>
+        ${fi>=0?`<div class="fin">${fi+1}番であがり</div>`:H.fallen===g?'<div class="fin" style="color:var(--bad)">都落ち</div>':H.passed.includes(g)?'<div class="ps">パス</div>':''}</div>`; }).join('') + exch;
+  if(H.phase==='round') roundModal(H); else if(H.phase!=='end') TC.modal(null);
+}
+function roundModal(H){
+  const N = H.names.length;
+  const box = TC.modal(`<h2>第${H.round}回戦の結果</h2><table class="mtab"><tr><th>順位</th><th style="text-align:left">班</th><th>称号</th><th>今回の点</th><th>合計点</th></tr>
+    ${H.prevOrder.map((g,i)=>`<tr><td class="t">${i+1}位</td><td class="n">${esc(H.names[g])}</td><td class="t">${titleOf(i,N)[0]}</td><td>+${N-i}</td><td class="t">${H.totals[g]}</td></tr>`).join('')}</table>
+    <div class="tie sub">次の回戦では、大富豪↔大貧民が2枚、${N>=4?'富豪↔貧民が1枚、':''}カードを交換します。</div>
+    <div class="row" style="justify-content:center"><button class="btn" id="rFin">🏁 ここで終わり(合計点で決める)</button><button class="btn main" id="rNext">次の回戦へ</button></div>`);
+  box.querySelector('#rNext').onclick = () => { const h=TC.H(); if(h.phase!=='round') return; TC.modal(null); startRound(h); TC.commit(); };
+  box.querySelector('#rFin').onclick = () => { const h=TC.H(); if(h.phase!=='round') return; TC.modal(null); finalize(h); TC.commit(); };
+}
+window.addEventListener('resize', () => { const h=TC.H(); if(h && !$('#table').hidden) TC.commit(); });
+
+/* ---------- iPad ---------- */
+function renderPad(P){
+  const st = P.st, me = P.me, groups = arr(st.groups), mine = groups[me];
+  const hand = arr(P.hd && P.hd.h).slice().sort(byStrength);
+  P.ui.sel = arr(P.ui.sel).filter(id=>hand.includes(id));
+  const rvd = !!st.rev !== !!st.back;
+  P.el.className = rvd ? 'rev' : '';
+  const N = st.names.length;
+  const tTop = mine.title ? `<span class="myttl">${mine.title}</span> ` : '';
+  const others = groups.map((o,i)=>`<div class="poc ${i===st.turn?'turn':''} ${i===me?'me':''} ${o.done||o.passed?'out':''}"><b>${esc(st.names[i])}</b><span>${o.done?(o.fin>0?o.fin+'抜け':'都落ち'):o.passed?'パス':o.c+'枚'}</span></div>`).join('');
+  const chips = [st.rev?'<span class="chip rv">革命中</span>':'', st.back?'<span class="chip rv">11バック中</span>':'', st.lock?`<span class="chip">しばり ${arr(st.lock).map(s=>SYM[s]).join('')}</span>`:''].join('');
+  const sel = P.ui.sel;
+  const cards = (dimFn) => hand.map(id=>card(id, `${sel.includes(id)?'sel':''} ${dimFn&&dimFn(id)?'dim':''} ${arr(P.hd&&P.hd.recv).includes(id)?'new':''}`, `data-id="${id}"`)).join('');
+
+  if(st.phase==='round'){
+    const ord = arr(st.order), i = ord.indexOf(me);
+    P.el.innerHTML = TC.padTop(P, `第${st.round}回戦 終了`, false) + `<div class="pjoin" style="margin-top:2vh"><div class="pres" style="font-size:clamp(40px,8vw,72px)">${i+1}位 ${titleOf(i,N)[0]}</div>
+      <p style="font-size:22px">合計 ${arr(st.totals)[me]}点</p><div class="wait">先生の画面を見てね</div></div>`;
+    return;
+  }
+  if(st.phase==='exch'){
+    const x = arr(st.exch).find(e=>e.up===me), y = arr(st.exch).find(e=>e.low===me);
+    let msg = '', btn = '';
+    if(x && !x.done){
+      msg = `<div class="pmsg">${esc(st.names[x.low])}から強いカード${x.k}枚をもらいました(NEWの印)。<br>お返しに渡すカードを <b>${x.k}枚</b> えらんでね</div>`;
+      btn = `<div class="pbar"><button class="pb go" id="pgive" ${sel.length!==x.k||P.busy?'disabled':''}>えらんだ ${sel.length}/${x.k}枚を渡す</button></div>`;
+    } else if(y) msg = `<div class="pmsg">${esc(st.names[y.up])}に一番強いカード${y.k}枚を渡しました。${y.done?'もらったカードにはNEWの印があります。':'お返しを待っています…'}</div>`;
+    else msg = '<div class="pmsg">カード交換中… ほかの班を待ってね</div>';
+    P.el.innerHTML = TC.padTop(P, `${tTop?mine.title+' / ':''}カード交換`, x && !x.done) + `<div class="pothers">${others}</div>${msg}<div class="phand"><div class="cards">${cards()}</div></div>${btn}`;
+    if(x && !x.done){
+      P.el.querySelectorAll('.phand [data-id]').forEach(c => c.onclick = () => { const id=+c.dataset.id, k=sel.indexOf(id); if(k>=0) sel.splice(k,1); else if(sel.length<x.k) sel.push(id); P.render(); });
+      $('#pgive').onclick = () => { if(sel.length===x.k){ P.send('give', {ids:sel.slice()}); P.ui.sel=[]; } };
+    }
+    return;
+  }
+  // 対戦中
+  const myTurn = st.turn===me && !mine.done;
+  if(myTurn) P.el.classList.add('myturn');
+  const S = {field:st.field, lock:st.lock, rev:st.rev, back:st.back, rules:st.rules};
+  const can = sel.length ? judge(sel, S) : null;
+  const f = st.field;
+  const field = f ? `${arr(f.ids).map(id=>card(id)).join('')}<span class="em">${esc(st.names[f.g])}<br>${comboName(f)}</span>` : `<span class="em">${myTurn?'好きなカードを出せます':'場は空です'}</span>`;
+  let tick = mine.done ? (mine.fin>0 ? `${mine.fin}番であがり! 見守ろう` : '都落ち… 見守ろう') : myTurn ? (f ? 'あなたの番! 出すかパス' : 'あなたの番! 好きなカードを出そう') : `${st.names[st.turn]}の番`;
+  const okMsg = myTurn && sel.length ? `<div class="pok ${can?'ok':'ng'}">${can?`「${comboName(can)}」を出せます`:'その組み合わせは出せません'}</div>` : '';
+  const btns = myTurn ? `<div class="pbar"><button class="pb" id="ppass" ${!f||P.busy?'disabled':''}>パス</button>${sel.length?`<button class="pb go" id="pplay" ${!can||P.busy?'disabled':''}>出す(${sel.length}枚)</button>`:''}</div>` : '';
+  P.el.innerHTML = TC.padTop(P, (tTop?mine.title+' / ':'')+tick, myTurn) + `<div class="pothers">${others}</div>
+    ${chips?`<div class="pchips">${chips}</div>`:''}<div class="pfield">${field}</div>${okMsg}
+    <div class="phand"><div class="cards">${cards()}</div></div>${btns}`;
+  P.el.querySelectorAll('.phand [data-id]').forEach(c => c.onclick = () => { if(!myTurn||P.busy) return; const id=+c.dataset.id, k=sel.indexOf(id); if(k>=0) sel.splice(k,1); else sel.push(id); P.render(); });
+  const pp = $('#pplay'); if(pp) pp.onclick = () => { if(can){ P.send('play', {ids:sel.slice()}); P.ui.sel=[]; } };
+  const pa = $('#ppass'); if(pa) pa.onclick = () => { P.send('pass'); P.ui.sel=[]; };
+}
+
+TC.game({
+  key:'daifugo', title:'大富豪', ver:1,
+  tagline:'王宮の謁見の間で、手札を先になくした班が大富豪。ルールは設定で選べます。',
+  heroHTML: card(cid('s',2))+card(52)+card(cid('h',1)),
+  defaults:{jokers:1, mode:'once', rules:{rev:true, eight:true, shibari:true, back11:false, spe3:false, kaidan:false, miyako:false}},
+  setupHTML: () => `<div><label class="t">ローカルルール</label>
+      ${RULES.map(([k,n,d])=>`<label class="opt"><input type="checkbox" id="fR_${k}"><span><b>${n}</b>:${d}</span></label>`).join('')}</div>
+    <div><label class="t" for="fJk">ジョーカー</label>
+      <select id="fJk"><option value="1">1枚</option><option value="2">2枚</option></select>
+      <label class="t" style="margin-top:14px">遊び方</label>
+      <label class="opt"><input type="radio" name="fMode" value="once"><span>1回勝負。あがった順で掃除場所を決める</span></label>
+      <label class="opt"><input type="radio" name="fMode" value="multi"><span>好きなだけ。2回戦からカード交換あり。毎回の順位を点数にして(1位=班の数 … 最下位=1点)、先生が「ここで終わり」を押したときの合計点で決める</span></label></div>`,
+  fillSetup: c => { const r = c.rules||{}; RULES.forEach(([k])=>{ $('#fR_'+k).checked = !!r[k]; }); $('#fJk').value = String(c.jokers===2?2:1); document.querySelector(`input[name=fMode][value=${c.mode==='multi'?'multi':'once'}]`).checked = true; },
+  readSetup: () => { const rules = {}; RULES.forEach(([k])=>{ rules[k] = $('#fR_'+k).checked; }); return {rules, jokers:+$('#fJk').value, mode:document.querySelector('input[name=fMode]:checked').value}; },
+  rulesHTML: `強さは 3 &lt; 4 &lt; … &lt; K &lt; A &lt; 2 &lt; ジョーカー。ジョーカーはどのカードの代わりにもなり、1枚で出すと一番強いカードです。<br>
+    場に出ているのと<b>同じ枚数</b>で、より<b>強い</b>カードを出していきます(2枚なら同じ数字のペア、3枚なら3枚組…)。出せない・出したくないときはパス。一度パスすると、場が流れるまで出せません。<br>
+    全員がパスすると場が流れ、最後に出した班から好きなカードを出せます。手札を先になくした班から 大富豪・富豪・平民・貧民・大貧民 になります。<br>
+    ${RULES.map(([k,n,d])=>`<b>${n}</b>:${d}`).join('<br>')}<br>(設定でチェックしたルールだけ使います)`,
+  newGame(H){
+    H.round = 0; H.prevOrder = null; H.history = []; H.totals = H.names.map(()=>0); H.titles = H.names.map(()=>'');
+    startRound(H);
+  },
+  onAct(H, gi, a){
+    if(H.phase==='exch' && a.t==='give') return doGive(H, gi, a.ids);
+    if(H.phase!=='play' || gi!==H.turn || a.tid!==H.tid || H.done[gi]) return false;
+    if(a.t==='play') return doPlay(H, gi, a.ids);
+    if(a.t==='pass') return doPass(H, gi);
+    return false;
+  },
+  pub: H => ({ turn:H.turn, round:H.round, mode:H.cfg.mode, rules:H.cfg.rules,
+    field: H.field ? {t:H.field.t, n:H.field.n, v:H.field.v, lo:H.field.lo, hi:H.field.hi, suit:H.field.suit||'', suits:H.field.suits, ids:H.field.ids, g:H.field.g} : null,
+    rev:H.rev, back:H.back, lock:H.lock, totals:H.totals, order:H.prevOrder,
+    exch: H.phase==='exch' ? H.exch.map(x=>({up:x.up, low:x.low, k:x.k, done:x.done})) : null,
+    groups:H.names.map((_,g)=>({c:H.hands[g].length, done:H.done[g], passed:H.passed.includes(g), fin:H.finList.indexOf(g)+1, title:H.titles[g]})) }),
+  hand: (H, g) => ({h:H.hands[g], recv:H.recv[g]}),
+  renderTable, renderPad,
+});
+</script>
+</body>
+</html>

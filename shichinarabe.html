@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>7並べ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&display=swap" rel="stylesheet">
+<style>
+/* 昭和の茶の間 */
+:root{
+  --bg:#b9b46e; --panel:#f6efdd; --field:#fffaf0; --bar:#efe3c6; --line:#8b6a43; --ink:#2b2117; --dim:#6e5b45;
+  --acc:#c23b2e; --accink:#fff; --accsh:#7d2017; --btn:#e7d8b8; --bad:#c23b2e;
+  --disp:'Kaisei Decol','Hiragino Mincho ProN','Yu Mincho',serif; --cf2:'Kaisei Decol',serif;
+  --back:#b5312a; --backline:#fff6e0;
+  --backpat:repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,246,224,.28) 5px 7px),repeating-linear-gradient(90deg,transparent 0 5px,rgba(255,246,224,.28) 5px 7px);
+}
+body{background:
+  linear-gradient(90deg,rgba(0,0,0,.07) 1px,transparent 1px) 0 0/50% 100%,
+  repeating-linear-gradient(0deg,#bdb873 0 2px,#b3ad66 2px 4px)}
+.panel{box-shadow:0 8px 0 #8b6a43}
+/* 先生の画面 */
+#stage{display:grid;place-items:center;background:
+  linear-gradient(90deg,#7a5531 0 1.2vmin,transparent 1.2vmin calc(100% - 1.2vmin),#7a5531 0),
+  repeating-linear-gradient(0deg,#bdb873 0 2px,#b3ad66 2px 4px)}
+.chabu{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:min(118vmin,74vw);aspect-ratio:1.75;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 40%,#9b6a3c,#7a4f2a 70%,#5f3a1d);box-shadow:0 2.4vmin 0 #4a2c14,0 4vmin 6vmin rgba(0,0,0,.35);
+  display:grid;place-items:center}
+.chabu::before{content:"";position:absolute;inset:3%;border-radius:50%;border:.3vmin solid rgba(255,220,170,.18)}
+.bd{display:grid;gap:var(--g);position:relative}
+.bd .ln{display:grid;grid-template-columns:repeat(13,var(--cw));gap:calc(var(--g)*.5)}
+.slot{width:var(--cw);height:calc(var(--cw)*1.42);border-radius:calc(var(--cw)*.1);border:2px dashed rgba(255,235,200,.28);position:relative}
+.slot.open{border-color:rgba(255,240,180,.85);background:rgba(255,240,180,.12)}
+.slot .pc{--cw:var(--cw0);position:absolute;inset:-2px}
+.slot .pc.nw{animation:drop .4s cubic-bezier(.2,1.4,.4,1)}
+@keyframes drop{0%{transform:translateY(-40%) scale(1.3);opacity:0}100%{transform:none}}
+.slot .jkn{position:absolute;left:50%;bottom:-1.2em;transform:translateX(-50%);font-size:max(11px,calc(var(--cw)*.17));font-weight:900;color:#ffe9a8;white-space:nowrap;text-shadow:0 1px 0 #000}
+.seat{position:absolute;transform:translate(-50%,-50%);width:20vmin;background:var(--panel);border:3px solid var(--line);border-radius:1.6vmin;padding:1vmin 1.2vmin;text-align:center;box-shadow:0 .6vmin 0 #8b6a43}
+.seat .nm{font-family:var(--disp);font-size:2.6vmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .cnt{font-family:var(--disp);font-size:4.4vmin;line-height:1.05}
+.seat .cnt small{font-size:1.8vmin;color:var(--dim);margin-left:.3vmin}
+.seat .cups{display:flex;gap:.5vmin;justify-content:center;min-height:3vmin;margin-top:.3vmin}
+.cup{width:2.4vmin;height:2.8vmin;border-radius:0 0 .8vmin .8vmin;background:linear-gradient(#e8e0cc,#cfc3a6);border:.25vmin solid #6e5b45;position:relative}
+.cup.used{background:linear-gradient(#5a8f5a,#3f6f3f);border-color:#2f4f2f}
+.cup.used::after{content:"";position:absolute;left:15%;right:15%;top:-1vmin;height:.9vmin;border-radius:50%;border-top:.25vmin solid rgba(110,91,69,.5)}
+.seat .dv{position:absolute;right:.7vmin;top:.4vmin;font-size:1.5vmin}
+.seat.turn{border-color:var(--acc);box-shadow:0 .6vmin 0 var(--accsh),0 0 0 .6vmin rgba(194,59,46,.25);transform:translate(-50%,-50%) scale(1.08);z-index:2}
+.seat.turn::after{content:"▶ この班の番";position:absolute;left:50%;top:-1.4vmin;transform:translate(-50%,-50%);background:var(--acc);color:#fff;font-weight:900;font-size:1.8vmin;padding:.2vmin 1.2vmin;border-radius:99px;white-space:nowrap}
+.seat .st{display:inline-block;margin-top:.4vmin;font-family:var(--disp);font-size:1.9vmin;padding:.2vmin 1vmin;border-radius:99px;background:#2b2117;color:#fff}
+.seat .st.fin{background:#d9a21b;color:#2b2117}
+.seat.done{opacity:.6}
+.force{position:absolute;left:50%;bottom:2vmin;transform:translateX(-50%);background:#2b2117;color:#ffe9a8;font-weight:700;font-size:2.2vmin;padding:.8vmin 2vmin;border-radius:99px}
+/* iPad */
+#pad{background:repeating-linear-gradient(0deg,#bdb873 0 2px,#b3ad66 2px 4px)}
+#pad.myturn .ptick{background:#fff3d6}
+.pbd{background:radial-gradient(ellipse at 50% 40%,#9b6a3c,#7a4f2a);border-radius:18px;padding:12px 8px 18px;display:grid;place-items:center;box-shadow:0 6px 0 #4a2c14}
+.pbd .bd{--g:6px}
+.jpick{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.jpick button{background:#2b2117;color:#ffe9a8;border:0;border-radius:12px;padding:12px 16px;font-size:20px;font-weight:700}
+.pmsg.f{background:#2b2117;color:#ffe9a8;border-color:#2b2117}
+</style>
+</head>
+<body>
+<script>window.NO_FB_CFG=false</script>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=true"></script>
+<script src="trump-core.js"></script>
+<script>
+'use strict';
+const {$, esc, shuffle, card, rankOf, suitOf, isJk, SUITS, SYM, RN, cid, arr, cardName} = TC;
+const JK = 52;
+
+/* ---------- ルール ---------- */
+// bd[マーク] = 14個の配列(1〜13 に置いたカードのID。ジョーカーは52)
+function ends(bd, s){ let lo=7, hi=7; while(lo-1>=1 && bd[s][lo-1]!=null) lo--; while(hi+1<=13 && bd[s][hi+1]!=null) hi++; return [lo,hi]; }
+function openSpots(bd){ const o=[]; for(const s of SUITS){ const [lo,hi]=ends(bd,s); if(lo-1>=1) o.push([s,lo-1]); if(hi+1<=13) o.push([s,hi+1]); } return o; }
+const isOpen = (bd, s, r) => openSpots(bd).some(([a,b])=>a===s && b===r);
+function canPlayId(st, id, me){
+  if(st.force && st.force.g===me) return id===st.force.id;
+  if(isJk(id)) return openSpots(st.bd).length>0;
+  return isOpen(st.bd, suitOf(id), rankOf(id));
+}
+const active = H => H.names.map((_,g)=>g).filter(g=>!H.fin[g] && !H.out[g]);
+function nextG(H, g){ const n=H.names.length; for(let k=1;k<=n;k++){ const x=(g+k)%n; if(!H.fin[x] && !H.out[x]) return x; } return -1; }
+function holder(H, id){ return H.hands.findIndex(h=>h.includes(id)); }
+function place(H, s, r, id){ H.bd[s][r] = id; H.lastPut = s+r; }
+
+function doPlay(H, gi, id, spot){
+  const hand = H.hands[gi];
+  if(!hand.includes(id)) return false;
+  const st = {bd:H.bd, force:H.force};
+  if(!canPlayId(st, id, gi)) return false;
+  hand.splice(hand.indexOf(id),1);
+  if(isJk(id)){
+    if(!spot || !isOpen(H.bd, spot.s, +spot.r)) { hand.push(id); return false; }
+    const s=spot.s, r=+spot.r;
+    place(H, s, r, JK);
+    const real = cid(s, r), h = holder(H, real);
+    H.jk = {s, r, by:gi};
+    H.force = h>=0 ? {g:h, id:real} : null;
+    TC.fx(`${H.names[gi]}:ジョーカーを${SYM[s]}${RN[r]}の場所に!`, {big:true, k:'big', c:'#ffe9a8'});
+    if(h>=0) TC.fx(`${H.names[h]}は次に${cardName(real)}を出す`);
+  } else {
+    const s=suitOf(id), r=rankOf(id);
+    if(H.force && H.force.g===gi && H.force.id===id){
+      place(H, s, r, id); hand.push(JK); H.force = null; H.jk = null;
+      TC.fx(`${H.names[gi]}:${cardName(id)}を出してジョーカーを受け取る`, {big:true, k:'big', c:'#ffe9a8'});
+    } else {
+      place(H, s, r, id); TC.fx(`${H.names[gi]}:${cardName(id)}`, {k:'card'});
+    }
+  }
+  if(!hand.length){ H.fin[gi] = ++H.finN; TC.fx(`${H.names[gi]} あがり!`, {big:true, k:'win', c:'#d9a21b'}); }
+  advance(H, gi);
+  return true;
+}
+function doPass(H, gi){
+  if(H.force && H.force.g===gi) return false;
+  H.pass[gi]++;
+  if(H.pass[gi] > H.cfg.passMax){
+    // アウト:手札を全部、場の正しい位置に並べる(ジョーカーはなくなる)
+    H.out[gi] = ++H.outN;
+    for(const id of H.hands[gi]){
+      if(isJk(id)) continue;
+      const s=suitOf(id), r=rankOf(id);
+      if(H.bd[s][r]===JK){ H.jk=null; }
+      H.bd[s][r] = id;
+    }
+    if(H.force && H.force.g===gi) H.force = null;
+    H.hands[gi] = [];
+    TC.fx(`${H.names[gi]} アウト!`, {big:true, k:'bad', c:'#ff8a7a'});
+  } else TC.fx(`${H.names[gi]}はパス(${H.pass[gi]}回目)`, {k:'tick'});
+  advance(H, gi);
+  return true;
+}
+function advance(H, gi){
+  H.tid++;
+  const act = active(H);
+  if(act.length<=1){
+    if(act.length===1) H.fin[act[0]] = ++H.finN;
+    const N = H.names.length;
+    TC.finish(H, H.names.map((_,g)=>({g, score: H.fin[g] ? 1000-H.fin[g] : H.out[g],
+      info: H.fin[g] ? `<b>${H.fin[g]}番目にあがり</b>` : `<b style="color:var(--bad)">アウト(${H.out[g]}番目)</b>`})),
+      'あがった順が上。アウトになった班は下の順位で、先にアウトになった班ほど下です');
+    return;
+  }
+  H.turn = nextG(H, gi);
+}
+
+/* ---------- 盤 ---------- */
+function boardHTML(bd, cw, g, opts={}){
+  const open = openSpots(bd);
+  return `<div class="bd" style="--cw:${cw}px;--cw0:${cw}px;--g:${g}px">${SUITS.map(s=>`<div class="ln">${Array.from({length:13},(_,k)=>{
+    const r=k+1, id=bd[s][r], isO=open.some(([a,b])=>a===s&&b===r);
+    const inner = id==null ? '' : id===JK ? card(JK)+`<span class="jkn">${SYM[s]}${RN[r]}</span>` : card(id, opts.last===s+r?'nw':'');
+    return `<div class="slot ${id==null&&isO?'open':''}">${inner}</div>`;
+  }).join('')}</div>`).join('')}</div>`;
+}
+
+/* ---------- 先生の画面 ---------- */
+function seatPos(i, n){ const a=(-90 + i*360/n)*Math.PI/180; return {x:50+42*Math.cos(a), y:52+40*Math.sin(a)}; }
+function renderTable(H, stage, hx){
+  hx.innerHTML = `<button class="hb" id="forceBtn">⏭ パスさせる</button>`;
+  $('#forceBtn').disabled = H.phase!=='play';
+  $('#forceBtn').onclick = () => { const h=TC.H(); if(h.phase!=='play') return;
+    if(h.force && h.force.g===h.turn){ if(confirm(`${h.names[h.turn]}の代わりに${cardName(h.force.id)}を出しますか?`)){ doPlay(h, h.turn, h.force.id); TC.commit(); } return; }
+    if(confirm(`${h.names[h.turn]}を「パス」にしますか?`)){ doPass(h, h.turn); TC.commit(); } };
+  const tw = Math.min(stage.clientHeight*1.18, stage.clientWidth*.74);
+  const cw = Math.floor(tw*.78/13/1.06);
+  const n = H.names.length;
+  stage.innerHTML = `<div class="chabu">${boardHTML(H.bd, cw, Math.round(cw*.18), {last:H.lastPut})}</div>` +
+    H.names.map((nm,g)=>{ const p=seatPos(g,n); const done=H.fin[g]||H.out[g];
+      const cups = Array.from({length:H.cfg.passMax},(_,k)=>`<i class="cup ${k<H.pass[g]?'used':''}"></i>`).join('');
+      return `<div class="seat ${g===H.turn&&H.phase==='play'?'turn':''} ${done?'done':''}" style="left:${p.x}%;top:${p.y}%">
+        <span class="dv">${TC.dev(g)?'📱':'📵'}</span><div class="nm">${esc(nm)}</div>
+        <div class="cnt">${H.hands[g].length}<small>枚</small></div><div class="cups" title="使ったパス">${cups}</div>
+        ${H.fin[g]?`<span class="st fin">${H.fin[g]}番目にあがり</span>`:H.out[g]?'<span class="st">アウト</span>':''}</div>`; }).join('') +
+    (H.force ? `<div class="force">🃏 ${esc(H.names[H.force.g])}は次の番で ${cardName(H.force.id)} を出してジョーカーを受け取ります</div>` : '');
+}
+window.addEventListener('resize', () => { const h=TC.H(); if(h && !$('#table').hidden) TC.commit(); });
+
+/* ---------- iPad ---------- */
+const SO = {s:0,h:1,d:2,c:3,j:4};
+function sortHand(h){ return h.slice().sort((a,b)=> (SO[suitOf(a)]-SO[suitOf(b)]) || (rankOf(a)-rankOf(b))); }
+function renderPad(P){
+  const st = P.st, me = P.me, g = arr(st.groups)[me];
+  const hand = sortHand(arr(P.hd && P.hd.h));
+  const bd = {}; SUITS.forEach(s => { bd[s] = Array.from({length:14},(_,k)=>{ const v=st.bd[s] && st.bd[s][k]; return v==null?null:v; }); });
+  const S = {bd, force:st.force};
+  const myTurn = st.turn===me && !g.fin && !g.out;
+  P.el.className = myTurn ? 'myturn' : '';
+  if(P.ui.sel!=null && !hand.includes(P.ui.sel)) P.ui.sel = null;
+  const forced = st.force && st.force.g===me;
+  let tick = g.fin ? `${g.fin}番目にあがり! 見守ろう` : g.out ? 'アウト… ほかの班を見守ろう' : myTurn ? (forced ? 'ジョーカーの場所のカードを出す番!' : 'あなたの番! 出すかパス') : `${st.names[st.turn]}の番`;
+  const cw = Math.max(22, Math.floor(Math.min((innerWidth-60)/13/1.06, 46)));
+  const cards = hand.map(id => { const ok = myTurn && canPlayId(S, id, me); return card(id, `${myTurn&&!ok?'dim':''} ${P.ui.sel===id?'sel':''}`, `data-id="${id}"`); }).join('');
+  let extra = '';
+  if(myTurn && P.ui.sel===JK){
+    extra = `<div class="pmsg">ジョーカーを置く場所をえらんでね</div><div class="jpick">${openSpots(bd).map(([s,r])=>`<button data-s="${s}" data-r="${r}">${SYM[s]}${RN[r]} の場所</button>`).join('')}</div>`;
+  }
+  const left = st.passMax - g.pass;
+  const btns = myTurn ? `<div class="pbar">
+      <button class="pb" data-a="pass" ${forced||P.busy?'disabled':''}>パス(${left>0?'あと'+left+'回':'次でアウト'})</button>
+      ${P.ui.sel!=null && P.ui.sel!==JK ? `<button class="pb go" data-a="play" ${P.busy?'disabled':''}>${cardName(P.ui.sel)} を出す</button>` : ''}</div>` : '';
+  P.el.innerHTML = TC.padTop(P, tick, myTurn) +
+    `<div class="pothers">${arr(st.groups).map((o,i)=>`<div class="poc ${i===st.turn?'turn':''} ${i===me?'me':''} ${o.fin||o.out?'out':''}"><b>${esc(st.names[i])}</b><span>${o.fin?o.fin+'抜け':o.out?'アウト':o.c+'枚'}</span></div>`).join('')}</div>
+     <div class="pbd">${boardHTML(bd, cw, 4)}</div>
+     ${forced ? `<div class="pmsg f">${myTurn?'':'次の番で '}ジョーカーが置かれた ${cardName(st.force.id)} を出してね(ジョーカーがもらえる)</div>` : ''}
+     ${myTurn && left<=0 && !forced ? '<div class="pmsg">次にパスするとアウト!</div>' : ''}
+     <div class="phand"><div class="cards">${cards || '<div class="wait">手札はありません</div>'}</div></div>${extra}${btns}`;
+  P.el.querySelectorAll('.phand [data-id]').forEach(c => c.onclick = () => {
+    if(!myTurn || P.busy) return; const id=+c.dataset.id;
+    if(!canPlayId(S, id, me)) return;
+    if(P.ui.sel===id && id!==JK){ P.send('play', {id}); P.ui.sel=null; return; }
+    P.ui.sel = id; P.render();
+  });
+  P.el.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { P.send('play', {id:JK, s:b.dataset.s, r:+b.dataset.r}); P.ui.sel=null; });
+  P.el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+    if(b.dataset.a==='pass'){ if(left<=0 && !confirm('パスするとアウトになり、手札を全部場に並べます。いいですか?')) return; P.send('pass'); }
+    else { P.send('play', {id:P.ui.sel}); P.ui.sel=null; }
+  });
+}
+
+TC.game({
+  key:'shichinarabe', title:'7並べ', ver:1,
+  tagline:'ちゃぶ台を囲んで、7からつなげて並べていこう。パスは湯のみ3杯まで。',
+  heroHTML: card(cid('h',6))+card(cid('h',7))+card(cid('h',8)),
+  defaults:{joker:false, passMax:3},
+  setupHTML: () => `<div><label class="t">ジョーカー</label>
+      <label class="opt"><input type="checkbox" id="fJoker"><span>ジョーカーを1枚入れる</span></label>
+      <label class="t" for="fPass" style="margin-top:14px">パスできる回数</label>
+      <select id="fPass"><option value="1">1回</option><option value="2">2回</option><option value="3">3回(ふつう)</option><option value="4">4回</option><option value="5">5回</option></select>
+      <div class="hint">これを超えてパスするとアウト。手札を全部場に並べます。</div></div>`,
+  fillSetup: c => { $('#fJoker').checked = !!c.joker; $('#fPass').value = String(c.passMax||3); },
+  readSetup: () => ({joker:$('#fJoker').checked, passMax:+$('#fPass').value}),
+  rulesHTML: `はじめに各マークの7が場に並びます。手番の班は、場のカードのとなり(7から続く数字)を1枚出すか、パスします。パスは決められた回数まで。それを超えてパスするとアウトで、手札を全部場に並べます。<br>
+    ジョーカーあり:ジョーカーは、いま出せる場所に置けます。その場所の本当のカードを持っている班は、次の番で必ずそれを出し、ジョーカーを受け取ります。<br>
+    手札を先になくした班から上の順位。アウトの班は下の順位で、先にアウトになった班ほど下です。AとKはつながりません。`,
+  newGame(H){
+    const deck = shuffle([...Array(52).keys(), ...(H.cfg.joker?[JK]:[])]);
+    const n = H.names.length;
+    H.hands = H.names.map(()=>[]);
+    const st0 = Math.random()*n|0;
+    deck.forEach((id,i)=>H.hands[(st0+i)%n].push(id));
+    H.bd = {}; SUITS.forEach(s=>{ H.bd[s] = Array(14).fill(null); });
+    const d7 = cid('d',7);
+    H.turn = H.hands.findIndex(h=>h.includes(d7));
+    for(const h of H.hands) for(const s of SUITS){ const id=cid(s,7), k=h.indexOf(id); if(k>=0){ h.splice(k,1); H.bd[s][7]=id; } }
+    H.pass = H.names.map(()=>0); H.fin = H.names.map(()=>0); H.out = H.names.map(()=>0); H.finN = 0; H.outN = 0;
+    H.force = null; H.jk = null; H.lastPut = '';
+    // 7を出したら手札がなくなった班(ほぼないが念のため)
+    H.hands.forEach((h,g)=>{ if(!h.length) H.fin[g] = ++H.finN; });
+    if(H.fin[H.turn]) H.turn = nextG(H, H.turn);
+    TC.fx(`スタート! ♦7を持っていた${H.names[H.turn]}から`, {big:true, k:'big', c:'#ffe9a8'});
+  },
+  onAct(H, gi, a){
+    if(H.phase!=='play' || gi!==H.turn || a.tid!==H.tid || H.fin[gi] || H.out[gi]) return false;
+    if(a.t==='play') return doPlay(H, gi, +a.id, a.s ? {s:a.s, r:+a.r} : null);
+    if(a.t==='pass') return doPass(H, gi);
+    return false;
+  },
+  pub: H => ({ bd:H.bd, turn:H.turn, force:H.force, passMax:H.cfg.passMax, lastPut:H.lastPut,
+    groups:H.names.map((_,g)=>({c:H.hands[g].length, pass:H.pass[g], fin:H.fin[g], out:H.out[g]})) }),
+  hand: (H, g) => ({h:H.hands[g]}),
+  renderTable, renderPad,
+});
+</script>
+</body>
+</html>

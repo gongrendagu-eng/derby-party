@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ダウト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;900&family=Yuji+Boku&display=swap" rel="stylesheet">
+<style>
+/* 探偵事務所・取調室 */
+:root{
+  --bg:#17150f; --panel:#23201a; --field:#1c1a15; --bar:#100f0b; --line:#4a4234; --ink:#ece3d0; --dim:#9d927b;
+  --acc:#e0a94a; --accink:#1b1408; --accsh:#8a6420; --btn:#322d24; --bad:#e0402f;
+  --disp:'Zen Kaku Gothic New','Hiragino Sans',sans-serif; --sys:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic',sans-serif;
+  --stamp:'Yuji Boku','Hiragino Mincho ProN',serif;
+  --back:#2c2a24; --backline:rgba(224,169,74,.55);
+  --backpat:repeating-linear-gradient(0deg,transparent 0 4px,rgba(224,169,74,.1) 4px 5px);
+}
+body{background:radial-gradient(ellipse at 50% 0%,#2a2519,#17150f 60%) fixed}
+.hero h1{font-weight:900;letter-spacing:.3em}
+#table>header .ttl{font-weight:900;letter-spacing:.3em}
+.btn.main,.pb{font-weight:900}
+/* 先生の画面:デスクとランプ */
+#stage{background:radial-gradient(ellipse 55% 60% at 50% 38%,rgba(255,215,140,.22),transparent 70%),
+  linear-gradient(180deg,#1a1712 0 60%,#2b2016 60% 100%)}
+#stage::before{content:"";position:absolute;left:50%;top:0;width:16vmin;height:6vmin;transform:translateX(-50%);
+  background:linear-gradient(#3a3226,#1e1a13);clip-path:polygon(18% 0,82% 0,100% 100%,0 100%);box-shadow:0 0 0 1px #000}
+.desk{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5vmin}
+.need{text-align:center;background:#f1e7cf;color:#2a2116;padding:1.4vmin 2.6vmin 2vmin;border-radius:.6vmin;transform:rotate(-3deg);box-shadow:0 1vmin 2vmin rgba(0,0,0,.5);position:relative}
+.need::before{content:"";position:absolute;left:50%;top:-1vmin;width:2vmin;height:2vmin;border-radius:50%;background:#b0281c;transform:translateX(-50%);box-shadow:0 .3vmin 0 #5e130b}
+.need small{display:block;font-weight:900;font-size:1.8vmin;letter-spacing:.3em;color:#6b5a40}
+.need b{display:block;font-family:var(--disp);font-weight:900;font-size:14vmin;line-height:1}
+.pile{position:relative;width:16vmin;height:22.7vmin}
+.pile .pc{--cw:16vmin;position:absolute;left:0;top:0}
+.pile .cnt{position:absolute;left:50%;bottom:-5vmin;transform:translateX(-50%);font-weight:900;font-size:2.4vmin;white-space:nowrap;color:var(--dim)}
+.claim{min-width:44vmin;text-align:left}
+.claim .who{font-size:2.4vmin;color:var(--dim);font-weight:700}
+.claim .what{font-weight:900;font-size:5vmin;line-height:1.2}
+.claim .what em{font-style:normal;color:var(--acc)}
+.timer{margin-top:1.2vmin;height:1.6vmin;border-radius:99px;background:#3a3328;overflow:hidden}
+.timer i{display:block;height:100%;background:var(--bad);transform-origin:left;animation:shrink linear forwards}
+@keyframes shrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.wq{font-weight:900;color:var(--bad);font-size:2.6vmin;margin-top:.8vmin;letter-spacing:.1em}
+.reveal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(10,9,7,.94);border:.4vmin solid var(--line);border-radius:2vmin;padding:3vmin 4vmin;text-align:center;z-index:5;min-width:60vmin}
+.reveal .rh{font-weight:900;font-size:3vmin;margin-bottom:2vmin}
+.reveal .cards{display:flex;gap:1.4vmin;justify-content:center}
+.reveal .pc{--cw:13vmin}
+.reveal .pc.lie{box-shadow:0 0 0 .6vmin var(--bad)}
+.reveal .rr{margin-top:2.4vmin;font-weight:900;font-size:3.2vmin}
+.stampk{position:absolute;right:-12vmin;top:-9vmin;font-family:var(--stamp);font-size:14vmin;line-height:1;color:var(--sc);border:.8vmin solid var(--sc);border-radius:1.6vmin;padding:.4vmin 2vmin;transform:rotate(-14deg);
+  background:rgba(255,255,255,.04);animation:stamp .5s cubic-bezier(.2,1.6,.4,1) both;mix-blend-mode:screen}
+@keyframes stamp{0%{transform:rotate(-14deg) scale(3);opacity:0}100%{transform:rotate(-14deg) scale(1);opacity:1}}
+.seat{position:absolute;transform:translate(-50%,-50%);width:19vmin;background:#211e18;border:.3vmin solid var(--line);border-radius:1.2vmin;padding:1vmin 1.2vmin;text-align:center;box-shadow:0 .8vmin 1.6vmin rgba(0,0,0,.5)}
+.seat .nm{font-weight:900;font-size:2.6vmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .cnt{font-weight:900;font-size:4.6vmin;line-height:1.05}
+.seat .cnt small{font-size:1.8vmin;color:var(--dim);margin-left:.3vmin}
+.seat .dv{position:absolute;right:.7vmin;top:.4vmin;font-size:1.5vmin}
+.seat.turn{border-color:var(--acc);box-shadow:0 0 0 .5vmin rgba(224,169,74,.25),0 0 4vmin rgba(224,169,74,.35);transform:translate(-50%,-50%) scale(1.08);z-index:2}
+.seat.turn::after{content:"▶ この班の番";position:absolute;left:50%;top:-1.4vmin;transform:translate(-50%,-50%);background:var(--acc);color:var(--accink);font-weight:900;font-size:1.8vmin;padding:.2vmin 1.2vmin;border-radius:99px;white-space:nowrap}
+.seat .st{display:inline-block;margin-top:.4vmin;font-weight:900;font-size:1.9vmin;padding:.2vmin 1vmin;border-radius:99px;background:var(--acc);color:var(--accink)}
+.seat.done{opacity:.55}
+/* iPad */
+#pad.myturn .ptick{border-color:var(--acc)}
+.dbtn{border:0;border-radius:22px;padding:22px 30px;font-family:var(--disp);font-weight:900;font-size:clamp(40px,8vw,72px);background:var(--bad);color:#fff;box-shadow:0 8px 0 #7c1d12;animation:pulse .5s ease-in-out infinite alternate;width:100%}
+.dbtn small{display:block;font-size:.32em;font-weight:700;opacity:.9}
+@keyframes pulse{to{transform:scale(1.03)}}
+.pclaim{display:flex;align-items:center;gap:14px;justify-content:center;background:var(--panel);border-radius:14px;padding:10px;border:2px solid var(--line)}
+.pclaim .need{transform:none;padding:6px 16px 8px}
+.pclaim .need b{font-size:56px}
+.pclaim .need small{font-size:11px}
+.pclaim .txt{font-weight:900;font-size:clamp(18px,3vw,26px)}
+.truth{font-size:.7em;padding:2px 10px;border-radius:99px;margin-left:8px;vertical-align:middle}
+.truth.t{background:#2f6b3a;color:#d8ffe0}.truth.l{background:var(--bad);color:#fff}
+.prev{background:#0f0e0b;border:2px solid var(--line);border-radius:14px;padding:8px;text-align:center}
+.prev .cards{display:flex;gap:6px;justify-content:center}
+.prev .pc{--cw:58px}
+.prev b{font-family:var(--stamp);font-size:34px;color:var(--sc);margin-left:10px}
+</style>
+</head>
+<body>
+<script>window.NO_FB_CFG=false</script>
+<script src="firebase-config.js" onerror="window.NO_FB_CFG=true"></script>
+<script src="trump-core.js"></script>
+<script>
+'use strict';
+const {$, esc, shuffle, card, rankOf, suitOf, RN, arr, cardName} = TC;
+
+/* ---------- ルール ---------- */
+const isOut = (H,g) => H.out[g] > 0;
+const active = H => H.names.map((_,g)=>g).filter(g=>!isOut(H,g));
+function nextG(H, g){ const n=H.names.length; for(let k=1;k<=n;k++){ const x=(g+k)%n; if(!isOut(H,x)) return x; } return -1; }
+function doPlay(H, gi, ids){
+  if(H.win || H.rev) return false;
+  ids = arr(ids).map(Number);
+  const hand = H.hands[gi];
+  if(ids.length<1 || ids.length>4 || new Set(ids).size!==ids.length || ids.some(id=>!hand.includes(id))) return false;
+  ids.forEach(id=>hand.splice(hand.indexOf(id),1));
+  H.pile.push(...ids);
+  H.last = {g:gi, ids, need:H.need};
+  H.tid++;
+  const ms = H.cfg.winSec*1000;
+  H.win = {until:Date.now()+ms, ms, g:gi, key:H.tid};
+  TC.fx(`${H.names[gi]}:「${RN[H.need]}」を${ids.length}枚`, {k:'card'});
+  const key = H.tid;
+  TC.later(ms, H => { if(H.win && H.win.key===key){ closeWin(H); TC.commit(); } });
+  return true;
+}
+function closeWin(H){
+  H.win = null;
+  const g = H.last.g;
+  if(!H.hands[g].length) goOut(H, g);
+  proceed(H);
+}
+function doDoubt(H, gi){
+  if(!H.win || H.win.g===gi || isOut(H,gi)) return false;
+  const L = H.last, liar = L.ids.some(id=>rankOf(id)!==L.need);
+  const loser = liar ? L.g : gi;
+  const n = H.pile.length;
+  H.hands[loser].push(...H.pile); H.pile = [];
+  H.win = null; H.tid++;
+  H.rev = {ids:L.ids, need:L.need, liar, by:gi, g:L.g, loser, n};
+  TC.fx(`${H.names[gi]}の「ダウト!」`, {big:true, k:'alarm', c:'#e0402f'});
+  TC.fx(liar ? 'ウソだった!' : '本当だった!', {k:'stamp'});
+  TC.later(3200, H => { afterReveal(H); TC.commit(); });
+  return true;
+}
+function afterReveal(H){
+  const r = H.rev; if(!r) return;
+  H.rev = null; H.lastRev = r;
+  if(!r.liar && !H.hands[r.g].length) goOut(H, r.g);
+  proceed(H);
+}
+function goOut(H, g){ if(isOut(H,g)) return; H.out[g] = ++H.outN; TC.fx(`${H.names[g]} あがり!`, {big:true, k:'win', c:'#e0a94a'}); }
+function proceed(H){
+  H.tid++;
+  const one = H.cfg.end==='one';
+  const act = active(H);
+  if((one && H.outN>=1) || act.length<=1){ endGame(H); return; }
+  H.need = H.need%13 + 1;
+  H.turn = nextG(H, H.last.g);
+}
+function endGame(H){
+  const one = H.cfg.end==='one';
+  TC.finish(H, H.names.map((_,g)=>({g,
+    score: isOut(H,g) ? 1000-H.out[g] : -H.hands[g].length,
+    info: isOut(H,g) ? `<b>${H.out[g]}番目にあがり</b>` : `<b>手札 ${H.hands[g].length}枚</b>`})),
+    one ? 'あがった班が1位。残りの班は手札が少ないほど上の順位です' : 'あがった順。最後まで残った班が最下位です');
+}
+
+/* ---------- 先生の画面 ---------- */
+function seatPos(i, n){ const a=(-90 + i*360/n)*Math.PI/180; return {x:50+41*Math.cos(a), y:52+39*Math.sin(a)}; }
+function renderTable(H, stage, hx){
+  hx.innerHTML = `<button class="hb" id="closeBtn">⏱ 締め切る</button>`;
+  $('#closeBtn').disabled = !H.win;
+  $('#closeBtn').onclick = () => { const h=TC.H(); if(h.win){ closeWin(h); TC.commit(); } };
+  const n = H.names.length, L = H.last;
+  let claim = `<div class="claim"><div class="who">${esc(H.names[H.turn])}の番</div><div class="what">「<em>${RN[H.need]}</em>」を出す</div></div>`;
+  if(H.win){
+    const left = Math.max(0, H.win.until - Date.now());
+    claim = `<div class="claim"><div class="who">${esc(H.names[L.g])}の申告</div><div class="what">「<em>${RN[L.need]}</em>」が <em>${L.ids.length}</em>枚</div>
+      <div class="timer"><i style="animation-duration:${left}ms"></i></div><div class="wq">ウソだと思ったら iPad で「ダウト!」</div></div>`;
+  }
+  const backs = Math.min(H.pile.length, 6);
+  stage.innerHTML = `<div class="desk">
+      <div class="need"><small>次の数字</small><b>${RN[H.win ? L.need : H.need]}</b></div>
+      <div class="pile">${Array.from({length:backs},(_,k)=>card(null,'',`style="transform:translate(${k*.4}vmin,${-k*.4}vmin) rotate(${(k%3-1)*4}deg)"`)).join('')}<div class="cnt">場のカード ${H.pile.length}枚</div></div>
+      ${claim}</div>` +
+    H.names.map((nm,g)=>{ const p=seatPos(g,n);
+      return `<div class="seat ${g===H.turn&&!H.win&&!H.rev&&H.phase==='play'?'turn':''} ${isOut(H,g)?'done':''}" style="left:${p.x}%;top:${p.y}%">
+        <span class="dv">${TC.dev(g)?'📱':'📵'}</span><div class="nm">${esc(nm)}</div>
+        <div class="cnt">${H.hands[g].length}<small>枚</small></div>${isOut(H,g)?`<span class="st">${H.out[g]}番目にあがり</span>`:''}</div>`; }).join('') +
+    (H.rev ? revealHTML(H, H.rev) : '');
+}
+function revealHTML(H, r){
+  const sc = r.liar ? '#e0402f' : '#5ab0ff';
+  return `<div class="reveal"><div class="rh">${esc(H.names[r.by])}が「ダウト!」 → ${esc(H.names[r.g])}の申告は「${RN[r.need]}」</div>
+    <div class="cards">${r.ids.map(id=>card(id, rankOf(id)!==r.need?'lie':'')).join('')}</div>
+    <div class="rr">${esc(H.names[r.loser])}が場のカード${r.n}枚を引き取り</div>
+    <span class="stampk" style="--sc:${sc}">${r.liar?'ウソ':'シロ'}</span></div>`;
+}
+
+/* ---------- iPad ---------- */
+const SO = {s:0,h:1,d:2,c:3};
+function sortHand(h){ return h.slice().sort((a,b)=> (rankOf(a)-rankOf(b)) || (SO[suitOf(a)]-SO[suitOf(b)])); }
+function winLeft(st){ return st.win ? Math.max(0, st.win.left - (Date.now() - st.recvAt)) : 0; }
+function renderPad(P){
+  const st = P.st, me = P.me, groups = arr(st.groups), mine = groups[me];
+  const hand = sortHand(arr(P.hd && P.hd.h));
+  P.ui.sel = arr(P.ui.sel).filter(id=>hand.includes(id));
+  const myTurn = st.turn===me && !st.win && !st.rev && !mine.out;
+  P.el.className = myTurn ? 'myturn' : '';
+  const L = st.last;
+  let tick;
+  if(mine.out) tick = `${mine.out}番目にあがり! 見守ろう`;
+  else if(st.rev) tick = 'ダウトの結果は先生の画面で!';
+  else if(st.win) tick = L.g===me ? 'ドキドキ… ダウトされるかな' : `${st.names[L.g]}の申告:「${RN[L.need]}」が${L.n}枚`;
+  else tick = myTurn ? `あなたの番! 「${RN[st.need]}」として出そう(1〜4枚)` : `${st.names[st.turn]}の番`;
+  let mid = '';
+  if(st.win && L.g!==me && !mine.out){
+    mid = `<button class="dbtn" id="dbtn">ダウト!<small id="dcount">あと ${Math.ceil(winLeft(st)/1000)} 秒</small></button>`;
+  } else if(st.rev){
+    const r = st.rev, sc = r.liar ? '#e0402f' : '#5ab0ff';
+    mid = `<div class="prev"><div class="cards">${arr(r.ids).map(id=>card(id)).join('')}<b style="--sc:${sc}">${r.liar?'ウソ':'シロ'}</b></div>
+      <div style="margin-top:6px;font-weight:900">${esc(st.names[r.loser])}が${r.n}枚引き取り${r.loser===me?'…':''}</div></div>`;
+  } else if(myTurn){
+    const sel = P.ui.sel, truth = sel.length && sel.every(id=>rankOf(id)===st.need);
+    mid = `<div class="pclaim"><div class="need"><small>出す数字</small><b>${RN[st.need]}</b></div>
+      <div class="txt">${sel.length?`${sel.length}枚えらんでいます<span class="truth ${truth?'t':'l'}">${truth?'本当':'ウソ'}</span>`:'出すカードをタッチ(1〜4枚)'}</div></div>`;
+  }
+  const others = groups.map((o,i)=>`<div class="poc ${i===st.turn&&!st.win?'turn':''} ${i===me?'me':''} ${o.out?'out':''}"><b>${esc(st.names[i])}</b><span>${o.out?o.out+'抜け':o.c+'枚'}</span></div>`).join('');
+  const cards = hand.map(id => card(id, P.ui.sel.includes(id)?'sel':'', `data-id="${id}"`)).join('');
+  const btn = myTurn && P.ui.sel.length ? `<div class="pbar"><button class="pb go" id="pplay" ${P.busy?'disabled':''}>「${RN[st.need]}」として ${P.ui.sel.length}枚 出す</button></div>` : '';
+  P.el.innerHTML = TC.padTop(P, tick, myTurn) + `<div class="pothers">${others}</div>
+    <div style="font-weight:900;text-align:center;color:var(--dim)">場のカード ${st.pileN}枚</div>${mid}
+    <div class="phand"><div class="cards">${cards}</div></div>${btn}`;
+  P.el.querySelectorAll('.phand [data-id]').forEach(c => c.onclick = () => {
+    if(!myTurn || P.busy) return; const id=+c.dataset.id; const k=P.ui.sel.indexOf(id);
+    if(k>=0) P.ui.sel.splice(k,1); else if(P.ui.sel.length<4) P.ui.sel.push(id);
+    P.render();
+  });
+  const pp = $('#pplay'); if(pp) pp.onclick = () => { P.send('play', {ids:P.ui.sel.slice()}); P.ui.sel=[]; };
+  const db = $('#dbtn'); if(db) db.onclick = () => { P.sendNow('doubt'); db.disabled = true; db.textContent = '送りました!'; };
+}
+function padTick(P){
+  const st = P.st; if(!st.win) return;
+  const el = $('#dcount'); if(!el) return;
+  const s = Math.ceil(winLeft(st)/1000);
+  if(s<=0){ const b=$('#dbtn'); if(b){ b.disabled=true; b.style.animation='none'; el.textContent='締め切り'; } }
+  else el.textContent = `あと ${s} 秒`;
+}
+
+TC.game({
+  key:'doubt', title:'ダウト', ver:1,
+  tagline:'決められた数字として、伏せたカードを出す。ウソを見破ったら「ダウト!」',
+  heroHTML: card(null)+card(null)+card(TC.cid('s',1)),
+  defaults:{winSec:5, end:'one'},
+  setupHTML: () => `<div><label class="t" for="fWin">「ダウト!」を受け付ける時間</label>
+      <select id="fWin"><option value="3">3秒</option><option value="5">5秒(ふつう)</option><option value="8">8秒</option></select>
+      <label class="t" style="margin-top:14px">終わり方</label>
+      <label class="opt"><input type="radio" name="fEnd" value="one"><span>1班があがったら終わり。残りの班は手札が少ないほど上(短時間)</span></label>
+      <label class="opt"><input type="radio" name="fEnd" value="all"><span>最後の1班になるまで続ける(時間がかかる)</span></label></div>`,
+  fillSetup: c => { $('#fWin').value = String(c.winSec||5); document.querySelector(`input[name=fEnd][value=${c.end==='all'?'all':'one'}]`).checked = true; },
+  readSetup: () => ({winSec:+$('#fWin').value, end:document.querySelector('input[name=fEnd]:checked').value}),
+  rulesHTML: `出す数字は A→2→3→…→K→A の順に決まっています。手番の班は、その数字として手札を1〜4枚、伏せて出します。本当の数字でなくてもかまいません(ウソをついてもいい)。<br>
+    出した直後の数秒間、ほかの班のiPadに「ダウト!」ボタンが出ます。いちばん早く押した班だけが有効です。<br>
+    カードを開いて、ウソだったら出した班が、本当だったら「ダウト!」と言った班が、場のカードを全部引き取ります。<br>
+    手札を最後まで出しきった班があがり。最後の1枚もダウトの対象で、ウソがばれたらあがれません。`,
+  newGame(H){
+    const deck = shuffle([...Array(52).keys()]); const n = H.names.length;
+    H.hands = H.names.map(()=>[]);
+    deck.forEach((id,i)=>H.hands[i%n].push(id));
+    H.out = H.names.map(()=>0); H.outN = 0; H.pile = []; H.need = 1; H.last = null; H.win = null; H.rev = null; H.lastRev = null;
+    H.turn = Math.random()*n|0;
+    TC.fx(`スタート! ${H.names[H.turn]}から「A」`, {big:true, k:'big', c:'#e0a94a'});
+  },
+  onAct(H, gi, a){
+    if(H.phase!=='play') return false;
+    if(a.t==='doubt') return doDoubt(H, gi);
+    if(a.t==='play' && gi===H.turn && a.tid===H.tid && !isOut(H,gi)) return doPlay(H, gi, a.ids);
+    return false;
+  },
+  onResume(H){ if(H.rev) afterReveal(H); else if(H.win) closeWin(H); },
+  pub: H => ({ turn:H.turn, need:H.need, pileN:H.pile.length, last:H.last?{g:H.last.g, need:H.last.need, n:H.last.ids.length}:null, rev:H.rev,
+    win: H.win ? {g:H.win.g, left:Math.max(0,H.win.until-Date.now())} : null,
+    groups:H.names.map((_,g)=>({c:H.hands[g].length, out:H.out[g]})) }),
+  hand: (H, g) => ({h:H.hands[g]}),
+  renderTable, renderPad, padTick,
+});
+</script>
+</body>
+</html>
