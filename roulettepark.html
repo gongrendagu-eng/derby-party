@@ -163,6 +163,62 @@ button,select,input{font:inherit;color:inherit}
 .revlist span{font-family:var(--f-display);font-size:clamp(20px,3.4vh,32px);background:var(--yellow);border:3px solid var(--ink);border-radius:16px;padding:4px 16px;box-shadow:0 4px 0 var(--ink)}
 .revlist span.sd{background:#ffd3e0}
 .revlist span.safe{background:var(--mint);color:#fff}
+/* グループ */
+.gchip{display:inline-flex;align-items:center;font-family:var(--f-display);font-size:clamp(18px,3vh,28px);background:var(--gc);color:#fff;border:3px solid var(--ink);border-radius:14px;padding:2px 14px;box-shadow:0 4px 0 var(--ink);-webkit-text-stroke:1px var(--ink);paint-order:stroke fill}
+.gchip.sm{font-size:13px;padding:0 8px;border-width:2px;box-shadow:none;border-radius:999px;-webkit-text-stroke:0}
+.names .gchip{font-size:14px;padding:0 10px;border-width:2px;box-shadow:0 2px 0 var(--ink);-webkit-text-stroke:0}
+.gbig{font-family:var(--f-display);font-size:clamp(46px,11vh,110px);line-height:1.1;color:var(--gc);-webkit-text-stroke:3px var(--ink);paint-order:stroke fill;text-shadow:0 6px 0 var(--ink);animation:rankin .5s cubic-bezier(.2,.9,.3,1.2)}
+.gbig.sm{font-size:clamp(34px,8vw,52px);text-shadow:0 4px 0 var(--ink)}
+.gmem{margin:0;font-weight:800;font-size:clamp(16px,2.6vh,24px)}
+.gtot{margin:0;font-weight:800;font-size:clamp(18px,3vh,28px)}.gtot b{font-family:var(--f-display);font-weight:400;color:var(--orange);font-size:1.4em}
+.vs{font-family:var(--f-display);font-size:clamp(20px,3.4vh,32px);align-self:center}
+.gsdcols{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.gsdcol{display:flex;flex-direction:column;gap:4px;min-width:150px;background:#fff;border:3px solid var(--gc);border-radius:16px;padding:8px 12px;font-weight:800}
+.gsdcol b{font-family:var(--f-display);font-weight:400;color:var(--gc);font-size:22px;-webkit-text-stroke:1px var(--ink);paint-order:stroke fill}
+.gsdside{border-left:6px solid var(--gc);padding-left:8px;display:flex;flex-direction:column;gap:4px}
+.gsdside.ok{opacity:.55}
+.gsdside .nm s{color:var(--muted)}
+.nm[data-g]::before{content:attr(data-g);display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--gc);color:#fff;font-size:11px;margin-left:-6px;border:1.5px solid var(--ink)}
+.nm .nb{font-size:11px;color:var(--orange)}
+.mynums{display:flex;gap:8px;justify-content:center}
+.mynums b{font-family:var(--f-display);font-weight:400;font-size:40px;min-width:64px;background:var(--yellow);border:3px solid var(--ink);border-radius:16px;padding:2px 10px;box-shadow:0 4px 0 var(--ink)}
+.mynums b.got{background:var(--mint);color:#fff}
+/* ロビーの設定（メダル・グループ） */
+.lobtabs{display:flex;gap:8px;align-self:stretch;justify-content:center}
+.lobtabs .btn.on{background:var(--yellow)}
+#ovCard:has(.edit){width:min(1000px,100%);align-items:stretch;justify-content:flex-start}
+.ov:has(.edit){place-items:stretch}
+.edit{display:flex;flex-direction:column;gap:12px;text-align:left;min-height:0}
+.edpaste{display:flex;flex-direction:column;gap:6px}
+.edpaste textarea{font:inherit;font-size:15px;border:2.5px solid var(--ink);border-radius:12px;padding:8px 10px;resize:vertical;background:#fff}
+.edpaste .row,.edgrp{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.edgrp select{font:inherit;font-weight:800;border:2.5px solid var(--ink);border-radius:10px;padding:2px 8px}
+.edsum{display:flex;flex-wrap:wrap;gap:8px}
+.gsum{display:flex;align-items:baseline;gap:6px;background:#fff;border:3px solid var(--gc);border-radius:14px;padding:4px 12px;font-weight:800}
+.gsum b{font-family:var(--f-display);font-weight:400;font-size:22px;color:var(--gc);-webkit-text-stroke:1px var(--ink);paint-order:stroke fill}
+.gsum small{color:var(--muted);font-size:12px}
+.edtab{width:100%;border-collapse:collapse;font-weight:800}
+.edtab th{font-size:12px;color:var(--muted);text-align:left;padding:2px 6px;border-bottom:2px solid var(--ink)}
+.edtab td{padding:3px 6px;border-bottom:1px dashed #c5c2d4}
+.edtab .nmc{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edtab .bon{color:var(--pink)}
+.edtab .stb b{font-family:var(--f-display);font-weight:400;color:var(--orange);font-size:20px}
+.gbtn{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--ink);background:var(--gc);color:#fff;font-family:var(--f-display);font-size:18px;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.estep{display:flex;gap:4px;align-items:center}
+.estep button{border:2px solid var(--ink);border-radius:999px;background:var(--paper);font-weight:800;font-size:12px;padding:2px 8px;cursor:pointer}
+.estep input{width:64px;font:inherit;font-weight:800;text-align:center;border:2px solid var(--ink);border-radius:8px;padding:2px}
+.kx{border:0;background:transparent;font-weight:800;font-size:16px;color:var(--muted);cursor:pointer}
+/* 最終順位（グループ） */
+.grank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%}
+.grk{display:flex;align-items:center;gap:8px;background:#fff;border:3px solid var(--gc);border-radius:14px;padding:2px 10px;box-shadow:0 3px 0 var(--ink);font-size:clamp(14px,2.6vh,22px);font-weight:800;animation:rankin .45s both}
+.grk b{font-family:var(--f-display);font-weight:400;color:var(--gc);-webkit-text-stroke:1px var(--ink);paint-order:stroke fill}
+.grk .rk,.grk .rm{font-family:var(--f-display);font-weight:400}.grk .rm{color:var(--orange)}
+.grk small{font-size:.6em}
+.grk.cl{background:#ffd3e0}
+.grk .rc{font-size:.62em;background:var(--pink);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:0 8px}
+.ranklist.sm{gap:4px 14px}
+.ranklist.sm li{font-size:clamp(12px,min(2.7vh,1.8vw),22px);padding:1px 10px;gap:8px}
+.ranklist .gl{font-style:normal;display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;background:var(--gc);color:#fff;font-family:var(--f-display);font-size:.8em;border:2px solid var(--ink);flex:none}
 /* 最終順位（プロジェクター） */
 .ov:has(.ranklist){place-items:stretch}
 #ovCard:has(.ranklist){justify-content:center;gap:10px;padding:16px 20px}
@@ -600,7 +656,11 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
           <div class="field"><label for="c_bet">BETの制限時間</label>
             <select id="c_bet"><option value="0">なし（先生が締め切る）</option><option value="30" selected>30秒</option><option value="60">60秒</option></select></div>
           <div class="field"><label for="c_start">最初の持ちメダル</label><input id="c_start" type="number" min="10" value="100"></div>
-          <div class="field"><label for="c_clean">掃除当番の人数</label><input id="c_clean" type="number" min="1" max="20" value="5"></div>
+          <div class="field"><label for="c_mode">掃除の決め方</label>
+            <select id="c_mode"><option value="solo" selected>個人（メダルの少ない人）</option><option value="group">グループ（合計が一番少ないグループ）</option></select></div>
+          <div class="field"><label for="c_clean">掃除当番の人数（個人のとき）</label><input id="c_clean" type="number" min="1" max="20" value="5"></div>
+          <div class="field"><label for="c_groups">グループの数（グループのとき）</label>
+            <select id="c_groups"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
           <div class="field"><label for="c_dbl">ダブルアップの確率</label>
             <select id="c_dbl"><option value="0">なし</option><option value="0.1">10%</option><option value="0.2" selected>20%</option><option value="0.3">30%</option></select></div>
           <div class="field"><label for="c_speed">ルーレットの演出</label>
@@ -665,7 +725,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
 
 <script>
 /* ===================== 共通 ===================== */
-const APP_VER=12;
+const APP_VER=13;
 const FB_VER='10.12.2';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -1054,8 +1114,8 @@ function buildWheel(k){
   }
   pockets=out;
 }
-function buildSdWheel(list){ // list: [{n, name}]
-  pockets=list.map(x=>({t:'n',n:x.n,name:x.name}));
+function buildSdWheel(list){ // list: [{n, name, col}]
+  pockets=list.map(x=>({t:'n',n:x.n,name:x.name,col:x.col}));
 }
 const POCKET_COLORS=['#ff5f8f','#3a9bff','#22c79a','#ff9a3c','#8a6cff'];
 const INK='#2b2a5a';
@@ -1136,7 +1196,7 @@ function drawWheel(now,b){
     const a0=wA+i*st,a1=a0+st;
     const done=p.t==='n'&&drawnSet.has(p.n)&&i!==hi;
     ctx.beginPath();ctx.arc(cx,cy,r2,a0,a1);ctx.arc(cx,cy,r1,a1,a0,true);ctx.closePath();
-    ctx.fillStyle=p.t==='p'?'#ffcf33':done?'#d6d3e2':POCKET_COLORS[i%5];ctx.fill();
+    ctx.fillStyle=p.t==='p'?'#ffcf33':done?'#d6d3e2':(p.col||POCKET_COLORS[i%5]);ctx.fill();
     if(i===hi){ctx.fillStyle=`rgba(255,255,255,${0.3+0.3*Math.sin(now/110)})`;ctx.fill()}
     else if(i===under){ctx.fillStyle='rgba(255,255,255,.4)';ctx.fill()}
     ctx.lineWidth=Math.max(1,R*0.008);ctx.strokeStyle=INK;ctx.stroke();
@@ -1267,22 +1327,141 @@ function commentary(info){
 const H={
   cfg:null,code:'',net:null,phase:'setup',roster:{},err:{},online:{},
   gno:0,gid:'',seed:0,dbl:false,drawn:[],ball:0,left:0,spinning:0,betLeft:-1,
-  rev:null,sd:null,busy:false,timer:null,joinIdx:0,lineup:[]
+  rev:null,sd:null,gsd:null,busy:false,timer:null,joinIdx:0,lineup:[],
+  medal:{},pasteText:'',pasteMsg:'',lobView:'qr'
 };
+/* ---- 人ごとのメダル・グループ ---- */
+const GL='ABCDEFGH',GCOL=['#ff5f8f','#3a9bff','#22c79a','#ff9a3c','#8a6cff','#e0a800','#19b5d6','#e14b4b'];
+const gName=i=>GL[i]+'グループ';
+const gChip=(i,txt)=>`<span class="gchip" style="--gc:${GCOL[i]}">${txt==null?gName(i):txt}</span>`;
+const isGroup=()=>!!(H.cfg&&H.cfg.mode==='group');
+function groupsOf(){const m={};Object.keys(H.roster).forEach(p=>{const g=H.roster[p].g;if(g>=0)(m[g]=m[g]||[]).push(p)});return m}
+function smallestGroup(){
+  const G=H.cfg.groups,c=Array(G).fill(0);Object.values(H.roster).forEach(r=>{if(r.g>=0&&r.g<G)c[r.g]++});
+  const mn=Math.min(...c);return pick(c.map((x,i)=>x===mn?i:-1).filter(i=>i>=0));
+}
+function fixGroups(){
+  if(!isGroup())return;
+  Object.keys(H.roster).sort((a,b)=>H.roster[a].o-H.roster[b].o).forEach(p=>{const r=H.roster[p];if(!(r.g>=0&&r.g<H.cfg.groups)){r.g=-1;r.g=smallestGroup()}});
+}
+function autoGroups(){
+  const G=H.cfg.groups;shuffle(Object.keys(H.roster)).forEach((p,i)=>H.roster[p].g=i%G);
+}
+/* ロビーで最初のメダルを決める：本人の枚数（小テストなど）＋少ない班の上乗せ */
+function applyStart(){
+  if(H.phase!=='lobby'||H.gno>0)return;
+  const ps=Object.keys(H.roster);
+  ps.forEach(p=>{const r=H.roster[p];if(!(r.b0>=10))r.b0=H.cfg.start;r.bonus=0});
+  if(isGroup()){
+    fixGroups();
+    const gs=Object.values(groupsOf()),mx=Math.max(0,...gs.map(a=>a.length));
+    gs.forEach(a=>{const bo=Math.ceil(H.cfg.start*(mx-a.length)/a.length);a.forEach(p=>H.roster[p].bonus=bo)});
+  }
+  ps.forEach(p=>{const r=H.roster[p];r.b=r.b0+r.bonus});
+}
+function refreshLobby(){applyStart();if(H.phase==='lobby'&&H.lobView==='edit')renderEdList()}
+function parseMedals(text){
+  const out={},bad=[];let low=0;
+  String(text||'').split(/\r?\n/).forEach(line=>{
+    const t=line.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\u3000/g,' ').trim();
+    if(!t)return;
+    const m=t.match(/^(.+?)[\s,、，:：]+(-?\d+(?:\.\d+)?)\s*(?:点|枚)?\s*$/);
+    const nm=m&&normName(m[1].replace(/[,、，:：]+$/,''));
+    if(!m||!nm){bad.push(line.trim());return}
+    let v=Math.round(+m[2]);if(v<10){v=10;low++}
+    out[nm.toLowerCase()]={n:nm,v};
+  });
+  return{out,bad,low};
+}
+function applyMedals(){
+  const {out,bad,low}=parseMedals(H.pasteText);
+  H.medal=out;let hit=0;
+  Object.values(H.roster).forEach(r=>{const x=out[r.n.toLowerCase()];if(x){r.b0=x.v;hit++}});
+  const n=Object.keys(out).length;
+  H.pasteMsg=n?`${n}人分を読みこみ、参加中の ${hit}人 に反映しました。${low?`（10枚未満の ${low}件 は10枚にしました）`:''}${bad.length?`<br>読めなかった行：${bad.slice(0,5).map(esc).join('／')}${bad.length>5?' ほか':''}`:''}`
+    :'名前と枚数が読みとれませんでした。「たろう　85」のように1行に1人ずつ入れてください。';
+  refreshLobby();renderSide();pubState();saveHost();
+}
+function setB0(p,v){
+  const r=H.roster[p];if(!r)return;
+  r.b0=Math.max(10,Math.round(+v)||10);
+  refreshLobby();renderSide();pubState();saveHost();
+}
+function renderLobbyOv(){
+  const url=joinUrl(),grp=isGroup();
+  const tabs=`<div class="lobtabs"><button type="button" class="btn small${H.lobView==='qr'?' on':''}" data-lv="qr">参加のQRコード</button><button type="button" class="btn small${H.lobView==='edit'?' on':''}" data-lv="edit">メダル${grp?'・グループ':''}の設定</button></div>`;
+  if(H.lobView!=='edit'){
+    $('ovCard').innerHTML=`${tabs}<h2 class="revtitle">iPadで参加しよう！</h2>
+    <div class="joinbox"><div id="qr"></div><div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div>参加コード<div class="joincode">${H.code}</div></div>
+      <div class="joinurl">${esc(url)}</div>
+      <p class="hint">カメラでQRコードを読むか、URLを開いてニックネームを入れてください。</p></div></div>`;
+    try{new QRCode($('qr'),{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('qr').textContent='QRコードを表示できません'}
+  }else{
+    $('ovCard').innerHTML=`${tabs}<div class="edit">
+      <div class="edpaste"><label for="edText"><b>メダル一覧を貼りつけ</b> <span class="hint">1行に1人「名前　枚数」。Excelの2列をコピーしてそのまま貼れます。参加前に貼ってもOK（同じニックネームで参加すると入ります）</span></label>
+        <textarea id="edText" rows="4" placeholder="たろう	85&#10;はなこ	92">${esc(H.pasteText)}</textarea>
+        <div class="row"><button type="button" class="btn small go" id="edApply">反映する</button><button type="button" class="btn small" id="edClear">一覧を消す</button><span class="hint" id="edMsg">${H.pasteMsg}</span></div></div>
+      ${grp?`<div class="edgrp"><label>グループの数 <select id="edG">${[2,3,4,5,6,7,8].map(n=>`<option${n===H.cfg.groups?' selected':''}>${n}</option>`).join('')}</select></label>
+        <button type="button" class="btn small go" id="edAuto">自動で分ける</button><span class="hint">名前の左の色ボタンを押すと、グループが A→B→C… と変わります。人数の少ない班には、合計がそろうようメダルを上乗せします。</span></div>`:''}
+      <div id="edList"></div></div>`;
+    $('edText').oninput=e=>{H.pasteText=e.target.value};
+    $('edApply').onclick=()=>{H.pasteText=$('edText').value;applyMedals();$('edMsg').innerHTML=H.pasteMsg};
+    $('edClear').onclick=()=>{H.pasteText='';H.medal={};H.pasteMsg='一覧を消しました（入れた枚数はそのままです）';$('edText').value='';$('edMsg').innerHTML=H.pasteMsg;refreshLobby();saveHost()};
+    if(grp){
+      $('edG').onchange=e=>{H.cfg.groups=+e.target.value;lsSet(CFG_KEY,H.cfg);refreshLobby();renderSide();pubState();saveHost()};
+      $('edAuto').onclick=()=>{autoGroups();refreshLobby();renderSide();pubState();saveHost();sfx.chime()};
+    }
+    renderEdList();
+  }
+  $('ovCard').querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{H.lobView=b.dataset.lv;renderLobbyOv()});
+}
+function renderEdList(){
+  const w=$('edList');if(!w)return;
+  const grp=isGroup(),G=H.cfg.groups;
+  const ps=Object.keys(H.roster).sort((a,b)=>grp?(H.roster[a].g-H.roster[b].g)||(H.roster[a].o-H.roster[b].o):H.roster[a].o-H.roster[b].o);
+  let h='';
+  if(grp){
+    const gs=groupsOf();
+    h+=`<div class="edsum">${Array.from({length:G},(_,g)=>{const a=gs[g]||[],t=a.reduce((x,p)=>x+H.roster[p].b,0);
+      return `<span class="gsum" style="--gc:${GCOL[g]}"><b>${GL[g]}</b>${a.length}人<small>合計 ${t}枚${a.length&&H.roster[a[0]].bonus?`・上乗せ +${H.roster[a[0]].bonus}`:''}</small></span>`}).join('')}</div>`;
+  }
+  if(!ps.length)h+='<p class="hint">まだ誰も参加していません</p>';
+  else h+=`<table class="edtab"><thead><tr>${grp?'<th>班</th>':''}<th>名前</th><th>メダル（小テストなど）</th>${grp?'<th>上乗せ</th>':''}<th>スタート</th><th></th></tr></thead><tbody>${ps.map(p=>{
+    const r=H.roster[p];
+    return `<tr>${grp?`<td><button type="button" class="gbtn" data-cg="${p}" style="--gc:${GCOL[r.g]||'#999'}" aria-label="${esc(r.n)}のグループを変える">${GL[r.g]||'?'}</button></td>`:''}
+      <td class="nmc">${esc(r.n)}</td>
+      <td><div class="estep"><button type="button" data-em="${p}" data-d="-10">−10</button><button type="button" data-em="${p}" data-d="-1">−1</button><input type="number" min="10" inputmode="numeric" data-ei="${p}" value="${r.b0}" aria-label="${esc(r.n)}のメダル"><button type="button" data-em="${p}" data-d="1">＋1</button><button type="button" data-em="${p}" data-d="10">＋10</button></div></td>
+      ${grp?`<td class="bon">${r.bonus?'+'+r.bonus:''}</td>`:''}<td class="stb"><b>${r.b}</b>枚</td>
+      <td><button type="button" class="kx" data-kick="${p}" aria-label="${esc(r.n)}を外す">×</button></td></tr>`}).join('')}</tbody></table>`;
+  const keys=Object.keys(H.medal);
+  if(keys.length){
+    const inR=new Set(Object.values(H.roster).map(r=>r.n.toLowerCase()));
+    const wait=keys.filter(k=>!inR.has(k)).map(k=>H.medal[k].n);
+    const none=Object.values(H.roster).filter(r=>!H.medal[r.n.toLowerCase()]).map(r=>r.n);
+    if(wait.length)h+=`<p class="hint">一覧にあって、まだ参加していない名前：${wait.map(esc).join('、')}</p>`;
+    if(none.length)h+=`<p class="hint">一覧にない参加者：${none.map(esc).join('、')}（入力した枚数のまま）</p>`;
+  }
+  w.innerHTML=h;
+  w.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{const r=H.roster[b.dataset.em];if(r)setB0(b.dataset.em,r.b0+(+b.dataset.d))});
+  w.querySelectorAll('[data-ei]').forEach(i=>i.onchange=()=>setB0(i.dataset.ei,i.value));
+  w.querySelectorAll('[data-cg]').forEach(b=>b.onclick=()=>{const r=H.roster[b.dataset.cg];if(!r)return;r.g=((r.g>=0?r.g:-1)+1)%G;refreshLobby();renderSide();pubState();saveHost()});
+  w.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>kick(b.dataset.kick));
+}
 const tagsHtml=ln=>`<span class="lineup">${ln.map(g=>`<span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span>`).join('')}</span>`;
 const CFG_KEY='rpark.cfg',SAVE_KEY='rpark.save';
 function readCfg(){
   const use=Array.from(document.querySelectorAll('#c_use input:checked')).map(i=>i.value);
   return{use:(use.length?use:GKEYS).join(','),
     games:+$('c_games').value||5,betSec:+$('c_bet').value||0,start:Math.max(10,+$('c_start').value||100),
-    clean:Math.max(1,Math.min(20,+$('c_clean').value||5)),dblp:+$('c_dbl').value||0,speed:$('c_speed').value,net:$('c_net').value
+    clean:Math.max(1,Math.min(20,+$('c_clean').value||5)),mode:$('c_mode').value==='group'?'group':'solo',groups:Math.max(2,Math.min(8,+$('c_groups').value||4)),dblp:+$('c_dbl').value||0,speed:$('c_speed').value,net:$('c_net').value
   };
 }
 function fillCfg(c){
   if(!c)return;
   const set=(id,v)=>{if(v!=null&&$(id))$(id).value=String(v)};
   if(c.use){const u=parseLineup(c.use);document.querySelectorAll('#c_use input').forEach(i=>i.checked=u.includes(i.value))}
-  set('c_games',c.games);set('c_bet',c.betSec);set('c_start',c.start);set('c_clean',c.clean);set('c_dbl',c.dblp);set('c_speed',c.speed);set('c_net',c.net);
+  set('c_games',c.games);set('c_bet',c.betSec);set('c_start',c.start);set('c_clean',c.clean);set('c_mode',c.mode);set('c_groups',c.groups);set('c_dbl',c.dblp);set('c_speed',c.speed);set('c_net',c.net);
 }
 const actives=()=>Object.keys(H.roster).filter(p=>!H.roster[p].out);
 const nameOf=p=>(H.roster[p]&&H.roster[p].n)||'?';
@@ -1299,16 +1478,16 @@ function pubState(){
   pubTimer=setTimeout(()=>{
     pubTimer=null;if(!H.net)return;
     const st={v:APP_VER,phase:H.phase,ts:Date.now(),
-      cfg:{games:H.cfg.games,betSec:H.cfg.betSec,start:H.cfg.start,clean:H.cfg.clean,use:H.cfg.use||ALL_USE},lineup:H.lineup.join(','),
+      cfg:{games:H.cfg.games,betSec:H.cfg.betSec,start:H.cfg.start,clean:H.cfg.clean,use:H.cfg.use||ALL_USE,mode:H.cfg.mode||'solo',groups:H.cfg.groups||4},lineup:H.lineup.join(','),
       gno:H.gno,gid:H.gid||'-',seed:H.seed||0,dbl:H.dbl?1:0,drawn:H.drawn.join(','),ball:H.ball,left:H.left,spinning:H.spinning?1:0,
-      betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0,rank:H.rank?1:0};
+      betLeft:H.betLeft,roster:H.roster,err:H.err,rev:H.rev||0,sd:H.sd||0,gsd:H.gsd||0,rank:H.rank?1:0};
     const j=JSON.stringify(st);if(j===lastPub)return;lastPub=j;
     H.net.set('state',st);
   },60);
 }
 function saveHost(){
   if(['setup'].includes(H.phase))return;
-  lsSet(SAVE_KEY,{cfg:H.cfg,code:H.code,roster:H.roster,gno:H.gno,lineup:H.lineup,phase:H.phase==='lobby'?'lobby':'result',joinIdx:H.joinIdx,ts:Date.now()});
+  lsSet(SAVE_KEY,{cfg:H.cfg,code:H.code,roster:H.roster,medal:H.medal,gno:H.gno,lineup:H.lineup,phase:H.phase==='lobby'?'lobby':'result',joinIdx:H.joinIdx,ts:Date.now()});
 }
 
 /* ---- 起動 ---- */
@@ -1344,7 +1523,7 @@ async function openRoom(sv){
   }catch(e){
     $('setupErr').textContent=e.message||String(e);$('setupErr').hidden=false;$('openBtn').disabled=false;return;
   }
-  if(sv){H.roster=sv.roster||{};H.gno=sv.gno||0;H.lineup=Array.isArray(sv.lineup)?sv.lineup.filter(g=>GAMES[g]):[];H.joinIdx=sv.joinIdx||0;H.phase=sv.phase==='result'&&H.gno>0?'result':'lobby'}
+  if(sv){H.roster=sv.roster||{};H.gno=sv.gno||0;H.lineup=Array.isArray(sv.lineup)?sv.lineup.filter(g=>GAMES[g]):[];H.joinIdx=sv.joinIdx||0;H.medal=sv.medal||{};H.phase=sv.phase==='result'&&H.gno>0?'result':'lobby'}
   else{H.net.set('join',null);H.net.set('bets',null);H.net.set('sdpick',null);H.phase='lobby'}
   H.err={};
   $('setup').hidden=true;$('stage').hidden=false;
@@ -1381,7 +1560,7 @@ function onJoin(v){
     if(cur){
       if(cur.n!==name&&H.phase==='lobby'){
         const dup=Object.keys(H.roster).some(q=>q!==pid&&H.roster[q].n.toLowerCase()===name.toLowerCase());
-        if(dup){if(H.err[pid]!=='dup'){H.err[pid]='dup';changed=true}}else{cur.n=name;delete H.err[pid];changed=true}
+        if(dup){if(H.err[pid]!=='dup'){H.err[pid]='dup';changed=true}}else{cur.n=name;const x=H.medal[name.toLowerCase()];if(x)cur.b0=x.v;delete H.err[pid];changed=true}
       }
       continue;
     }
@@ -1389,27 +1568,22 @@ function onJoin(v){
     if(H.err[pid]==='kick')continue;
     const dup=Object.keys(H.roster).some(q=>H.roster[q].n.toLowerCase()===name.toLowerCase());
     if(dup){if(H.err[pid]!=='dup'){H.err[pid]='dup';changed=true}continue}
-    H.roster[pid]={n:name,b:H.cfg.start,out:0,o:++H.joinIdx,bet:ZERO(),conf:0,res:0,pt:0};
+    const mx=H.medal[name.toLowerCase()];
+    H.roster[pid]={n:name,b:H.cfg.start,b0:mx?mx.v:H.cfg.start,bonus:0,g:-1,out:0,o:++H.joinIdx,bet:ZERO(),conf:0,res:0,pt:0};
     delete H.err[pid];changed=true;
     if(H.phase==='lobby')sfx.bell();
   }
-  if(changed){renderSide();pubState();saveHost()}
+  if(changed){refreshLobby();renderSide();pubState();saveHost()}
 }
 function kick(pid){
   delete H.roster[pid];H.err[pid]='kick';H.net.remove('join/'+pid);
-  renderSide();pubState();saveHost();
+  refreshLobby();renderSide();pubState();saveHost();
 }
 function enterLobby(){
   H.phase='lobby';$('hGame').hidden=true;$('hDbl').hidden=true;
   hubText='START';hubSmall='';
-  const url=joinUrl();
-  $('ovCard').innerHTML=`<h2 class="revtitle">iPadで参加しよう！</h2>
-    <div class="joinbox"><div id="qr"></div><div style="display:flex;flex-direction:column;gap:10px;min-width:0">
-      <div>参加コード<div class="joincode">${H.code}</div></div>
-      <div class="joinurl">${esc(url)}</div>
-      <p class="hint">カメラでQRコードを読むか、URLを開いてニックネームを入れてください。</p></div></div>`;
-  $('ov').hidden=false;
-  try{new QRCode($('qr'),{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('qr').textContent='QRコードを表示できません'}
+  applyStart();
+  $('ov').hidden=false;renderLobbyOv();
   setHitInfo('参加者を待っています…');
   renderSide();pubState();saveHost();
 }
@@ -1417,6 +1591,7 @@ function enterLobby(){
 /* ---- ゲームの流れ ---- */
 function startGame(){
   if(!actives().length)return;
+  if(H.phase==='lobby'){applyStart();H.lobView='qr'}
   H.gno++;H.gid=newId(6);H.seed=rint(1e9);H.dbl=false;H.drawn=[];H.ball=0;H.left=0;H.spinning=0;
   H.lineup=useOf(H.cfg); // 設定で選んだゲームすべてが遊べる
   drawnSet=new Set();
@@ -1551,6 +1726,7 @@ function enterResult(resumed){
 
 /* ---- 結果発表 ---- */
 function startReveal(){
+  if(isGroup())return startGReveal();
   const all=Object.keys(H.roster).sort((a,b)=>H.roster[a].b-H.roster[b].b);
   const need=Math.min(H.cfg.clean,all.length);
   let sure=[],tie=[],slots=0;
@@ -1569,6 +1745,7 @@ function startReveal(){
 let revealBusy=false;
 async function revealNext(){
   if(revealBusy||!H.rev)return;
+  if(H.rev.g)return gRevealNext();
   const R=H.rev;
   if(R.step==='sure'||R.step==='sdReveal'){
     const pid=R.queue.shift();if(!pid)return;
@@ -1581,7 +1758,7 @@ async function revealNext(){
     if(!R.queue.length)R.step=R.step==='sure'&&R.tie.length?'sdIntro':'done';
     if(R.step==='done'){H.phase='end'}
     revealBusy=false;renderSide();pubState();
-    if(H.phase==='end')setTimeout(()=>{if(!H.rank)renderReveal('end');renderSide()},fast?100:2600);
+    if(H.phase==='end')setTimeout(()=>{if(!H.rank&&H.phase==='end')renderReveal('end');renderSide()},fast?100:2600);
   }else if(R.step==='sdIntro'){
     startSd();
   }
@@ -1603,6 +1780,33 @@ function renderReveal(mode){
        <div class="revlist">${R.tie.map(p=>`<span class="sd">${esc(nameOf(p))}</span>`).join('')}</div>
        <p class="hint">iPadで1〜25の数字を1つ選びます。ルーレットで自分の数字が出たらセーフ。最後まで残った ${R.slots}人 が掃除当番です。</p>
        <div class="revlist">${list}</div>`;
+  }else if(mode==='gintro'){
+    h=`<div class="revtitle">掃除グループの発表</div><p style="font-weight:800;margin:0">メダルの合計が一番少なかったグループが掃除当番です</p>
+       <div class="revlist">${R.order.slice().sort((a,b)=>a-b).map(g=>gChip(g)).join('')}</div><p class="hint">「発表する」で、合計の多いグループから順にセーフを発表します</p>`;
+  }else if(mode==='gwait'){
+    h=`<div class="revtitle">セーフのグループは…</div><div class="revname wait">？？？</div><div class="revlist">${R.safeG.map(g=>gChip(g,gName(g)+' セーフ')).join('')}</div>`;
+  }else if(mode==='gsafe'){
+    const g=R.cur;
+    h=`<div class="revtitle">セーフ！</div>${gBig(g)}<p class="gmem">${memNames(g)}</p><p class="gtot">合計 <b>${totOf(g)}</b> 枚</p>
+       <div class="revlist">${R.safeG.filter(x=>x!==g).map(x=>gChip(x,gName(x)+' セーフ')).join('')}</div>
+       ${R.step==='gfinal'?'<p class="hint">残りは2グループ…</p>':R.step==='gsdIntro'?'<p class="hint">残りのグループは同点…！</p>':''}`;
+  }else if(mode==='gfinalWait'){
+    h=`<div class="revtitle">${R.final.length>1?'掃除になるのは…':'掃除は…'}</div><div class="revlist">${R.final.map(g=>gChip(g)).join('<span class="vs">VS</span>')}</div><div class="revname wait">？？？</div>`;
+  }else if(mode==='gclean'||mode==='gend'){
+    const g=R.cleanG;
+    h=`<div class="revtitle">${mode==='gend'?'今日の掃除当番':'掃除当番は…'}</div>${gBig(g,'')}
+       <div class="revlist">${R.members[g].map(p=>`<span>${esc(nameOf(p))}</span>`).join('')}</div>
+       <p class="gtot">合計 <b>${totOf(g)}</b> 枚</p>
+       ${mode==='gend'?'<p style="font-weight:800;margin:0">よろしくお願いします！ ほかのグループはセーフです。</p>':`<div class="revlist">${R.safeG.slice(-1).map(x=>gChip(x,gName(x)+' セーフ（合計 '+totOf(x)+'枚）')).join('')}</div>`}`;
+  }else if(mode==='gsdIntro'){
+    h=`<div class="revtitle">同点！</div><p style="font-weight:800;margin:0;font-size:20px">合計 ${totOf(R.tie[0])}枚 で並んだ ${R.tie.length}グループ でサドンデス！</p>
+       <div class="revlist">${R.tie.map(g=>gChip(g)).join('')}</div>
+       <p class="hint">全員がiPadで1〜25の数字を選びます。ルーレットで、グループ全員の数字が先に出たグループからセーフ。最後まで残ったグループが掃除当番です。</p>`;
+  }else if(mode==='gsdPick'){
+    const G=H.gsd;
+    h=`<div class="revtitle">サドンデス！ 数字を選んでください</div>
+       <div class="gsdcols">${G.groups.map(g=>`<div class="gsdcol" style="--gc:${GCOL[g]}"><b>${gName(g)}</b>${R.members[g].map(p=>`<span>${esc(nameOf(p))}${G.slots[p]>1?` ×${G.slots[p]}`:G.slots[p]?'':'（見学）'}</span>`).join('')}</div>`).join('')}</div>
+       <p class="hint">どのグループも数字は ${G.K}つずつ。人数の少ないグループは、だれかが2つ選びます（×2の人）。</p>`;
   }else if(mode==='rank'){
     h=rankHtml();
   }else if(mode==='end'){
@@ -1612,12 +1816,136 @@ function renderReveal(mode){
   $('ovCard').innerHTML=h;
 }
 
+/* ---- グループの結果発表 ---- */
+function startGReveal(){
+  const gs=groupsOf(),t={};
+  Object.keys(gs).forEach(g=>t[g]=gs[g].reduce((x,p)=>x+H.roster[p].b,0));
+  const order=Object.keys(gs).map(Number).sort((a,b)=>t[b]-t[a]);
+  const min=t[order[order.length-1]],tie=order.filter(g=>t[g]===min);
+  let queue,final=null;
+  if(tie.length>1)queue=order.filter(g=>!tie.includes(g));
+  else if(order.length>=2){queue=order.slice(0,-2);final=order.slice(-2)}
+  else{queue=[];final=order.slice()}
+  H.rev={g:1,order,tot:t,members:gs,queue,final,tie:tie.length>1?tie:[],safeG:[],cleanG:-1,cur:-1,shown:[],safe:[],need:0,
+    step:queue.length?'gsafe':(tie.length>1?'gsdIntro':'gfinal')};
+  H.phase='reveal';$('hDbl').hidden=true;$('hGame').hidden=true;
+  hubText='結果発表';hubSmall='';
+  renderReveal('gintro');renderSide();pubState();
+}
+async function gRevealNext(){
+  const R=H.rev,fast=!MODES[H.cfg.speed];
+  if(R.step==='gsafe'){
+    const g=R.queue.shift();if(g==null)return;
+    revealBusy=true;renderSide();
+    renderReveal('gwait');sfx.drum(fast?50:1500);
+    await sleep(fast?60:1600);
+    R.safeG.push(g);R.safe=R.safe.concat(R.members[g]);R.cur=g;sfx.safe();
+    if(!R.queue.length)R.step=R.tie.length?'gsdIntro':'gfinal';
+    renderReveal('gsafe');revealBusy=false;renderSide();pubState();
+  }else if(R.step==='gfinal'||R.step==='gsdEnd'){
+    revealBusy=true;renderSide();
+    renderReveal('gfinalWait');sfx.drum(fast?50:2600);
+    await sleep(fast?60:2700);
+    const clean=R.final[R.final.length-1];
+    R.final.slice(0,-1).forEach(g=>{R.safeG.push(g);R.safe=R.safe.concat(R.members[g])});
+    R.cleanG=clean;R.shown=R.members[clean].slice();R.step='done';H.phase='end';sfx.doom();
+    renderReveal('gclean');revealBusy=false;renderSide();pubState();
+    setTimeout(()=>{if(!H.rank&&H.phase==='end')renderReveal('gend')},fast?100:3200);
+  }else if(R.step==='gsdIntro'){
+    startGsd();
+  }
+}
+const totOf=g=>H.rev&&H.rev.tot?H.rev.tot[g]:0;
+const memNames=g=>(H.rev.members[g]||[]).map(p=>esc(nameOf(p))).join('・');
+function gBig(g,extra){return `<div class="gbig" style="--gc:${GCOL[g]}">${gName(g)}</div>${extra||''}`}
+/* 同点のグループでサドンデス：グループ全員の数字が出たらセーフ。
+   人数がちがうときは、少ない班のだれかが2つ選んで数字の数をそろえる */
+function startGsd(){
+  const R=H.rev,T=R.tie;if(!T.length)return;
+  const K=Math.min(Math.max(...T.map(g=>R.members[g].length)),Math.floor(25/T.length));
+  const slots={};
+  T.forEach(g=>{const ms=shuffle(R.members[g].slice()),base=Math.floor(K/ms.length);let extra=K-base*ms.length;ms.forEach(p=>{slots[p]=base+(extra>0?1:0);extra--})});
+  H.gsd={id:newId(5),groups:T.slice(),K,slots,picks:{},left:30,drawn:[],safeG:[]};
+  H.phase='gsd_pick';
+  renderReveal('gsdPick');
+  clearInterval(H.timer);
+  H.timer=setInterval(()=>{H.gsd.left--;if(H.gsd.left<=0){clearInterval(H.timer);gsdSpinStart()}renderSide();pubState()},1000);
+  H.net.set('sdpick',null);
+  renderSide();pubState();
+}
+function gsdTaken(except){const t=new Set();Object.keys(H.gsd.picks).forEach(q=>{if(q!==except)H.gsd.picks[q].forEach(n=>t.add(n))});return t}
+function onGsdPick(v){
+  const G=H.gsd;if(H.phase!=='gsd_pick'||!G||!v)return;
+  let changed=false;
+  for(const pid of Object.keys(v)){
+    const x=v[pid],k=G.slots[pid];if(!x||x.id!==G.id||!k)continue;
+    const taken=gsdTaken(pid);
+    const ns=[...new Set((Array.isArray(x.ns)?x.ns:[]).map(n=>Math.floor(+n)))].filter(n=>n>=1&&n<=25&&!taken.has(n)).slice(0,k);
+    if(JSON.stringify(ns)!==JSON.stringify(G.picks[pid]||[])){G.picks[pid]=ns;changed=true}
+  }
+  if(changed){
+    renderSide();pubState();
+    if(Object.keys(G.slots).every(p=>!G.slots[p]||(G.picks[p]||[]).length===G.slots[p])){clearInterval(H.timer);setTimeout(()=>{if(H.phase==='gsd_pick')gsdSpinStart()},1200)}
+  }
+}
+function gsdOwner(n){const G=H.gsd;return Object.keys(G.picks).find(p=>G.picks[p].includes(n))}
+function gsdLeft(g){const G=H.gsd,d=new Set(G.drawn);return H.rev.members[g].reduce((x,p)=>x+(G.picks[p]||[]).filter(n=>!d.has(n)).length,0)}
+function gsdSpinStart(){
+  const G=H.gsd;if(H.phase!=='gsd_pick')return;
+  const used=gsdTaken(null);
+  Object.keys(G.slots).forEach(p=>{const a=G.picks[p]=(G.picks[p]||[]).slice();while(a.length<G.slots[p]){const n=pick(range25().filter(x=>!used.has(x)));a.push(n);used.add(n)}});
+  H.phase='gsd_spin';
+  const list=[];G.groups.forEach(g=>H.rev.members[g].forEach(p=>(G.picks[p]||[]).forEach(n=>list.push({n,name:gName(g),col:GCOL[g]}))));
+  list.sort((a,b)=>a.n-b.n);
+  buildSdWheel(list);drawnSet=new Set();hi=-1;rest=null;hubText='SAFE?';hubSmall='';
+  $('ov').hidden=true;$('drawn').innerHTML='';renderTray(0,0,0,false);
+  setHitInfo(`グループのサドンデス！ 全員の数字が出たグループからセーフ`);
+  showCallout('サドンデス','グループ全員の数字が出たらセーフ！',1600,true);
+  renderSide();pubState();
+}
+async function gsdSpin(){
+  const G=H.gsd;if(H.phase!=='gsd_spin'||H.busy)return;
+  const alive=G.groups.filter(g=>!G.safeG.includes(g));if(alive.length<=1)return;
+  H.busy=true;renderSide();
+  const M=MODES[H.cfg.speed];
+  if(M){showCallout('次の数字は…','',M.call,false);sfx.drum(M.call);await sleep(M.call)}
+  const avail=pockets.map((q,i)=>i).filter(i=>!drawnSet.has(pockets[i].n));
+  const target=avail[rint(avail.length)];
+  H.spinning=1;pubState();
+  await spinTo(target,H.cfg.speed);
+  H.spinning=0;
+  const n=pockets[target].n,pid=gsdOwner(n),g=H.roster[pid].g;
+  G.drawn.push(n);drawnSet.add(n);hubText=String(n);hubSmall=nameOf(pid);
+  const left=gsdLeft(g);
+  const b=document.createElement('b');b.className='new';b.textContent=n;b.style.background=GCOL[g];b.style.color='#fff';$('drawn').appendChild(b);
+  setTense(false);
+  if(left===0){
+    G.safeG.push(g);H.rev.safeG.push(g);H.rev.safe=H.rev.safe.concat(H.rev.members[g]);
+    showFlash(`${gName(g)} セーフ！`);sfx.safe();
+    setHitInfo(`<span class="num">${n}</span> ${esc(nameOf(pid))} さん！ ${gName(g)} 全員そろってセーフ！`);
+  }else{
+    showFlash('抜けた！');sfx.chime();
+    setHitInfo(`<span class="num">${n}</span> ${esc(nameOf(pid))} さん 抜けた！ ${gName(g)} あと${left}つ`);
+  }
+  const rest2=G.groups.filter(x=>!G.safeG.includes(x));
+  if(rest2.length===1){
+    H.rev.final=[rest2[0]];H.rev.step='gsdEnd';
+    await sleep(M?1800:50);
+    H.phase='reveal';
+    $('ov').hidden=false;
+    $('ovCard').innerHTML=`<div class="revtitle">サドンデス終了！</div><p style="font-weight:800;margin:0">最後まで残ったのは…</p><div class="revname wait">？？？</div>
+      <div class="revlist">${H.rev.safeG.map(x=>gChip(x,gName(x)+' セーフ')).join('')}</div>`;
+  }
+  H.busy=false;renderSide();pubState();
+}
+
 /* ---- 全体の順位（プロジェクターとiPadに同時に出す） ---- */
 function showRank(){
   if(H.phase!=='end'||!H.rev)return;
   H.rank=1;sfx.doom();renderReveal('rank');renderSide();pubState();
 }
 function rankHtml(){
+  if(H.rev.g)return rankHtmlG();
   const clean=new Set(H.rev.shown);
   const ps=Object.keys(H.roster).sort((a,b)=>H.roster[b].b-H.roster[a].b||(clean.has(a)-clean.has(b))||H.roster[a].o-H.roster[b].o);
   const n=ps.length,cols=n>24?3:n>10?2:1,rows=Math.ceil(n/cols);
@@ -1626,6 +1954,17 @@ function rankHtml(){
     return `<li style="--i:${n-1-i}" class="${c?'cl':''}${k<=3?' t'+k:''}"><span class="rk">${k}<small>位</small></span><span class="rn">${esc(r.n)}</span><span class="rm">${r.b}<small>枚</small></span>${c?'<span class="rc">🧹掃除</span>':''}</li>`;
   }).join('');
   return `<div class="revtitle">最終結果</div><ol class="ranklist" style="--cols:${cols};--rows:${rows}">${items}</ol>`;
+}
+function rankHtmlG(){
+  const R=H.rev,t=R.tot,order=R.order;
+  const gh=order.map(g=>{const k=1+order.filter(x=>t[x]>t[g]).length,c=g===R.cleanG;
+    return `<div class="grk${c?' cl':''}" style="--gc:${GCOL[g]}"><span class="rk">${k}<small>位</small></span><b>${gName(g)}</b><span class="rm">${t[g]}<small>枚</small></span>${c?'<span class="rc">🧹掃除</span>':''}</div>`}).join('');
+  const clean=new Set(R.shown);
+  const ps=Object.keys(H.roster).sort((a,b)=>H.roster[b].b-H.roster[a].b||(clean.has(a)-clean.has(b))||H.roster[a].o-H.roster[b].o);
+  const n=ps.length,cols=n>24?3:n>8?2:1,rows=Math.ceil(n/cols);
+  const items=ps.map((p,i)=>{const r=H.roster[p],k=rankOf(H.roster,p),c=clean.has(p);
+    return `<li style="--i:${n-1-i}" class="${c?'cl':''}${k<=3?' t'+k:''}"><span class="rk">${k}<small>位</small></span><i class="gl" style="--gc:${GCOL[r.g]||'#999'}">${GL[r.g]||''}</i><span class="rn">${esc(r.n)}</span><span class="rm">${r.b}<small>枚</small></span>${c?'<span class="rc">🧹</span>':''}</li>`}).join('');
+  return `<div class="revtitle">最終結果</div><div class="grank">${gh}</div><ol class="ranklist sm" style="--cols:${cols};--rows:${rows}">${items}</ol>`;
 }
 /* ---- サドンデス ---- */
 function startSd(){
@@ -1639,6 +1978,7 @@ function startSd(){
   renderSide();pubState();
 }
 function onSdPick(v){
+  if(H.phase==='gsd_pick')return onGsdPick(v);
   if(H.phase!=='sd_pick'||!H.sd||!v)return;
   let changed=false;
   for(const pid of Object.keys(v)){
@@ -1694,7 +2034,8 @@ async function sdSpin(){
 
 /* ---- もう一回 ---- */
 function playAgain(){
-  Object.values(H.roster).forEach(r=>{r.b=H.cfg.start;r.out=0;r.bet=ZERO();r.conf=0;r.res=0;r.pt=0;delete r.lastBet});
+  H.medal={};H.pasteText='';H.pasteMsg='';H.gsd=null;
+  Object.values(H.roster).forEach(r=>{r.b=H.cfg.start;r.b0=H.cfg.start;r.out=0;r.bet=ZERO();r.conf=0;r.res=0;r.pt=0;delete r.lastBet});
   H.gno=0;H.rev=null;H.sd=null;H.rank=0;H.dbl=false;H.drawn=[];buildWheel(2);drawnSet=new Set();
   $('drawn').innerHTML='';
   enterLobby();
@@ -1707,7 +2048,8 @@ function chipsHtml(mode){
   return '<div class="names">'+ps.map(p=>{
     const r=H.roster[p],on=H.online[p]?' on':'';
     let cl='nm'+on,extra='';
-    if(mode==='lobby')extra=`<button type="button" data-kick="${p}" aria-label="${esc(r.n)}を外す">×</button>`;
+    if(mode==='lobby')extra=`${r.b!==H.cfg.start?`<small class="nb">${r.b}</small>`:''}<button type="button" data-kick="${p}" aria-label="${esc(r.n)}を外す">×</button>`;
+    if(mode==='lobby'&&isGroup()&&r.g>=0)cl+='" style="--gc:'+GCOL[r.g]+'" data-g="'+GL[r.g];
     if(mode==='bet'){if(r.out)cl+=' out';else if(r.conf)cl+=' ok'}
     if(mode==='plain'&&r.out)cl+=' out';
     if(mode==='sd'){if(H.sd&&H.sd.picks[p])cl+=' ok'}
@@ -1720,7 +2062,8 @@ function renderSide(){
   let h='',k='';
   if(H.phase==='lobby'){
     h=`<h2>参加者</h2><div class="stat"><span>参加人数</span><b>${n}人</b></div>${chipsHtml('lobby')}
-       <p class="hint">ゲーム数 ${H.cfg.games}／最初のメダル ${H.cfg.start}枚／掃除当番 ${H.cfg.clean}人</p>
+       <p class="hint">ゲーム数 ${H.cfg.games}／最初のメダル ${H.cfg.start}枚／${isGroup()?`掃除：合計が一番少ないグループ（${H.cfg.groups}グループ）`:`掃除当番 ${H.cfg.clean}人`}</p>
+       <button type="button" class="btn small" id="bEdit">${H.lobView==='edit'?'QRコードを出す':`メダル${isGroup()?'・グループ':''}の設定`}</button>
        <div><p class="hint" style="margin-bottom:4px">アトラクション（BETは1ゲームにつき${MAX_PICK}つまで）</p>${tagsHtml(useOf(H.cfg))}</div>`;
     k=`<button class="btn go" type="button" data-main id="bStart" ${n?'':'disabled'}>ゲームスタート</button><div class="keyhint">Enterキーでも進めます</div>`;
   }else if(H.phase==='bet'){
@@ -1744,6 +2087,27 @@ function renderSide(){
        <p class="hint">${last?'全ゲーム終了！ 結果発表に進みましょう。':`次は 第${H.gno+1}ゲーム（全${H.cfg.games}）`}</p>${chipsHtml('plain')}`;
     k=last?`<button class="btn go pink" type="button" data-main id="bReveal">結果発表へ</button>`
           :`<button class="btn go" type="button" data-main id="bNext">次のゲームへ</button>`;
+  }else if((H.phase==='reveal'||H.phase==='end')&&H.rev&&H.rev.g){
+    const R=H.rev;
+    h=`<h2>結果発表（グループ）</h2><div class="stat"><span>セーフ</span><b>${R.safeG.length}グループ</b></div>
+       <div class="names">${R.safeG.map(g=>gChip(g)).join('')}</div>
+       ${R.cleanG>=0?`<div class="stat"><span>掃除当番</span><b>${gName(R.cleanG)}</b></div><div class="names">${R.shown.map(p=>`<span class="nm ok"><i class="dot"></i>${esc(nameOf(p))}</span>`).join('')}</div>`:''}`;
+    if(H.phase==='end')k=`${H.rank?'':`<button class="btn go pink" type="button" data-main id="bRank">全体の順位を発表</button>`}<button class="btn go" type="button" id="bAgain">同じメンバーでもう一回</button><button class="btn" type="button" id="bQuit2">設定にもどる</button>`;
+    else if(R.step==='gsdIntro')k=`<button class="btn go pink" type="button" data-main id="bGsd" ${revealBusy?'disabled':''}>サドンデス開始</button>`;
+    else k=`<button class="btn go pink" type="button" data-main id="bRev" ${revealBusy?'disabled':''}>発表する</button>`;
+  }else if(H.phase==='gsd_pick'){
+    const G=H.gsd,need=Object.keys(G.slots).filter(p=>G.slots[p]),done=need.filter(p=>(G.picks[p]||[]).length===G.slots[p]).length;
+    h=`<h2>サドンデス（グループ）</h2><div class="big">${Math.max(0,G.left)}</div><p class="hint" style="text-align:center">秒で数字を選んでください</p>
+       <div class="stat"><span>選んだ人</span><b>${done}／${need.length}人</b></div>
+       ${G.groups.map(g=>`<div class="names">${gChip(g,GL[g])}${H.rev.members[g].filter(p=>G.slots[p]).map(p=>{const a=G.picks[p]||[];return `<span class="nm${a.length===G.slots[p]?' ok':''}"><i class="dot"></i>${esc(nameOf(p))}${a.length?` <b>${a.join('・')}</b>`:''}</span>`}).join('')}</div>`).join('')}
+       <p class="hint">選ばなかった人の数字は自動で決まります。</p>`;
+    k=`<button class="btn go" type="button" data-main id="bGsdGo">締め切ってルーレットへ</button>`;
+  }else if(H.phase==='gsd_spin'){
+    const G=H.gsd,d=new Set(G.drawn),alive=G.groups.filter(g=>!G.safeG.includes(g));
+    h=`<h2>サドンデス（グループ）</h2>
+       ${G.groups.map(g=>`<div class="gsdside${G.safeG.includes(g)?' ok':''}" style="--gc:${GCOL[g]}"><div class="stat"><span>${gName(g)}</span><b>${G.safeG.includes(g)?'セーフ！':'あと'+gsdLeft(g)}</b></div>
+         <div class="names">${H.rev.members[g].filter(p=>G.slots[p]).map(p=>`<span class="nm"><i class="dot"></i>${esc(nameOf(p))} ${(G.picks[p]||[]).map(n=>d.has(n)?`<s>${n}</s>`:`<b>${n}</b>`).join(' ')}</span>`).join('')}</div></div>`).join('')}`;
+    k=`<button class="btn go" type="button" data-main id="bGspin" ${H.busy||alive.length<=1?'disabled':''}>ルーレットを回す</button>`;
   }else if(H.phase==='reveal'||H.phase==='end'){
     const R=H.rev;
     h=`<h2>結果発表</h2><div class="stat"><span>掃除当番</span><b>${R.shown.length}／${R.need}人</b></div>
@@ -1769,6 +2133,8 @@ function renderSide(){
   on('bStart',startGame);on('bClose',closeBets);on('bNext',startGame);on('bReveal',startReveal);
   on('bRev',revealNext);on('bSd',revealNext);on('bSdGo',()=>{clearInterval(H.timer);sdSpinStart()});on('bSpin',sdSpin);
   on('bAgain',playAgain);on('bQuit2',quitAsk);on('bRank',showRank);
+  on('bEdit',()=>{H.lobView=H.lobView==='edit'?'qr':'edit';renderLobbyOv();renderSide()});
+  on('bGsd',startGsd);on('bGsdGo',()=>{clearInterval(H.timer);gsdSpinStart()});on('bGspin',gsdSpin);
 }
 
 /* ===================== iPad（参加者） ===================== */
@@ -1823,11 +2189,12 @@ function padRender(){
   if(ph==='bet')return m.out?renderOut():renderBet();
   if(ph==='dbl'||ph==='draw')return m.out?renderOut():renderPlay();
   if(ph==='result')return m.out&&!m.res?renderOut():renderResult();
-  if(ph==='reveal'||ph==='end'||ph==='sd_pick'||ph==='sd_spin')return renderFinal();
+  if(ph==='reveal'||ph==='end'||ph==='sd_pick'||ph==='sd_spin'||ph==='gsd_pick'||ph==='gsd_spin')return (st.rev&&st.rev.g)?renderGFinal():renderFinal();
 }
 function head(){
   const st=P.st,m=me();
-  $('pName').textContent=m?m.n+' さん':'';
+  const grp=st&&st.cfg&&st.cfg.mode==='group'&&m&&m.g>=0;
+  $('pName').innerHTML=m?esc(m.n)+' さん'+(grp?` <span class="gchip sm" style="--gc:${GCOL[m.g]}">${gName(m.g)}</span>`:''):'';
   $('pGame').textContent=st&&st.gno&&['bet','dbl','draw','result'].includes(st.phase)?`第${st.gno}ゲーム／全${st.cfg.games}`:'';
   $('pBalBox').hidden=!m;
   if(m)$('pBal').textContent=m.b;
@@ -1861,9 +2228,11 @@ function howtoHtml(keys){
   return `<div class="howto">${(keys||GKEYS).map(g=>`<div><span class="gtag" style="--g:${GAMES[g].color}">${GAMES[g].name}</span><p>${RULES[g]}</p></div>`).join('')}</div>`;
 }
 function renderLobby(){
-  const st=P.st,use=useOf(st.cfg),k=Math.min(MAX_PICK,use.length);
+  const st=P.st,use=useOf(st.cfg),k=Math.min(MAX_PICK,use.length),m=me(),grp=st.cfg.mode==='group';
   setBody('lobby',`<div class="pmsg panel"><h2>参加しました！</h2><p>先生がスタートするまで待っていてください。</p>
-    <p class="hint">全${st.cfg.games}ゲーム／最初のメダル ${st.cfg.start}枚。最後にメダルが少なかった ${st.cfg.clean}人 が掃除当番です。</p></div>
+    ${grp&&m.g>=0?`<div class="gbig sm" style="--gc:${GCOL[m.g]}">${gName(m.g)}</div>`:''}
+    <p class="fmed">最初のメダル <b>${m.b}</b> 枚</p>
+    <p class="hint">全${st.cfg.games}ゲーム。${grp?'最後に、グループのメダルの合計が一番少なかったグループが掃除当番です。':`最後にメダルが少なかった ${st.cfg.clean}人 が掃除当番です。`}</p></div>
     <div class="panel"><h3 style="margin-bottom:8px">${use.length}つのアトラクション</h3>${howtoHtml(use)}
     <p class="hint" style="margin-top:10px">毎ゲーム、好きなゲーム（${k}つまで）に枚数を分けてBETします（合計10枚以上。10枚未満の人は全部）。ルーレットの球は1ゲーム8球。金色の「+2」に入ると球が2つ増えます。</p></div>`);
 }
@@ -2406,10 +2775,63 @@ function renderFinal(){
   }
   setBody(key+':'+(amClean?1:0),h);
 }
+/* グループの結果発表（iPad） */
+function renderGFinal(){
+  const st=P.st,m=me(),R=st.rev||{},G=st.gsd||{},g=m.g;
+  const shown=R.shown||[],safe=R.safe||[],tie=R.tie||[];
+  const gtag=g>=0?`<span class="gchip" style="--gc:${GCOL[g]}">${gName(g)}</span>`:'';
+  const amClean=shown.includes(P.pid);
+  let h;
+  if(st.phase==='end'&&st.rank){
+    h=`<div class="panel pmsg finalme"><h2>最終結果</h2>
+      <div class="frank"><span class="fr">${rankOf(st.roster,P.pid)}</span><span class="fu">位</span></div>
+      <p class="fmed">最終 <b>${m.b}</b> 枚</p>
+      <span class="ftag ${amClean?'clean':'safe'}">${amClean?'🧹 掃除当番':'セーフ'}（${g>=0?gName(g):''}）</span></div>`;
+    return setBody('gfinal:rank',h);
+  }
+  if(st.phase==='gsd_pick'&&G.slots&&G.slots[P.pid]){
+    if(P.key!=='gsdpick:'+G.id){
+      P.key='gsdpick:'+G.id;P.gsel=[];
+      $('pBody').innerHTML=`<div class="panel pmsg"><h2>サドンデス！</h2>${gtag}
+        <p>1〜25の数字を <b id="gsK"></b> 選んでください。グループ全員の数字が出たらセーフ！</p>
+        <div class="status" id="sdLeft"></div><div class="numgrid" id="sdGrid"></div><p class="hint" id="sdMine"></p></div>`;
+      $('sdGrid').onclick=e=>{
+        const b=e.target.closest('button[data-n]');if(!b||b.disabled)return;
+        const n=+b.dataset.n,k=P.st.gsd.slots[P.pid],a=P.gsel;
+        const i=a.indexOf(n);if(i>=0)a.splice(i,1);else{a.push(n);while(a.length>k)a.shift()}
+        P.net.set('sdpick/'+P.pid,{id:P.st.gsd.id,ns:a.slice()});updateGsd();
+      };
+    }
+    return updateGsd();
+  }
+  if(amClean)h=`<div class="panel pmsg"><div class="bigres clean">掃除当番…</div>${gtag}<p style="font-weight:800">グループのみんなで掃除をよろしくお願いします！</p><p class="hint">最後のメダル ${m.b}枚</p></div>`;
+  else if(st.phase==='end'||safe.includes(P.pid))h=`<div class="panel pmsg"><div class="bigres safe">セーフ！</div>${gtag}<p style="font-weight:800">掃除当番にはなりませんでした</p><p class="hint">最後のメダル ${m.b}枚</p></div>`;
+  else if(st.phase==='gsd_spin'&&(G.groups||[]).includes(g)){
+    const d=new Set(G.drawn||[]),mine=(G.picks&&G.picks[P.pid])||[];
+    let left=0;Object.keys(G.picks||{}).forEach(p=>{const r=st.roster[p];if(r&&r.g===g)left+=G.picks[p].filter(n=>!d.has(n)).length});
+    h=`<div class="panel pmsg"><h2>サドンデス中</h2>${gtag}${mine.length?`<p>あなたの数字は</p><div class="mynums">${mine.map(n=>`<b class="${d.has(n)?'got':''}">${n}</b>`).join('')}</div>`:'<p>グループの仲間を応援しよう！</p>'}
+      <p class="fmed">グループ あと <b>${left}</b> つ</p><p class="hint">プロジェクターのルーレットを見てください。全員の数字が出たらセーフ！</p></div>`;
+  }else if(tie.includes(g))h=`<div class="panel pmsg"><h2>同点でサドンデス！</h2>${gtag}<p>${st.phase==='gsd_pick'?'グループの仲間が数字を選んでいます。':'同じ合計のグループで、掃除当番を決めます。'}</p></div>`;
+  else h=`<div class="panel pmsg"><h2>結果発表中…</h2>${gtag}<p>ドキドキ…プロジェクターを見てください</p></div>`;
+  setBody('gfinal',h);
+}
+function updateGsd(){
+  const G=P.st.gsd,picks=G.picks||{},k=G.slots[P.pid],mine=picks[P.pid];
+  const taken=new Set();Object.keys(picks).forEach(p=>{if(p!==P.pid)picks[p].forEach(n=>taken.add(n))});
+  P.gsel=(P.gsel||[]).filter(n=>!taken.has(n));
+  const sel=new Set(P.gsel.length||!mine?P.gsel:mine);
+  $('gsK').textContent=k>1?`${k}つ`:'1つ';
+  const gh=range25().map(n=>`<button type="button" data-n="${n}" class="${sel.has(n)?'mine':''}" ${taken.has(n)?'disabled':''}>${n}</button>`).join('');
+  if($('sdGrid')._h!==gh){$('sdGrid')._h=gh;$('sdGrid').innerHTML=gh}
+  $('sdLeft').innerHTML=`あと <span class="cd">${Math.max(0,G.left||0)}</span> 秒`;
+  const a=[...sel];
+  $('sdMine').textContent=a.length>=k?`あなたの数字：${a.join('・')}（締め切りまで変えられます）`:`あと ${k-a.length}つ 選んでね（選ばなかった分は自動で決まります）`;
+}
 function updateSd(){
   const st=P.st,sd=st.sd||{},picks=sd.picks||{},mine=picks[P.pid];
   const taken=new Set(Object.keys(picks).filter(p=>p!==P.pid).map(p=>picks[p]));
-  $('sdGrid').innerHTML=range25().map(n=>`<button type="button" data-n="${n}" class="${mine===n||(!mine&&P.sdSent===n)?'mine':''}" ${taken.has(n)?'disabled':''}>${n}</button>`).join('');
+  const gh=range25().map(n=>`<button type="button" data-n="${n}" class="${mine===n||(!mine&&P.sdSent===n)?'mine':''}" ${taken.has(n)?'disabled':''}>${n}</button>`).join('');
+  if($('sdGrid')._h!==gh){$('sdGrid')._h=gh;$('sdGrid').innerHTML=gh}
   $('sdLeft').innerHTML=`あと <span class="cd">${Math.max(0,sd.left||0)}</span> 秒`;
   $('sdMine').textContent=mine?`あなたの数字：${mine}（締め切りまで変えられます）`:'選ばなかった場合は、空いている数字が自動で決まります';
 }
