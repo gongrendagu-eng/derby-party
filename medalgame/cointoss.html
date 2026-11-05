@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>コイントス(テスト機)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap">
+<script src="mg-core.js"></script>
+<style>
+/* メダルゲームにつながる、いちばん小さなゲーム。ほかのゲームを口座につなぐときのひな形 */
+:root{--f-num:"Dela Gothic One",sans-serif;--f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;--gold:#f2b705;--ink:#173b33;--soft:#5d7c74;--mint-d:#12a37a;--line:#d5efe5;--warn:#d63c5e}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font-family:var(--f-body);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+body.host{background:#f5efe1;--ink:#1e1a14;--soft:#6f6555;--line:#dccfb4}
+body.pad{background:linear-gradient(180deg,#d4f7e8,#bdeedb 60%,#a9e6cf);background-attachment:fixed;min-height:100vh}
+html.padmode,html.padmode *{touch-action:manipulation}
+.wrap{max-width:900px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 60px max(16px,env(safe-area-inset-left,0px))}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ttl{font-family:var(--f-num);font-size:26px}
+.ttl small{font-family:var(--f-body);font-size:14px;color:var(--soft);font-weight:800;margin-left:6px}
+.sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:3px 12px;font-weight:800;font-size:14px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:#1f9d4a}.chip.off .dot{background:var(--warn)}
+.box{background:#fffaf0;border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.box h2{margin:0 0 8px;font-size:18px}
+.note{color:var(--soft);font-size:14px;line-height:1.7;margin:4px 0}
+.btn{border:2px solid var(--line);background:#fffaf0;border-radius:10px;padding:8px 14px;font-weight:800}
+.btn.danger{background:#c8102e;border-color:#c8102e;color:#fff}
+ul.pl{list-style:none;margin:0;padding:0}
+ul.pl li{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-weight:800}
+ul.pl li b{margin-left:auto;font-family:var(--f-num);font-weight:400;font-size:18px}
+ul.pl li small{color:var(--soft)}
+.feed li .w{color:#0f8a66}.feed li .l{color:#c8102e}
+/* iPad */
+.pc{background:#fff;border-radius:28px;padding:20px;box-shadow:0 8px 0 rgba(18,163,122,.18)}
+.pc+.pc{margin-top:16px}
+.pbtn{border:0;border-radius:999px;padding:13px 24px;font-weight:800;font-size:17px;background:#eaf8f2;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.pbtn:active{transform:translateY(2px)}.pbtn:disabled{opacity:.4}
+a.pbtn{color:var(--ink);text-decoration:none;display:inline-block}a.pbtn.go{color:#fff}
+.pbtn.go{background:var(--mint-d);color:#fff}.pbtn.gold{background:linear-gradient(#ffd84a,var(--gold));color:#3a2600}
+.inbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.inbar .num{font-family:var(--f-num);font-size:clamp(40px,7vw,56px);color:#8a5a00;line-height:1}
+.inbar .num small{font-size:.4em}
+.inbar .lbl{color:var(--soft);font-weight:800}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.stage{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.coinbox{perspective:800px;width:170px;height:170px}
+.coin{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 1.6s cubic-bezier(.2,.8,.2,1)}
+.coin .f{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;backface-visibility:hidden;font-family:var(--f-num);font-size:64px;border:8px solid}
+.coin .h{background:radial-gradient(circle at 35% 30%,#fff3b0,#f2b705 60%,#c68a00);border-color:#a86f00;color:#7a4a00}
+.coin .t{background:radial-gradient(circle at 35% 30%,#fff,#d9dde6 60%,#9aa2b2);border-color:#6b7385;color:#3f4657;transform:rotateY(180deg)}
+.side{display:flex;gap:12px}
+.side button{border:4px solid transparent;border-radius:22px;padding:14px 34px;font-family:var(--f-num);font-size:30px;background:#eaf8f2}
+.side button.on{border-color:var(--mint-d);background:#fff;box-shadow:0 0 0 4px rgba(18,163,122,.18)}
+.bets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.bets button{width:64px;height:64px;border-radius:50%;border:4px dashed rgba(255,255,255,.8);color:#fff;font-family:var(--f-num);font-size:18px;opacity:.6}
+.bets button.on{opacity:1;box-shadow:0 0 0 4px var(--gold)}
+.bets input{width:6em;border:3px solid var(--line);border-radius:14px;padding:8px;font-family:var(--f-num);font-size:24px;text-align:right}
+.res{font-family:var(--f-num);font-size:44px;min-height:1.2em}
+.res.w{color:var(--mint-d)}.res.l{color:#9aa2b2}
+.perr{color:var(--warn);font-weight:800;min-height:1.4em;margin:0}
+.pmodal{position:fixed;inset:0;background:rgba(23,59,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
+.pmodal .pc{width:min(520px,100%)}
+.pmodal h2{margin:0 0 6px}
+.amt{display:flex;gap:10px;align-items:center;margin:12px 0}
+.amt input{flex:1;min-width:0;border:3px solid var(--mint-d);border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:36px;text-align:right}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick button{border:0;border-radius:14px;padding:12px 0;font-weight:800;background:#fff3c2}
+.mrow{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2b27;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;z-index:99}
+@media (prefers-reduced-motion:reduce){.coin{transition:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+const GID='cointoss', NAME='コイントス', {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
+let toastT=null; function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
+if(MG.qs.get('mg')) padMain(); else hostMain();
+
+/* ================= 先生のPC(このタブが開いている間「稼働中」) ================= */
+let HOST=null; const feed=[];
+async function hostMain(){
+  document.body.className='host';
+  if(!MG.keys.get()){ app.innerHTML=`<div class="wrap"><div class="box"><h2>まだ準備ができていません</h2><p class="note">先に、このPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。</p></div></div>`; return; }
+  app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
+  try{
+    HOST=await MG.startHost({gid:GID,name:NAME,art:'coin',hooks:{
+      async onReq(sid,r){
+        if(r.type!=='g:flip') return {ok:false,msg:'その操作はできません'};
+        const bet=Math.floor(+r.bet||0), side=r.side==='t'?'t':'h', a=HOST.acc()[sid];
+        if(bet<1||bet>999) return {ok:false,msg:'1〜999枚で賭けてください'};
+        if(!a.seat||(a.seat.a||0)<bet) return {ok:false,msg:'メダルが足りません'};
+        const res=Math.random()<0.5?'h':'t', win=res===side;
+        const na=await HOST.change(sid,win?bet:-bet);
+        feed.unshift({n:a.n,bet,win,t:Date.now()}); feed.length=Math.min(feed.length,12); render();
+        return {ok:true,d:{res,win,bet,a:na}};
+      },
+      onLeave(){ render(); }
+    }});
+  }catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>テスト機・先生のPC</small></div><span class="sp"></span>
+      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span><button class="btn danger" id="stop">停止する(全員を精算)</button></div>
+    <div class="box"><p class="note">このタブを開いている間、iPadのゲーム一覧に「${NAME}」が出ます。表か裏を当てると賭けたメダルが2倍、外れると没収。口座のしくみ(持ち込み・追加・一部もどす・やめる)を確かめるためのゲームです。</p></div>
+    <div class="box"><h2>遊んでいる人</h2><ul class="pl" id="pl"></ul></div>
+    <div class="box"><h2>さいきんの勝負</h2><ul class="pl feed" id="fd"></ul></div></div>`;
+  HOST.onAcc(render);
+  HOST.onConn(ok=>{ const c=$('#conn'); c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
+  $('#stop').onclick=async()=>{ const n=HOST.seated().length;
+    if(!confirm(`停止しますか?\n遊んでいる ${n}人 のメダルを、全員貯金にもどします。`)) return;
+    $('#stop').disabled=true; await HOST.stop(); HOST=null;
+    app.innerHTML=`<div class="wrap"><div class="box"><h2>停止しました</h2><p class="note">${n}人を精算しました。このタブは閉じてかまいません。</p></div></div>`; };
+  addEventListener('beforeunload',e=>{ if(HOST&&HOST.seated().length){ e.preventDefault(); e.returnValue=''; } });
+}
+function render(){
+  if(!HOST||!$('#pl')) return;
+  const acc=HOST.acc(), list=HOST.seated();
+  $('#pl').innerHTML=list.map(s=>`<li>${esc(acc[s].n)}<small>${esc(s)}</small><b>${yen(acc[s].seat.a)}枚</b></li>`).join('')||'<li><small>まだ誰もいません</small></li>';
+  $('#fd').innerHTML=feed.map(f=>`<li>${esc(f.n)}<small>${f.bet}枚</small><b class="${f.win?'w':'l'}">${f.win?'+'+f.bet:'-'+f.bet}</b></li>`).join('')||'<li><small>まだありません</small></li>';
+}
+
+/* ================= iPad ================= */
+let PAD=null; const G={view:undefined,live:true,side:'h',bet:10,busy:false,hold:null,res:'',rot:0};
+async function padMain(){
+  document.body.className='pad'; document.documentElement.classList.add('padmode');
+  document.querySelector('meta[name=viewport]').content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+  app.innerHTML='<div class="wrap"><div class="pc">接続しています…</div></div>';
+  try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="wrap"><div class="pc">つながりません:${esc(e.message)}</div></div>`; return; }
+  if(!PAD.vk()){ location.href=PAD.indexUrl(); return; }
+  PAD.onView(v=>{ if(!v){ location.href=PAD.indexUrl(); return; } G.view=v; padRender(); });
+  PAD.onGames(g=>{ G.live=!!g[GID]; padRender(); });
+}
+const seatA=()=>{const s=G.view&&G.view.seat;return s&&s.g===GID?s.a||0:null};
+function padRender(){
+  const v=G.view; if(v===undefined) return;
+  const a=seatA(), top=PAD.indexUrl();
+  if(a===null){ app.innerHTML=`<div class="wrap"><div class="pc"><h2>${NAME}にはまだ入っていません</h2><p class="note">メダルゲームのトップで、持ち込む枚数を選んでから入ってください。</p><div class="mrow" style="justify-content:flex-start"><a class="pbtn go" href="${esc(top)}" style="text-decoration:none">トップへ</a></div></div></div>`; return; }
+  if(!G.live){ app.innerHTML=`<div class="wrap"><div class="pc"><h2>${NAME}は止まりました</h2><p class="note">先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。</p><div class="mrow" style="justify-content:flex-start"><a class="pbtn go" href="${esc(top)}" style="text-decoration:none">トップへ</a></div></div></div>`; return; }
+  const shown=G.hold!=null?G.hold:a;
+  if(!$('#stage')){
+    app.innerHTML=`<div class="wrap">
+      <div class="pc inbar"><div><div class="lbl">${esc(v.n)} さん ・ ${NAME}のメダル</div><div class="num" id="num"></div><div class="lbl" id="bank"></div></div>
+        <div class="tools"><button class="pbtn sm" id="tAdd">貯金から追加</button><button class="pbtn sm" id="tBack">一部もどす</button><button class="pbtn gold" id="tQuit">やめる</button></div></div>
+      <div class="pc stage" id="stage"><div class="coinbox"><div class="coin" id="coin"><div class="f h">表</div><div class="f t">裏</div></div></div>
+        <div class="res" id="res"></div>
+        <div class="side"><button data-s="h">表</button><button data-s="t">裏</button></div>
+        <div class="bets">${[[1,'#c02c64'],[10,'#2456c9'],[50,'#7a3fc0'],[100,'#1f8a4c']].map(([n,c])=>`<button data-b="${n}" style="background:${c}">${n}</button>`).join('')}<input id="bIn" type="number" inputmode="numeric" min="1" max="999" aria-label="賭ける枚数"><span>枚</span></div>
+        <p class="perr" id="err"></p><button class="pbtn go" id="flip" style="font-size:24px;padding:16px 60px">コインを投げる</button>
+        <a href="${esc(top)}" class="pbtn" style="text-decoration:none;font-size:14px">トップへ(メダルは預けたまま)</a></div>
+      <div id="mod"></div></div>`;
+    app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{G.side=b.dataset.s;padRender()});
+    app.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{G.bet=+b.dataset.b;padRender()});
+    $('#bIn').oninput=e=>{G.bet=Math.floor(+e.target.value||0);upd()};
+    $('#flip').onclick=flip;
+    $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
+    $('#tQuit').onclick=async()=>{ if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。`)) return; const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok) setTimeout(()=>location.href=top,700); };
+  }
+  $('#num').innerHTML=`${yen(shown)}<small>枚</small>`; $('#bank').textContent=`貯金 ${yen(v.b)}枚`;
+  app.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===G.side));
+  app.querySelectorAll('[data-b]').forEach(b=>b.classList.toggle('on',+b.dataset.b===G.bet));
+  if(document.activeElement!==$('#bIn')) $('#bIn').value=G.bet;
+  upd();
+}
+function upd(){ const a=seatA(), f=$('#flip'); if(!f) return; f.disabled=G.busy||G.bet<1||G.bet>Math.min(999,a||0); }
+async function flip(){
+  if(G.busy) return; G.busy=true; G.hold=seatA()-G.bet; $('#err').textContent=''; $('#res').textContent=''; $('#res').className='res'; padRender();
+  const r=await PAD.req('g:flip',{bet:G.bet,side:G.side},GID);
+  if(!r.ok){ G.busy=false; G.hold=null; $('#err').textContent=r.msg; padRender(); return; }
+  G.rot+=1800+(r.d.res==='t'?180:0)-(G.rot%360);
+  $('#coin').style.transform=`rotateY(${G.rot}deg)`;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(()=>{ G.busy=false; G.hold=null; const el=$('#res'); el.className='res '+(r.d.win?'w':'l'); el.textContent=r.d.win?`当たり! +${r.d.bet}`:'はずれ…'; padRender(); },reduce?50:1650);
+}
+function amtModal(kind){
+  const v=G.view, a=seatA(), max=kind==='add'?v.b||0:a; let amt=Math.min(kind==='add'?100:a,max);
+  const box=$('#mod');
+  const draw=()=>{ amt=Math.max(0,Math.min(max,Math.floor(+amt||0)));
+    box.innerHTML=`<div class="pmodal"><div class="pc"><h2>${kind==='add'?'貯金から追加':'一部だけ貯金にもどす'}</h2><p class="note">${kind==='add'?`貯金 ${yen(max)}枚`:`${NAME}のメダル ${yen(max)}枚`}</p>
+      <div class="amt"><input id="mIn" type="number" inputmode="numeric" value="${amt}"><span>枚</span></div>
+      <div class="quick">${[10,50,100].map(n=>`<button data-q="${n}" ${n>max?'disabled':''}>${n}枚</button>`).join('')}<button data-q="${max}">全部</button></div>
+      <p class="perr" id="mErr"></p><div class="mrow"><button class="pbtn" id="mNo">やめる</button><button class="pbtn go" id="mGo">${kind==='add'?'追加する':'もどす'}</button></div></div></div>`;
+    $('#mIn').oninput=e=>{amt=e.target.value};
+    box.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{amt=+b.dataset.q;draw()});
+    $('#mNo').onclick=()=>{box.innerHTML=''};
+    $('#mGo').onclick=async()=>{ amt=Math.floor(+$('#mIn').value||0); if(amt<1) return; $('#mGo').disabled=true;
+      const r=await PAD.req(kind,{amt},GID); if(!r.ok){ $('#mErr').textContent=r.msg; $('#mGo').disabled=false; return; } box.innerHTML=''; toast(r.msg); };
+  }; draw();
+}
+</script>
+</body>
+</html>
