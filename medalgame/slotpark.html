@@ -8,7 +8,310 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Orbitron:wght@700;900&family=Shippori+Mincho:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
 <script src="mg-core.js"></script>
-<script src="sp-engine.js"></script>
+<script>
+/* スロットパーク：抽選と配当（先生のPCで動く。iPadは表示に使う定数だけ読む） */
+(function (root) {
+  'use strict';
+  const R = () => Math.random();
+  const ri = (n) => Math.floor(R() * n);
+  const wpick = (list) => { // [[item, weight], ...]
+    let t = 0; for (const x of list) t += x[1];
+    let r = R() * t;
+    for (const x of list) { r -= x[1]; if (r < 0) return x[0]; }
+    return list[list.length - 1][0];
+  };
+  // 端数を持ち越して払う（還元率を正確に保つ）
+  const payFrac = (st, v) => { const t = v + (st.frac || 0); const p = Math.floor(t + 1e-9); st.frac = t - p; return p; };
+
+  const MACHINES = [
+    { id: 'classic', name: 'フルーツクラシック', style: 'pop', bets: [1, 2, 3] },
+    { id: 'oshi', name: '目押しチャレンジ', style: 'chic', bets: [3] },
+    { id: 'wide', name: 'ワイドライン', style: 'pop', bets: [1, 2, 3, 4, 5] },
+    { id: 'rocket', name: '連チャンロケット', style: 'pop', bets: [2, 3, 4, 5] },
+    { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bets: [5] },
+    { id: 'drop', name: 'キラリドロップ', style: 'pop', bets: [1, 2, 3, 5, 10] },
+    { id: 'battle', name: 'メダまるバトル', style: 'pop', bets: [3] }
+  ];
+
+  /* ---------- ① フルーツクラシック ---------- */
+  const C_SYMS = ['seven', 'bar', 'bell', 'grape', 'lemon', 'cherry'];
+  const C_OUT = [ // [結果, 倍率(BETに対して), 確率]
+    ['seven', 100, 1 / 2000], ['bar', 30, 1 / 400], ['bell', 15, 1 / 70], ['grape', 8, 1 / 40],
+    ['lemon', 6, 1 / 30], ['cherry3', 5, 1 / 100], ['cherry', 2, 1 / 12]
+  ];
+  const C_LINES = [1, 0, 2]; // ライン1=中段, 2=上段, 3=下段
+  function classicGrid(out, lineIdx, bet) {
+    for (let tries = 0; tries < 500; tries++) {
+      const g = [0, 1, 2].map(() => [0, 1, 2].map(() => C_SYMS[ri(C_SYMS.length)]));
+      if (out) {
+        const r = C_LINES[lineIdx];
+        if (out === 'cherry') { g[r][0] = 'cherry'; } else { const s = out === 'cherry3' ? 'cherry' : out; g[r] = [s, s, s]; }
+      }
+      let ok = true;
+      for (let i = 0; i < bet; i++) {
+        const row = g[C_LINES[i]];
+        const win = out && i === lineIdx;
+        if (win && out === 'cherry') { if (row[1] === 'cherry' || (row[1] === row[2] && row[1] === row[0])) ok = false; continue; }
+        if (win) continue;
+        if (row[0] === 'cherry' || (row[0] === row[1] && row[1] === row[2])) ok = false;
+      }
+      if (ok) return g;
+    }
+    return [['lemon', 'grape', 'bell'], ['grape', 'bell', 'lemon'], ['bell', 'lemon', 'grape']];
+  }
+  function classicSpin(st, bet) {
+    let r = R(), out = null, mult = 0;
+    for (const o of C_OUT) { if (r < o[2]) { out = o[0]; mult = o[1]; break; } r -= o[2]; }
+    const line = out ? ri(bet) : -1;
+    const pay = mult * bet;
+    return { pay, bet, out, line, grid: classicGrid(out, line, bet) };
+  }
+
+  /* ---------- ② 目押し / ⑦ メダまるバトル（パチスロ） ---------- */
+  const P_STRIP = ['seven', 'bell', 'replay', 'lemon', 'bell', 'replay', 'cherry', 'bell', 'replay', 'bar', 'bell',
+    'replay', 'lemon', 'bell', 'replay', 'cherry', 'bell', 'replay', 'lemon', 'bell', 'replay'];
+  const P_PROB = { replay: 1 / 7.3, bell: 1 / 7.5, cherry: 1 / 36, big: 1 / 280, reg: 1 / 400 };
+  const P_PAY = { replay: 3, bell: 8, cherry: 4, bonusGame: 12 };
+  const P_GAMES = { big: 30, reg: 12 };
+  function pachiLever(st) {
+    const res = { bet: 3, pay: 0, newHit: false };
+    if (st.bonus) {
+      st.bonus.left--; res.flag = 'bonusGame'; res.pay = P_PAY.bonusGame;
+      res.bonus = { type: st.bonus.type, left: st.bonus.left };
+      st.bonusGet = (st.bonusGet || 0) + res.pay - 3;
+      res.bonusGet = st.bonusGet;
+      if (st.bonus.left <= 0) { res.bonusEnd = true; st.bonus = null; st.bonusGet = 0; }
+      st.last = null; res.held = st.held || null; return res;
+    }
+    let r = R(), flag = 'none';
+    for (const f of ['replay', 'bell', 'cherry']) { if (r < P_PROB[f]) { flag = f; break; } r -= P_PROB[f]; }
+    if (!st.held) {
+      const b = R();
+      if (b < P_PROB.big) { st.held = 'big'; res.newHit = true; }
+      else if (b < P_PROB.big + P_PROB.reg) { st.held = 'reg'; res.newHit = true; }
+    }
+    res.flag = flag; res.held = st.held || null;
+    if (flag === 'replay') res.pay = P_PAY.replay;
+    if (flag === 'bell') res.pay = P_PAY.bell;
+    st.last = flag; st.games = (st.games || 0) + 1;
+    return res;
+  }
+  function pachiStop(st, d) {
+    const res = { bet: 0, pay: 0 };
+    if (st.last === 'cherry' && d.cherryOk) res.pay = P_PAY.cherry;
+    st.last = null;
+    if (d.aligned && st.held && !st.bonus) {
+      st.bonus = { type: st.held, left: P_GAMES[st.held] }; st.bonusGet = 0;
+      st.count = st.count || { big: 0, reg: 0 }; st.count[st.held]++;
+      res.bonusStart = st.held; st.held = null; st.games = 0; st.lampOn = false;
+    }
+    res.held = st.held || null;
+    return res;
+  }
+  // 液晶演出（メダまるバトル）
+  function battleEffect(res) {
+    if (res.flag === 'bonusGame') return { scene: 'bonusGame' };
+    if (res.newHit) return { scene: wpick([['gold', 30], ['red', 25], ['battleWin', 30], ['rainbow', 15]]), hit: true };
+    const r = R();
+    if (r < 0.05) return { scene: 'green' };
+    if (r < 0.065) return { scene: 'red' };
+    if (r < 0.075) return { scene: 'battleLose' };
+    if (res.flag === 'cherry') return { scene: 'chance' };
+    return { scene: 'normal' };
+  }
+
+  /* ---------- ③ ワイドライン（5リール20ライン） ---------- */
+  const W_SYMS = [['seven', 2], ['gem', 4], ['star', 3], ['bell', 7], ['grape', 9], ['cherry', 10], ['lemon', 10]];
+  const W_PAY = { seven: [0, 0, 0, 2, 10, 50], gem: [0, 0, 0, 1, 4, 15], bell: [0, 0, 0, 0.5, 2, 6], grape: [0, 0, 0, 0.3, 1, 3], cherry: [0, 0, 0, 0.2, 0.6, 2], lemon: [0, 0, 0, 0.2, 0.6, 2] };
+  const W_SCAT = [0, 0, 0, 2, 5, 20];
+  const W_K = 0.74; // 調整係数（シミュレーションで決める）
+  const W_LINES = [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2], [0, 0, 1, 2, 2], [2, 2, 1, 0, 0],
+    [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [0, 1, 1, 1, 0], [2, 1, 1, 1, 2], [1, 0, 1, 2, 1], [1, 2, 1, 0, 1], [0, 1, 0, 1, 0],
+    [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1], [0, 2, 0, 2, 0], [2, 0, 2, 0, 2], [0, 2, 2, 2, 0]];
+  const W_FS = 10;
+  function wideGrid() { // grid[row][reel]
+    const g = [[], [], []];
+    for (let c = 0; c < 5; c++) {
+      const used = {};
+      for (let r = 0; r < 3; r++) {
+        let s; do { s = wpick(W_SYMS); } while (s === 'star' && used.star);
+        used[s] = 1; g[r][c] = s;
+      }
+    }
+    return g;
+  }
+  function wideEval(g) {
+    let m = 0; const wins = [];
+    W_LINES.forEach((ln, i) => {
+      const first = g[ln[0]][0];
+      if (first === 'star') return;
+      let n = 1; while (n < 5 && g[ln[n]][n] === first) n++;
+      const v = (W_PAY[first] || [])[n] || 0;
+      if (v > 0) { m += v; wins.push({ line: i, n, sym: first, cells: ln.slice(0, n).map((r, c) => [r, c]) }); }
+    });
+    let stars = 0; const starCells = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 5; c++) if (g[r][c] === 'star') { stars++; starCells.push([r, c]); }
+    m += W_SCAT[Math.min(stars, 5)] || 0;
+    return { m, wins, stars, starCells };
+  }
+  function wideSpin(st, bet) {
+    const free = st.fs > 0;
+    if (free) { bet = st.fsBet; st.fs--; }
+    const g = wideGrid(); const ev = wideEval(g);
+    const mult = free ? 2 : 1;
+    const pay = payFrac(st, ev.m * W_K * bet * mult);
+    const res = { bet: free ? 0 : bet, pay, grid: g, wins: ev.wins, stars: ev.stars, starCells: ev.starCells, free, mult };
+    if (free) st.fsWin = (st.fsWin || 0) + pay;
+    if (ev.stars >= 3) { if (!free) { st.fsBet = bet; st.fsWin = 0; } st.fs = (st.fs || 0) + W_FS; res.fsStart = true; }
+    res.fs = st.fs || 0; res.fsWin = st.fsWin || 0; res.fsBet = st.fsBet || bet;
+    if (free && st.fs === 0) res.fsEnd = true;
+    return res;
+  }
+
+  /* ---------- ④ 連チャンロケット ---------- */
+  const K_LV = [0, 3, 4, 5, 6, 8, 10, 12, 15, 20, 50]; // レベルごとの配当（BETの倍）
+  const K_CONT = 0.8;
+  const K_OUT = [['rocket', 0, 1 / 61.5], ['bell', 5, 1 / 40], ['cherry', 2, 1 / 8]];
+  const K_FILL = ['seven', 'star', 'gem', 'bell', 'cherry', 'lemon'];
+  function rocketReels(sym) {
+    let a, tries = 0;
+    do { a = [0, 1, 2].map(() => K_FILL[ri(K_FILL.length)]); tries++; }
+    while (tries < 200 && ((a[0] === a[1] && a[1] === a[2]) || a[0] === 'cherry'));
+    if (sym === 'rocket') a = ['rocket', 'rocket', 'rocket'];
+    else if (sym === 'bell') a = ['bell', 'bell', 'bell'];
+    else if (sym === 'cherry') { a[0] = 'cherry'; if (a[1] === 'cherry') a[1] = 'lemon'; }
+    else if (sym === 'miss') { a = ['rocket', 'rocket', K_FILL[ri(K_FILL.length)]]; }
+    return a;
+  }
+  function rocketSpin(st, bet) {
+    if (st.chain) { // 連チャン中（BETなし）
+      const c = st.chain;
+      if (R() < K_CONT && c.lv < 10) {
+        c.lv++; const pay = K_LV[c.lv] * c.bet; c.win += pay;
+        const res = { bet: 0, pay, chain: true, lv: c.lv, win: c.win, reels: rocketReels('rocket'), chainBet: c.bet };
+        if (c.lv >= 10) { res.end = true; res.moon = true; st.best = Math.max(st.best || 0, c.lv); st.chain = null; }
+        return res;
+      }
+      const res = { bet: 0, pay: 0, chain: true, end: true, lv: c.lv, win: c.win, reels: rocketReels('miss'), chainBet: c.bet };
+      st.best = Math.max(st.best || 0, c.lv); st.last = c.lv; st.chain = null; return res;
+    }
+    let r = R(), out = null, mult = 0;
+    for (const o of K_OUT) { if (r < o[2]) { out = o[0]; mult = o[1]; break; } r -= o[2]; }
+    if (out === 'rocket') {
+      st.chain = { lv: 1, bet, win: K_LV[1] * bet };
+      return { bet, pay: K_LV[1] * bet, start: true, lv: 1, win: st.chain.win, reels: rocketReels('rocket'), chainBet: bet };
+    }
+    return { bet, pay: mult * bet, out, reels: rocketReels(out) };
+  }
+
+  /* ---------- ⑤ ジャックポット777 ---------- */
+  const J_BET = 5, J_ADD = 1, J_SEED = 1000;
+  const J_OUT = [['jp', 0, 1 / 5000], ['bar3', 10, 1 / 40], ['seven2', 4, 1 / 25], ['bar2', 2, 1 / 12], ['cherry', 1, 1 / 7]];
+  const J_FILL = ['seven', 'bar', 'cherry', 'bell', 'lemon'];
+  function jpReels(out) {
+    let a, tries = 0;
+    const bad = (x) => x[0] === 'cherry' || (x[0] === x[1] && (x[0] === 'seven' || x[0] === 'bar')) || (x[0] === x[1] && x[1] === x[2]) ||
+      (x.filter((s) => s === 'seven').length >= 2) || (x.filter((s) => s === 'bar').length >= 2);
+    do { a = [0, 1, 2].map(() => J_FILL[ri(J_FILL.length)]); tries++; } while (tries < 300 && bad(a));
+    if (out === 'jp') a = ['seven', 'seven', 'seven'];
+    if (out === 'bar3') a = ['bar', 'bar', 'bar'];
+    if (out === 'seven2') a = ['seven', 'seven', ['bar', 'cherry', 'bell', 'lemon'][ri(4)]];
+    if (out === 'bar2') a = ['bar', 'bar', ['cherry', 'bell', 'lemon'][ri(3)]];
+    if (out === 'cherry') { a[0] = 'cherry'; }
+    return a;
+  }
+  function jackpotSpin(st, bet, jp) {
+    jp.add(J_ADD);
+    let r = R(), out = null, mult = 0;
+    for (const o of J_OUT) { if (r < o[2]) { out = o[0]; mult = o[1]; break; } r -= o[2]; }
+    let pay = mult * J_BET;
+    if (out === 'jp') { pay = jp.take(); }
+    const reach = !out && R() < 0.06; // 7・7のリーチ演出（ハズレ）
+    const reels = jpReels(out);
+    if (reach) { reels[0] = 'seven'; reels[1] = 'seven'; reels[2] = ['bell', 'lemon'][ri(2)]; }
+    return { bet: J_BET, pay, out, reels, reach: reach || out === 'jp' || out === 'seven2', pool: jp.get() };
+  }
+
+  /* ---------- ⑥ キラリドロップ（3×3 連鎖） ---------- */
+  const D_SYMS = [['seven', 1], ['bar', 2], ['star', 3], ['bell', 5], ['grape', 7], ['gem', 8], ['lemon', 11], ['cherry', 14]];
+  const D_ODDS = { seven: 6, bar: 4, star: 2.5, bell: 1.8, grape: 1.2, gem: 1, lemon: 0.8, cherry: 0.6 };
+  const D_COMBO = [1, 1, 2, 3, 4, 6, 8, 10, 15, 20, 30];
+  const D_K = 2.05;
+  const D_LINES = [[[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1], [1, 2]], [[2, 0], [2, 1], [2, 2]], [[0, 0], [1, 0], [2, 0]],
+    [[0, 1], [1, 1], [2, 1]], [[0, 2], [1, 2], [2, 2]], [[0, 0], [1, 1], [2, 2]], [[0, 2], [1, 1], [2, 0]]];
+  const dCombo = (k) => D_COMBO[Math.min(k, D_COMBO.length - 1)];
+  function dropSpin(st, bet) {
+    let g = [0, 1, 2].map(() => [0, 1, 2].map(() => wpick(D_SYMS)));
+    const steps = []; let total = 0, k = 0;
+    for (; ;) {
+      const hit = [];
+      D_LINES.forEach((ln, i) => { const s = g[ln[0][0]][ln[0][1]]; if (ln.every(([r, c]) => g[r][c] === s)) hit.push({ line: i, sym: s }); });
+      if (!hit.length || k >= 30) { steps.push({ grid: g.map((r) => r.slice()), hit: [] }); break; }
+      k++;
+      const connect = hit.length;
+      let m = 0; hit.forEach((h) => { m += D_ODDS[h.sym]; });
+      const raw = m * dCombo(k) * connect * D_K * bet;
+      const pay = payFrac(st, raw);
+      total += pay;
+      const clear = {}; hit.forEach((h) => D_LINES[h.line].forEach(([r, c]) => { clear[r + ',' + c] = 1; }));
+      steps.push({ grid: g.map((r) => r.slice()), hit, combo: k, connect, pay });
+      // 消して落とす
+      const ng = [[], [], []];
+      for (let c = 0; c < 3; c++) {
+        const keep = []; for (let r = 2; r >= 0; r--) if (!clear[r + ',' + c]) keep.push(g[r][c]);
+        while (keep.length < 3) keep.push(wpick(D_SYMS));
+        for (let r = 2, i = 0; r >= 0; r--, i++) ng[r][c] = keep[i];
+      }
+      g = ng;
+    }
+    st.best = Math.max(st.best || 0, k);
+    return { bet, pay: total, steps, combo: k };
+  }
+
+  /* ---------- まとめ ---------- */
+  function play(mid, st, d, ctx) {
+    const bet = d.bet | 0;
+    const m = MACHINES.find((x) => x.id === mid);
+    if (!m) throw new Error('機種がありません');
+    const needBet = !(mid === 'wide' && st.fs > 0) && !(mid === 'rocket' && st.chain) && !(d.type === 'stop');
+    if (needBet && m.bets.indexOf(bet) < 0 && mid !== 'oshi' && mid !== 'battle' && mid !== 'jackpot') throw new Error('BETがちがいます');
+    switch (mid) {
+      case 'classic': return classicSpin(st, bet);
+      case 'wide': return wideSpin(st, bet);
+      case 'rocket': return rocketSpin(st, bet);
+      case 'jackpot': return jackpotSpin(st, J_BET, ctx.jp);
+      case 'drop': return dropSpin(st, bet);
+      case 'oshi': case 'battle': {
+        if (d.type === 'stop') return pachiStop(st, d);
+        const res = pachiLever(st);
+        if (mid === 'battle') { res.fx = battleEffect(res); if (res.newHit) res.lamp = true; }
+        else if (res.newHit) res.lamp = R() < 0.6; // 目押し：告知ランプ（すぐ光る／あとで光る）
+        if (mid === 'oshi' && !res.newHit && st.held && !st.lampOn) { if (R() < 0.35) res.lamp = true; }
+        if (res.lamp) st.lampOn = true;
+        if (!st.held) st.lampOn = false;
+        res.lampOn = !!st.lampOn;
+        return res;
+      }
+    }
+  }
+  // 何を払うのにいくら必要か（ゲーム前のチェック用）
+  function cost(mid, st, d) {
+    if (d.type === 'stop') return 0;
+    if (mid === 'wide' && st.fs > 0) return 0;
+    if (mid === 'rocket' && st.chain) return 0;
+    if (mid === 'oshi' || mid === 'battle') return 3;
+    if (mid === 'jackpot') return J_BET;
+    return d.bet | 0;
+  }
+
+  const API = {
+    MACHINES, play, cost,
+    consts: { C_LINES, P_STRIP, W_LINES, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_K }
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SP = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
 <style>
 /* =========================================================
    スロットパーク(7機種)。先生のPC=ホスト、iPad=パッド
