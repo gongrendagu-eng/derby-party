@@ -590,6 +590,8 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .klogo{position:absolute;font-family:var(--f-led);font-weight:900;font-size:34px;letter-spacing:10px;color:#f1eeff;text-shadow:0 0 8px #a46bff,0 0 22px #5ff3ff}
 .ksub{position:absolute;font-family:var(--f-min);font-weight:800;font-size:16px;letter-spacing:8px;color:#c9b8ff}
 .kflash{position:absolute;inset:0;background:#fff;animation:kflash .5s ease-out forwards;pointer-events:none;z-index:6}@keyframes kflash{to{opacity:0}}
+.klunge{animation:klunge .3s cubic-bezier(.5,0,.8,1) forwards}@keyframes klunge{to{transform:translateX(-230px)}}
+.khit{animation:khit .12s steps(2) 3;filter:brightness(2.2)}@keyframes khit{50%{transform:translateX(8px)}}
 .krb{position:absolute;inset:0;background:linear-gradient(90deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd,#ff4d6d);background-size:200% 100%;animation:krb 3s linear infinite}@keyframes krb{to{background-position:200% 0}}
 .kdark{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(5,6,15,.92) 0%,rgba(5,6,15,.75) 40%,rgba(5,6,15,0) 75%)}
 .sc .big.neon{text-shadow:0 0 10px #a46bff,0 0 24px #5ff3ff,0 4px 0 #1a0f4a}
@@ -672,8 +674,8 @@ const sfx={
 
 /* ---------- 絵と音のファイル(medalgame/sp-assets/) ---------- */
 const ASSET='sp-assets/';
-// 機種ごとのBGM。キラリドロップと機種選びの画面は、曲ができたらここに1行足す
-const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',rocket:'bgm_rocket.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_kaguya.mp3'};
+// 機種ごとのBGM(lobby=機種選びの画面)
+const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',rocket:'bgm_rocket.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_kaguya.mp3',drop:'bgm_drop.mp3',lobby:'bgm_lobby.mp3'};
 const BGM_VOL=0.35; // 小さめ
 const bgm={on:(()=>{ try{ return localStorage.getItem('mg.slotpark.bgm')!=='0'; }catch(e){ return true; } })(),el:null,file:null};
 function acx(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume().catch(()=>{}); return AC; }
@@ -690,7 +692,7 @@ function bgmPlay(mid){
 }
 function bgmStop(){ if(bgm.el){ try{ bgm.el.pause(); bgm.el.removeAttribute('src'); bgm.el.load(); }catch(e){} } bgm.el=null; bgm.file=null; }
 function bgmToggle(){ bgm.on=!bgm.on; try{ localStorage.setItem('mg.slotpark.bgm',bgm.on?'1':'0'); }catch(e){}
-  if(bgm.on) bgmPlay(G.mid); else bgmStop(); const b=$('#tBgm'); if(b){ b.textContent=bgm.on?'♪ ON':'♪ OFF'; b.classList.toggle('gray',!bgm.on); } }
+  if(bgm.on) bgmPlay(G.mid||'lobby'); else bgmStop(); const b=$('#tBgm'); if(b){ b.textContent=bgm.on?'♪ ON':'♪ OFF'; b.classList.toggle('gray',!bgm.on); } }
 document.addEventListener('visibilitychange',()=>{ if(!bgm.el) return; if(document.hidden) bgm.el.pause(); else if(bgm.on) bgm.el.play().catch(()=>{}); });
 
 
@@ -837,7 +839,7 @@ function setTheme(mid){ const m=mid&&MBY[mid]; document.body.className='pad '+(m
 function topbarHtml(title){
   return `<div class="topbar">${G.mid?'<button class="tbtn" id="tBackL">機種をかえる</button>':''}<div class="t">${esc(title)}</div><span class="nm">${esc(G.view.n)} さん</span><span class="sp" style="flex:1"></span>
     <span class="bank" id="tBank"></span><span class="cred">持ち込み <b id="tCred">0</b> 枚</span>
-    ${G.mid&&BGM[G.mid]?`<button class="tbtn${bgm.on?'':' gray'}" id="tBgm" aria-label="BGMを切りかえる" title="BGM">${bgm.on?'♪ ON':'♪ OFF'}</button>`:''}<button class="tbtn" id="tAdd">貯金から追加</button><button class="tbtn" id="tBack">一部もどす</button><button class="tbtn gray" id="tQuit">やめる</button></div>`;
+    ${BGM[G.mid||'lobby']?`<button class="tbtn${bgm.on?'':' gray'}" id="tBgm" aria-label="BGMを切りかえる" title="BGM">${bgm.on?'♪ ON':'♪ OFF'}</button>`:''}<button class="tbtn" id="tAdd">貯金から追加</button><button class="tbtn" id="tBack">一部もどす</button><button class="tbtn gray" id="tQuit">やめる</button></div>`;
 }
 function bindTop(){
   const bg=$('#tBgm'); if(bg) bg.onclick=bgmToggle;
@@ -903,7 +905,7 @@ const MINFO={
   battle:{op:'レバー＋ボタン3つ＋液晶',memo:'KAGUYAと宿敵シロガネのバトル。演出の色で期待度がわかる。',w:3,bet:'3〜30枚',hd:'#0d1030',img:'kg_bust',s:['seven','replay','bell']}
 };
 async function openLobby(){
-  setTheme(null); bgmStop(); G.scr++; G.screen='lobby';
+  setTheme(null); bgmPlay('lobby'); G.scr++; G.screen='lobby';
   $('#stage').innerHTML=topbarHtml(NAME)+`<div class="lobby"><h1>どれで遊ぶ？<small>どの機種も、長い目で見て戻ってくるメダルは同じくらい(約95%)。ちがうのは「波の大きさ」と遊び方。</small></h1>
     <div class="mgrid">${MLIST.map(m=>{const i=MINFO[m.id];return `<button class="mcard" data-m="${m.id}"><div class="hd" style="background:${i.hd}">${i.img?`<img src="${ASSET}${i.img}.webp" alt="" style="width:100%;height:100%;object-fit:cover;object-position:62% 24%">`:i.s.map(k=>sym(k,46)).join('')}</div>
       <div class="bd"><span class="tag ${m.style}">${m.style==='pop'?'ポップ':'シック'}</span><div class="nm">${esc(m.name)}</div><div class="op">${i.op}</div><div class="memo">${i.memo}</div>
@@ -944,7 +946,7 @@ function toggleAuto(M){ G.auto=!G.auto; M.upd(); if(G.auto&&!G.busy) M.spin(); e
 
 // KAGUYAの絵(先に読みこんでおく)
 const KI=(n,st,cls)=>`<img class="kimg ${cls||''}" src="${ASSET}${n}.webp" alt="" style="${st}">`;
-const KPRE=[]; function kPreload(){ if(KPRE.length) return; ['kg_stand','kg_ready','kg_special','kg_win','kg_lose','kg_bust','sg_ready','kg_face1','kg_face2','kg_face3'].forEach(n=>{ const i=new Image(); i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
+const KPRE=[]; function kPreload(){ if(KPRE.length) return; ['kg_stand','kg_ready','kg_special','kg_win','kg_lose','kg_bust','sg_ready','sg_bust','sg_attack','sg_lose','sg_win','kg_face1','kg_face2','kg_face3'].forEach(n=>{ const i=new Image(); i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
 
 /* =========================================================
    機種ごとの作り
@@ -1124,7 +1126,7 @@ function pachi(mid){ return {
     if(name==='normal') h=base('',true)+KI('kg_stand','left:46px;bottom:-4px;height:244px','breathe kidle')+`<div class="klogo" style="right:36px;top:140px">KAGUYA</div><div class="ksub" style="right:58px;top:188px">輝夜 ・ 月下の剣</div>`;
     else if(name==='chance') h=base('radial-gradient(ellipse at 25% 50%,rgba(176,77,255,.75) 0%,rgba(176,77,255,0) 70%)')+`<div class="kflash"></div><div class="rays"></div>`+face(1,'left:60px;top:16px',true)+`<div class="big neon" style="top:96px;left:240px;font-size:56px">CHANCE</div>`;
     else if(name==='green') h=base('radial-gradient(ellipse at 30% 60%,rgba(47,179,107,.8) 0%,rgba(47,179,107,0) 70%)')+`<div class="rays"></div>`+KI('kg_ready','left:-24px;bottom:-8px;height:232px','kslideL')+`<div class="big neon" style="top:40px;left:330px;font-size:40px;text-shadow:0 0 12px #2fb36b,0 4px 0 #0b3a20">なにか来る…?</div>`;
-    else if(name==='red') h=base('radial-gradient(ellipse at 50% 40%,rgba(230,57,70,.85) 0%,rgba(230,57,70,.15) 75%)')+`<div class="rays"></div>`+face(3,'left:36px;top:16px',true)+`<div class="big" style="top:26px;left:220px;font-size:60px;text-shadow:0 0 14px #ff3a4f,0 4px 0 #7a0f17">REACH!</div><div style="position:absolute;left:220px;right:0;bottom:26px;display:flex;justify-content:center;gap:10px">${sym('seven',84)}${sym('seven',84)}<span class="shake" style="width:84px;height:84px;border:4px dashed #fff;border-radius:12px"></span></div>`;
+    else if(name==='red') h=base('radial-gradient(ellipse at 50% 40%,rgba(230,57,70,.85) 0%,rgba(230,57,70,.15) 75%)')+`<div class="rays"></div>`+KI('sg_bust','left:-44px;bottom:-10px;height:262px','kslideL')+`<div class="big" style="top:26px;left:300px;font-size:60px;text-shadow:0 0 14px #ff3a4f,0 4px 0 #7a0f17">REACH!</div><div style="position:absolute;left:300px;right:0;bottom:26px;display:flex;justify-content:center;gap:10px">${sym('seven',84)}${sym('seven',84)}<span class="shake" style="width:84px;height:84px;border:4px dashed #fff;border-radius:12px"></span></div>`;
     else if(name==='gold') h=base('radial-gradient(ellipse at 70% 50%,rgba(224,178,58,.9) 0%,rgba(224,178,58,.2) 70%)')+`<div class="kflash"></div><div class="band"></div>`+KI('kg_bust','right:-24px;bottom:-12px;height:272px','kslideR')+`<div class="big" style="top:96px;left:30px;right:auto;font-size:62px;color:#ffd23f;transform:rotate(-8deg);text-shadow:0 0 14px rgba(255,210,63,.9),0 4px 0 #5a3a00">激アツ!!</div>`;
     else if(name==='battle') h=base('linear-gradient(90deg,rgba(40,90,255,.45) 0%,rgba(0,0,0,0) 45%,rgba(0,0,0,0) 55%,rgba(255,30,60,.5) 100%)')+`
       <div class="hp" style="left:16px"><i id="hp1" style="width:100%;background:#5ff3ff;box-shadow:0 0 8px #5ff3ff"></i></div><div class="hp" style="right:16px"><i id="hp2" style="width:100%;background:#ff3a4f;box-shadow:0 0 8px #ff3a4f"></i></div>
@@ -1134,7 +1136,7 @@ function pachi(mid){ return {
     else if(name==='rainbow'||name==='bonusStart') h=base('')+`<div class="krb" style="opacity:.6"></div><div class="kdark" style="background:radial-gradient(ellipse at 22% 60%,rgba(5,6,15,.92) 0%,rgba(5,6,15,.7) 30%,rgba(5,6,15,0) 60%)"></div><div class="kflash"></div><div class="rays"></div>`+KI('kg_special','left:60px;bottom:-6px;height:252px','kzoom')+`<div class="big" style="top:78px;left:250px;font-size:58px;text-shadow:0 4px 0 #3a1a6e,0 0 18px rgba(255,255,255,.9)">${name==='bonusStart'?(o.type==='big'?'BIG BONUS!!':'REG BONUS!!'):'BONUS!!'}</div>`;
     else if(name==='aim') h=base('radial-gradient(ellipse at 50% 30%,rgba(164,107,255,.5) 0%,rgba(164,107,255,0) 70%)')+`<div class="rays"></div>`+face(2,'left:30px;top:16px')+`<div class="big neon" style="top:34px;left:200px;font-size:50px;color:#ffd23f">${o.held==='reg'?'BAR':'7'}をねらえ!!</div><div style="position:absolute;left:200px;right:0;bottom:26px;display:flex;justify-content:center;gap:12px">${[0,1,2].map(()=>sym(o.held==='reg'?'bar':'seven',90)).join('')}</div>`;
     else if(name==='bonusGame') h=base('')+`<div class="krb" style="opacity:.32"></div><div class="rays"></div>`+KI('kg_win','left:40px;bottom:-4px;height:244px','breathe')+`<div class="big neon" style="top:50px;left:200px;font-size:44px">BONUS GAME</div><div class="big neon" style="top:116px;left:200px;font-size:34px;font-family:var(--f-led)">のこり ${o.left??''}</div>`;
-    else if(name==='lose') h=base('rgba(60,70,100,.55)',true)+KI('kg_lose','left:50%;margin-left:-110px;bottom:-6px;height:230px','')+`<div class="big" style="top:18px;font-size:46px;color:#cfd6ff;text-shadow:0 4px 0 #1a1f40">ざんねん…</div>`;
+    else if(name==='lose') h=base('rgba(60,70,100,.55)',true)+KI('kg_lose','left:10px;bottom:-6px;height:222px','')+KI('sg_win','right:20px;bottom:-6px;height:236px','kslideR')+`<div class="big" style="top:18px;font-size:46px;color:#cfd6ff;text-shadow:0 4px 0 #1a1f40">ざんねん…</div>`;
     L.innerHTML=`<div class="sc">${h}</div>${o.meter!=null?`<div class="meter">期待度<div class="bar"><i style="width:${o.meter}%"></i></div>${o.meter}%</div>`:''}`;
     document.querySelectorAll('.ledbar').forEach(b=>b.classList.toggle('hot',name!=='normal'&&name!=='lose'));
   },
@@ -1156,8 +1158,9 @@ function pachi(mid){ return {
   push(){ const P=this.P; if(P.revealed){ sfx.push(); return; } clearTimeout(P.pushT); P.revealed=true; $('#bPush').classList.remove('ready'); sfx.push(); this.upd();
     const hit=P.fxHit;
     if(P.fx==='battleWin'||P.fx==='battleLose'){ const h1=$('#hp1'),h2=$('#hp2');
-      if(hit){ if(h2) h2.style.width='0%'; setTimeout(()=>{ const c=$('#c2'); if(c) c.classList.add('knock'); },500); }
-      else { if(h1) h1.style.width='0%'; setTimeout(()=>{ const c=$('#c1'); if(c) c.classList.add('knockL'); },500); }
+      const c1=$('#c1'), c2=$('#c2'), im2=c2&&c2.querySelector('img'), vs=$('#lcd .big'); if(vs){ vs.style.transition='opacity .2s'; vs.style.opacity=0; }
+      if(hit){ if(h2) h2.style.width='0%'; if(im2){ im2.src=ASSET+'sg_lose.webp'; im2.style.height='200px'; } if(c2){ c2.classList.remove('kslideR'); c2.classList.add('khit'); } setTimeout(()=>{ if(c2){ c2.classList.remove('khit'); c2.classList.add('knock'); } },500); }
+      else { if(im2){ im2.src=ASSET+'sg_attack.webp'; im2.style.height='236px'; } if(c2){ c2.classList.remove('kslideR'); c2.classList.add('klunge'); } setTimeout(()=>{ if(h1) h1.style.width='0%'; if(c1){ c1.classList.remove('kslideL'); c1.classList.add('khit'); } },250); setTimeout(()=>{ if(c1){ c1.classList.remove('khit'); c1.classList.add('knockL'); } },600); }
       setTimeout(()=>{ if(G.mid!=='battle') return; if(hit){ sfx.big(); this.scene('rainbow'); setTimeout(()=>this.held&&this.scene('aim',{held:this.held}),1600); } else this.scene('lose'); },1700);
     } else if(hit){ sfx.big(); this.scene('rainbow'); setTimeout(()=>{ if(G.mid==='battle'&&this.held) this.scene('aim',{held:this.held}); },1600); }
     else { this.scene('lose'); setTimeout(()=>{ if(G.mid==='battle'&&!G.busy) this.scene('normal'); },1600); }
