@@ -220,6 +220,8 @@ async function startHost(opt){
       if(hooks.onEnter) await hooks.onEnter(sid,amt,t);
       return {ok:true,msg:amt?`${yen(amt)}枚を${t==='add'?'追加しました':'持ち込みました'}`:''};
     }
+    // 掃除決めのゲーム(opt.anyone)は、席がなくても 'g:〜' の申請を受け付ける(本人かどうかはゲーム側で確かめる)
+    if(opt.anyone&&t.startsWith('g:')&&hooks.onReq) return await hooks.onReq(sid,r,H.acc[sid]);
     const s0=H.acc[sid].seat;
     if(!s0||s0.g!==gid) return {ok:false,msg:'このゲームには入っていません',d:{noseat:true}};
     if(hooks.flush&&(t==='back'||t==='quit')) await hooks.flush(sid);   // ゲームの中の枚数を口座にそろえてから

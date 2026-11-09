@@ -71,6 +71,12 @@ a.pbtn{color:var(--ink);text-decoration:none;display:inline-block}
 .cv.ctl{outline:4px solid var(--gold)}
 html.padmode .cv.ctl,html.padmode .cv.ctl canvas{touch-action:none}
 .sides{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sides button.g{background:#18a865}.sides button.y{background:#e09a00}
+.items button.g{background:#dff6ea;color:#0e7a47}.items button.y{background:#fff1cc;color:#9a6a00}
+.tag.g{background:#18a865}.tag.y{background:#e09a00}
+.vs4{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;font-weight:800}
+.vs4 div{border:2px solid var(--line);border-radius:10px;padding:6px}
+.vs4 small{display:block;color:var(--soft);font-size:13px}
 .sides button{border:4px solid transparent;border-radius:20px;padding:12px;font-weight:800;font-size:20px;color:#fff}
 .sides button small{display:block;font-size:14px;opacity:.9}
 .sides button.b{background:var(--blue)}.sides button.r{background:var(--red)}
@@ -102,272 +108,363 @@ html.padmode .cv.ctl,html.padmode .cv.ctl canvas{touch-action:none}
 <div id="app"></div>
 <div id="toast" class="toast" hidden></div>
 <script>
-const GID='airhockey', NAME='エアホッケー', {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
+/* エアホッケー(メダルゲームにつながる版)
+   形式:1対1・2対2・4人バトル
+   モード:フリーモード(貯金のメダルを持ち込む)/掃除モード(?clean=ID。掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ) */
+const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
+const CLEAN=MG.qs.get('clean')||'';
+const GID=CLEAN?'ahclean':'airhockey', NAME=CLEAN?'エアホッケー(掃除決め)':'エアホッケー';
 let toastT=null; function toast(m){ if(!m) return; const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
 const now=()=>Date.now();
 
-/* ---------- 盤面(先生のPCとiPadで同じ描き方) ---------- */
-const W=1000,H=560,TOP=84,CW=1000,CH=TOP+H;      // 論理サイズ(上の84pxは点数の帯)
-const PR=18, MR=34, MR_S=20, GW=180, GW_B=300;     // パック・マレット・ゴールの大きさ
-const BUMP=[[W/2,150],[W/2,H-150]], BR=34;          // ジャマ玉の位置
-const SIDE={b:'青',r:'赤'}, COL={b:'#2f7bff',r:'#ff4d6d'};
-const ITEMS={
-  sb:{n:'青のマレットを小さく',e:'青のマレットが小さくなった',ic:'🔹',s:'b',sec:8},
-  sr:{n:'赤のマレットを小さく',e:'赤のマレットが小さくなった',ic:'🔻',s:'r',sec:8},
-  gb:{n:'青のゴールを広く',e:'青のゴールが広がった',ic:'🥅',s:'b',sec:8},
-  gr:{n:'赤のゴールを広く',e:'赤のゴールが広がった',ic:'🥅',s:'r',sec:8},
-  sp:{n:'パックを速く',e:'パックが速くなった',ic:'⚡',s:'',sec:6},
-  wl:{n:'ジャマ玉を出す',e:'ジャマ玉が出た',ic:'🪨',s:'',sec:8}
+/* ---------- 形式と盤面 ---------- */
+const CW=1000, TOP=84, RH=560, CH=TOP+RH;   // 論理サイズ(上の84pxは点数の帯)
+const PR=18, MR=34, MR_S=20;                 // パック・マレット
+const CUT=100, DEP=175;                      // 4人バトル:角の斜め・陣地の深さ
+const FM={
+  '1v1':{n:'1対1',need:2,w:1000,h:RH,gw:180,gwb:300,teams:['b','r']},
+  '2v2':{n:'2対2',need:4,w:1000,h:RH,gw:200,gwb:320,teams:['b','r']},
+  'ffa':{n:'4人バトル',need:4,w:RH,h:RH,gw:170,gwb:260,teams:['b','r','g','y']}
 };
-const ITEM_MAX=3; // 1試合に1人が使える回数
+const TEAM={b:'青',r:'赤',g:'緑',y:'黄'}, COL={b:'#2f7bff',r:'#ff4d6d',g:'#18a865',y:'#e09a00'};
+const WALL={b:'L',r:'R',g:'T',y:'B'};       // その色のゴールがある壁
+const ox=fm=>(CW-FM[fm].w)/2;
+function slotsOf(fm){
+  const {w,h}=FM[fm];
+  if(fm==='1v1') return [{id:'b',t:'b',z:[0,w/2,0,h],home:[110,h/2]},{id:'r',t:'r',z:[w/2,w,0,h],home:[w-110,h/2]}];
+  if(fm==='2v2') return [{id:'b1',t:'b',z:[0,w/2,0,h/2],home:[150,h/4],nm:'上'},{id:'b2',t:'b',z:[0,w/2,h/2,h],home:[150,h*3/4],nm:'下'},
+                         {id:'r1',t:'r',z:[w/2,w,0,h/2],home:[w-150,h/4],nm:'上'},{id:'r2',t:'r',z:[w/2,w,h/2,h],home:[w-150,h*3/4],nm:'下'}];
+  return [{id:'b',t:'b',z:[0,DEP,CUT,h-CUT],home:[60,h/2]},{id:'r',t:'r',z:[w-DEP,w,CUT,h-CUT],home:[w-60,h/2]},
+          {id:'g',t:'g',z:[CUT,w-CUT,0,DEP],home:[w/2,60]},{id:'y',t:'y',z:[CUT,w-CUT,h-DEP,h],home:[w/2,h-60]}];
+}
+const bumpsOf=fm=>{ const {w,h}=FM[fm]; return fm==='ffa'?[[w/2,h/2,38]]:[[w/2,150,34],[w/2,h-150,34]]; };
+function itemsOf(fm){
+  const L=[]; FM[fm].teams.forEach(t=>{
+    L.push({k:'s'+t,t,n:`${TEAM[t]}のマレットを小さく`,e:`${TEAM[t]}のマレットが小さくなった`,ic:'🔻',sec:8});
+    L.push({k:'g'+t,t,n:`${TEAM[t]}のゴールを広く`,e:`${TEAM[t]}のゴールが広がった`,ic:'🥅',sec:8}); });
+  L.push({k:'sp',t:'',n:'パックを速く',e:'パックが速くなった',ic:'⚡',sec:6});
+  L.push({k:'wl',t:'',n:'ジャマ玉を出す',e:'ジャマ玉が出た',ic:'🪨',sec:8});
+  return L;
+}
+const ITEM_MAX=3;
+const slotName=(fm,id)=>{ const s=slotsOf(fm).find(x=>x.id===id); return s?TEAM[s.t]+(s.nm?`(${s.nm})`:''):''; };
 
 function setupCanvas(cv){ const dpr=Math.min(2,window.devicePixelRatio||1); cv.width=CW*dpr; cv.height=CH*dpr; const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return c; }
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
-/* s = {q:[x,y]|null, b:[x,y,r], r:[x,y,r], g:[青のゴール幅,赤のゴール幅], w:ジャマ玉, sp:速い, sc:[青,赤], tm:のこり秒, gg:延長}
-   o = {nb,nr:名前, big:真ん中の大きな字, sub:小さな字, ev:お知らせ, ghost:[x,y,side], me:'b'|'r'} */
+const fmtT=s=>s==null?'—':`${Math.floor(s/60)}:${String(Math.max(0,Math.floor(s%60))).padStart(2,'0')}`;
+/* s = {fm, m:[[x,y,r,色]...], q:[x,y]|null, g:{色:ゴール幅(0=閉じた)}, w:ジャマ玉, sp, sc:{色:点}, lv:{色:ライフ}, out:[色], tm, gg}
+   o = {names:{色:名前}, big, bigc, sub, ev, ghost:[x,y,色], zone:[x0,x1,y0,y1,色]} */
 function drawScene(c,s,o){
-  o=o||{};
+  o=o||{}; const fm=s.fm||'1v1', F=FM[fm], w=F.w, h=F.h, X=ox(fm), nm=o.names||{};
   c.clearRect(0,0,CW,CH);
-  // 点数の帯
   c.fillStyle='#14213a'; rr(c,0,0,CW,TOP-8,16); c.fill();
-  c.textBaseline='middle'; c.font='800 24px "M PLUS Rounded 1c",sans-serif';
-  c.fillStyle=COL.b; c.textAlign='left'; c.fillText(o.nb||'青',22,TOP/2-4);
-  c.fillStyle=COL.r; c.textAlign='right'; c.fillText(o.nr||'赤',CW-22,TOP/2-4);
-  const sc=s.sc||[0,0];
-  c.textAlign='center'; c.font='52px "Dela Gothic One",sans-serif';
-  c.fillStyle=COL.b; c.fillText(sc[0],CW/2-90,TOP/2-2); c.fillStyle=COL.r; c.fillText(sc[1],CW/2+90,TOP/2-2);
-  c.fillStyle='#fff'; c.font='800 22px "M PLUS Rounded 1c",sans-serif';
-  c.fillText(s.gg?'延長':(s.tm!=null?`${Math.floor(s.tm/60)}:${String(Math.max(0,Math.floor(s.tm%60))).padStart(2,'0')}`:'—'),CW/2,TOP/2-4);
-  // リンク
-  c.save(); c.translate(0,TOP);
-  c.fillStyle=s.sp?'#fff6db':'#f3f8ff'; rr(c,0,0,W,H,26); c.fill();
-  c.lineWidth=6; c.strokeStyle='#14213a'; rr(c,0,0,W,H,26); c.stroke();
-  c.strokeStyle='rgba(255,77,109,.55)'; c.lineWidth=4; c.beginPath(); c.moveTo(W/2,8); c.lineTo(W/2,H-8); c.stroke();
-  c.beginPath(); c.arc(W/2,H/2,70,0,7); c.stroke();
-  c.strokeStyle='rgba(47,123,255,.25)'; c.beginPath(); c.arc(0,H/2,120,-Math.PI/2,Math.PI/2); c.stroke();
-  c.strokeStyle='rgba(255,77,109,.25)'; c.beginPath(); c.arc(W,H/2,120,Math.PI/2,Math.PI*1.5); c.stroke();
-  const g=s.g||[GW,GW];
-  c.fillStyle=COL.b; rr(c,-6,H/2-g[0]/2,14,g[0],6); c.fill();
-  c.fillStyle=COL.r; rr(c,W-8,H/2-g[1]/2,14,g[1],6); c.fill();
-  if(s.w){ BUMP.forEach(([x,y])=>{ c.fillStyle='#7a6a55'; c.beginPath(); c.arc(x,y,BR,0,7); c.fill(); c.fillStyle='#a99779'; c.beginPath(); c.arc(x-8,y-8,BR*.45,0,7); c.fill(); }); }
-  const mal=(m,col)=>{ if(!m) return; const [x,y,r]=m; c.fillStyle='rgba(0,0,0,.12)'; c.beginPath(); c.arc(x+3,y+5,r,0,7); c.fill();
-    c.fillStyle=col; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.fillStyle='rgba(255,255,255,.45)'; c.beginPath(); c.arc(x,y,r*.55,0,7); c.fill();
-    c.fillStyle=col; c.beginPath(); c.arc(x,y,r*.32,0,7); c.fill(); };
-  mal(s.b,COL.b); mal(s.r,COL.r);
-  if(o.ghost){ const [x,y,sd]=o.ghost; c.strokeStyle=COL[sd]; c.lineWidth=4; c.setLineDash([8,6]); c.beginPath(); c.arc(x,y,(sd==='b'?s.b:s.r)?.[2]||MR,0,7); c.stroke(); c.setLineDash([]); }
+  c.textBaseline='middle';
+  if(fm==='ffa'){
+    const ts=F.teams, cw=(CW-160)/4;
+    ts.forEach((t,i)=>{ const x=20+i*cw+(i>=2?160:0), out=(s.out||[]).includes(t);
+      c.globalAlpha=out?.35:1; c.fillStyle=COL[t]; c.textAlign='left'; c.font='800 20px "M PLUS Rounded 1c",sans-serif';
+      c.fillText((nm[t]||TEAM[t]).slice(0,7),x,24);
+      const lv=(s.lv||{})[t]||0; c.font='22px sans-serif'; c.fillText(out?'脱落':'♥'.repeat(Math.max(0,lv)),x,54); c.globalAlpha=1; });
+    c.fillStyle='#fff'; c.textAlign='center'; c.font='800 24px "M PLUS Rounded 1c",sans-serif'; c.fillText(s.gg?'延長':fmtT(s.tm),CW/2,TOP/2-4);
+  }else{
+    c.font='800 22px "M PLUS Rounded 1c",sans-serif';
+    c.fillStyle=COL.b; c.textAlign='left'; c.fillText(nm.b||'青',22,TOP/2-4);
+    c.fillStyle=COL.r; c.textAlign='right'; c.fillText(nm.r||'赤',CW-22,TOP/2-4);
+    const sc=s.sc||{}; c.textAlign='center'; c.font='52px "Dela Gothic One",sans-serif';
+    c.fillStyle=COL.b; c.fillText(sc.b||0,CW/2-90,TOP/2-2); c.fillStyle=COL.r; c.fillText(sc.r||0,CW/2+90,TOP/2-2);
+    c.fillStyle='#fff'; c.font='800 22px "M PLUS Rounded 1c",sans-serif'; c.fillText(s.gg?'延長':fmtT(s.tm),CW/2,TOP/2-4);
+  }
+  c.save(); c.translate(X,TOP);
+  // リンクの形
+  const shape=()=>{ if(fm==='ffa'){ c.beginPath(); c.moveTo(CUT,0); c.lineTo(w-CUT,0); c.lineTo(w,CUT); c.lineTo(w,h-CUT); c.lineTo(w-CUT,h); c.lineTo(CUT,h); c.lineTo(0,h-CUT); c.lineTo(0,CUT); c.closePath(); } else rr(c,0,0,w,h,26); };
+  c.fillStyle=s.sp?'#fff6db':'#f3f8ff'; shape(); c.fill();
+  if(o.zone){ const [x0,x1,y0,y1,t]=o.zone; c.fillStyle=COL[t]+'22'; c.fillRect(x0,y0,x1-x0,y1-y0); }
+  c.lineWidth=6; c.strokeStyle='#14213a'; shape(); c.stroke();
+  c.lineWidth=4;
+  if(fm==='ffa'){ c.strokeStyle='rgba(20,33,58,.18)'; c.beginPath(); c.arc(w/2,h/2,80,0,7); c.stroke();
+    F.teams.forEach(t=>{ const [x0,x1,y0,y1]=slotsOf(fm).find(q=>q.t===t).z; c.strokeStyle=COL[t]+'55'; c.setLineDash([10,8]); c.strokeRect(x0+3,y0+3,x1-x0-6,y1-y0-6); c.setLineDash([]); }); }
+  else{ c.strokeStyle='rgba(255,77,109,.55)'; c.beginPath(); c.moveTo(w/2,8); c.lineTo(w/2,h-8); c.stroke(); c.beginPath(); c.arc(w/2,h/2,70,0,7); c.stroke();
+    if(fm==='2v2'){ c.strokeStyle='rgba(20,33,58,.15)'; c.setLineDash([10,10]); c.beginPath(); c.moveTo(10,h/2); c.lineTo(w-10,h/2); c.stroke(); c.setLineDash([]); } }
+  // ゴール
+  F.teams.forEach(t=>{ const gw=(s.g||{})[t]; c.fillStyle=gw?COL[t]:'#9aa6b8'; const L=gw||F.gw;
+    const wl=WALL[t]; if(!gw&&fm!=='ffa') return;
+    if(wl==='L') rr(c,-6,h/2-L/2,14,L,6); else if(wl==='R') rr(c,w-8,h/2-L/2,14,L,6);
+    else if(wl==='T') rr(c,w/2-L/2,-6,L,14,6); else rr(c,w/2-L/2,h-8,L,14,6);
+    c.fill(); });
+  if(s.w) bumpsOf(fm).forEach(([x,y,r])=>{ c.fillStyle='#7a6a55'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.fillStyle='#a99779'; c.beginPath(); c.arc(x-8,y-8,r*.45,0,7); c.fill(); });
+  (s.m||[]).forEach(([x,y,r,t])=>{ c.fillStyle='rgba(0,0,0,.12)'; c.beginPath(); c.arc(x+3,y+5,r,0,7); c.fill();
+    c.fillStyle=COL[t]; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.fillStyle='rgba(255,255,255,.45)'; c.beginPath(); c.arc(x,y,r*.55,0,7); c.fill();
+    c.fillStyle=COL[t]; c.beginPath(); c.arc(x,y,r*.32,0,7); c.fill(); });
+  if(o.ghost){ const [x,y,t]=o.ghost; c.strokeStyle=COL[t]; c.lineWidth=4; c.setLineDash([8,6]); c.beginPath(); c.arc(x,y,MR,0,7); c.stroke(); c.setLineDash([]); }
   if(s.q){ const [x,y]=s.q; c.fillStyle='rgba(0,0,0,.15)'; c.beginPath(); c.arc(x+2,y+4,PR,0,7); c.fill();
     c.fillStyle=s.sp?'#e07b00':'#14213a'; c.beginPath(); c.arc(x,y,PR,0,7); c.fill(); }
-  if(o.me){ c.fillStyle=COL[o.me]; c.font='800 22px "M PLUS Rounded 1c",sans-serif'; c.textAlign='center';
-    c.fillText('あなたの陣地',o.me==='b'?W/4:W*3/4,H-24); }
-  if(o.big){ c.fillStyle='rgba(255,255,255,.78)'; rr(c,W/2-330,H/2-80,660,160,24); c.fill();
-    c.fillStyle=o.bigc||'#14213a'; c.textAlign='center'; c.font='64px "Dela Gothic One",sans-serif'; c.fillText(o.big,W/2,H/2-(o.sub?16:0));
-    if(o.sub){ c.font='800 24px "M PLUS Rounded 1c",sans-serif'; c.fillStyle='#14213a'; c.fillText(o.sub,W/2,H/2+46); } }
+  c.restore();
+  // 文字は盤面の真ん中(リンクの幅に関係なく)
+  c.save(); c.translate(0,TOP);
+  if(o.big){ c.fillStyle='rgba(255,255,255,.8)'; rr(c,CW/2-330,RH/2-80,660,160,24); c.fill();
+    c.fillStyle=o.bigc||'#14213a'; c.textAlign='center'; c.font='60px "Dela Gothic One",sans-serif'; c.fillText(o.big,CW/2,RH/2-(o.sub?16:0));
+    if(o.sub){ c.font='800 22px "M PLUS Rounded 1c",sans-serif'; c.fillStyle='#14213a'; c.fillText(o.sub,CW/2,RH/2+46); } }
   if(o.ev){ c.font='800 26px "M PLUS Rounded 1c",sans-serif'; const tw=c.measureText(o.ev).width+40;
-    c.fillStyle='rgba(20,33,58,.85)'; rr(c,W/2-tw/2,H-70,tw,48,24); c.fill(); c.fillStyle='#ffd84a'; c.textAlign='center'; c.fillText(o.ev,W/2,H-46); }
+    c.fillStyle='rgba(20,33,58,.85)'; rr(c,CW/2-tw/2,RH-70,tw,48,24); c.fill(); c.fillStyle='#ffd84a'; c.textAlign='center'; c.fillText(o.ev,CW/2,RH-46); }
   c.restore();
 }
-
-if(MG.qs.get('mg')) padMain(); else hostMain();
 
 /* =========================================================================
    先生のPC(このタブが開いている間「稼働中」)
    ========================================================================= */
-let HOST=null, CTX=null, AH='';
+let HOST=null, CTX=null, AH='', SESS=null, CB={};
 const CFG_KEY='mg.airhockey.cfg';
-const C=Object.assign({mode:'vol',fee:30,goals:5,tlim:120,entSec:20,betSec:20,cost:10,auto:false},(()=>{try{return JSON.parse(localStorage.getItem(CFG_KEY))||{}}catch(e){return{}}})());
+const C=Object.assign({fm:'1v1',mode:'vol',fee:30,goals:5,lives:3,tlim:120,entSec:20,betSec:20,cost:10,auto:false},(()=>{try{return JSON.parse(localStorage.getItem(CFG_KEY))||{}}catch(e){return{}}})());
+if(!FM[C.fm]) C.fm='1v1';
 const saveCfg=()=>{try{localStorage.setItem(CFG_KEY,JSON.stringify(C))}catch(e){}};
-// 試合の状態
-const M={ph:'lobby',mid:'',pl:{b:'',r:''},fee:{},ent:new Set(),bets:{},used:{},dl:0,msg:'',win:'',sc:[0,0],gg:false,tEnd:0,res:{},ev:null,evSeq:0,cool:0,busy:false};
-// 物理
-const S={q:{x:W/2,y:H/2,vx:0,vy:0},m:{b:{x:120,y:H/2,vx:0,vy:0,tx:120,ty:H/2},r:{x:W-120,y:H/2,vx:0,vy:0,tx:W-120,ty:H/2}},fx:{sb:0,sr:0,gb:0,gr:0,sp:0,wl:0},pause:0,hide:false};
+const M={ph:'lobby',mid:'',fm:C.fm,pl:{},fee:{},ent:new Set(),bets:{},used:{},dl:0,msg:'',win:'',sc:{},lv:{},out:new Set(),gg:false,tEnd:0,tLeft:null,res:{},ev:null,evSeq:0,cool:0,busy:false};
+const S={q:{x:0,y:0,vx:0,vy:0},m:{},fx:{},pause:0,hide:false};
 let HERE=new Set(), stDirty=true, panelDirty=true, lastSt=0, lastF=0, lastTick=0;
 
-const sideOf=sid=>M.pl.b===sid?'b':M.pl.r===sid?'r':'';
+const curSlots=()=>slotsOf(M.fm);
+const slotOf=sid=>Object.keys(M.pl).find(k=>M.pl[k]===sid)||'';
+const teamOf=sid=>{ const k=slotOf(sid); return k?k[0]:''; };
 const reserved=sid=>(M.fee[sid]||0)+((M.bets[sid]&&M.bets[sid].a)||0);
 const hSeatA=sid=>{const a=HOST.acc()[sid];return a&&a.seat&&a.seat.g===GID?a.seat.a||0:0};
-const avail=sid=>hSeatA(sid)-reserved(sid);
+const bal=sid=>CLEAN?(CB[sid]||0):hSeatA(sid);
+const avail=sid=>bal(sid)-reserved(sid);
+const people=()=>CLEAN?Object.keys(SESS.m||{}).sort((a,b)=>a.localeCompare(b,'ja',{numeric:true})):HOST.seated();
 const nm=sid=>{const a=HOST.acc()[sid];return a?a.n:''};
 const isHere=sid=>{const a=HOST.acc()[sid];return !!(a&&a.vk&&HERE.has(a.vk))};
 const eligible=sid=>isHere(sid)&&avail(sid)>=C.fee;
-const candidates=()=>HOST.seated().filter(eligible);
-const fx=k=>S.fx[k]>now();
-const malR=sd=>fx('s'+sd)?MR_S:MR;
-const goalW=sd=>fx('g'+sd)?GW_B:GW;
+const candidates=()=>people().filter(eligible);
+const fx=k=>(S.fx[k]||0)>now();
+const malR=t=>fx('s'+t)?MR_S:MR;
+const goalW=t=>M.out.has(t)?0:(fx('g'+t)?FM[M.fm].gwb:FM[M.fm].gw);
+const teamNames=()=>{ const o={}; FM[M.fm].teams.forEach(t=>{ o[t]=curSlots().filter(s=>s.t===t).map(s=>nm(M.pl[s.id])).filter(Boolean).join('・')||TEAM[t]; }); return o; };
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+// メダルの増減(フリー:口座の持ち込み/掃除:その日だけのメダル)
+let cbT=null;
+async function addBal(sid,d){
+  if(!d) return;
+  if(CLEAN){ CB[sid]=Math.max(0,(CB[sid]||0)+d); clearTimeout(cbT); cbT=setTimeout(saveCB,300); return; }
+  await HOST.change(sid,d);
+}
+function saveCB(){ if(HOST&&CLEAN) HOST.clean.update(CLEAN,{ah:{b:CB,t:now()}}).catch(e=>console.warn(e)); }
+
+if(MG.qs.get('mg')) padMain(); else hostMain();
 
 async function hostMain(){
   document.body.className='host';
-  if(!MG.keys.get()){ app.innerHTML=`<div class="wrap"><div class="box"><h2>まだ準備ができていません</h2><p class="note">先に、このPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。</p></div></div>`; return; }
+  const fail=(t,m)=>{ app.innerHTML=`<div class="wrap"><div class="box"><h2>${t}</h2><p class="note">${m}</p></div></div>`; };
+  if(!MG.keys.get()) return fail('まだ準備ができていません',`先に、このPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。`);
   app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
   try{
-    HOST=await MG.startHost({gid:GID,name:NAME,art:'hockey',hooks:{
-      reserved:sid=>reserved(sid),
-      beforeQuit:sid=>{ if(M.ent.has(sid)){ M.ent.delete(sid); writeMe(sid); stDirty=panelDirty=true; } return reserved(sid)>0?'later':true; },
-      onLeave(sid){ onLeave(sid); },
-      async onReq(sid,r){ return padReq(sid,r); }
-    }});
-  }catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
-  AH=HOST.P+'/ah';
+    if(CLEAN){
+      SESS=(await MG.cleanList())[CLEAN];
+      if(!SESS) return fail('その掃除決めが見つかりません','管理画面の「掃除決め」で確認してください。');
+      if(!['ready','playing'].includes(SESS.st)) return fail('この掃除決めはもう終わっています','管理画面で新しく始めてください。');
+      if(SESS.ah&&SESS.ah.done) return fail('エアホッケーはもう終わっています',`ルーレットパークに進んでいます。<a href="${esc(rpUrl())}">ルーレットパークを開く</a>`);
+      CB={}; Object.keys(SESS.m||{}).forEach(s=>CB[s]=Math.max(0,Math.floor(+((SESS.ah&&SESS.ah.b&&SESS.ah.b[s]!=null)?SESS.ah.b[s]:SESS.m[s])||0)));
+    }
+    HOST=await MG.startHost({gid:GID,name:NAME,art:'hockey',anyone:!!CLEAN,
+      url:location.origin+location.pathname+(CLEAN?'?clean='+encodeURIComponent(CLEAN):''),
+      info:CLEAN?{clean:CLEAN}:{},
+      hooks:CLEAN?{onReq:async(sid,r)=>padReq(sid,r)}:{
+        reserved:sid=>reserved(sid),
+        beforeQuit:sid=>{ if(M.ent.has(sid)){ M.ent.delete(sid); writeMe(sid); stDirty=panelDirty=true; } return reserved(sid)>0?'later':true; },
+        onLeave(sid){ onLeave(sid); },
+        async onReq(sid,r){ return padReq(sid,r); }
+      }});
+  }catch(e){ return fail('つながりませんでした',esc(e.message)); }
+  AH=HOST.P+'/ah'+(CLEAN?'c':'');
   await HOST.be.remove(AH).catch(()=>{});
-  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC</small></div><span class="sp"></span>
-      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span><button class="btn danger" id="stop">停止する(全員を精算)</button></div>
+  if(CLEAN){ HOST.clean.update(CLEAN,{st:'playing',ah:{b:CB,t:now()}}).catch(()=>{});
+    let seen=false;   // 読み込み前の空のデータで止まらないように、一度見えてから判断する
+    HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } }); }
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC${CLEAN&&SESS.cls?' ・ '+esc(SESS.cls):''}</small></div><span class="sp"></span>
+      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>
+      ${CLEAN?'<button class="btn pri" id="toRp">ルーレットパークへ進む</button>':'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
     <div class="grid"><div class="rink"><canvas id="cv"></canvas></div>
       <div><div class="box" id="ctl"></div>
         <div class="box"><h2>設定</h2><div class="frm" id="cfg"></div><p class="note">試合中は変えられません。</p></div>
-        <details class="box"><summary style="font-weight:800">遊んでいる人(<span id="nseat">0</span>人)</summary><ul class="pl" id="pl"></ul></details>
+        <details class="box" ${CLEAN?'open':''}><summary style="font-weight:800">${CLEAN?'参加者':'遊んでいる人'}(<span id="nseat">0</span>人)</summary><ul class="pl" id="pl"></ul></details>
       </div></div></div>`;
   CTX=setupCanvas($('#cv'));
   cfgRender();
   HOST.onAcc(()=>{ panelDirty=true; });
-  HOST.onConn(ok=>{ const c=$('#conn'); c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
+  HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
   HOST.be.on(AH+'/here',v=>{ HERE=new Set(Object.keys(v||{})); panelDirty=true; });
   HOST.be.on(AH+'/in',v=>{ v=v||{}; const acc=HOST.acc();
-    ['b','r'].forEach(sd=>{ const sid=M.pl[sd]; if(!sid||!acc[sid]) return; const i=v[acc[sid].vk]; if(!i) return; S.m[sd].tx=+i.x||0; S.m[sd].ty=+i.y||0; }); });
-  $('#stop').onclick=async()=>{ const n=HOST.seated().length;
+    Object.keys(M.pl).forEach(k=>{ const sid=M.pl[k], m=S.m[k]; if(!sid||!acc[sid]||!m) return; const i=v[acc[sid].vk]; if(!i) return; m.tx=+i.x||0; m.ty=+i.y||0; }); });
+  if(CLEAN) $('#toRp').onclick=toRoulette;
+  else $('#stop').onclick=async()=>{ const n=HOST.seated().length;
     if(!confirm(`停止しますか?\n遊んでいる ${n}人 のメダルを、全員貯金にもどします。${['bet','ready','play'].includes(M.ph)?'\n(いまの試合は中止になり、BETと参戦料は払われません)':''}`)) return;
     $('#stop').disabled=true; M.ph='stop'; M.fee={}; M.bets={};
     await HOST.stop(); await HOST.be.remove(AH).catch(()=>{}); HOST=null;
-    app.innerHTML=`<div class="wrap"><div class="box"><h2>停止しました</h2><p class="note">${n}人を精算しました。このタブは閉じてかまいません。</p></div></div>`; };
-  addEventListener('beforeunload',e=>{ if(HOST&&HOST.seated().length){ e.preventDefault(); e.returnValue=''; } });
+    fail('停止しました',`${n}人を精算しました。このタブは閉じてかまいません。`); };
+  addEventListener('beforeunload',e=>{ if(HOST&&(CLEAN||HOST.seated().length)){ e.preventDefault(); e.returnValue=''; } });
   document.addEventListener('pointerdown',()=>sfx.unlock(),{once:true});
-  resetField(); stDirty=true;
-  // 裏のタブでも止まらないように Web Worker の時計で動かす
+  M.fm=C.fm; resetField(); people().forEach(writeMe); stDirty=true;
   try{ const w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),16)'],{type:'text/javascript'}))); w.onmessage=tick; }catch(e){ setInterval(tick,16); }
   const draw=()=>{ if(HOST&&CTX) drawScene(CTX,snap(),hostOverlay()); requestAnimationFrame(draw); }; requestAnimationFrame(draw);
+}
+function rpUrl(){ const u=new URL('roulettepark.html',location.href); u.searchParams.set('clean',CLEAN); if(MG.LOCAL) u.searchParams.set('local','1'); return u.href; }
+/* ---------- 掃除モード:ルーレットパークへ引き継ぐ ---------- */
+async function toRoulette(){
+  if(['entry','bet','ready','play'].includes(M.ph)) return toast('試合が終わってから進んでください');
+  if(M.busy) return toast('精算が終わるまで待ってください');
+  const ids=people(), zero=ids.filter(s=>(CB[s]||0)<10).length;
+  if(!confirm(`ルーレットパークへ進みますか?\n${ids.length}人 のいまのメダルを、そのままルーレットパークに引き継ぎます。${zero?`\n(10枚未満の ${zero}人 は、ルーレットパークでは10枚から始まります)`:''}\nエアホッケーにはもどれません。`)) return;
+  const win=window.open('about:blank','_blank');
+  M.ph='stop'; $('#toRp').disabled=true;
+  const m={}; ids.forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
+  try{ await HOST.clean.update(CLEAN,{m,m0:SESS.m0||SESS.m,ah:{b:m,done:1,t:now()}}); }
+  catch(e){ M.ph='lobby'; $('#toRp').disabled=false; if(win) win.close(); return toast('保存できませんでした:'+e.message); }
+  const url=rpUrl(); if(win) win.location.href=url;
+  await HOST.stop().catch(()=>{}); await HOST.be.remove(AH).catch(()=>{}); HOST=null;
+  app.innerHTML=`<div class="wrap"><div class="box"><h2>ルーレットパークに引き継ぎました</h2>
+    <p class="note">${ids.length}人 のメダルを引き継ぎました。ルーレットパークのタブで「はじめる」を押してください。このタブは閉じてかまいません。</p>
+    <p><a class="btn pri" href="${esc(url)}" target="_blank" rel="noopener">ルーレットパークを開く(開いていないとき)</a></p></div></div>`;
 }
 
 /* ---------- 設定 ---------- */
 function cfgRender(){
   const lock=!['lobby','result'].includes(M.ph);
   $('#cfg').innerHTML=`
+    <span>形式</span><div class="seg">${Object.keys(FM).map(k=>`<button data-f="${k}" class="${C.fm===k?'on':''}">${FM[k].n}</button>`).join('')}</div>
     <span>出場者</span><div class="seg"><button data-m="vol" class="${C.mode==='vol'?'on':''}">立候補</button><button data-m="rand" class="${C.mode==='rand'?'on':''}">ランダム</button></div>
-    <span>参戦料</span><input type="number" id="cFee" min="0" max="999" value="${C.fee}">
-    <span>何点先取</span><input type="number" id="cGoals" min="1" max="20" value="${C.goals}">
+    <span>参戦料</span><input type="number" id="cFee" min="0" max="9999" value="${C.fee}">
+    ${C.fm==='ffa'?`<span>ライフ</span><input type="number" id="cLv" min="1" max="10" value="${C.lives}">`:`<span>何点先取</span><input type="number" id="cGoals" min="1" max="20" value="${C.goals}">`}
     <span>試合時間(秒)</span><input type="number" id="cT" min="30" max="600" step="10" value="${C.tlim}">
     <span>立候補の時間(秒)</span><input type="number" id="cE" min="5" max="120" value="${C.entSec}">
     <span>BETの時間(秒)</span><input type="number" id="cB" min="5" max="120" value="${C.betSec}">
     <span>アイテムの値段</span><input type="number" id="cC" min="1" max="999" value="${C.cost}">
     <span>自動で次の試合</span><label><input type="checkbox" id="cA" ${C.auto?'checked':''} style="width:auto"> 結果のあと自動で出場者を決める</label>`;
   $('#cfg').querySelectorAll('input,button').forEach(x=>x.disabled=lock);
+  $('#cfg').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{C.fm=b.dataset.f;saveCfg();if(M.ph==='lobby'){M.fm=C.fm;resetField();}cfgRender();stDirty=panelDirty=true});
   $('#cfg').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{C.mode=b.dataset.m;saveCfg();cfgRender();stDirty=panelDirty=true});
-  const num=(id,k,lo,hi)=>{$(id).onchange=e=>{C[k]=Math.max(lo,Math.min(hi,Math.floor(+e.target.value||0)));e.target.value=C[k];saveCfg();stDirty=panelDirty=true}};
-  num('#cFee','fee',0,999); num('#cGoals','goals',1,20); num('#cT','tlim',30,600); num('#cE','entSec',5,120); num('#cB','betSec',5,120); num('#cC','cost',1,999);
+  const num=(id,k,lo,hi)=>{const el=$(id); if(el) el.onchange=e=>{C[k]=Math.max(lo,Math.min(hi,Math.floor(+e.target.value||0)));e.target.value=C[k];saveCfg();stDirty=panelDirty=true}};
+  num('#cFee','fee',0,9999); num('#cGoals','goals',1,20); num('#cLv','lives',1,10); num('#cT','tlim',30,600); num('#cE','entSec',5,120); num('#cB','betSec',5,120); num('#cC','cost',1,999);
   $('#cA').onchange=e=>{C.auto=e.target.checked;saveCfg()};
 }
 
 /* ---------- 操作パネル ---------- */
+let lastCtl='', lastPl='';
+function vsHtml(withPool){
+  const T=FM[M.fm].teams, names=teamNames(), p=betPool();
+  const cell=t=>`<div style="color:${COL[t]}"><div class="nm" style="font-size:${M.fm==='1v1'?20:16}px">${esc(names[t])}</div><small>${TEAM[t]}${withPool?` ・ ${yen(p.a[t])}枚 ${p.n[t]}人 ${odds(p,t)}`:''}</small></div>`;
+  if(T.length===2) return `<div class="vs">${cell('b').replace('<div ','<div class="b" ')}<div class="big-n">VS</div>${cell('r').replace('<div ','<div class="r" ')}</div>`;
+  return `<div class="vs4">${T.map(cell).join('')}</div>`;
+}
 function ctlRender(){
   if(!HOST||!$('#ctl')) return;
-  const left=Math.max(0,Math.ceil((M.dl-now())/1000)), b=M.pl.b, r=M.pl.r;
-  const pool=betPool();
-  const vs=()=>`<div class="vs"><div class="b"><div class="nm">${esc(nm(b)||'—')}</div><small>青</small></div><div class="big-n">VS</div><div class="r"><div class="nm">${esc(nm(r)||'—')}</div><small>赤</small></div></div>`;
+  const left=Math.max(0,Math.ceil((M.dl-now())/1000)), F=FM[C.fm], p=betPool(), rule=M.fm==='ffa'?`ライフ${C.lives}・最後の1人が勝ち`:`${C.goals}点先取`;
   let h='';
   if(M.ph==='lobby'){
     const n=candidates().length;
-    h=`<h2>つぎの試合</h2><p class="note">出場できる人:<b>${n}人</b>(エアホッケーの画面を開いていて、参戦料 ${C.fee}枚 を持っている人)</p>
+    h=`<h2>つぎの試合(${F.n})</h2><p class="note">出場できる人:<b>${n}人</b>(エアホッケーの画面を開いていて、参戦料 ${C.fee}枚 を持っている人)。${F.n}は${F.need}人必要です。</p>
       ${M.msg?`<p class="note" style="color:var(--warn);font-weight:800">${esc(M.msg)}</p>`:''}
-      <button class="btn pri big" id="go" ${n<2&&C.mode==='rand'?'disabled':''}>${C.mode==='vol'?'立候補を受け付ける':'ランダムで出場者を決める'}</button>`;
+      <button class="btn pri big" id="go" ${n<F.need&&C.mode==='rand'?'disabled':''}>${C.mode==='vol'?'立候補を受け付ける':'ランダムで出場者を決める'}</button>
+      ${CLEAN?'<p class="note">時間になったら、右上の「ルーレットパークへ進む」を押します。</p>':''}`;
   }else if(M.ph==='entry'){
     h=`<h2>立候補を受付中 <span style="color:var(--blue)">あと${left}秒</span></h2>
-      <p class="note">立候補:<b>${M.ent.size}人</b>。締め切ったら、この中から2人を抽選します。</p>
+      <p class="note">${FM[M.fm].n}・立候補:<b>${M.ent.size}人</b>。締め切ったら、この中から${FM[M.fm].need}人を抽選します。</p>
       <ul class="pl">${[...M.ent].map(s=>`<li>${esc(nm(s))}<small>${esc(s)}</small></li>`).join('')||'<li><small>まだいません</small></li>'}</ul>
       <div class="mrow"><button class="btn" id="cancel">やめる</button><button class="btn pri" id="close">締め切る</button></div>`;
   }else if(M.ph==='bet'){
-    h=`<h2>BET受付中 <span style="color:var(--blue)">あと${left}秒</span></h2>${vs()}
-      <div class="vs" style="margin-top:10px"><div class="b">${yen(pool.b)}枚<small>${pool.nb}人 ・ ${odds(pool,'b')}</small></div><div></div><div class="r">${yen(pool.r)}枚<small>${pool.nr}人 ・ ${odds(pool,'r')}</small></div></div>
-      <p class="note">参戦料 ${C.fee}枚(勝った人が2人分をもらう)。</p>
+    h=`<h2>BET受付中 <span style="color:var(--blue)">あと${left}秒</span></h2>${vsHtml(true)}
+      <p class="note">参戦料 ${C.fee}枚 × ${FM[M.fm].need}人 = ${C.fee*FM[M.fm].need}枚 を、勝った${M.fm==='2v2'?'チームの2人で分けます':'人がもらいます'}。</p>
       <div class="mrow"><button class="btn" id="cancel">中止(返金)</button><button class="btn pri" id="close">締め切って始める</button></div>`;
   }else if(M.ph==='ready'||M.ph==='play'){
-    h=`<h2>${M.ph==='ready'?'まもなく開始':'試合中'}</h2>${vs()}
-      <p class="note" style="margin-top:8px">${C.goals}点先取・${C.tlim}秒。時間切れで同点なら、次の1点で決着。BET合計 ${yen(pool.b+pool.r)}枚。</p>
+    h=`<h2>${M.ph==='ready'?'まもなく開始':'試合中'}</h2>${vsHtml(false)}
+      <p class="note" style="margin-top:8px">${FM[M.fm].n}・${rule}・${C.tlim}秒。BET合計 ${yen(p.tot)}枚。</p>
       <div class="mrow"><button class="btn" id="cancel">中止(返金)</button></div>`;
   }else if(M.ph==='result'){
-    h=`<h2>結果</h2>${M.win?vs():''}<p class="note" style="font-weight:800;font-size:16px;color:var(--ink)">${esc(M.msg)}</p>
+    h=`<h2>結果</h2>${M.win?vsHtml(false):''}<p class="note" style="font-weight:800;font-size:16px;color:var(--ink)">${esc(M.msg)}</p>
       ${M.busy?'<p class="note">メダルを精算しています…</p>':`<button class="btn pri big" id="next">${C.auto?`次の試合へ(あと${left}秒で自動)`:'次の試合へ'}</button>`}`;
   }
   const pl=plHtml();
-  if(pl!==lastPl){ lastPl=pl; $('#pl').innerHTML=pl; $('#nseat').textContent=HOST.seated().length; }
+  if(pl!==lastPl){ lastPl=pl; $('#pl').innerHTML=pl; $('#nseat').textContent=people().length; }
   if(h===lastCtl) return; lastCtl=h;
   $('#ctl').innerHTML=h;
   const on=(id,f)=>{const x=$('#'+id);if(x)x.onclick=f};
   on('go',startSelect); on('close',()=>M.ph==='entry'?closeEntry():closeBet()); on('next',()=>{ toLobby(''); if(C.auto) startSelect(); });
   on('cancel',()=>{ if(M.ph==='entry') toLobby('立候補を取りやめました'); else if(confirm('この試合を中止しますか?\nBETと参戦料は払われません(もとのまま)。')) cancelMatch('先生が試合を中止しました(BETと参戦料はもとのまま)'); });
 }
-let lastCtl='', lastPl='';
-function plHtml(){ // 遊んでいる人
-  const acc=HOST.acc(), list=HOST.seated();
-  return list.map(s=>{const sd=sideOf(s);const bt=M.bets[s];
-    return `<li>${esc(acc[s].n)}${sd?`<span class="tag ${sd}">${SIDE[sd]}</span>`:''}${bt?`<span class="tag ${bt.s}">${SIDE[bt.s]}に${bt.a}</span>`:''}${M.ent.has(s)?'<span class="tag e">立候補</span>':''}${isHere(s)?'':'<small>画面を開いていない</small>'}<b>${yen(acc[s].seat.a)}枚</b></li>`}).join('')||'<li><small>まだ誰もいません</small></li>';
+function plHtml(){
+  const list=people();
+  return list.map(s=>{const k=slotOf(s);const bt=M.bets[s];
+    return `<li>${esc(nm(s)||s)}${k?`<span class="tag ${k[0]}">${slotName(M.fm,k)}</span>`:''}${bt?`<span class="tag ${bt.s}">${TEAM[bt.s]}に${bt.a}</span>`:''}${M.ent.has(s)?'<span class="tag e">立候補</span>':''}${isHere(s)?'':'<small>画面を開いていない</small>'}<b>${yen(bal(s))}枚</b></li>`}).join('')||'<li><small>まだ誰もいません</small></li>';
 }
 
 /* ---------- 試合の流れ ---------- */
-function newMatch(){ M.mid=now().toString(36); M.pl={b:'',r:''}; M.fee={}; M.ent=new Set(); M.bets={}; M.used={}; M.res={}; M.win=''; M.msg=''; M.sc=[0,0]; M.gg=false; M.ev=null;
-  S.fx={sb:0,sr:0,gb:0,gr:0,sp:0,wl:0}; HOST.be.remove(AH+'/me').catch(()=>{}); HOST.be.remove(AH+'/in').catch(()=>{}); resetField(); }
+function newMatch(){ M.mid=now().toString(36); M.fm=C.fm; M.pl={}; M.fee={}; M.ent=new Set(); M.bets={}; M.used={}; M.res={}; M.win=''; M.msg=''; M.gg=false; M.ev=null; M.tLeft=null;
+  M.sc={}; M.lv={}; M.out=new Set(); FM[M.fm].teams.forEach(t=>{M.sc[t]=0;M.lv[t]=C.lives;});
+  S.fx={}; HOST.be.remove(AH+'/in').catch(()=>{}); resetField(); }
 function startSelect(){
   if(!['lobby','result'].includes(M.ph)) return;
   newMatch();
-  if(C.mode==='vol'){ M.ph='entry'; M.dl=now()+C.entSec*1000; }
-  else{ const c=shuffle(candidates()); if(c.length<2){ toLobby('出場できる人が2人いません'); return; } assign(c[0],c[1]); }
+  if(C.mode==='vol'){ M.ph='entry'; M.dl=now()+C.entSec*1000; people().forEach(writeMe); }
+  else{ const c=shuffle(candidates()); if(c.length<FM[M.fm].need){ toLobby(`出場できる人が${FM[M.fm].need}人いません`); return; } assign(c.slice(0,FM[M.fm].need)); }
   setPhase();
 }
 function closeEntry(){
-  const c=shuffle([...M.ent].filter(eligible));
-  if(c.length<2){ const was=M.ent; M.ent=new Set(); was.forEach(writeMe); toLobby(`立候補が2人に届きませんでした(${c.length}人)`); return; }
-  const was=M.ent; M.ent=new Set(); assign(c[0],c[1]); was.forEach(writeMe); setPhase();
+  const need=FM[M.fm].need, c=shuffle([...M.ent].filter(eligible));
+  if(c.length<need){ M.ent=new Set(); people().forEach(writeMe); toLobby(`立候補が${need}人に届きませんでした(${c.length}人)`); return; }
+  M.ent=new Set(); assign(c.slice(0,need)); setPhase();
 }
-function assign(a,b){
-  if(Math.random()<.5) [a,b]=[b,a];
-  M.pl={b:a,r:b}; M.fee={[a]:C.fee,[b]:C.fee};   // 参戦料は試合が終わるまで「賭けている枚数」として預かる
-  M.ph='bet'; M.dl=now()+C.betSec*1000; resetField(); writeMe(a); writeMe(b);
-  sfx.ding();
+function assign(list){
+  list=shuffle(list); M.pl={}; M.fee={};
+  curSlots().forEach((s,i)=>{ M.pl[s.id]=list[i]; M.fee[list[i]]=C.fee; });  // 参戦料は試合が終わるまで「預かり」
+  M.ph='bet'; M.dl=now()+C.betSec*1000; resetField(); people().forEach(writeMe); sfx.ding();
 }
 function closeBet(){ M.ph='ready'; M.dl=now()+3000; resetField(); setPhase(); }
-function startPlay(){ M.ph='play'; M.tEnd=now()+C.tlim*1000; serve(Math.random()<.5?'b':'r',true); setPhase(); }
-function toLobby(msg){ M.ph='lobby'; M.msg=msg||''; M.pl={b:'',r:''}; M.fee={}; M.bets={}; M.ent=new Set(); setPhase(); }
+function startPlay(){ M.ph='play'; M.tEnd=now()+C.tlim*1000; serve(null,true); setPhase(); }
+function toLobby(msg){ M.ph='lobby'; M.msg=msg||''; M.fm=C.fm; M.pl={}; M.fee={}; M.bets={}; M.ent=new Set(); M.out=new Set(); resetField(); setPhase(); }
 function setPhase(){ stDirty=panelDirty=true; cfgRender(); }
 function cancelMatch(msg){
-  const inv=[M.pl.b,M.pl.r,...Object.keys(M.bets)].filter(Boolean);
+  const inv=[...Object.values(M.pl),...Object.keys(M.bets)];
   M.tLeft=M.ph==='play'?Math.max(0,(M.tEnd-now())/1000):C.tlim;
-  M.fee={}; M.bets={}; M.ph='result'; M.win=''; M.msg=msg; M.dl=now()+8000;
-  inv.forEach(s=>{ M.res[s]={net:0,t:'試合は中止。BETと参戦料はもとのままです'}; writeMe(s); });
-  setPhase(); afterResult();
+  M.fee={}; M.bets={}; M.ph='result'; M.win=''; M.msg=msg; M.dl=now()+8000; S.hide=true;
+  inv.forEach(s=>{ M.res[s]={net:0,t:'試合は中止。BETと参戦料はもとのままです'}; });
+  people().forEach(writeMe); setPhase(); afterResult();
 }
 async function finish(win){
   if(M.ph!=='play') return;
   M.tLeft=Math.max(0,(M.tEnd-now())/1000);
   M.ph='result'; M.win=win; M.busy=true; S.hide=true; M.dl=now()+12000;
-  const lose=win==='b'?'r':'b', wn=nm(M.pl[win]), pool=betPool(), tot=pool.b+pool.r, wt=pool[win];
-  M.msg=`${SIDE[win]}(${wn})の勝ち! ${M.sc[0]}-${M.sc[1]}`;
+  const names=teamNames(), pool=betPool();
+  M.msg=M.fm==='ffa'?`${TEAM[win]}(${names[win]})の勝ち!`:`${TEAM[win]}(${names[win]})の勝ち! ${M.sc.b}-${M.sc.r}`;
   setPhase(); sfx.win();
-  const ch={};   // 学籍番号 → 増減
-  const add=(s,d,t)=>{ ch[s]=(ch[s]||0)+d; M.res[s]={net:ch[s],t}; };
-  add(M.pl[win],M.fee[M.pl[win]]||0,`勝ち! 参戦料 ${C.fee}枚 × 2 をもらいました`);
-  add(M.pl[lose],-(M.fee[M.pl[lose]]||0),`負け… 参戦料 ${C.fee}枚 を払いました`);
+  const ch={}, add=(s,d,t)=>{ ch[s]=(ch[s]||0)+d; M.res[s]={net:ch[s],t}; };
+  const players=Object.keys(M.pl), winners=players.filter(k=>k[0]===win).map(k=>M.pl[k]);
+  const pot=players.reduce((a,k)=>a+(M.fee[M.pl[k]]||0),0), share=winners.length?Math.floor(pot/winners.length):0;
+  players.forEach(k=>{ const s=M.pl[k], f=M.fee[s]||0;
+    if(k[0]===win) add(s,share-f,`勝ち! 参戦料 ${pot}枚 ${winners.length>1?`を${winners.length}人で分けて ${share}枚`:'をもらいました'}`);
+    else add(s,-f,`負け… 参戦料 ${f}枚 を払いました`); });
   Object.entries(M.bets).forEach(([s,bt])=>{
-    if(!wt) add(s,0,'当たった人がいないので、BETはもどしました');
-    else if(bt.s===win){ const pay=Math.floor(bt.a*tot/wt); add(s,pay-bt.a,`当たり! ${bt.a}枚 → ${pay}枚`); }
+    if(!pool.a[win]) add(s,0,'当たった人がいないので、BETはもどしました');
+    else if(bt.s===win){ const pay=Math.floor(bt.a*pool.tot/pool.a[win]); add(s,pay-bt.a,`当たり! ${bt.a}枚 → ${pay}枚`); }
     else add(s,-bt.a,`はずれ… ${bt.a}枚`);
   });
-  for(const [s,d] of Object.entries(ch)){ if(d) await HOST.change(s,d).catch(e=>{ console.warn(e); M.res[s]={net:0,t:'精算できませんでした(もうゲームにいません)'}; }); }
+  for(const [s,d] of Object.entries(ch)){ if(d) await addBal(s,d).catch(e=>{ console.warn(e); M.res[s]={net:0,t:'精算できませんでした(もうゲームにいません)'}; }); }
   M.fee={}; M.bets={}; M.busy=false; M.dl=now()+12000;
-  Object.keys(ch).forEach(writeMe); setPhase(); afterResult();
+  people().forEach(writeMe); setPhase(); afterResult();
 }
-async function afterResult(){ // 「勝負が終わってからやめる」にした人を精算
-  const acc=HOST.acc();
+async function afterResult(){ // 「勝負が終わってからやめる」にした人を精算(フリーモード)
+  if(CLEAN) return; const acc=HOST.acc();
   for(const s of HOST.seated()){ if(acc[s].seat&&acc[s].seat.leave) await HOST.settle(s).catch(()=>{}); }
 }
 function onLeave(sid){
   if(M.ent.delete(sid)) stDirty=panelDirty=true;
-  if(sideOf(sid)&&['bet','ready','play'].includes(M.ph)){ cancelMatch(`${SIDE[sideOf(sid)]}の出場者がぬけたので、試合は中止です(BETと参戦料はもとのまま)`); return; }
+  const k=slotOf(sid);
+  if(k&&['bet','ready','play'].includes(M.ph)){ cancelMatch(`${slotName(M.fm,k)}の出場者がぬけたので、試合は中止です(BETと参戦料はもとのまま)`); return; }
   if(M.bets[sid]){ delete M.bets[sid]; stDirty=true; }
   panelDirty=true;
 }
-function betPool(){ const p={b:0,r:0,nb:0,nr:0}; Object.values(M.bets).forEach(x=>{p[x.s]+=x.a;p['n'+x.s]++}); return p; }
-function odds(p,s){ const t=p.b+p.r; return p[s]?'×'+(t/p[s]).toFixed(2):'—'; }
+function betPool(){ const p={a:{},n:{},tot:0}; FM[M.fm].teams.forEach(t=>{p.a[t]=0;p.n[t]=0}); Object.values(M.bets).forEach(x=>{ if(p.a[x.s]==null) return; p.a[x.s]+=x.a; p.n[x.s]++; p.tot+=x.a; }); return p; }
+function odds(p,t){ return p.a[t]?'×'+(p.tot/p.a[t]).toFixed(2):'—'; }
 
 /* ---------- iPadからの申請 ---------- */
 async function padReq(sid,r){
-  const t=r.type, sd=sideOf(sid);
+  const t=r.type, k=slotOf(sid);
+  if(CLEAN&&!(SESS.m&&SESS.m[sid]!=null)) return {ok:false,msg:'この掃除決めには参加していません'};
   if(t==='g:hello'){ writeMe(sid); return {ok:true}; }
   if(t==='g:entry'){
     if(M.ph!=='entry') return {ok:false,msg:'いまは立候補の時間ではありません'};
@@ -377,92 +474,126 @@ async function padReq(sid,r){
   }
   if(t==='g:bet'){
     if(M.ph!=='bet') return {ok:false,msg:'いまはBETできません'};
-    if(sd) return {ok:false,msg:'出場者はBETできません'};
-    const s=r.s==='r'?'r':'b', amt=Math.floor(+r.amt||0), cur=M.bets[sid];
-    if(amt<1||amt>9999) return {ok:false,msg:'1〜9999枚でBETしてください'};
-    if(cur&&cur.s!==s) return {ok:false,msg:`もう${SIDE[cur.s]}にBETしています`};
+    if(k) return {ok:false,msg:'出場者はBETできません'};
+    const s=String(r.s||''), amt=Math.floor(+r.amt||0), cur=M.bets[sid];
+    if(!FM[M.fm].teams.includes(s)) return {ok:false,msg:'その色はありません'};
+    if(amt<1||amt>99999) return {ok:false,msg:'1枚以上でBETしてください'};
+    if(cur&&cur.s!==s) return {ok:false,msg:`もう${TEAM[cur.s]}にBETしています`};
     if(avail(sid)<amt) return {ok:false,msg:`メダルが足りません(使えるのは ${yen(avail(sid))}枚)`};
     M.bets[sid]={s,a:(cur?cur.a:0)+amt}; writeMe(sid); stDirty=panelDirty=true; sfx.coin();
-    return {ok:true,msg:`${SIDE[s]}に${amt}枚BETしました(合計 ${M.bets[sid].a}枚)`};
+    return {ok:true,msg:`${TEAM[s]}に${amt}枚BETしました(合計 ${M.bets[sid].a}枚)`};
   }
   if(t==='g:item'){
-    const it=ITEMS[r.k]; if(!it) return {ok:false,msg:'そのアイテムはありません'};
+    const it=itemsOf(M.fm).find(x=>x.k===r.k); if(!it) return {ok:false,msg:'そのアイテムはありません'};
     if(M.ph!=='play'||S.pause>now()) return {ok:false,msg:'いまは使えません'};
-    if(sd) return {ok:false,msg:'出場者はアイテムを使えません'};
+    if(k) return {ok:false,msg:'出場者はアイテムを使えません'};
+    if(it.t&&M.out.has(it.t)) return {ok:false,msg:`${TEAM[it.t]}はもう脱落しています`};
     const u=M.used[sid]||0; if(u>=ITEM_MAX) return {ok:false,msg:`この試合ではもう${ITEM_MAX}回使いました`};
     if(M.cool>now()) return {ok:false,msg:'ほかの人が使ったばかりです。少し待ってね'};
     if(fx(r.k)) return {ok:false,msg:'いま効いているところです'};
     if(avail(sid)<C.cost) return {ok:false,msg:`メダルが足りません(${C.cost}枚 必要)`};
-    await HOST.change(sid,-C.cost);
+    await addBal(sid,-C.cost);
     M.used[sid]=u+1; M.cool=now()+1500; S.fx[r.k]=now()+it.sec*1000;
     if(r.k==='sp'){ S.q.vx*=1.5; S.q.vy*=1.5; }
     if(r.k==='wl') pushOutOfBumpers();
-    notice(`おじゃま! ${it.e}`);
-    writeMe(sid); sfx.item();
+    notice(`おじゃま! ${it.e}`); writeMe(sid); sfx.item();
     return {ok:true,msg:`${it.n}!(のこり${ITEM_MAX-u-1}回)`};
   }
   return {ok:false,msg:'その操作はできません'};
 }
 function notice(text){ M.evSeq++; M.ev={s:M.evSeq,t:text,until:now()+2500}; }
-// 本人だけが見る情報(役割・BET・結果)
+// 本人だけが見る情報(役割・BET・結果、掃除モードはメダルの枚数も)
 function writeMe(sid){
   if(!HOST) return; const a=HOST.acc()[sid]; if(!a||!a.vk) return;
-  HOST.be.set(AH+'/me/'+a.vk,{mid:M.mid,role:sideOf(sid),ent:M.ent.has(sid),bet:M.bets[sid]||null,used:M.used[sid]||0,rsv:reserved(sid),res:M.res[sid]||null,t:now()}).catch(()=>{});
+  HOST.be.set(AH+'/me/'+a.vk,{mid:M.mid,role:slotOf(sid),ent:M.ent.has(sid),bet:M.bets[sid]||null,used:M.used[sid]||0,rsv:reserved(sid),res:M.res[sid]||null,b:CLEAN?(CB[sid]||0):null,t:now()}).catch(()=>{});
 }
 
 /* ---------- 物理 ---------- */
 function resetField(){
-  S.q={x:W/2,y:H/2,vx:0,vy:0}; S.hide=false;
-  S.m.b=Object.assign(S.m.b,{x:110,y:H/2,vx:0,vy:0,tx:110,ty:H/2});
-  S.m.r=Object.assign(S.m.r,{x:W-110,y:H/2,vx:0,vy:0,tx:W-110,ty:H/2});
+  const {w,h}=FM[M.fm];
+  S.q={x:w/2,y:h/2,vx:0,vy:0}; S.hide=false; S.m={};
+  slotsOf(M.fm).forEach(s=>{ S.m[s.id]={x:s.home[0],y:s.home[1],vx:0,vy:0,tx:s.home[0],ty:s.home[1]}; });
 }
-function serve(to,first){ // to の側にパックを置く(点を取られた側から再開)
-  S.q={x:to==='b'?W/2-160:W/2+160,y:H/2,vx:0,vy:0}; S.hide=false;
-  if(first){ S.q.x=W/2; S.q.vx=(to==='b'?-1:1)*220; S.q.vy=(Math.random()-.5)*200; }
+function serve(conceded,first){
+  const {w,h}=FM[M.fm];
+  S.hide=false;
+  if(M.fm==='ffa'){ const alive=FM.ffa.teams.filter(t=>!M.out.has(t)), t=alive[Math.random()*alive.length|0]||'b';
+    const dir={b:[-1,0],r:[1,0],g:[0,-1],y:[0,1]}[t], a=(Math.random()-.5)*.8, sp=320;
+    S.q={x:w/2,y:h/2,vx:(dir[0]*Math.cos(a)-dir[1]*Math.sin(a))*sp,vy:(dir[0]*Math.sin(a)+dir[1]*Math.cos(a))*sp}; }
+  else if(first){ const s=Math.random()<.5?-1:1; S.q={x:w/2,y:h/2,vx:s*220,vy:(Math.random()-.5)*200}; }
+  else S.q={x:conceded==='b'?w/2-160:w/2+160,y:h/2,vx:0,vy:0};
   S.pause=now()+(first?300:1200);
 }
-function pushOutOfBumpers(){ BUMP.forEach(([x,y])=>{ const dx=S.q.x-x,dy=S.q.y-y,d=Math.hypot(dx,dy)||1; if(d<BR+PR){ S.q.x=x+dx/d*(BR+PR+1); S.q.y=y+dy/d*(BR+PR+1); } }); }
+function pushOutOfBumpers(){ bumpsOf(M.fm).forEach(([x,y,r])=>{ const dx=S.q.x-x,dy=S.q.y-y,d=Math.hypot(dx,dy)||1; if(d<r+PR){ S.q.x=x+dx/d*(r+PR+1); S.q.y=y+dy/d*(r+PR+1); } }); }
 function step(dt){
-  const t=now();
-  ['b','r'].forEach(sd=>{ const m=S.m[sd], r=malR(sd);
-    const x0=sd==='b'?r:W/2+r, x1=sd==='b'?W/2-r:W-r;
-    const tx=Math.max(x0,Math.min(x1,m.tx)), ty=Math.max(r,Math.min(H-r,m.ty));
+  const t=now(), F=FM[M.fm], w=F.w, h=F.h;
+  slotsOf(M.fm).forEach(sl=>{ const m=S.m[sl.id]; if(!m) return; const r=malR(sl.t), z=sl.z;
+    if(M.out.has(sl.t)) return;
+    const tx=Math.max(Math.max(r,z[0]+r),Math.min(Math.min(w-r,z[1]-r),m.tx)), ty=Math.max(Math.max(r,z[2]+r),Math.min(Math.min(h-r,z[3]-r),m.ty));
     let dx=tx-m.x, dy=ty-m.y; const d=Math.hypot(dx,dy), mx=1900*dt;
     if(d>mx){ dx*=mx/d; dy*=mx/d; }
     m.x+=dx; m.y+=dy; m.vx=dx/dt; m.vy=dy/dt; });
   if(M.ph!=='play'||S.pause>t||S.hide) return;
-  const q=S.q, fast=fx('sp'), vmax=fast?2100:1500;
+  const q=S.q, fast=fx('sp'), vmax=fast?2100:1500, ffa=M.fm==='ffa';
   q.x+=q.vx*dt; q.y+=q.vy*dt;
-  const k=Math.pow(fast?0.85:0.62,dt); q.vx*=k; q.vy*=k;
-  if(fast){ const v=Math.hypot(q.vx,q.vy); if(v>1&&v<500){ q.vx*=500/v; q.vy*=500/v; } }
-  const e=0.9;
-  if(q.y<PR){ q.y=PR; q.vy=Math.abs(q.vy)*e; sfx.wall(); }
-  if(q.y>H-PR){ q.y=H-PR; q.vy=-Math.abs(q.vy)*e; sfx.wall(); }
-  const gb=goalW('b'), gr=goalW('r'), inB=Math.abs(q.y-H/2)<gb/2-PR*.3, inR=Math.abs(q.y-H/2)<gr/2-PR*.3;
-  if(q.x<PR){ if(inB){ if(q.x<-PR){ goal('r'); return; } } else { q.x=PR; q.vx=Math.abs(q.vx)*e; sfx.wall(); } }
-  if(q.x>W-PR){ if(inR){ if(q.x>W+PR){ goal('b'); return; } } else { q.x=W-PR; q.vx=-Math.abs(q.vx)*e; sfx.wall(); } }
-  ['b','r'].forEach(sd=>{ const m=S.m[sd], r=malR(sd); hitCircle(m.x,m.y,r,m.vx,m.vy,0.95,true); });
-  if(fx('wl')) BUMP.forEach(([x,y])=>hitCircle(x,y,BR,0,0,0.95,false));
+  const k=Math.pow(fast?0.85:ffa?0.8:0.62,dt); q.vx*=k; q.vy*=k;
+  const vmin=fast?500:ffa?260:0;   // 4人バトルは真ん中で止まらないように、いつも少し動かす
+  if(vmin){ const v=Math.hypot(q.vx,q.vy); if(v<vmin){ if(v<1){ const a=Math.random()*7; q.vx=Math.cos(a); q.vy=Math.sin(a); } const v2=Math.hypot(q.vx,q.vy); q.vx*=vmin/v2; q.vy*=vmin/v2; } }
+  const e=0.9, open=(tm,pos,len)=>tm&&!M.out.has(tm)&&Math.abs(pos-len/2)<goalW(tm)/2-PR*.3;
+  const owner=wl=>F.teams.find(tm=>WALL[tm]===wl);
+  // 左右
+  if(q.x<PR){ if(open(owner('L'),q.y,h)){ if(q.x<-PR){ goal(owner('L')); return; } } else { q.x=PR; q.vx=Math.abs(q.vx)*e; sfx.wall(); } }
+  if(q.x>w-PR){ if(open(owner('R'),q.y,h)){ if(q.x>w+PR){ goal(owner('R')); return; } } else { q.x=w-PR; q.vx=-Math.abs(q.vx)*e; sfx.wall(); } }
+  // 上下
+  if(q.y<PR){ if(open(owner('T'),q.x,w)){ if(q.y<-PR){ goal(owner('T')); return; } } else { q.y=PR; q.vy=Math.abs(q.vy)*e; sfx.wall(); } }
+  if(q.y>h-PR){ if(open(owner('B'),q.x,w)){ if(q.y>h+PR){ goal(owner('B')); return; } } else { q.y=h-PR; q.vy=-Math.abs(q.vy)*e; sfx.wall(); } }
+  // 4人バトルの角(斜めの壁)
+  if(ffa){ const R2=Math.SQRT1_2;
+    [[1,1,0,0],[-1,1,w,0],[1,-1,0,h],[-1,-1,w,h]].forEach(([sx,sy,cx,cy])=>{
+      const d=((q.x-cx)*sx+(q.y-cy)*sy-CUT)*R2;
+      if(d<PR){ const nx=sx*R2, ny=sy*R2, push=PR-d; q.x+=nx*push; q.y+=ny*push; const vn=q.vx*nx+q.vy*ny; if(vn<0){ q.vx-=(1+e)*vn*nx; q.vy-=(1+e)*vn*ny; sfx.wall(); } } }); }
+  slotsOf(M.fm).forEach(sl=>{ if(M.out.has(sl.t)) return; const m=S.m[sl.id]; hitCircle(m.x,m.y,malR(sl.t),m.vx,m.vy,0.95,true,w,h); });
+  if(fx('wl')) bumpsOf(M.fm).forEach(([x,y,r])=>hitCircle(x,y,r,0,0,0.95,false,w,h));
   const v=Math.hypot(q.vx,q.vy); if(v>vmax){ q.vx*=vmax/v; q.vy*=vmax/v; }
 }
-function hitCircle(cx,cy,r,mvx,mvy,e,mallet){
+function hitCircle(cx,cy,r,mvx,mvy,e,mallet,w,h){
   const q=S.q, dx=q.x-cx, dy=q.y-cy, d=Math.hypot(dx,dy), min=r+PR;
   if(d>=min) return;
   const nx=d?dx/d:1, ny=d?dy/d:0;
   q.x=cx+nx*min; q.y=cy+ny*min;
   const rvx=q.vx-mvx, rvy=q.vy-mvy, vn=rvx*nx+rvy*ny;
   if(vn<0){ q.vx-=(1+e)*vn*nx; q.vy-=(1+e)*vn*ny; if(mallet) sfx.hit(Math.min(1,-vn/1200)); else sfx.wall(); }
-  // 壁とマレットにはさまれたとき、外へ逃がす
-  q.x=Math.max(-PR*3,Math.min(W+PR*3,q.x)); q.y=Math.max(PR,Math.min(H-PR,q.y));
+  q.x=Math.max(-PR*3,Math.min(w+PR*3,q.x)); q.y=Math.max(-PR*3,Math.min(h+PR*3,q.y));
 }
-function goal(by){
+// conceded = ゴールを入れられた色
+function goal(conceded){
   if(M.ph!=='play'){ S.hide=true; return; }
-  M.sc[by==='b'?0:1]++; S.hide=true; sfx.goal();
-  const need=C.goals, [a,b]=M.sc;
-  if(M.gg||a>=need||b>=need){ notice(`${SIDE[by]}のゴール!`); finish(by); return; }
-  notice(`${SIDE[by]}のゴール! ${a}-${b}`); stDirty=true;
-  setTimeout(()=>{ if(M.ph==='play') serve(by==='b'?'r':'b'); },900);
+  S.hide=true; sfx.goal();
+  if(M.fm==='ffa'){
+    M.lv[conceded]=Math.max(0,(M.lv[conceded]||0)-1);
+    if(M.gg||M.lv[conceded]<=0){ M.lv[conceded]=0; M.out.add(conceded); notice(`${TEAM[conceded]}が脱落!`); }
+    else notice(`${TEAM[conceded]}が入れられた!のこりライフ${M.lv[conceded]}`);
+    const alive=FM.ffa.teams.filter(t=>!M.out.has(t));
+    if(alive.length===1){ finish(alive[0]); return; }
+  }else{
+    const by=conceded==='b'?'r':'b'; M.sc[by]++;
+    if(M.gg||M.sc[by]>=C.goals){ notice(`${TEAM[by]}のゴール!`); finish(by); return; }
+    notice(`${TEAM[by]}のゴール! ${M.sc.b}-${M.sc.r}`);
+  }
+  stDirty=true;
+  setTimeout(()=>{ if(M.ph==='play') serve(conceded); },900);
   S.pause=now()+2100;
+}
+function timeUp(){
+  if(M.fm==='ffa'){
+    const alive=FM.ffa.teams.filter(t=>!M.out.has(t)), mx=Math.max(...alive.map(t=>M.lv[t]||0));
+    alive.forEach(t=>{ if((M.lv[t]||0)<mx){ M.out.add(t); M.lv[t]=0; } });
+    const rest=FM.ffa.teams.filter(t=>!M.out.has(t));
+    if(rest.length===1){ finish(rest[0]); return; }
+    M.gg=true; notice('時間切れ! 次に入れられた人が脱落'); stDirty=true; return;
+  }
+  if(M.sc.b===M.sc.r){ M.gg=true; notice('時間切れ! 次の1点で決着'); stDirty=true; }
+  else finish(M.sc.b>M.sc.r?'b':'r');
 }
 
 /* ---------- 時計 ---------- */
@@ -475,33 +606,35 @@ function tick(){
   else if(M.ph==='result'&&!M.busy&&C.auto&&t>=M.dl){ toLobby(''); startSelect(); }
   if(['bet','ready','play','result'].includes(M.ph)){
     const n=Math.max(1,Math.ceil(dt/(1/240))); for(let i=0;i<n;i++) step(dt/n);
-    if(M.ph==='play'&&!M.gg&&t>=M.tEnd&&!S.hide){ const [a,b]=M.sc; if(a===b){ M.gg=true; notice('時間切れ! 次の1点で決着'); stDirty=true; } else finish(a>b?'b':'r'); }
+    if(M.ph==='play'&&!M.gg&&t>=M.tEnd&&!S.hide) timeUp();
   }
-  // iPadへ:位置は1秒に15回、状態は変わったときだけ(4回/秒まで)
   if(['bet','ready','play','result'].includes(M.ph)&&t-lastF>=66){ lastF=t; HOST.be.set(AH+'/f',snap(true)).catch(()=>{}); }
   if(stDirty&&t-lastSt>=250){ stDirty=false; lastSt=t; HOST.be.set(AH+'/st',stDoc()).catch(()=>{}); }
   if(panelDirty||Math.floor(t/500)!==Math.floor((t-dt*1000)/500)){ panelDirty=false; ctlRender(); }
 }
 const R=v=>Math.round(v);
 function snap(net){
-  const t=now(), s={t,sc:M.sc.slice(),gg:M.gg?1:0,g:[goalW('b'),goalW('r')],w:fx('wl')?1:0,sp:fx('sp')?1:0,
+  const t=now(), T=FM[M.fm].teams, g={};
+  T.forEach(tm=>g[tm]=goalW(tm));
+  const s={t,fm:M.fm,sc:Object.assign({},M.sc),lv:Object.assign({},M.lv),out:[...M.out],gg:M.gg?1:0,g,w:fx('wl')?1:0,sp:fx('sp')?1:0,
     tm:M.ph==='play'?Math.max(0,(M.tEnd-t)/1000):M.ph==='result'?M.tLeft:M.ph==='lobby'||M.ph==='entry'?null:C.tlim,
-    b:[R(S.m.b.x),R(S.m.b.y),malR('b')],r:[R(S.m.r.x),R(S.m.r.y),malR('r')],q:S.hide?null:[R(S.q.x),R(S.q.y)]};
+    m:slotsOf(M.fm).filter(sl=>!M.out.has(sl.t)&&S.m[sl.id]).map(sl=>[R(S.m[sl.id].x),R(S.m[sl.id].y),malR(sl.t),sl.t]),
+    q:S.hide?null:[R(S.q.x),R(S.q.y)]};
   if(net&&M.ev&&M.ev.until>t) s.e=[M.ev.s,M.ev.t];
   return s;
 }
 function stDoc(){
   const p=betPool();
-  return {ph:M.ph,mid:M.mid,mode:C.mode,fee:C.fee,goals:C.goals,tlim:C.tlim,cost:C.cost,left:Math.max(0,(M.dl-now())/1000),
-    ent:M.ent.size,pool:[p.b,p.r],nb:[p.nb,p.nr],win:M.win,msg:M.ph==='result'||M.ph==='lobby'?M.msg:'',busy:M.busy?1:0,t:now()};
+  return {ph:M.ph,mid:M.mid,fm:M.fm,need:FM[M.fm].need,mode:C.mode,fee:C.fee,goals:C.goals,lives:C.lives,tlim:C.tlim,cost:C.cost,left:Math.max(0,(M.dl-now())/1000),
+    ent:M.ent.size,pool:p.a,np:p.n,tot:p.tot,out:[...M.out],win:M.win,msg:M.ph==='result'||M.ph==='lobby'?M.msg:'',busy:M.busy?1:0,clean:CLEAN?1:0,t:now()};
 }
 function hostOverlay(){
-  const t=now(), o={nb:nm(M.pl.b)||'青',nr:nm(M.pl.r)||'赤'}, left=Math.max(0,Math.ceil((M.dl-t)/1000));
-  if(M.ph==='lobby'){ o.big='エアホッケー'; o.sub=M.msg||'iPadでエアホッケーを開いて待っててね'; }
-  else if(M.ph==='entry'){ o.big=`立候補 ${left}`; o.sub=`出場したい人はiPadで「出場する」(参戦料 ${C.fee}枚)・いま${M.ent.size}人`; }
-  else if(M.ph==='bet'){ const p=betPool(); o.big=`BET ${left}`; o.sub=`青 ${yen(p.b)}枚(${odds(p,'b')}) / 赤 ${yen(p.r)}枚(${odds(p,'r')})`; }
+  const t=now(), o={names:teamNames()}, left=Math.max(0,Math.ceil((M.dl-t)/1000)), F=FM[M.fm];
+  if(M.ph==='lobby'){ o.big=NAME.replace('(掃除決め)',''); o.sub=M.msg||`つぎは${FM[C.fm].n}・iPadでエアホッケーを開いて待っててね`; }
+  else if(M.ph==='entry'){ o.big=`立候補 ${left}`; o.sub=`${F.n}・出場したい人はiPadで「出場する」(参戦料 ${C.fee}枚)・いま${M.ent.size}人`; }
+  else if(M.ph==='bet'){ const p=betPool(); o.big=`BET ${left}`; o.sub=F.teams.map(tm=>`${TEAM[tm]} ${yen(p.a[tm])}枚`).join(' / '); }
   else if(M.ph==='ready'){ o.big=String(left||'GO!'); o.sub='出場者はiPadの上で指を動かしてね'; }
-  else if(M.ph==='result'){ o.big=M.win?`${SIDE[M.win]}の勝ち!`:'中止'; o.bigc=M.win?COL[M.win]:'#14213a'; o.sub=M.win?nm(M.pl[M.win])||'':''; }
+  else if(M.ph==='result'){ o.big=M.win?`${TEAM[M.win]}の勝ち!`:'中止'; o.bigc=M.win?COL[M.win]:'#14213a'; o.sub=M.win?o.names[M.win]||'':''; }
   if(M.ev&&M.ev.until>t) o.ev=M.ev.t;
   return o;
 }
@@ -523,128 +656,147 @@ const sfx=(()=>{ let ac=null, last=0;
    iPad
    ========================================================================= */
 let PAD=null, PCTX=null;
-const G={view:undefined,live:true,st:null,stAt:0,me:{},buf:[],off:null,touch:null,sent:'',side:'b',bet:10,busy:false,hold:null,lastEv:0,ev:null,here:null,resMid:''};
+const G={view:undefined,live:true,games:{},st:null,stAt:0,me:{},buf:[],off:null,touch:null,sent:'',side:'b',bet:10,busy:false,lastEv:0,ev:null,here:null};
 async function padMain(){
   document.body.className='pad'; document.documentElement.classList.add('padmode');
   document.querySelector('meta[name=viewport]').content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
   app.innerHTML='<div class="pwrap"><div class="pc">接続しています…</div></div>';
   try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pwrap"><div class="pc">つながりません:${esc(e.message)}</div></div>`; return; }
   if(!PAD.vk()){ location.href=PAD.indexUrl(); return; }
-  const AHp=PAD.P+'/ah', vk=PAD.vk();
+  const AHp=PAD.P+'/ah'+(CLEAN?'c':''), vk=PAD.vk();
+  G.AHp=AHp;
   PAD.onView(v=>{ if(!v){ location.href=PAD.indexUrl(); return; } G.view=v; herePresence(); padRender(); });
-  PAD.onGames(g=>{ G.live=!!g[GID]; padRender(); });
+  PAD.onGames(g=>{ G.games=g||{}; G.live=!!G.games[GID]; herePresence(); padRender(); });
   PAD.be.on(AHp+'/st',v=>{ G.st=v; G.stAt=now(); padRender(); });
   PAD.be.on(AHp+'/me/'+vk,v=>{ G.me=v||{}; padRender(); });
-  PAD.be.on(AHp+'/f',v=>{ if(!v) return; const t=now(), o=t-v.t; G.off=G.off==null||o<G.off?o:G.off+(o-G.off)*0.002; // 一番速く届いた時を基準にする
+  PAD.be.on(AHp+'/f',v=>{ if(!v) return; const t=now(), o=t-v.t; G.off=G.off==null||o<G.off?o:G.off+(o-G.off)*0.002;
     G.buf.push(v); if(G.buf.length>30) G.buf.shift();
     if(v.e&&v.e[0]!==G.lastEv){ G.lastEv=v.e[0]; G.ev={t:v.e[1],until:t+2500}; } });
-  // 出場者の指の位置を送る(1秒に20回まで)
-  setInterval(()=>{ if(!G.me.role||!G.touch) return; const j=G.touch[0]+','+G.touch[1]; if(j===G.sent) return; G.sent=j;
+  setInterval(()=>{ if(!meNow().role||!G.touch) return; const j=G.touch[0]+','+G.touch[1]; if(j===G.sent) return; G.sent=j;
     PAD.be.set(AHp+'/in/'+vk,{x:G.touch[0],y:G.touch[1],t:now()}).catch(()=>{}); },50);
   const loop=()=>{ if(PCTX) drawScene(PCTX,interp(),padOverlay()); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
   setInterval(padTick,250);
 }
+const inThis=()=>CLEAN?!!(G.view&&G.view.cl===CLEAN):seatA()!==null;
 function herePresence(){ // エアホッケーの画面を開いている印(ランダムの出場者はこの人たちから選ぶ)
-  const inGame=seatA()!==null;
-  if(inGame&&!G.here){ G.here=PAD.be.presence(PAD.P+'/ah/here/'+PAD.vk(),{t:now()}); PAD.req('g:hello',{},GID); }
-  else if(!inGame&&G.here){ G.here(); G.here=null; }
+  const on=inThis()&&G.live;
+  if(on&&!G.here){ G.here=PAD.be.presence(G.AHp+'/here/'+PAD.vk(),{t:now()}); PAD.req('g:hello',{},GID); }
+  else if(!on&&G.here){ G.here(); G.here=null; }
 }
 const seatA=()=>{const s=G.view&&G.view.seat;return s&&s.g===GID?s.a||0:null};
-const availP=()=>Math.max(0,(seatA()||0)-((G.me&&G.me.mid===(G.st&&G.st.mid))?G.me.rsv||0:0));
+const myBal=()=>CLEAN?(G.me.b||0):(seatA()||0);
 const meNow=()=>G.me&&G.st&&G.me.mid===G.st.mid?G.me:{};
+const availP=()=>Math.max(0,myBal()-(meNow().rsv||0));
 const leftP=()=>G.st?Math.max(0,Math.ceil(G.st.left-(now()-G.stAt)/1000)):0;
+const curFm=()=>(G.st&&G.st.fm)||(G.buf.length?G.buf[G.buf.length-1].fm:'1v1')||'1v1';
 function interp(){
-  const b=G.buf; if(!b.length) return {sc:[0,0],b:[110,H/2,MR],r:[W-110,H/2,MR],q:null};
-  const rt=now()-(G.off||0)-110;   // 少し遅らせて、2つの間をつなぐ
+  const b=G.buf; if(!b.length) return {fm:curFm(),sc:{},lv:{},m:[],q:null,g:{}};
+  const rt=now()-(G.off||0)-110;
   let i=b.length-1; while(i>0&&b[i-1].t>rt) i--;
   const a=b[Math.max(0,i-1)], c=b[i];
-  if(!a||a===c||rt>=c.t) return c;
-  const k=Math.max(0,Math.min(1,(rt-a.t)/(c.t-a.t||1))), L=(x,y)=>x+(y-x)*k, lp=(p,q)=>p&&q?[L(p[0],q[0]),L(p[1],q[1]),q[2]]:q;
-  const s=Object.assign({},c,{b:lp(a.b,c.b),r:lp(a.r,c.r),q:a.q&&c.q&&Math.hypot(a.q[0]-c.q[0],a.q[1]-c.q[1])<200?lp(a.q,c.q):c.q});
+  if(!a||a===c||rt>=c.t||a.fm!==c.fm) return c;
+  const k=Math.max(0,Math.min(1,(rt-a.t)/(c.t-a.t||1))), L=(x,y)=>x+(y-x)*k;
+  const m=c.m.map((cm,j)=>{ const am=a.m[j]; return am&&am[3]===cm[3]?[L(am[0],cm[0]),L(am[1],cm[1]),cm[2],cm[3]]:cm; });
+  const s=Object.assign({},c,{m,q:a.q&&c.q&&Math.hypot(a.q[0]-c.q[0],a.q[1]-c.q[1])<200?[L(a.q[0],c.q[0]),L(a.q[1],c.q[1])]:c.q});
   if(c.tm!=null&&a.tm!=null) s.tm=L(a.tm,c.tm);
   return s;
 }
 function padOverlay(){
-  const st=G.st||{}, me=meNow(), o={nb:me.role==='b'?'青(あなた)':'青',nr:me.role==='r'?'赤(あなた)':'赤'}, left=leftP();
-  if(me.role) o.me=me.role;
-  if(me.role&&G.touch) o.ghost=[G.touch[0],G.touch[1],me.role];
+  const st=G.st||{}, me=meNow(), fm=curFm(), o={names:{}}, left=leftP();
+  FM[fm].teams.forEach(t=>o.names[t]=TEAM[t]);
+  if(me.role){ const t=me.role[0], sl=slotsOf(fm).find(s=>s.id===me.role); o.names[t]=TEAM[t]+'(あなた)'; if(sl) o.zone=[...sl.z,t]; if(G.touch) o.ghost=[G.touch[0],G.touch[1],t]; }
   if(st.ph==='lobby'||!st.ph){ o.big='待っています'; o.sub='先生が試合を始めるまで待ってね'; }
-  else if(st.ph==='entry'){ o.big=`立候補 ${left}`; o.sub=`いま${st.ent||0}人`; }
-  else if(st.ph==='bet'){ o.big=`BET ${left}`; o.sub=me.role?'あなたは出場者です。指を置いて準備しよう':'下でBETしてね'; }
+  else if(st.ph==='entry'){ o.big=`立候補 ${left}`; o.sub=`${FM[fm].n}・いま${st.ent||0}人`; }
+  else if(st.ph==='bet'){ o.big=`BET ${left}`; o.sub=me.role?'あなたは出場者です。色のついた場所に指を置こう':'下でBETしてね'; }
   else if(st.ph==='ready'){ o.big=String(left||'GO!'); }
-  else if(st.ph==='result'){ o.big=st.win?`${SIDE[st.win]}の勝ち!`:'中止'; o.bigc=st.win?COL[st.win]:'#14213a'; }
+  else if(st.ph==='result'){ o.big=st.win?`${TEAM[st.win]}の勝ち!`:'中止'; o.bigc=st.win?COL[st.win]:'#14213a'; }
   if(G.ev&&G.ev.until>now()) o.ev=G.ev.t;
   return o;
 }
 let lastKey='';
 function padTick(){ const k=JSON.stringify([G.st&&G.st.ph,leftP(),meNow().role]); if(k!==lastKey){ lastKey=k; padRender(); } }
+function padMsg(t,m,btn){ PCTX=null; app.innerHTML=`<div class="pwrap"><div class="pc"><h2>${t}</h2><p class="note">${m}</p><div class="mrow" style="justify-content:flex-start">${btn||''}<a class="pbtn" href="${esc(PAD.indexUrl())}">トップへ</a></div></div></div>`; }
 function padRender(){
   const v=G.view; if(v===undefined) return;
-  const a=seatA(), top=PAD.indexUrl();
-  if(a===null){ PCTX=null; app.innerHTML=`<div class="pwrap"><div class="pc"><h2>${NAME}にはまだ入っていません</h2><p class="note">メダルゲームのトップで、持ち込む枚数を選んでから入ってください。</p><div class="mrow" style="justify-content:flex-start"><a class="pbtn go" href="${esc(top)}">トップへ</a></div></div></div>`; return; }
-  if(!G.live){ PCTX=null; app.innerHTML=`<div class="pwrap"><div class="pc"><h2>${NAME}は止まりました</h2><p class="note">先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。</p><div class="mrow" style="justify-content:flex-start"><a class="pbtn go" href="${esc(top)}">トップへ</a></div></div></div>`; return; }
+  if(CLEAN){
+    if(v.cl!==CLEAN) return padMsg('この掃除決めには参加していません','先生に確認してください。');
+    if(!G.live){ // エアホッケーが終わった:ルーレットパークへ
+      const id=Object.keys(G.games).find(k=>G.games[k].clean===CLEAN);
+      if(id){ const u=new URL(G.games[id].url); u.searchParams.set('mg',PAD.pub); if(MG.LOCAL) u.searchParams.set('local','1');
+        return padMsg(`${esc(G.games[id].n)}が始まりました`,'エアホッケーのメダルを、そのまま引き継いでいます。',`<a class="pbtn go" href="${esc(u.href)}">${esc(G.games[id].n)}へ</a>`); }
+      return padMsg('エアホッケーは終わりました','先生がつぎのゲーム(ルーレットパーク)を開くまで待ってね。');
+    }
+  }else{
+    if(seatA()===null) return padMsg(`${NAME}にはまだ入っていません`,'メダルゲームのトップで、持ち込む枚数を選んでから入ってください。','');
+    if(!G.live) return padMsg(`${NAME}は止まりました`,'先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。');
+  }
+  const top=PAD.indexUrl();
   if(!$('#pcv')){
     app.innerHTML=`<div class="pwrap">
-      <div class="pc inbar"><div><div class="lbl">${esc(v.n)} さん ・ ${NAME}のメダル</div><div class="num" id="num"></div><div class="lbl" id="bank"></div></div>
-        <div class="tools"><button class="pbtn" id="tAdd">貯金から追加</button><button class="pbtn" id="tBack">一部もどす</button><button class="pbtn gold" id="tQuit">やめる</button></div></div>
+      <div class="pc inbar"><div><div class="lbl">${esc(v.n)} さん ・ ${CLEAN?'掃除決めのメダル':NAME+'のメダル'}</div><div class="num" id="num"></div><div class="lbl" id="bank"></div></div>
+        ${CLEAN?'':'<div class="tools"><button class="pbtn" id="tAdd">貯金から追加</button><button class="pbtn" id="tBack">一部もどす</button><button class="pbtn gold" id="tQuit">やめる</button></div>'}</div>
       <div class="pc"><div class="cv" id="cvw"><canvas id="pcv"></canvas></div></div>
       <div class="pc" id="act"></div>
-      <div class="center" style="margin-top:12px"><a href="${esc(top)}" class="pbtn" style="font-size:14px">トップへ(メダルは預けたまま)</a></div>
+      <div class="center" style="margin-top:12px"><a href="${esc(top)}" class="pbtn" style="font-size:14px">トップへ${CLEAN?'':'(メダルは預けたまま)'}</a></div>
       <div id="mod"></div></div>`;
     PCTX=setupCanvas($('#pcv'));
     const cv=$('#pcv');
-    const pos=e=>{ const me=meNow(); if(!me.role) return; const r=cv.getBoundingClientRect();
-      const x=(e.clientX-r.left)/r.width*CW, y=(e.clientY-r.top)/r.height*CH-TOP;
-      G.touch=[Math.round(Math.max(0,Math.min(W,x))),Math.round(Math.max(0,Math.min(H,y)))]; };
+    const pos=e=>{ const me=meNow(); if(!me.role) return; const r=cv.getBoundingClientRect(), fm=curFm(), F=FM[fm];
+      const x=(e.clientX-r.left)/r.width*CW-ox(fm), y=(e.clientY-r.top)/r.height*CH-TOP;
+      G.touch=[Math.round(Math.max(0,Math.min(F.w,x))),Math.round(Math.max(0,Math.min(F.h,y)))]; };
     cv.addEventListener('pointerdown',e=>{ if(meNow().role){ e.preventDefault(); cv.setPointerCapture(e.pointerId); pos(e); } });
     cv.addEventListener('pointermove',e=>{ if(meNow().role){ e.preventDefault(); pos(e); } });
-    $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
-    $('#tQuit').onclick=async()=>{ if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。${meNow().rsv?'\n(試合が終わってから、自動で貯金にもどします)':''}`)) return;
-      const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok&&!(r.d&&r.d.later)) setTimeout(()=>location.href=top,700); };
+    if(!CLEAN){
+      $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
+      $('#tQuit').onclick=async()=>{ if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。${meNow().rsv?'\n(試合が終わってから、自動で貯金にもどします)':''}`)) return;
+        const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok&&!(r.d&&r.d.later)) setTimeout(()=>location.href=top,700); };
+    }
   }
   const me=meNow(), st=G.st||{};
-  $('#num').innerHTML=`${yen(a)}<small>枚</small>`;
-  $('#bank').textContent=`貯金 ${yen(v.b)}枚${me.rsv?` ・ 賭けている ${yen(me.rsv)}枚`:''}`;
+  $('#num').innerHTML=`${yen(myBal())}<small>枚</small>`;
+  $('#bank').textContent=CLEAN?(me.rsv?`賭けている ${yen(me.rsv)}枚`:'この日だけのメダル(あとでルーレットパークへ)'):`貯金 ${yen(v.b)}枚${me.rsv?` ・ 賭けている ${yen(me.rsv)}枚`:''}`;
   $('#cvw').classList.toggle('ctl',!!me.role&&['bet','ready','play'].includes(st.ph));
   actRender();
 }
 function actRender(){
   const box=$('#act'); if(!box) return;
-  const st=G.st||{}, me=meNow(), left=leftP(), ph=st.ph||'lobby', av=availP(), pool=st.pool||[0,0], tot=pool[0]+pool[1];
-  const od=i=>pool[i]?'×'+(tot/pool[i]).toFixed(2):'—';
-  const key=JSON.stringify([ph,me,st.ent,pool,st.win,st.busy,av,G.side,G.bet,G.busy,st.mid]);
-  if(box.dataset.k===key&&!['entry','bet'].includes(ph)) { return; }
+  const st=G.st||{}, me=meNow(), left=leftP(), ph=st.ph||'lobby', av=availP(), fm=curFm(), T=FM[fm].teams, pool=st.pool||{}, tot=st.tot||0, np=st.np||{};
+  if(!T.includes(G.side)) G.side=T[0];
+  const od=t=>pool[t]?'×'+(tot/pool[t]).toFixed(2):'—';
+  const key=JSON.stringify([ph,me,st.ent,pool,st.win,st.busy,av,G.side,G.bet,G.busy,st.mid,st.out,fm]);
   if(box.dataset.k===key){ const l=$('#left'); if(l) l.textContent=left; return; }
   const keepFocus=document.activeElement&&document.activeElement.id==='bIn';
   box.dataset.k=key;
   let h='';
+  const prize=fm==='2v2'?`勝ったチームの2人で${st.fee*4}枚を分けます(1人${st.fee*2}枚)`:`勝つと${st.fee*FM[fm].need}枚がもらえます`;
   if(ph==='lobby'){ h=`<div class="phase">つぎの試合を待っています</div><p class="note center">${esc(st.msg||'')}</p><p class="note center">出場者は${st.mode==='rand'?'<b>ランダム</b>で決まります(参戦料 '+st.fee+'枚 を持っている人から)':'<b>立候補</b>で決まります'}。</p>`; }
   else if(ph==='entry'){
-    h=`<div class="phase">立候補 受付中(あと<span id="left">${left}</span>秒)</div>
-      <p class="note center">出場すると参戦料 <b>${st.fee}枚</b>。勝つと2人分(${st.fee*2}枚)がもらえます。${st.goals}点先取。</p>
+    h=`<div class="phase">${FM[fm].n} 立候補 受付中(あと<span id="left">${left}</span>秒)</div>
+      <p class="note center">出場すると参戦料 <b>${st.fee}枚</b>。${prize}。${fm==='ffa'?`ライフ${st.lives}、最後の1人が勝ち`:`${st.goals}点先取`}。</p>
       <div class="center">${me.ent?`<button class="pbtn" id="ent" data-on="0">立候補を取り消す</button><p class="note">立候補しました!締め切りで抽選します</p>`:`<button class="pbtn go" id="ent" data-on="1" style="font-size:22px;padding:16px 50px" ${av<st.fee?'disabled':''}>出場する</button>${av<st.fee?'<p class="perr">メダルが足りません</p>':''}`}</div>`;
   }
   else if(me.role&&['bet','ready','play'].includes(ph)){
-    h=`<div class="phase" style="color:${COL[me.role]}">あなたは ${SIDE[me.role]} で出場!</div>
-      <p class="note center">上の盤面の<b>${me.role==='b'?'左':'右'}半分</b>を指でなぞると、マレットが動きます(点線の丸が指の位置)。プロジェクターの画面を見ながら動かすと、ずれが少なくなります。</p>`;
+    const t=me.role[0];
+    h=`<div class="phase" style="color:${COL[t]}">あなたは ${slotName(fm,me.role)} で出場!</div>
+      <p class="note center">上の盤面の<b>色のついた場所</b>を指でなぞると、マレットが動きます(点線の丸が指の位置)。プロジェクターの画面を見ながら動かすと、ずれが少なくなります。${fm==='2v2'?'味方と上下で分かれて守ります。':fm==='ffa'?'自分の前のゴールを守ろう。入れられるとライフが減ります。':''}</p>`;
   }
   else if(ph==='bet'){
     const cur=me.bet;
-    h=`<div class="phase">どっちが勝つ?(あと<span id="left">${left}</span>秒)</div>
-      <div class="sides"><button class="b ${G.side==='b'?'on':''}" data-s="b" ${cur&&cur.s!=='b'?'disabled':''}>青<small>${yen(pool[0])}枚 ・ ${od(0)}</small></button><button class="r ${G.side==='r'?'on':''}" data-s="r" ${cur&&cur.s!=='r'?'disabled':''}>赤<small>${yen(pool[1])}枚 ・ ${od(1)}</small></button></div>
+    h=`<div class="phase">${T.length>2?'どれ':'どっち'}が勝つ?(あと<span id="left">${left}</span>秒)</div>
+      <div class="sides">${T.map(t=>`<button class="${t} ${G.side===t?'on':''}" data-s="${t}" ${cur&&cur.s!==t?'disabled':''}>${TEAM[t]}<small>${yen(pool[t]||0)}枚 ・ ${np[t]||0}人 ・ ${od(t)}</small></button>`).join('')}</div>
       <div class="chips">${[[10,'#c02c64'],[30,'#2456c9'],[50,'#7a3fc0'],[100,'#1f8a4c']].map(([n,c])=>`<button data-b="${n}" style="background:${c}" class="${G.bet===n?'on':''}">${n}</button>`).join('')}<input id="bIn" type="number" inputmode="numeric" min="1" value="${G.bet}" aria-label="BETする枚数"><span>枚</span></div>
-      <div class="center"><button class="pbtn go" id="betGo" style="font-size:20px;padding:14px 46px" ${G.busy||G.bet<1||G.bet>av?'disabled':''}>${SIDE[G.side]}に BETする</button></div>
-      <p class="note center">${cur?`いま <b style="color:${COL[cur.s]}">${SIDE[cur.s]}に${yen(cur.a)}枚</b> BET中(足すこともできます)`:'当たると、BETの合計を当たった人で分けます(×の数字が目安)'}</p><p class="perr" id="err"></p>`;
+      <div class="center"><button class="pbtn go" id="betGo" style="font-size:20px;padding:14px 46px" ${G.busy||G.bet<1||G.bet>av?'disabled':''}>${TEAM[G.side]}に BETする</button></div>
+      <p class="note center">${cur?`いま <b style="color:${COL[cur.s]}">${TEAM[cur.s]}に${yen(cur.a)}枚</b> BET中(足すこともできます)`:'当たると、BETの合計を当たった人で分けます(×の数字が目安)'}</p><p class="perr" id="err"></p>`;
   }
   else if(ph==='ready'||ph==='play'){
-    const used=me.used||0, cost=st.cost||10, rest=3-used;
+    const used=me.used||0, cost=st.cost||10, rest=ITEM_MAX-used, out=st.out||[];
     h=`<div class="phase">${ph==='ready'?'まもなく開始!':'おじゃまアイテム'} <small style="font-size:15px;font-family:var(--f-body)">1回 ${cost}枚・のこり${rest}回</small></div>
-      <div class="items">${Object.entries(ITEMS).map(([k,it])=>`<button data-it="${k}" class="${it.s}" ${ph!=='play'||rest<=0||av<cost||G.busy?'disabled':''}><span class="ic">${it.ic}</span>${it.n}</button>`).join('')}</div>
-      ${me.bet?`<p class="note center">あなたのBET:<b style="color:${COL[me.bet.s]}">${SIDE[me.bet.s]}に${yen(me.bet.a)}枚</b></p>`:''}<p class="perr" id="err"></p>`;
+      <div class="items">${itemsOf(fm).map(it=>`<button data-it="${it.k}" class="${it.t}" ${ph!=='play'||rest<=0||av<cost||G.busy||(it.t&&out.includes(it.t))?'disabled':''}><span class="ic">${it.ic}</span>${it.n}</button>`).join('')}</div>
+      ${me.bet?`<p class="note center">あなたのBET:<b style="color:${COL[me.bet.s]}">${TEAM[me.bet.s]}に${yen(me.bet.a)}枚</b></p>`:''}<p class="perr" id="err"></p>`;
   }
   else if(ph==='result'){
     const r=me.res;
-    h=`<div class="phase" style="color:${st.win?COL[st.win]:'inherit'}">${st.win?SIDE[st.win]+'の勝ち!':'試合は中止'}</div>
+    h=`<div class="phase" style="color:${st.win?COL[st.win]:'inherit'}">${st.win?TEAM[st.win]+'の勝ち!':'試合は中止'}</div>
       ${st.busy?'<p class="note center">メダルを精算しています…</p>':r?`<p class="center" style="font-weight:800;font-size:20px">${esc(r.t)}</p><p class="center big-n" style="color:${r.net>0?'var(--mint-d)':r.net<0?'var(--warn)':'var(--soft)'}">${r.net>0?'+':''}${r.net}枚</p>`:'<p class="note center">つぎの試合を待ってね</p>'}`;
   }
   box.innerHTML=h;
@@ -657,7 +809,7 @@ function actRender(){
   on('[data-it]',async x=>{ if(G.busy) return; G.busy=true; actRender(); const r=await PAD.req('g:item',{k:x.dataset.it},GID); G.busy=false; actRender(); if(r.ok) toast(r.msg); else { const e=$('#err'); if(e) e.textContent=r.msg; } });
 }
 function amtModal(kind){
-  const v=G.view, a=seatA(), max=kind==='add'?v.b||0:availP(); let amt=Math.min(kind==='add'?100:max,max);
+  const v=G.view, max=kind==='add'?v.b||0:availP(); let amt=Math.min(kind==='add'?100:max,max);
   const box=$('#mod');
   const draw=()=>{ amt=Math.max(0,Math.min(max,Math.floor(+amt||0)));
     box.innerHTML=`<div class="pmodal"><div class="pc"><h2>${kind==='add'?'貯金から追加':'一部だけ貯金にもどす'}</h2><p class="note">${kind==='add'?`貯金 ${yen(max)}枚`:`もどせるのは ${yen(max)}枚(賭けている分はもどせません)`}</p>
