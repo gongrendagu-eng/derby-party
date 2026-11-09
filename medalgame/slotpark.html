@@ -77,22 +77,25 @@
   const P_PAY = { replay: 3, bell: 8, cherry: 4, bonusGame: 12 };
   const P_GAMES = { big: 30, reg: 12 };
   function pachiLever(st, bet) {
-    const k = Math.max(1, Math.round(bet / 3)); st.k = k;
+    let k = Math.max(1, Math.round(bet / 3));
+    // ボーナスが当たってから終わるまでは、当たったときのBETで固定(当たってからBETを上げて増やすのを防ぐ)
+    if (st.held || st.bonus) { if (!st.hk) st.hk = k; k = st.hk; }
+    st.k = k;
     const res = { bet: 3 * k, pay: 0, newHit: false, k };
     if (st.bonus) {
       st.bonus.left--; res.flag = 'bonusGame'; res.pay = P_PAY.bonusGame * k;
       res.bonus = { type: st.bonus.type, left: st.bonus.left };
       st.bonusGet = (st.bonusGet || 0) + res.pay - 3 * k;
       res.bonusGet = st.bonusGet;
-      if (st.bonus.left <= 0) { res.bonusEnd = true; st.bonus = null; st.bonusGet = 0; }
+      if (st.bonus.left <= 0) { res.bonusEnd = true; st.bonus = null; st.bonusGet = 0; if (!st.held) st.hk = null; }
       st.last = null; res.held = st.held || null; return res;
     }
     let r = R(), flag = 'none';
     for (const f of ['replay', 'bell', 'cherry']) { if (r < P_PROB[f]) { flag = f; break; } r -= P_PROB[f]; }
     if (!st.held) {
       const b = R();
-      if (b < P_PROB.big) { st.held = 'big'; res.newHit = true; }
-      else if (b < P_PROB.big + P_PROB.reg) { st.held = 'reg'; res.newHit = true; }
+      if (b < P_PROB.big) { st.held = 'big'; res.newHit = true; st.hk = k; }
+      else if (b < P_PROB.big + P_PROB.reg) { st.held = 'reg'; res.newHit = true; st.hk = k; }
     }
     res.flag = flag; res.held = st.held || null;
     if (flag === 'replay') res.pay = P_PAY.replay * k;
@@ -305,6 +308,7 @@
     if (d.type === 'stop') return 0;
     if (mid === 'wide' && st.fs > 0) return 0;
     if (mid === 'rocket' && st.chain) return 0;
+    if ((mid === 'oshi' || mid === 'battle') && (st.held || st.bonus) && st.hk) return 3 * st.hk;
     return d.bet | 0;
   }
 
@@ -710,7 +714,7 @@ const stOf=(sid,m)=>{ ST[sid]=ST[sid]||{}; ST[sid][m]=ST[sid][m]||{}; return ST[
 const locks={};
 async function withLock(sid,fn){ while(locks[sid]) await locks[sid]; let done; locks[sid]=new Promise(r=>done=r); try{ return await fn(); } finally { delete locks[sid]; done(); } }
 function pubState(m,st){
-  if(m==='oshi'||m==='battle') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0}};
+  if(m==='oshi'||m==='battle') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0};
   if(m==='wide') return {fs:st.fs||0,fsWin:st.fsWin||0,fsBet:st.fsBet||0};
   if(m==='rocket') return {chain:st.chain||null,best:st.best||0,last:st.last||0};
   if(m==='drop') return {best:st.best||0};
@@ -1038,7 +1042,7 @@ function pachi(mid){ return {
       const cells=[]; for(let j=0;j<NS*3;j++) cells.push(STRIP[((NS*3-1-j)%NS+NS)%NS]);
       el.innerHTML=`<div class="col">${cells.map(k=>`<div class="cell" style="height:${h}px">${sym(k,ss)}</div>`).join('')}</div>`; });
     this.draw();
-    $('#bLever').onclick=()=>this.lever(); $('#bAuto').onclick=()=>toggleAuto(this); bindBet(mid,()=>this.P.run.some(x=>x));
+    $('#bLever').onclick=()=>this.lever(); $('#bAuto').onclick=()=>toggleAuto(this); bindBet(mid,()=>this.P.run.some(x=>x)||!!this.betLock());
     document.querySelectorAll('.stopb').forEach(b=>b.onclick=()=>this.stop(+b.dataset.s));
     if(battle){ kPreload(); $('#bPush').onclick=()=>this.push(); this.scene('normal'); }
     this.upd(); this.drawData();
@@ -1055,9 +1059,13 @@ function pachi(mid){ return {
       if(P.goal[i]!=null&&P.pos[i]>=P.goal[i]){ P.pos[i]=P.goal[i]; P.run[i]=false; P.goal[i]=null; sfx.stop();
         const el=this.reels[i]; el.animate([{transform:'translateY(6px)'},{transform:'none'}],{duration:120}); if(P.run.every(x=>!x)) this.allStopped(); } }
     this.draw(); if(any) P.raf=requestAnimationFrame(x=>this.loop(x)); else P.raf=0; },
+  // ボーナスが光っている・ボーナス中は、BETを当たったときの枚数で固定
+  betLock(){ const s=G.st[mid]||{}, P=this.P; if(!s.hk) return 0; if(s.bonus) return 3*s.hk;
+    if(s.held&&s.lampOn&&(mid!=='battle'||(P&&P.revealed))) return 3*s.hk; return 0; },
   upd(){ const P=this.P; if(!P||!$('#bLever')) return; const spinning=P.run.some(x=>x);
+    const lk=this.betLock(); if(lk&&G.bet[mid]!==lk){ G.bet[mid]=lk; try{ localStorage.setItem('mg.slotpark.bet',JSON.stringify(G.bet)); }catch(e){} }
     const wait=mid==='battle'&&!P.revealed; // PUSH待ちのときは、レバーを引くとPUSHと同じ
-    $('#bLever').disabled=G.busy||(!wait&&G.cred<G.bet[mid]); updBet(mid,spinning,spinning&&P.bet?P.bet:G.bet[mid]);
+    $('#bLever').disabled=G.busy||(!wait&&G.cred<G.bet[mid]); updBet(mid,spinning||!!lk,spinning&&P.bet?P.bet:G.bet[mid]);
     $('#bAuto').classList.toggle('on',G.auto);
     document.querySelectorAll('.stopb').forEach(b=>{ const i=+b.dataset.s; const on=P.run[i]&&P.goal[i]==null&&!(P.q||[]).includes(i); b.classList.toggle('on',on); b.disabled=!on; }); },
   hurry(){ const P=this.P; if(!P) return; [0,1,2].forEach(i=>this.stop(i)); },
