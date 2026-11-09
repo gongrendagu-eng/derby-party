@@ -31,7 +31,8 @@
     { id: 'rocket', name: '連チャンロケット', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 2 } },
     { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bet: { min: 5, max: 50, step: 5, def: 5 } },
     { id: 'drop', name: 'キラリドロップ', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
-    { id: 'battle', name: 'メダまるバトル', style: 'pop', bet: { min: 3, max: 30, step: 3, def: 3 } }
+    // ⑦ は id を 'battle' のまま、中身を KAGUYA に差し替え(先生のPCに保存した台の状態をそのまま使うため)
+    { id: 'battle', name: 'KAGUYA', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } }
   ];
 
   /* ---------- ① フルーツクラシック ---------- */
@@ -69,7 +70,7 @@
     return { pay, bet, out, line, lines, grid: classicGrid(out, line, lines) };
   }
 
-  /* ---------- ② 目押し / ⑦ メダまるバトル（パチスロ） ---------- */
+  /* ---------- ② 目押し / ⑦ KAGUYA（パチスロ） ---------- */
   const P_STRIP = ['seven', 'bell', 'replay', 'lemon', 'bell', 'replay', 'cherry', 'bell', 'replay', 'bar', 'bell',
     'replay', 'lemon', 'bell', 'replay', 'cherry', 'bell', 'replay', 'lemon', 'bell', 'replay'];
   const P_PROB = { replay: 1 / 7.3, bell: 1 / 7.5, cherry: 1 / 36, big: 1 / 280, reg: 1 / 400 };
@@ -111,7 +112,7 @@
     res.held = st.held || null;
     return res;
   }
-  // 液晶演出（メダまるバトル）
+  // 液晶演出（KAGUYA）。確率はメダまるバトルのときと同じ
   function battleEffect(res) {
     if (res.flag === 'bonusGame') return { scene: 'bonusGame' };
     if (res.newHit) return { scene: wpick([['gold', 30], ['red', 25], ['battleWin', 30], ['rainbow', 15]]), hit: true };
@@ -370,6 +371,7 @@ body.pad{background:#fff7ec;overflow:hidden;touch-action:manipulation;-webkit-us
 .topbar .bank{font-size:13px;color:#6e5a72;font-weight:800}
 .tbtn{height:40px;padding:0 16px;border-radius:999px;background:var(--tb-btn,#ffe3ec);color:var(--tb-btnc,#8c1d40);font-size:14px;font-weight:800}
 .tbtn.gray{background:#efe9e2;color:#4a3f44}
+.topbar>*{white-space:nowrap;flex-shrink:0}.topbar .t{font-size:22px;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}.topbar .tbtn{padding:0 13px}
 body.chic .topbar{font-family:var(--f-chic)}
 body.chic .tbtn{border-radius:4px;border:1px solid var(--tb-btnc);background:#fff}
 body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px solid #b08a3e}
@@ -549,21 +551,48 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .th-drop .side.l{background:#fff;border:4px solid #ffb3d1;margin-top:100px}.th-drop .side.l h3{color:#c2185b}
 .th-drop .side.r{background:#2a1c3d;color:#e3c9d6;margin-top:100px}.th-drop .side.r .dat{background:#1a1128}.th-drop .side.r .dat b{color:#ffd23f}
 .how{display:flex;gap:6px;align-items:flex-start}.how i{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:#ff5fa2;color:#fff;font-style:normal;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
-/* ⑦ メダまるバトル */
-.th-battle{--body:linear-gradient(90deg,#9a2d0a 0%,#e8590c 18%,#ff8a3d 50%,#e8590c 82%,#9a2d0a 100%);--deck:linear-gradient(180deg,#7a2a08,#b8460f);--led:#ffb02e;--ledbox:#2a1408;--ledlbl:#f5cfb4;--tray:linear-gradient(180deg,#3a1a08,#6b3414);background:#fff1e0;--tb-line:#ffe0c2;--tb-ttl:#c2410c;--tb-btn:#ffe0c2;--tb-btnc:#7c2d12}
-.th-battle .cab{padding:12px 24px;border-radius:26px 26px 12px 12px;gap:7px}
-.ledbar{position:absolute;top:30px;bottom:60px;width:10px;border-radius:5px;background:linear-gradient(180deg,#ffe066,#ff4d6d 30%,#ffe066 60%,#ff4d6d);box-shadow:0 0 12px #ff4d6d}
+/* ⑦ KAGUYA(シック・ネオン) */
+.th-battle{--body:linear-gradient(90deg,#04050d 0%,#121736 18%,#1b2150 50%,#121736 82%,#04050d 100%);--deck:linear-gradient(180deg,#0a0d22,#151a3c);--led:#5ff3ff;--ledbox:#04050d;--ledlbl:#9fa8e0;--tray:linear-gradient(180deg,#04050d,#191e44);background:radial-gradient(ellipse at 50% 0%,#2b2166 0%,#0d1024 60%,#05060e 100%);--tb-line:#3a3f7a;--tb-ttl:#3b2a9a;--tb-btnc:#2b1f7a}
+.th-battle .cab{padding:8px 24px 10px;border-radius:14px 14px 8px 8px;gap:6px;box-shadow:0 0 0 2px rgba(95,243,255,.35),0 0 34px rgba(150,100,255,.45),0 10px 24px rgba(0,0,0,.6)}
+.ktop{height:28px;display:flex;align-items:center;justify-content:center;gap:16px;border-bottom:1px solid rgba(95,243,255,.25)}
+.ktop .kl{font-family:var(--f-led);font-weight:900;font-size:25px;letter-spacing:12px;color:#f1eeff;text-shadow:0 0 8px #a46bff,0 0 18px #5ff3ff}
+.ktop .ks{font-family:var(--f-min);font-weight:800;font-size:15px;letter-spacing:6px;color:#c9b8ff}
+.ledbar{position:absolute;top:30px;bottom:60px;width:8px;border-radius:4px;background:linear-gradient(180deg,#5ff3ff,#a46bff 30%,#5ff3ff 60%,#a46bff);box-shadow:0 0 12px #a46bff}
 .ledbar.hot{animation:flash .3s steps(2) infinite}
-.lcdwrap{padding:8px;border-radius:16px;background:linear-gradient(180deg,#fff 0%,#b9bdc6 45%,#eef0f3 55%,#a3a8b2 100%)}
-.lcd2{position:relative;height:270px;border-radius:8px;overflow:hidden;background:#9fd8ff}
-.th-battle .rwin{border-radius:0;background:#0d0d10;padding:6px}
+.lcdwrap{padding:7px;border-radius:10px;background:linear-gradient(180deg,#8a90b8 0%,#2a2f52 45%,#5a6090 55%,#1d2140 100%)}
+.lcd2{position:relative;height:250px;border-radius:4px;overflow:hidden;background:#070a1c}
+.th-battle .rwin{border-radius:0;background:#05060e;padding:6px}
 .th-battle .reel{border-radius:0}
-.th-battle .side.l{background:#fff;border:4px solid #ffb37a;margin-top:50px}.th-battle .side.l h3{color:#c2410c;font-size:14px}
-.th-battle .side.r{background:#2a1408;color:#f5cfb4;margin-top:50px}.th-battle .side.r .dat{background:#1a0c04}.th-battle .side.r .dat b{color:#ffb02e}
-.trust{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.trust i{width:22px;height:22px;border-radius:6px;flex-shrink:0}
-.push{width:64px;height:64px;border-radius:50%;border:4px solid #ffd9a8;background:radial-gradient(circle at 35% 30%,#fff 0%,#ffe066 25%,#ff9f1c 70%,#b35c00 100%);color:#4a2600;font-size:11px;font-weight:800}
+.th-battle .side.l{background:#0d1130;border:1px solid rgba(95,243,255,.4);border-radius:0;color:#cfd6ff;margin-top:50px;font-family:var(--f-chic)}
+.th-battle .side.l h3{color:#5ff3ff;font-family:var(--f-chic);font-weight:700;font-size:14px;letter-spacing:2px}
+.th-battle .side.r{background:#070915;border-top:3px solid #a46bff;border-radius:0;color:#9fa8e0;margin-top:50px}.th-battle .side.r .dat{background:#121633;border-radius:0}.th-battle .side.r .dat b{color:#5ff3ff}
+.th-battle .side .row,.th-battle .side .dat{border-color:rgba(255,255,255,.1)}
+.th-battle .stopb{border-color:#3a3f7a;background:radial-gradient(circle at 35% 30%,#3a3f6a,#12152e);color:#6a70a0}
+.th-battle .stopb.on{border-color:#bff9ff;background:radial-gradient(circle at 35% 30%,#fff 0%,#9ff7ff 30%,#2fb5d6 100%);color:#08122a;box-shadow:0 0 16px rgba(95,243,255,.9)}
+.push{width:64px;height:64px;border-radius:50%;border:4px solid #d8c8ff;background:radial-gradient(circle at 35% 30%,#fff 0%,#c9a8ff 25%,#8a4dff 70%,#3a1a8a 100%);color:#fff;font-size:11px;font-weight:800;text-shadow:0 1px 2px #2a0a6a}
 .push.ready{animation:pushg .5s ease-in-out infinite alternate}
-@keyframes pushg{to{box-shadow:0 0 26px #ffd23f,0 0 50px #ff9f1c;transform:scale(1.08)}}
+@keyframes pushg{to{box-shadow:0 0 26px #c9a8ff,0 0 50px #8a4dff;transform:scale(1.08)}}
+/* KAGUYAの液晶 */
+.kbg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 115%,#2c1f70 0%,#0b0d26 55%,#05060f 100%)}
+.ktint{position:absolute;inset:0;mix-blend-mode:screen}
+.kmoon{position:absolute;right:64px;top:20px;width:112px;height:112px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fffdf0 0%,#e9e3ff 55%,#a99cff 100%);box-shadow:0 0 34px #b9b0ff,0 0 80px #6a4cff;opacity:.92}
+.kgrid{position:absolute;left:-30%;right:-30%;bottom:-6px;height:96px;background-image:linear-gradient(rgba(95,243,255,.45) 1px,transparent 1px),linear-gradient(90deg,rgba(164,107,255,.45) 1px,transparent 1px);background-size:44px 22px;transform:perspective(180px) rotateX(58deg);transform-origin:50% 100%;animation:kgrid 1.4s linear infinite}
+@keyframes kgrid{to{background-position:0 22px}}
+.kimg{position:absolute;pointer-events:none;-webkit-user-drag:none}
+.breathe{animation:breathe 2.6s ease-in-out infinite alternate;transform-origin:50% 100%}@keyframes breathe{to{transform:scale(1.015) translateY(-2px)}}
+.kslideL{animation:kslideL .45s cubic-bezier(.2,1.3,.4,1) both}@keyframes kslideL{from{transform:translateX(-110%);opacity:0}}
+.kslideR{animation:kslideR .45s cubic-bezier(.2,1.3,.4,1) both}@keyframes kslideR{from{transform:translateX(110%);opacity:0}}
+.kzoom{animation:kzoom .6s cubic-bezier(.2,1.4,.4,1) both}@keyframes kzoom{from{transform:scale(.4);opacity:0}}
+.kface{position:absolute;width:142px;height:220px;border:3px solid #5ff3ff;overflow:hidden;transform:skewX(-7deg);box-shadow:0 0 18px rgba(95,243,255,.8);background:#000}
+.kface img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;transform:skewX(7deg) scale(1.08)}
+.kface.cut{animation:kface .4s cubic-bezier(.2,1.4,.4,1) both}@keyframes kface{from{transform:skewX(-7deg) translateX(-140%)}}
+.klogo{position:absolute;font-family:var(--f-led);font-weight:900;font-size:34px;letter-spacing:10px;color:#f1eeff;text-shadow:0 0 8px #a46bff,0 0 22px #5ff3ff}
+.ksub{position:absolute;font-family:var(--f-min);font-weight:800;font-size:16px;letter-spacing:8px;color:#c9b8ff}
+.kflash{position:absolute;inset:0;background:#fff;animation:kflash .5s ease-out forwards;pointer-events:none;z-index:6}@keyframes kflash{to{opacity:0}}
+.krb{position:absolute;inset:0;background:linear-gradient(90deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd,#ff4d6d);background-size:200% 100%;animation:krb 3s linear infinite}@keyframes krb{to{background-position:200% 0}}
+.kdark{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(5,6,15,.92) 0%,rgba(5,6,15,.75) 40%,rgba(5,6,15,0) 75%)}
+.sc .big.neon{text-shadow:0 0 10px #a46bff,0 0 24px #5ff3ff,0 4px 0 #1a0f4a}
+.trust{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.trust i{width:22px;height:22px;border-radius:6px;flex-shrink:0}
 /* 液晶の演出 */
 .sc{position:absolute;inset:0;overflow:hidden}
 .sc .chr{position:absolute}
@@ -584,7 +613,7 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .meter{position:absolute;left:14px;right:14px;bottom:10px;display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:13px;z-index:4}
 .meter .bar{flex:1;height:12px;border-radius:6px;background:rgba(0,0,0,.35);overflow:hidden}
 .meter .bar i{display:block;height:100%;background:linear-gradient(90deg,#3a86ff,#3ddc84,#ff4d6d,#ffd23f)}
-@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb{animation:none!important}}
 </style>
 </head>
 <body>
@@ -636,6 +665,29 @@ const sfx={
   coin:()=>tone(1500,.04,'square',.02),
   push:()=>tone(300,.3,'sawtooth',.05)
 };
+
+/* ---------- 絵と音のファイル(medalgame/sp-assets/) ---------- */
+const ASSET='sp-assets/';
+// 機種ごとのBGM。キラリドロップと機種選びの画面は、曲ができたらここに1行足す
+const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',rocket:'bgm_rocket.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_kaguya.mp3'};
+const BGM_VOL=0.35; // 小さめ
+const bgm={on:(()=>{ try{ return localStorage.getItem('mg.slotpark.bgm')!=='0'; }catch(e){ return true; } })(),el:null,file:null};
+function acx(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume().catch(()=>{}); return AC; }
+// iPadは画面にさわったときでないと音が出ないので、さわるたびに音の準備を確かめる
+document.addEventListener('pointerdown',()=>{ try{ if(AC&&AC.state==='suspended') AC.resume(); if(bgm.el&&bgm.on&&bgm.el.paused&&!document.hidden) bgm.el.play().catch(()=>{}); }catch(e){} },true);
+function bgmPlay(mid){
+  const f=BGM[mid]; if(!f||!bgm.on){ bgmStop(); return; }
+  if(bgm.file===f&&bgm.el){ if(bgm.el.paused&&!document.hidden) bgm.el.play().catch(()=>{}); return; }
+  bgmStop();
+  const a=new Audio(ASSET+f); a.loop=true; a.preload='auto';
+  // iPadは音量の指定がきかないので、Web Audio を通して小さくする
+  try{ const ctx=acx(), src=ctx.createMediaElementSource(a), g=ctx.createGain(); g.gain.value=BGM_VOL; src.connect(g); g.connect(ctx.destination); }catch(e){ a.volume=BGM_VOL; }
+  bgm.el=a; bgm.file=f; a.play().catch(()=>{});
+}
+function bgmStop(){ if(bgm.el){ try{ bgm.el.pause(); bgm.el.removeAttribute('src'); bgm.el.load(); }catch(e){} } bgm.el=null; bgm.file=null; }
+function bgmToggle(){ bgm.on=!bgm.on; try{ localStorage.setItem('mg.slotpark.bgm',bgm.on?'1':'0'); }catch(e){}
+  if(bgm.on) bgmPlay(G.mid); else bgmStop(); const b=$('#tBgm'); if(b){ b.textContent=bgm.on?'♪ ON':'♪ OFF'; b.classList.toggle('gray',!bgm.on); } }
+document.addEventListener('visibilitychange',()=>{ if(!bgm.el) return; if(document.hidden) bgm.el.pause(); else if(bgm.on) bgm.el.play().catch(()=>{}); });
 
 
 /* =========================================================
@@ -762,7 +814,7 @@ async function padMain(){
 }
 const seatA=()=>{const s=G.view&&G.view.seat;return s&&s.g===GID?s.a||0:null};
 const inGame=()=>seatA()!==null&&G.live;
-function msg(h,body,link){ $('#stage').innerHTML=`<div class="msgbox"><div class="card"><h2>${h}</h2><p class="note">${body}</p>${link?`<p style="margin-top:18px"><a class="pbtn go" href="${esc(PAD.indexUrl())}">トップへ</a></p>`:''}</div></div>`; }
+function msg(h,body,link){ bgmStop(); $('#stage').innerHTML=`<div class="msgbox"><div class="card"><h2>${h}</h2><p class="note">${body}</p>${link?`<p style="margin-top:18px"><a class="pbtn go" href="${esc(PAD.indexUrl())}">トップへ</a></p>`:''}</div></div>`; }
 function route(){
   if(G.view===undefined) return;
   if(seatA()===null){ G.auto=false; msg(`${NAME}にはまだ入っていません`,'メダルゲームのトップで、持ち込む枚数を選んでから入ってください。',true); return; }
@@ -773,9 +825,10 @@ function setTheme(mid){ const m=mid&&MBY[mid]; document.body.className='pad '+(m
 function topbarHtml(title){
   return `<div class="topbar">${G.mid?'<button class="tbtn" id="tBackL">機種をかえる</button>':''}<div class="t">${esc(title)}</div><span class="nm">${esc(G.view.n)} さん</span><span class="sp" style="flex:1"></span>
     <span class="bank" id="tBank"></span><span class="cred">持ち込み <b id="tCred">0</b> 枚</span>
-    <button class="tbtn" id="tAdd">貯金から追加</button><button class="tbtn" id="tBack">一部もどす</button><button class="tbtn gray" id="tQuit">やめる</button></div>`;
+    ${G.mid&&BGM[G.mid]?`<button class="tbtn${bgm.on?'':' gray'}" id="tBgm" aria-label="BGMを切りかえる" title="BGM">${bgm.on?'♪ ON':'♪ OFF'}</button>`:''}<button class="tbtn" id="tAdd">貯金から追加</button><button class="tbtn" id="tBack">一部もどす</button><button class="tbtn gray" id="tQuit">やめる</button></div>`;
 }
 function bindTop(){
+  const bg=$('#tBgm'); if(bg) bg.onclick=bgmToggle;
   const b=$('#tBackL'); if(b) b.onclick=()=>whenFree(()=>{ G.auto=false; G.mid=null; openLobby(); },'機種選びにもどります');
   $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>whenFree(()=>amtModal('back'),'「一部もどす」を開きます');
   $('#tQuit').onclick=()=>whenFree(quitNow,'「やめる」を確かめます'); updTop();
@@ -822,12 +875,12 @@ const MINFO={
   rocket:{op:'ボタン1つ・3リール',memo:'ロケットがそろうと発射。80%で連チャンが続き、月まで行ける。',w:4,bet:'1〜100枚',hd:'#cfe8ff',s:['rocket','rocket','rocket']},
   jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
   drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
-  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'メダまるとギンジのバトル。演出の色で期待度がわかる。',w:3,bet:'3〜30枚',hd:'#ffe0c2',s:['seven','replay','bell']}
+  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'KAGUYAと宿敵シロガネのバトル。演出の色で期待度がわかる。',w:3,bet:'3〜30枚',hd:'#0d1030',img:'kg_bust',s:['seven','replay','bell']}
 };
 async function openLobby(){
-  setTheme(null);
+  setTheme(null); bgmStop();
   $('#stage').innerHTML=topbarHtml(NAME)+`<div class="lobby"><h1>どれで遊ぶ？<small>どの機種も、長い目で見て戻ってくるメダルは同じくらい(約95%)。ちがうのは「波の大きさ」と遊び方。</small></h1>
-    <div class="mgrid">${MLIST.map(m=>{const i=MINFO[m.id];return `<button class="mcard" data-m="${m.id}"><div class="hd" style="background:${i.hd}">${i.s.map(k=>sym(k,46)).join('')}</div>
+    <div class="mgrid">${MLIST.map(m=>{const i=MINFO[m.id];return `<button class="mcard" data-m="${m.id}"><div class="hd" style="background:${i.hd}">${i.img?`<img src="${ASSET}${i.img}.webp" alt="" style="width:100%;height:100%;object-fit:cover;object-position:62% 24%">`:i.s.map(k=>sym(k,46)).join('')}</div>
       <div class="bd"><span class="tag ${m.style}">${m.style==='pop'?'ポップ':'シック'}</span><div class="nm">${esc(m.name)}</div><div class="op">${i.op}</div><div class="memo">${i.memo}</div>
       <div class="wave">波 ${[1,2,3,4,5].map(n=>`<i class="${n<=i.w?'on':''}"></i>`).join('')}</div><div class="op">BET ${i.bet}</div>${m.id==='jackpot'?'<div class="jp" id="lobJp">JP —</div>':''}<div class="now" id="now_${m.id}"></div></div></button>`}).join('')}
       <div class="mcard" style="justify-content:center;align-items:center;padding:16px;gap:10px;text-align:center"><div>${chr('happy',110)}</div><div style="font-weight:800">メダまる</div><div class="op">どの台にしようかな？</div></div></div></div>`;
@@ -845,7 +898,7 @@ function screen(theme,cab,left,right){
   $('#stage').innerHTML=`<div class="${theme}" style="position:absolute;inset:0">${topbarHtml(MBY[G.mid].name)}<div class="mscr"><div class="side l">${left}</div><div class="cab" id="cab">${cab}</div><div class="side r">${right}</div></div></div>`;
   bindTop();
 }
-function openMachine(mid){ G.auto=false; const M=MACH[mid]; M.open(); info(mid).then(r=>{ if(r.ok&&G.mid===mid&&M.restore) M.restore(); }); }
+function openMachine(mid){ G.auto=false; const M=MACH[mid]; M.open(); bgmPlay(mid); info(mid).then(r=>{ if(r.ok&&G.mid===mid&&M.restore) M.restore(); }); }
 
 // 結果が決まっているリール(縦に回して止める)
 function makeReel(el,h,w,ss,syms){ el.style.width=w+'px'; el.style.height=(h*3)+'px'; el._h=h; el._ss=ss; el._cur=syms; drawCol(el,syms,0); }
@@ -862,6 +915,10 @@ function spinStop(el,fin,pool,ms){ return new Promise(res=>{
 function winText(parent,text,top){ const d=document.createElement('div'); d.className='winmsg'; d.style.top=(top||120)+'px'; d.textContent=text; parent.appendChild(d); setTimeout(()=>d.remove(),2200); }
 function autoNext(fn){ if(G.auto&&G.mid) setTimeout(()=>{ if(G.auto&&!G.busy&&!G.after) fn(); },450); }
 function toggleAuto(M){ G.auto=!G.auto; M.upd(); if(G.auto&&!G.busy) M.spin(); else if(!G.auto&&G.busy) toast('今の回で止まります'); }
+
+// KAGUYAの絵(先に読みこんでおく)
+const KI=(n,st,cls)=>`<img class="kimg ${cls||''}" src="${ASSET}${n}.webp" alt="" style="${st}">`;
+const KPRE=[]; function kPreload(){ if(KPRE.length) return; ['kg_stand','kg_ready','kg_special','kg_win','kg_lose','kg_bust','sg_ready','kg_face1','kg_face2','kg_face3'].forEach(n=>{ const i=new Image(); i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
 
 /* =========================================================
    機種ごとの作り
@@ -922,19 +979,20 @@ function pachi(mid){ return {
   mid, P:null,
   open(){
     const battle=mid==='battle';
-    const reelsHtml=`<div class="${battle?'':'bezel gold'}" style="${battle?'padding:8px;background:linear-gradient(180deg,#3a3a42,#1a1a1f);border-radius:10px':''}"><div class="rwin" id="rw">${'<div class="reel"></div>'.repeat(3)}${battle?'':'<div class="glare"></div>'}</div></div>`;
+    const reelsHtml=`<div class="${battle?'':'bezel gold'}" style="${battle?'padding:7px;background:linear-gradient(180deg,#2a2f60,#0b0d22);border-radius:6px;box-shadow:inset 0 0 0 1px rgba(95,243,255,.35)':''}"><div class="rwin" id="rw">${'<div class="reel"></div>'.repeat(3)}${battle?'':'<div class="glare"></div>'}</div></div>`;
     const deck=`<div class="deck" style="height:${battle?96:112}px;${battle?'padding:0 16px':''}">${betBox(mid)}
-      <div class="lever"><div class="stick"></div><button id="bLever" aria-label="レバー" style="${battle?'background:radial-gradient(circle at 35% 30%,#fff 0%,#9be7ff 25%,#1e6fc4 70%,#0b3a6e 100%)':''}"></button></div>
+      <div class="lever"><div class="stick"></div><button id="bLever" aria-label="レバー" style="${battle?'background:radial-gradient(circle at 35% 30%,#fff 0%,#c9a8ff 25%,#6a3df0 70%,#2a1270 100%);box-shadow:0 0 14px rgba(164,107,255,.8)':''}"></button></div>
       ${battle?'<button class="push" id="bPush" aria-label="プッシュボタン">PUSH</button>':''}<span style="flex:1"></span>
       ${[0,1,2].map(i=>`<button class="stopb" data-s="${i}" aria-label="${i+1}番目のリールを止める">${battle?'':'止'}</button>`).join('')}</div>`;
     if(battle){
       screen('th-battle',
         `<div class="ledbar" style="left:6px"></div><div class="ledbar" style="right:6px"></div>
+         <div class="ktop"><span class="kl">KAGUYA</span><span class="ks">輝夜</span></div>
          <div class="lcdwrap"><div class="lcd2" id="lcd"></div></div>${reelsHtml}
          ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',3],['GET','ledWin',0]])}${deck}${trayHtml()}`,
-        `<h3>演出の色と期待度</h3>${[['#3a86ff','青','ふつう'],['#2fb36b','緑','チャンス'],['#e63946','赤','アツい'],['#e0b23a','金','激アツ'],['linear-gradient(135deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd)','虹','当たり確定']].map(([c,n,v])=>`<div class="trust"><i style="background:${c}"></i>${n}<span style="margin-left:auto;font-weight:500;font-size:12px;color:#6b4a33">${v}</span></div>`).join('')}
-         <div style="display:flex;justify-content:center;gap:4px">${chr('normal',56)}${chr('rival',56)}</div><p style="text-align:center;color:#6b4a33">メダまる と ライバルのギンジ</p>
-         <p style="color:#6b4a33">レバーで回して、ボタンで止める。当たったら液晶の合図で7(BIG)かBAR(REG)をねらってそろえる。</p>`,
+        `<h3>演出の色と期待度</h3>${[['#3a86ff','青','ふつう'],['#2fb36b','緑','チャンス'],['#e63946','赤','アツい'],['#e0b23a','金','激アツ'],['linear-gradient(135deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd)','虹','当たり確定']].map(([c,n,v])=>`<div class="trust"><i style="background:${c}"></i>${n}<span style="margin-left:auto;font-weight:500;font-size:12px;color:#9fa8e0">${v}</span></div>`).join('')}
+         <div style="display:flex;justify-content:center;align-items:flex-end;gap:4px;margin-top:4px"><img src="${ASSET}kg_stand.webp" alt="" style="height:62px"><img src="${ASSET}sg_ready.webp" alt="" style="height:62px"></div><p style="text-align:center;color:#cfd6ff">KAGUYA と 宿敵シロガネ</p>
+         <p style="color:#9fa8e0">レバーで回して、ボタンで止める。当たったら液晶の合図で7(BIG)かBAR(REG)をねらってそろえる。</p>`,
         `<h3 style="font-family:var(--f-body);font-weight:800;font-size:12px;letter-spacing:3px">DATA</h3><div id="data"></div><p>PUSHボタン:演出のあとに押すと結果がわかる</p>`);
     } else {
       screen('th-oshi',
@@ -954,7 +1012,7 @@ function pachi(mid){ return {
     this.draw();
     $('#bLever').onclick=()=>this.lever(); bindBet(mid,()=>this.P.run.some(x=>x));
     document.querySelectorAll('.stopb').forEach(b=>b.onclick=()=>this.stop(+b.dataset.s));
-    if(battle){ $('#bPush').onclick=()=>this.push(); this.scene('normal'); }
+    if(battle){ kPreload(); $('#bPush').onclick=()=>this.push(); this.scene('normal'); }
     this.upd(); this.drawData();
   },
   restore(){ const s=G.st[mid]||{}; this.lamp(!!s.lampOn); this.drawData();
@@ -1017,28 +1075,30 @@ function pachi(mid){ return {
     this.drawData();
     await finish({a}); this.upd();
   },
-  /* ---- 液晶(メダまるバトルだけ) ---- */
+  /* ---- 液晶(KAGUYAだけ) ---- */
   scene(name,o){ const L=$('#lcd'); if(!L) return; o=o||{}; let h='';
-    const sky='<div style="position:absolute;inset:0;background:#9fd8ff"></div><div style="position:absolute;left:0;right:0;bottom:0;height:70px;background:#7ccf7a"></div><div class="cloud" style="top:30px;width:90px"></div><div class="cloud" style="top:70px;width:60px;animation-delay:-9s"></div>';
-    if(name==='normal') h=sky+`<div class="chr walk" style="left:0;bottom:30px"><div class="bob">${chr('normal',130)}</div></div>`;
-    else if(name==='chance') h=`<div style="position:absolute;inset:0;background:#1fa35c" class="flash"></div><div class="rays"></div><div class="chr" style="left:60px;top:60px">${chr('surprise',150)}</div><div class="big" style="top:96px;left:220px;font-size:56px;text-shadow:0 4px 0 #0b5a2f">CHANCE</div>`;
-    else if(name==='green') h=`<div style="position:absolute;inset:0;background:#2fb36b"></div><div class="rays"></div><div class="chr" style="left:60px;top:60px">${chr('surprise',150)}</div><div class="big" style="top:100px;left:200px;font-size:44px;text-shadow:0 4px 0 #0b5a2f">なにか来る…?</div>`;
-    else if(name==='red') h=`<div style="position:absolute;inset:0;background:#e63946"></div><div class="rays"></div><div class="big" style="top:30px;font-size:64px;text-shadow:0 4px 0 #7a0f17">REACH!</div><div style="position:absolute;left:0;right:0;bottom:30px;display:flex;justify-content:center;gap:10px">${sym('seven',84)}${sym('seven',84)}<span class="shake" style="width:84px;height:84px;border:4px dashed #fff;border-radius:12px"></span></div>`;
-    else if(name==='gold') h=`<div style="position:absolute;inset:0;background:#e0b23a"></div><div class="band"></div><div class="chr cutin" style="left:30px;top:50px">${chr('fire',160)}</div><div class="big cutin" style="top:100px;left:180px;font-size:58px;color:#ffd23f;transform:rotate(-8deg);text-shadow:0 0 14px rgba(255,210,63,.9)">激アツ!!</div>`;
-    else if(name==='battle') h=`<div style="position:absolute;inset:0;background:#ff7a3d"></div><div style="position:absolute;left:0;right:0;bottom:0;height:60px;background:#8a3b12"></div>
-      <div class="hp" style="left:16px"><i id="hp1" style="width:100%;background:#3ddc84"></i></div><div class="hp" style="right:16px"><i id="hp2" style="width:100%;background:#ff4d6d"></i></div>
-      <div class="chr" id="c1" style="left:40px;top:50px"><div class="bob">${chr('fire',170)}</div></div><div class="chr" id="c2" style="right:40px;top:60px">${chr('rival',150)}</div>
-      <div class="big" style="top:96px;font-size:72px;text-shadow:0 5px 0 #b3361f">VS</div>`;
-    else if(name==='rainbow'||name==='bonusStart') h=`<div class="rainbow" style="position:absolute;inset:0"></div><div class="rays"></div><div class="big" style="top:24px;font-size:66px;text-shadow:0 4px 0 #5a1a6e,0 0 18px rgba(255,255,255,.9)">${name==='bonusStart'?(o.type==='big'?'BIG BONUS!!':'REG BONUS!!'):'BONUS!!'}</div><div class="chr bob" style="left:50%;margin-left:-75px;top:100px">${chr('happy',150)}</div>`;
-    else if(name==='aim') h=`<div style="position:absolute;inset:0;background:#2a1408"></div><div class="rays"></div><div class="big" style="top:40px;font-size:52px;color:#ffd23f">${o.held==='reg'?'BAR':'7'}をねらえ!!</div><div style="position:absolute;left:0;right:0;bottom:30px;display:flex;justify-content:center;gap:12px">${[0,1,2].map(()=>sym(o.held==='reg'?'bar':'seven',90)).join('')}</div>`;
-    else if(name==='bonusGame') h=`<div class="rainbow" style="position:absolute;inset:0;opacity:.85"></div><div class="rays"></div><div class="chr walk" style="left:0;bottom:20px"><div class="bob">${chr('happy',120)}</div></div><div class="big" style="top:30px;font-size:46px;text-shadow:0 4px 0 #5a1a6e">BONUS GAME</div><div class="big" style="top:96px;font-size:34px;font-family:var(--f-led);text-shadow:0 3px 0 #5a1a6e">のこり ${o.left??''}</div>`;
-    else if(name==='lose') h=`<div style="position:absolute;inset:0;background:#5d6b85"></div><div class="chr" style="left:50%;margin-left:-70px;top:70px">${chr('sad',140)}</div><div class="big" style="top:24px;font-size:48px">ざんねん…</div>`;
+    const base=(t,moon)=>`<div class="kbg"></div>${t?`<div class="ktint" style="background:${t}"></div>`:''}${moon?'<div class="kmoon"></div>':''}<div class="kgrid"></div>`;
+    const face=(n,st,cut)=>`<div class="kface${cut?' cut':''}" style="${st}"><img src="${ASSET}kg_face${n}.webp" alt=""></div>`;
+    if(name==='normal') h=base('',true)+KI('kg_stand','left:46px;bottom:-4px;height:244px','breathe kidle')+`<div class="klogo" style="right:36px;top:140px">KAGUYA</div><div class="ksub" style="right:58px;top:188px">輝夜 ・ 月下の剣</div>`;
+    else if(name==='chance') h=base('radial-gradient(ellipse at 25% 50%,rgba(176,77,255,.75) 0%,rgba(176,77,255,0) 70%)')+`<div class="kflash"></div><div class="rays"></div>`+face(1,'left:60px;top:16px',true)+`<div class="big neon" style="top:96px;left:240px;font-size:56px">CHANCE</div>`;
+    else if(name==='green') h=base('radial-gradient(ellipse at 30% 60%,rgba(47,179,107,.8) 0%,rgba(47,179,107,0) 70%)')+`<div class="rays"></div>`+KI('kg_ready','left:-24px;bottom:-8px;height:232px','kslideL')+`<div class="big neon" style="top:40px;left:330px;font-size:40px;text-shadow:0 0 12px #2fb36b,0 4px 0 #0b3a20">なにか来る…?</div>`;
+    else if(name==='red') h=base('radial-gradient(ellipse at 50% 40%,rgba(230,57,70,.85) 0%,rgba(230,57,70,.15) 75%)')+`<div class="rays"></div>`+face(3,'left:36px;top:16px',true)+`<div class="big" style="top:26px;left:220px;font-size:60px;text-shadow:0 0 14px #ff3a4f,0 4px 0 #7a0f17">REACH!</div><div style="position:absolute;left:220px;right:0;bottom:26px;display:flex;justify-content:center;gap:10px">${sym('seven',84)}${sym('seven',84)}<span class="shake" style="width:84px;height:84px;border:4px dashed #fff;border-radius:12px"></span></div>`;
+    else if(name==='gold') h=base('radial-gradient(ellipse at 70% 50%,rgba(224,178,58,.9) 0%,rgba(224,178,58,.2) 70%)')+`<div class="kflash"></div><div class="band"></div>`+KI('kg_bust','right:-24px;bottom:-12px;height:272px','kslideR')+`<div class="big" style="top:96px;left:30px;right:auto;font-size:62px;color:#ffd23f;transform:rotate(-8deg);text-shadow:0 0 14px rgba(255,210,63,.9),0 4px 0 #5a3a00">激アツ!!</div>`;
+    else if(name==='battle') h=base('linear-gradient(90deg,rgba(40,90,255,.45) 0%,rgba(0,0,0,0) 45%,rgba(0,0,0,0) 55%,rgba(255,30,60,.5) 100%)')+`
+      <div class="hp" style="left:16px"><i id="hp1" style="width:100%;background:#5ff3ff;box-shadow:0 0 8px #5ff3ff"></i></div><div class="hp" style="right:16px"><i id="hp2" style="width:100%;background:#ff3a4f;box-shadow:0 0 8px #ff3a4f"></i></div>
+      <div class="chr kslideL" id="c1" style="left:-40px;bottom:-10px"><img src="${ASSET}kg_ready.webp" alt="" style="height:206px;display:block"></div>
+      <div class="chr kslideR" id="c2" style="right:-56px;bottom:-10px"><img src="${ASSET}sg_ready.webp" alt="" style="height:216px;display:block"></div>
+      <div class="big neon" style="top:84px;font-size:72px">VS</div>`;
+    else if(name==='rainbow'||name==='bonusStart') h=base('')+`<div class="krb" style="opacity:.6"></div><div class="kdark" style="background:radial-gradient(ellipse at 22% 60%,rgba(5,6,15,.92) 0%,rgba(5,6,15,.7) 30%,rgba(5,6,15,0) 60%)"></div><div class="kflash"></div><div class="rays"></div>`+KI('kg_special','left:60px;bottom:-6px;height:252px','kzoom')+`<div class="big" style="top:78px;left:250px;font-size:58px;text-shadow:0 4px 0 #3a1a6e,0 0 18px rgba(255,255,255,.9)">${name==='bonusStart'?(o.type==='big'?'BIG BONUS!!':'REG BONUS!!'):'BONUS!!'}</div>`;
+    else if(name==='aim') h=base('radial-gradient(ellipse at 50% 30%,rgba(164,107,255,.5) 0%,rgba(164,107,255,0) 70%)')+`<div class="rays"></div>`+face(2,'left:30px;top:16px')+`<div class="big neon" style="top:34px;left:200px;font-size:50px;color:#ffd23f">${o.held==='reg'?'BAR':'7'}をねらえ!!</div><div style="position:absolute;left:200px;right:0;bottom:26px;display:flex;justify-content:center;gap:12px">${[0,1,2].map(()=>sym(o.held==='reg'?'bar':'seven',90)).join('')}</div>`;
+    else if(name==='bonusGame') h=base('')+`<div class="krb" style="opacity:.32"></div><div class="rays"></div>`+KI('kg_win','left:40px;bottom:-4px;height:244px','breathe')+`<div class="big neon" style="top:50px;left:200px;font-size:44px">BONUS GAME</div><div class="big neon" style="top:116px;left:200px;font-size:34px;font-family:var(--f-led)">のこり ${o.left??''}</div>`;
+    else if(name==='lose') h=base('rgba(60,70,100,.55)',true)+KI('kg_lose','left:50%;margin-left:-110px;bottom:-6px;height:230px','')+`<div class="big" style="top:18px;font-size:46px;color:#cfd6ff;text-shadow:0 4px 0 #1a1f40">ざんねん…</div>`;
     L.innerHTML=`<div class="sc">${h}</div>${o.meter!=null?`<div class="meter">期待度<div class="bar"><i style="width:${o.meter}%"></i></div>${o.meter}%</div>`:''}`;
     document.querySelectorAll('.ledbar').forEach(b=>b.classList.toggle('hot',name!=='normal'&&name!=='lose'));
   },
   playFx(d){ const P=this.P, f=d.fx||{scene:'normal'}; P.fxHit=!!f.hit; P.revealed=true; P.fx=f.scene;
     if(f.scene==='bonusGame'){ this.scene('bonusGame',{left:d.bonus?d.bonus.left:''}); return; }
-    if(f.scene==='normal'){ if(this.held&&G.st.battle&&G.st.battle.lampOn) this.scene('aim',{held:this.held}); else if(!$('#lcd .walk')) this.scene('normal'); return; }
+    if(f.scene==='normal'){ if(this.held&&G.st.battle&&G.st.battle.lampOn) this.scene('aim',{held:this.held}); else if(!$('#lcd .kidle')) this.scene('normal'); return; }
     if(f.scene==='battleWin'||f.scene==='battleLose') this.scene('battle',{meter:f.scene==='battleWin'?72:40});
     else this.scene(f.scene,{meter:{green:25,chance:20,red:45,gold:80,rainbow:100}[f.scene]});
     if(f.scene!=='chance'&&f.scene!=='green') P.revealed=false;
