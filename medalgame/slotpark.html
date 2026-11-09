@@ -24,13 +24,14 @@
   const payFrac = (st, v) => { const t = v + (st.frac || 0); const p = Math.floor(t + 1e-9); st.frac = t - p; return p; };
 
   const MACHINES = [
-    { id: 'classic', name: 'フルーツクラシック', style: 'pop', bets: [1, 2, 3] },
-    { id: 'oshi', name: '目押しチャレンジ', style: 'chic', bets: [3] },
-    { id: 'wide', name: 'ワイドライン', style: 'pop', bets: [1, 2, 3, 4, 5] },
-    { id: 'rocket', name: '連チャンロケット', style: 'pop', bets: [2, 3, 4, 5] },
-    { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bets: [5] },
-    { id: 'drop', name: 'キラリドロップ', style: 'pop', bets: [1, 2, 3, 5, 10] },
-    { id: 'battle', name: 'メダまるバトル', style: 'pop', bets: [3] }
+    // BETは min〜max を step きざみで自由に選べる。配当はBETに比例するので、還元率はBETに関係なく同じ
+    { id: 'classic', name: 'フルーツクラシック', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
+    { id: 'oshi', name: '目押しチャレンジ', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } },
+    { id: 'wide', name: 'ワイドライン', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
+    { id: 'rocket', name: '連チャンロケット', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 2 } },
+    { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bet: { min: 5, max: 50, step: 5, def: 5 } },
+    { id: 'drop', name: 'キラリドロップ', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
+    { id: 'battle', name: 'メダまるバトル', style: 'pop', bet: { min: 3, max: 30, step: 3, def: 3 } }
   ];
 
   /* ---------- ① フルーツクラシック ---------- */
@@ -62,9 +63,10 @@
   function classicSpin(st, bet) {
     let r = R(), out = null, mult = 0;
     for (const o of C_OUT) { if (r < o[2]) { out = o[0]; mult = o[1]; break; } r -= o[2]; }
-    const line = out ? ri(bet) : -1;
+    const lines = Math.min(bet, 3); // 光るラインは最大3本(BETが多いほど配当が大きい)
+    const line = out ? ri(lines) : -1;
     const pay = mult * bet;
-    return { pay, bet, out, line, grid: classicGrid(out, line, bet) };
+    return { pay, bet, out, line, lines, grid: classicGrid(out, line, lines) };
   }
 
   /* ---------- ② 目押し / ⑦ メダまるバトル（パチスロ） ---------- */
@@ -73,12 +75,13 @@
   const P_PROB = { replay: 1 / 7.3, bell: 1 / 7.5, cherry: 1 / 36, big: 1 / 280, reg: 1 / 400 };
   const P_PAY = { replay: 3, bell: 8, cherry: 4, bonusGame: 12 };
   const P_GAMES = { big: 30, reg: 12 };
-  function pachiLever(st) {
-    const res = { bet: 3, pay: 0, newHit: false };
+  function pachiLever(st, bet) {
+    const k = Math.max(1, Math.round(bet / 3)); st.k = k;
+    const res = { bet: 3 * k, pay: 0, newHit: false, k };
     if (st.bonus) {
-      st.bonus.left--; res.flag = 'bonusGame'; res.pay = P_PAY.bonusGame;
+      st.bonus.left--; res.flag = 'bonusGame'; res.pay = P_PAY.bonusGame * k;
       res.bonus = { type: st.bonus.type, left: st.bonus.left };
-      st.bonusGet = (st.bonusGet || 0) + res.pay - 3;
+      st.bonusGet = (st.bonusGet || 0) + res.pay - 3 * k;
       res.bonusGet = st.bonusGet;
       if (st.bonus.left <= 0) { res.bonusEnd = true; st.bonus = null; st.bonusGet = 0; }
       st.last = null; res.held = st.held || null; return res;
@@ -91,14 +94,14 @@
       else if (b < P_PROB.big + P_PROB.reg) { st.held = 'reg'; res.newHit = true; }
     }
     res.flag = flag; res.held = st.held || null;
-    if (flag === 'replay') res.pay = P_PAY.replay;
-    if (flag === 'bell') res.pay = P_PAY.bell;
+    if (flag === 'replay') res.pay = P_PAY.replay * k;
+    if (flag === 'bell') res.pay = P_PAY.bell * k;
     st.last = flag; st.games = (st.games || 0) + 1;
     return res;
   }
   function pachiStop(st, d) {
     const res = { bet: 0, pay: 0 };
-    if (st.last === 'cherry' && d.cherryOk) res.pay = P_PAY.cherry;
+    if (st.last === 'cherry' && d.cherryOk) res.pay = P_PAY.cherry * (st.k || 1);
     st.last = null;
     if (d.aligned && st.held && !st.bonus) {
       st.bonus = { type: st.held, left: P_GAMES[st.held] }; st.bonusGet = 0;
@@ -221,15 +224,16 @@
     return a;
   }
   function jackpotSpin(st, bet, jp) {
-    jp.add(J_ADD);
+    const k = Math.max(1, Math.round(bet / J_BET)); // BET5枚ごとに1倍:JPへの積み立てと7・7・7の当たりやすさがk倍
+    jp.add(J_ADD * k);
     let r = R(), out = null, mult = 0;
-    for (const o of J_OUT) { if (r < o[2]) { out = o[0]; mult = o[1]; break; } r -= o[2]; }
-    let pay = mult * J_BET;
+    for (const o of J_OUT) { const pr = o[0] === 'jp' ? o[2] * k : o[2]; if (r < pr) { out = o[0]; mult = o[1]; break; } r -= pr; }
+    let pay = mult * J_BET * k;
     if (out === 'jp') { pay = jp.take(); }
     const reach = !out && R() < 0.06; // 7・7のリーチ演出（ハズレ）
     const reels = jpReels(out);
     if (reach) { reels[0] = 'seven'; reels[1] = 'seven'; reels[2] = ['bell', 'lemon'][ri(2)]; }
-    return { bet: J_BET, pay, out, reels, reach: reach || out === 'jp' || out === 'seven2', pool: jp.get() };
+    return { bet: J_BET * k, pay, out, reels, reach: reach || out === 'jp' || out === 'seven2', pool: jp.get() };
   }
 
   /* ---------- ⑥ キラリドロップ（3×3 連鎖） ---------- */
@@ -274,16 +278,17 @@
     const m = MACHINES.find((x) => x.id === mid);
     if (!m) throw new Error('機種がありません');
     const needBet = !(mid === 'wide' && st.fs > 0) && !(mid === 'rocket' && st.chain) && !(d.type === 'stop');
-    if (needBet && m.bets.indexOf(bet) < 0 && mid !== 'oshi' && mid !== 'battle' && mid !== 'jackpot') throw new Error('BETがちがいます');
+    const B = m.bet;
+    if (needBet && (!(bet >= B.min && bet <= B.max) || bet % B.step)) throw new Error('BETは' + B.min + '〜' + B.max + '枚' + (B.step > 1 ? '(' + B.step + '枚きざみ)' : '') + 'で選んでください');
     switch (mid) {
       case 'classic': return classicSpin(st, bet);
       case 'wide': return wideSpin(st, bet);
       case 'rocket': return rocketSpin(st, bet);
-      case 'jackpot': return jackpotSpin(st, J_BET, ctx.jp);
+      case 'jackpot': return jackpotSpin(st, bet, ctx.jp);
       case 'drop': return dropSpin(st, bet);
       case 'oshi': case 'battle': {
         if (d.type === 'stop') return pachiStop(st, d);
-        const res = pachiLever(st);
+        const res = pachiLever(st, bet);
         if (mid === 'battle') { res.fx = battleEffect(res); if (res.newHit) res.lamp = true; }
         else if (res.newHit) res.lamp = R() < 0.6; // 目押し：告知ランプ（すぐ光る／あとで光る）
         if (mid === 'oshi' && !res.newHit && st.held && !st.lampOn) { if (R() < 0.35) res.lamp = true; }
@@ -299,8 +304,6 @@
     if (d.type === 'stop') return 0;
     if (mid === 'wide' && st.fs > 0) return 0;
     if (mid === 'rocket' && st.chain) return 0;
-    if (mid === 'oshi' || mid === 'battle') return 3;
-    if (mid === 'jackpot') return J_BET;
     return d.bet | 0;
   }
 
@@ -487,6 +490,16 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .th-wide .hl{position:absolute;border-radius:10px;box-shadow:0 0 0 3px #ffcf3f,0 0 14px #ffcf3f;background:rgba(255,243,196,.35);pointer-events:none;animation:blink .4s steps(1) 4}
 .th-wide .side.l{background:#fff;border:4px solid #c4a5ff;margin-top:120px}.th-wide .side.l h3{color:#7c3aed}.th-wide .side .v{color:#6d28d9}
 .th-wide .side.r{background:#24183d;color:#d6c7f5;margin-top:120px}.th-wide .side.r .dat{background:#150c26}.th-wide .side.r .dat b{color:#ffcf3f}
+/* BETの枚数(どの機種も共通):−/＋/MAX と、数字を押すと入力 */
+.betbox{display:flex;align-items:center;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.28);flex-shrink:0}
+.betbox .bb{width:46px;height:52px;border-radius:10px;background:linear-gradient(180deg,#fff,#e8e2da);color:#3a2a3f;font-size:24px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.4)}
+.betbox .bb.max{width:56px;font-size:14px;background:linear-gradient(180deg,#fff3b0,#ffd23f);color:#4a3500}
+.betbox .bb:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.betbox .bv{min-width:92px;height:52px;padding:0 8px;border-radius:10px;background:#100a0c;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.betbox .bv small{font-size:10px;font-weight:800;letter-spacing:2px;color:#d8c8cc}
+.betbox .bv b{font-family:var(--f-led);font-size:26px;font-weight:900;color:var(--led,#ff4a2e);text-shadow:0 0 8px var(--led,#ff4a2e)}
+.betbox button:disabled{opacity:.45}
+.auto.on::after{content:" ■"}
 .betsel{width:58px;height:56px;border-radius:10px;font-family:var(--f-led);font-size:21px;font-weight:900;border:3px solid #c4a5ff;background:linear-gradient(180deg,#fff,#e3d2ff);color:#4c1d95;box-shadow:0 4px 0 #3b1f8a}
 .betsel.sel{border-color:#fff;background:linear-gradient(180deg,#fff7c2,#ffcf3f);color:#33204f;box-shadow:0 0 12px #ffcf3f}
 .betsel:disabled{opacity:.5}
@@ -704,7 +717,38 @@ function hostRender(){
    iPad
    ========================================================= */
 let PAD=null;
-const G={view:undefined,live:true,mid:null,busy:false,cred:0,hold:false,auto:false,jp:0,st:{},bet:{classic:1,wide:1,rocket:2,drop:1}};
+const G={view:undefined,live:true,mid:null,busy:false,cred:0,hold:false,auto:false,jp:0,st:{},bet:{},after:null};
+try{ Object.assign(G.bet,JSON.parse(localStorage.getItem('mg.slotpark.bet'))||{}); }catch(e){}
+MLIST.forEach(m=>{ const B=m.bet, v=+G.bet[m.id]; G.bet[m.id]=(v>=B.min&&v<=B.max&&!(v%B.step))?v:B.def; });
+// BETの枚数をえらぶ部品
+function betBox(mid){ return `<div class="betbox" id="betbox"><button class="bb" data-bm="-" aria-label="BETを減らす">−</button><button class="bv" id="betVal" aria-label="BETの枚数を入力する"><small>BET</small><b id="betNum">${G.bet[mid]}</b></button><button class="bb" data-bm="+" aria-label="BETを増やす">＋</button><button class="bb max" data-bm="max">MAX</button></div>`; }
+function setBet(mid,v){ const B=MBY[mid].bet; v=Math.round(v/B.step)*B.step; G.bet[mid]=Math.max(B.min,Math.min(B.max,v));
+  try{ localStorage.setItem('mg.slotpark.bet',JSON.stringify(G.bet)); }catch(e){} updTop(); }
+function bindBet(mid,locked){ const B=MBY[mid].bet;
+  document.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{ if(locked&&locked()) return toast('いまはBETを変えられません'); let v=G.bet[mid];
+    if(b.dataset.bm==='+') v+=B.step; else if(b.dataset.bm==='-') v-=B.step; else v=Math.max(B.min,Math.min(B.max,Math.floor(G.cred/B.step)*B.step));
+    setBet(mid,v); });
+  $('#betVal').onclick=()=>{ if(locked&&locked()) return toast('いまはBETを変えられません'); betModal(mid); }; }
+function updBet(mid,locked,shown){ const n=$('#betNum'); if(!n) return; n.textContent=shown??G.bet[mid]; const l=$('#ledBet'); if(l) l.textContent=shown??G.bet[mid];
+  document.querySelectorAll('#betbox button').forEach(b=>b.disabled=!!locked); }
+function betModal(mid){
+  const B=MBY[mid].bet; let amt=G.bet[mid];
+  const pre=(B.step===1?[1,2,3,5,10,20,50,100]:B.step===3?[3,6,9,15,30]:[5,10,20,30,50]).filter(n=>n<=B.max);
+  const box=document.createElement('div'); box.className='msgbox'; box.style.background='rgba(40,20,30,.45)'; box.style.zIndex=50; $('#stage').appendChild(box);
+  box.innerHTML=`<div class="card" style="width:560px"><h2>BETの枚数</h2><p class="note">1回あたり ${B.min}〜${B.max}枚${B.step>1?`(${B.step}枚きざみ)`:''}。BETを増やすと、当たったときの配当も同じ倍率で増えます。</p>
+    <div style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="bIn" type="number" inputmode="numeric" value="${amt}" min="${B.min}" max="${B.max}" step="${B.step}" style="flex:1;border:3px solid #ff5c8a;border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:34px;text-align:right"><span>枚</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${pre.map(n=>`<button class="pbtn" data-q="${n}">${n}枚</button>`).join('')}</div>
+    <p id="bErr" style="color:#d63c5e;font-weight:800;min-height:1.4em"></p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="pbtn" id="bNo">やめる</button><button class="pbtn go" id="bGo">決める</button></div></div>`;
+  const inp=box.querySelector('#bIn');
+  box.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ inp.value=b.dataset.q; });
+  box.querySelector('#bNo').onclick=()=>box.remove();
+  box.querySelector('#bGo').onclick=()=>{ const v=Math.floor(+inp.value||0);
+    if(v<B.min||v>B.max||v%B.step){ box.querySelector('#bErr').textContent=`${B.min}〜${B.max}枚${B.step>1?`の${B.step}枚きざみ`:''}で入れてください`; return; }
+    setBet(mid,v); box.remove(); };
+}
+// 回っているあいだに押されたボタンは、AUTOを止めて、今の回が終わってから実行する
+function whenFree(fn,label){ if(!G.busy) return fn(); const wasAuto=G.auto; G.auto=false; G.after=fn; if(MACH[G.mid]&&MACH[G.mid].upd) try{MACH[G.mid].upd()}catch(e){}
+  toast(wasAuto?`AUTOを止めました。今の回が終わったら${label}`:`今の回が終わったら${label}`); }
 function fit(){ const s=Math.min(innerWidth/1180,innerHeight/820), st=$('#stage'); if(!st) return;
   st.style.transform=`scale(${s})`; st.style.left=((innerWidth-1180*s)/2)+'px'; st.style.top=((innerHeight-820*s)/2)+'px'; }
 async function padMain(){
@@ -732,11 +776,12 @@ function topbarHtml(title){
     <button class="tbtn" id="tAdd">貯金から追加</button><button class="tbtn" id="tBack">一部もどす</button><button class="tbtn gray" id="tQuit">やめる</button></div>`;
 }
 function bindTop(){
-  const b=$('#tBackL'); if(b) b.onclick=()=>{ if(G.busy) return toast('回っているあいだは変えられません'); G.auto=false; G.mid=null; openLobby(); };
-  $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>{ if(G.busy) return toast('回っているあいだはもどせません'); amtModal('back'); };
-  $('#tQuit').onclick=async()=>{ if(G.busy) return toast('回っているあいだはやめられません'); G.auto=false;
-    if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。`)) return; const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok) setTimeout(()=>location.href=PAD.indexUrl(),700); };
-  updTop();
+  const b=$('#tBackL'); if(b) b.onclick=()=>whenFree(()=>{ G.auto=false; G.mid=null; openLobby(); },'機種選びにもどります');
+  $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>whenFree(()=>amtModal('back'),'「一部もどす」を開きます');
+  $('#tQuit').onclick=()=>whenFree(quitNow,'「やめる」を確かめます'); updTop();
+}
+async function quitNow(){ G.auto=false;
+    if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。`)) return; const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok) setTimeout(()=>location.href=PAD.indexUrl(),700);
 }
 function updTop(){ const c=$('#tCred'); if(c) c.textContent=yen(G.cred); const b=$('#tBank'); if(b) b.textContent=`貯金 ${yen(G.view.b)}枚`; const l=$('#ledCred'); if(l) l.textContent=G.cred; if(MACH[G.mid]&&MACH[G.mid].upd) try{ MACH[G.mid].upd(); }catch(e){} }
 function amtModal(kind){
@@ -766,17 +811,18 @@ async function countUp(to){ const from=G.cred; if(to<=from){ G.cred=to; updTop()
   for(let i=1;i<=steps;i++){ G.cred=from+Math.round(n*i/steps); updTop(); if(i%2) sfx.coin(); await sleep(dt); }
   const t=$('#tray'); if(t){ t.querySelectorAll('i').forEach((c,i)=>{ c.classList.remove('drop'); void c.offsetWidth; c.style.animationDelay=(i*60)+'ms'; c.classList.add('drop'); }); } }
 function begin(cost){ G.busy=true; G.hold=true; G.cred=Math.max(0,G.cred-cost); updTop(); }
-async function finish(d){ await countUp(d.a); G.hold=false; G.busy=false; G.cred=seatA()??d.a; updTop(); }
+async function finish(d){ await countUp(d.a); G.hold=false; G.busy=false; G.cred=seatA()??d.a; updTop();
+  if(G.after){ const f=G.after; G.after=null; G.auto=false; setTimeout(f,50); } }
 
 /* ---------- ロビー ---------- */
 const MINFO={
-  classic:{op:'ボタン1つ・3リール',memo:'小さな当たりがよく出る。はじめての人向け。BETの数だけラインが光る。',w:1,bet:'1〜3枚',hd:'#c9f2dc',s:['cherry','lemon','bell']},
-  oshi:{op:'レバー＋ボタン3つ',memo:'自分で止めるパチスロ風。ランプが光ったら7かBARをねらえ。',w:3,bet:'3枚',hd:'#e9e3d6',s:['seven','bar','replay']},
-  wide:{op:'ボタン1つ・5リール',memo:'20ライン。ほしが3つでフリースピン10回(配当2倍)。',w:3,bet:'1〜5枚',hd:'#eadcff',s:['star','grape','gem']},
-  rocket:{op:'ボタン1つ・3リール',memo:'ロケットがそろうと発射。80%で連チャンが続き、月まで行ける。',w:4,bet:'2〜5枚',hd:'#cfe8ff',s:['rocket','rocket','rocket']},
-  jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5枚',hd:'#f3e3c3',s:['seven','seven','seven']},
-  drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜10枚',hd:'#ffd9ea',s:['gem','star','cherry']},
-  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'メダまるとギンジのバトル。演出の色で期待度がわかる。',w:3,bet:'3枚',hd:'#ffe0c2',s:['seven','replay','bell']}
+  classic:{op:'ボタン1つ・3リール',memo:'小さな当たりがよく出る。はじめての人向け。BETの数だけラインが光る。',w:1,bet:'1〜100枚',hd:'#c9f2dc',s:['cherry','lemon','bell']},
+  oshi:{op:'レバー＋ボタン3つ',memo:'自分で止めるパチスロ風。ランプが光ったら7かBARをねらえ。',w:3,bet:'3〜30枚',hd:'#e9e3d6',s:['seven','bar','replay']},
+  wide:{op:'ボタン1つ・5リール',memo:'20ライン。ほしが3つでフリースピン10回(配当2倍)。',w:3,bet:'1〜100枚',hd:'#eadcff',s:['star','grape','gem']},
+  rocket:{op:'ボタン1つ・3リール',memo:'ロケットがそろうと発射。80%で連チャンが続き、月まで行ける。',w:4,bet:'1〜100枚',hd:'#cfe8ff',s:['rocket','rocket','rocket']},
+  jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
+  drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
+  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'メダまるとギンジのバトル。演出の色で期待度がわかる。',w:3,bet:'3〜30枚',hd:'#ffe0c2',s:['seven','replay','bell']}
 };
 async function openLobby(){
   setTheme(null);
@@ -814,7 +860,8 @@ function spinStop(el,fin,pool,ms){ return new Promise(res=>{
   setTimeout(()=>el.classList.remove('blur'),ms*.7);
   a.onfinish=()=>{ el._cur=fin; drawCol(el,fin,0); sfx.stop(); res(); }; }); }
 function winText(parent,text,top){ const d=document.createElement('div'); d.className='winmsg'; d.style.top=(top||120)+'px'; d.textContent=text; parent.appendChild(d); setTimeout(()=>d.remove(),2200); }
-function autoNext(fn){ if(G.auto&&G.mid) setTimeout(()=>{ if(G.auto&&!G.busy) fn(); },450); }
+function autoNext(fn){ if(G.auto&&G.mid) setTimeout(()=>{ if(G.auto&&!G.busy&&!G.after) fn(); },450); }
+function toggleAuto(M){ G.auto=!G.auto; M.upd(); if(G.auto&&!G.busy) M.spin(); else if(!G.auto&&G.busy) toast('今の回で止まります'); }
 
 /* =========================================================
    機種ごとの作り
@@ -833,30 +880,29 @@ MACH.classic={
          <div class="lnum" id="lnR"><i>2</i><i>1</i><i>3</i></div>
          <div class="pline" data-l="2" style="top:55px"></div><div class="pline" data-l="1" style="top:151px"></div><div class="pline" data-l="3" style="top:247px"></div><div class="glare"></div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
-       <div class="deck" style="height:112px"><button class="kbtn" id="bOne">BET<br>ONE</button><button class="kbtn" id="bMax">MAX<br>BET</button><button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" aria-label="スピン">SPIN</button></div>
+       <div class="deck" style="height:112px">${betBox('classic')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" aria-label="スピン">SPIN</button></div>
        ${trayHtml()}`,
       `<h3>PAY TABLE</h3>${pays.map(([k,v])=>`<div class="row">${sym(k)}${sym(k)}${sym(k)}<span class="v">${v}</span></div>`).join('')}
        <div class="row">${sym('cherry')}${sym('cherry')}${sym('cherry')}<span class="v">5</span></div><div class="row">${sym('cherry')}<span style="font-size:11px;margin-left:4px">左に1つ</span><span class="v">2</span></div>
-       <p>BETの数だけラインが光る(最大3ライン)。配当はBET1枚あたり。</p>`,
+       <p>BET1〜3枚でラインが1〜3本光る(4枚以上は3本)。配当はBET1枚あたり。BETを増やすと配当も増える。</p>`,
       `<h3 style="font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:2px">WIN 履歴</h3><div id="hist"></div>`);
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     const init=[['bell','cherry','lemon'],['grape','seven','bar'],['lemon','bell','grape']];
     this.reels.forEach((el,i)=>makeReel(el,96,202,84,init[i]));
     this.hist=this.hist||[];
-    $('#bOne').onclick=()=>{ if(G.busy) return; G.bet.classic=G.bet.classic%3+1; this.upd(); };
-    $('#bMax').onclick=()=>{ if(G.busy) return; G.bet.classic=3; this.upd(); this.spin(); };
+    bindBet('classic');
     $('#bSpin').onclick=()=>this.spin();
-    $('#bAuto').onclick=()=>{ G.auto=!G.auto; this.upd(); if(G.auto&&!G.busy) this.spin(); };
+    $('#bAuto').onclick=()=>toggleAuto(this);
     this.upd(); this.drawHist();
   },
-  upd(){ const b=G.bet.classic; if(!$('#ledBet')) return; $('#ledBet').textContent=b;
-    document.querySelectorAll('#lnL i,#lnR i').forEach(i=>i.classList.toggle('on',+i.textContent<=b));
-    document.querySelectorAll('.pline').forEach(p=>{ if(!p.classList.contains('hit')) p.classList.toggle('on',+p.dataset.l<=b); });
+  upd(){ const b=G.bet.classic, ln=Math.min(b,3); if(!$('#ledBet')) return; updBet('classic',false,G.busy&&this.bet?this.bet:b);
+    document.querySelectorAll('#lnL i,#lnR i').forEach(i=>i.classList.toggle('on',+i.textContent<=ln));
+    document.querySelectorAll('.pline').forEach(p=>{ if(!p.classList.contains('hit')) p.classList.toggle('on',+p.dataset.l<=ln); });
     $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||G.cred<b; },
   drawHist(){ const h=$('#hist'); if(h) h.innerHTML=this.hist.map(x=>`<div class="dat"><span>${esc(x.t)}</span><b>+${x.v}</b></div>`).join('')||'<p>まだありません</p>'; },
   async spin(){
     const bet=G.bet.classic; if(G.busy) return; if(G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
-    begin(bet); document.querySelectorAll('.pline').forEach(p=>p.classList.remove('hit')); $('#ledWin').textContent=0; this.upd(); sfx.spin();
+    this.bet=bet; begin(bet); document.querySelectorAll('.pline').forEach(p=>p.classList.remove('hit')); $('#ledWin').textContent=0; this.upd(); sfx.spin();
     spinStart(this.reels,this.pool); const t0=Date.now();
     const d=await play('classic',{bet});
     if(!d){ this.reels.forEach(el=>{ el.getAnimations&&el.firstChild.getAnimations().forEach(a=>a.cancel()); drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); return; }
@@ -877,7 +923,7 @@ function pachi(mid){ return {
   open(){
     const battle=mid==='battle';
     const reelsHtml=`<div class="${battle?'':'bezel gold'}" style="${battle?'padding:8px;background:linear-gradient(180deg,#3a3a42,#1a1a1f);border-radius:10px':''}"><div class="rwin" id="rw">${'<div class="reel"></div>'.repeat(3)}${battle?'':'<div class="glare"></div>'}</div></div>`;
-    const deck=`<div class="deck" style="height:${battle?96:112}px;${battle?'padding:0 16px':''}"><button class="kbtn ${battle?'':'dim'}" id="bMax" style="${battle?'width:80px;height:52px':''}">MAX<br>BET</button>
+    const deck=`<div class="deck" style="height:${battle?96:112}px;${battle?'padding:0 16px':''}">${betBox(mid)}
       <div class="lever"><div class="stick"></div><button id="bLever" aria-label="レバー" style="${battle?'background:radial-gradient(circle at 35% 30%,#fff 0%,#9be7ff 25%,#1e6fc4 70%,#0b3a6e 100%)':''}"></button></div>
       ${battle?'<button class="push" id="bPush" aria-label="プッシュボタン">PUSH</button>':''}<span style="flex:1"></span>
       ${[0,1,2].map(i=>`<button class="stopb" data-s="${i}" aria-label="${i+1}番目のリールを止める">${battle?'':'止'}</button>`).join('')}</div>`;
@@ -894,8 +940,8 @@ function pachi(mid){ return {
       screen('th-oshi',
         `<div class="topper"><div class="logo">目押し挑戦</div><div class="golamp" id="lamp"><i></i>チャンスランプ<i></i></div></div>
          ${reelsHtml}${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',3],['GET','ledWin',0]])}${deck}${trayHtml(8)}`,
-        `<h3>配当</h3>${[['seven','BIG','30ゲームのボーナス'],['bar','REG','12ゲームのボーナス'],['bell','ベル','8枚'],['cherry','チェリー','4枚(左リールに止める)'],['replay','リプレイ','もう1回']].map(([k,n,dd])=>`<div class="row" style="gap:6px">${sym(k)}<div style="display:flex;flex-direction:column"><b style="font-size:13px">${n}</b><span style="font-size:11px;color:#6b665c">${dd}</span></div></div>`).join('')}
-         <p style="color:#6b665c">ランプが光ったらボーナスが当たっている。7かBARをねらって止めよう(4コマまですべって止まる)。</p>`,
+        `<h3>配当</h3>${[['seven','BIG','30ゲームのボーナス'],['bar','REG','12ゲームのボーナス'],['bell','ベル','8枚(BET3枚のとき)'],['cherry','チェリー','4枚(左リールに止める)'],['replay','リプレイ','もう1回']].map(([k,n,dd])=>`<div class="row" style="gap:6px">${sym(k)}<div style="display:flex;flex-direction:column"><b style="font-size:13px">${n}</b><span style="font-size:11px;color:#6b665c">${dd}</span></div></div>`).join('')}
+         <p style="color:#6b665c">BETは3枚きざみ。6枚なら配当も2倍。ランプが光ったらボーナスが当たっている。7かBARをねらって止めよう(4コマまですべって止まる)。</p>`,
         `<h3 style="font-family:var(--f-chic);font-weight:700;font-size:12px;letter-spacing:3px;color:#e6c37a">DATA</h3><div id="data"></div><p style="color:#9a958a">自分のこの台での記録</p>`);
     }
     this.reels=[...$('#rw').querySelectorAll('.reel')];
@@ -906,7 +952,7 @@ function pachi(mid){ return {
       const cells=[]; for(let j=0;j<NS*3;j++) cells.push(STRIP[((NS*3-1-j)%NS+NS)%NS]);
       el.innerHTML=`<div class="col">${cells.map(k=>`<div class="cell" style="height:${h}px">${sym(k,ss)}</div>`).join('')}</div>`; });
     this.draw();
-    $('#bLever').onclick=()=>this.lever(); $('#bMax').onclick=()=>this.lever();
+    $('#bLever').onclick=()=>this.lever(); bindBet(mid,()=>this.P.run.some(x=>x));
     document.querySelectorAll('.stopb').forEach(b=>b.onclick=()=>this.stop(+b.dataset.s));
     if(battle){ $('#bPush').onclick=()=>this.push(); this.scene('normal'); }
     this.upd(); this.drawData();
@@ -925,13 +971,13 @@ function pachi(mid){ return {
     this.draw(); if(any) P.raf=requestAnimationFrame(x=>this.loop(x)); else P.raf=0; },
   upd(){ const P=this.P; if(!P||!$('#bLever')) return; const spinning=P.run.some(x=>x);
     const wait=mid==='battle'&&!P.revealed;
-    $('#bLever').disabled=G.busy||G.cred<3||wait; $('#bMax').disabled=G.busy||G.cred<3||wait;
+    $('#bLever').disabled=G.busy||G.cred<G.bet[mid]||wait; updBet(mid,spinning,spinning&&P.bet?P.bet:G.bet[mid]);
     document.querySelectorAll('.stopb').forEach(b=>{ const i=+b.dataset.s; const on=!!P.res&&P.run[i]&&P.goal[i]==null; b.classList.toggle('on',on); b.disabled=!on; }); },
   async lever(){
-    const P=this.P; if(G.busy||P.run.some(x=>x)||(mid==='battle'&&!P.revealed)) return; if(G.cred<3) return toast('メダルが足りません');
-    begin(3); $('#ledWin').textContent=0; P.res=null; P.stopsSent=false; sfx.spin();
+    const P=this.P; if(G.busy||P.run.some(x=>x)||(mid==='battle'&&!P.revealed)) return; const bet=G.bet[mid]; if(G.cred<bet) return toast('メダルが足りません');
+    P.bet=bet; begin(bet); $('#ledWin').textContent=0; P.res=null; P.stopsSent=false; sfx.spin();
     P.run=[true,true,true]; P.goal=[null,null,null]; P.last=0; if(!P.raf) P.raf=requestAnimationFrame(x=>this.loop(x)); this.upd();
-    const d=await play(mid,{bet:3});
+    const d=await play(mid,{bet});
     if(!d){ for(let i=0;i<3;i++){ P.goal[i]=Math.ceil(P.pos[i]); } setTimeout(()=>{ G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); },600); P.res={flag:'none',fail:true}; return; }
     P.res=d; this.held=d.held; this.lamp(!!d.lampOn);
     if(mid==='battle'&&d.fx) this.playFx(d);
@@ -1027,28 +1073,28 @@ MACH.wide={
       `<div class="topper">${sym('star',44)}<div class="logo">WIDE LINE</div>${sym('gem',44)}</div>
        <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"><b>20 LINES</b><span>ほしが3つでフリースピン</span></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
-       <div class="deck" style="height:106px;gap:9px">${[1,2,3,4,5].map(n=>`<button class="betsel" data-b="${n}">${n}</button>`).join('')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ffe680;--b2:#ffcf3f;--b3:#c99400;--glow:rgba(255,207,63,.9);color:#33204f;text-shadow:none" aria-label="スピン">SPIN</button></div>
+       <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ffe680;--b2:#ffcf3f;--b3:#c99400;--glow:rgba(255,207,63,.9);color:#33204f;text-shadow:none" aria-label="スピン">SPIN</button></div>
        ${trayHtml(6)}`,
-      `<h3>PAY TABLE</h3><p style="color:#5b4a75">5つそろったとき(BET1枚あたり)</p>${['seven','gem','bell','grape','cherry'].map(k=>`<div class="row">${sym(k)}<span style="font-size:11px">×5</span><span class="v">${+(W[k][5]*K).toFixed(1)}</span></div>`).join('')}
+      `<h3>PAY TABLE</h3><p style="color:#5b4a75">5つそろったとき(BET1枚あたり。BETを増やすと配当も増える)</p>${['seven','gem','bell','grape','cherry'].map(k=>`<div class="row">${sym(k)}<span style="font-size:11px">×5</span><span class="v">${+(W[k][5]*K).toFixed(1)}</span></div>`).join('')}
        <div class="row">${sym('star')}<span style="font-size:11px">3つ以上</span><span class="v">FREE</span></div><p style="color:#5b4a75">左のリールから3つ以上つながると当たり。フリースピン中は配当2倍。</p>`,
       `<h3 style="font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:1px">フリースピン</h3><div id="fsd"></div>`);
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     this.reels.forEach((el,i)=>makeReel(el,88,126,74,[this.pool[(i+1)%7],this.pool[(i+3)%7],this.pool[(i+5)%7]]));
-    document.querySelectorAll('.betsel').forEach(b=>b.onclick=()=>{ if(G.busy||this.fs()) return; G.bet.wide=+b.dataset.b; this.upd(); });
-    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>{ G.auto=!G.auto; this.upd(); if(G.auto&&!G.busy) this.spin(); };
+    bindBet('wide',()=>!!this.fs()||(G.busy&&this.wasFs));
+    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
     this.upd();
   },
   fs(){ return (G.st.wide||{}).fs||0; },
   restore(){ this.upd(); },
   upd(){ if(!$('#bSpin')) return; const fs=this.fs(), s=G.st.wide||{};
-    const bet=fs?s.fsBet:G.bet.wide; $('#ledBet').textContent=bet;
-    document.querySelectorAll('.betsel').forEach(b=>{ b.classList.toggle('sel',+b.dataset.b===bet); b.disabled=G.busy||!!fs; });
+    updBet('wide',!!fs,fs?s.fsBet:(G.busy&&this.bet?this.bet:G.bet.wide));
     $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||(!fs&&G.cred<G.bet.wide);
     const bar=$('#fsbar'); bar.classList.toggle('on',!!fs);
     bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffcf3f;color:#33204f">配当 ×2</span>`:'<b>20 LINES</b><span>ほしが3つでフリースピン</span>';
     $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>ほしが3つ以上でフリースピン10回。BETは入ったときのまま。</p>`; },
   async spin(){
     if(G.busy) return; const fs=this.fs(), bet=G.bet.wide; if(!fs&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
+    this.bet=fs?(G.st.wide||{}).fsBet:bet; this.wasFs=!!fs;
     begin(fs?0:bet); $('#ledWin').textContent=0; document.querySelectorAll('.hl').forEach(x=>x.remove()); this.upd(); sfx.spin();
     spinStart(this.reels,this.pool); const t0=Date.now();
     const d=await play('wide',{bet});
@@ -1076,7 +1122,7 @@ MACH.rocket={
       `<div class="topper"><div style="display:flex;align-items:center;gap:10px"><div class="logo">連チャンロケット</div><span style="flex:1"></span><span id="chainTag" class="chainmsg"></span></div><div class="alt" id="alt"></div></div>
        <div class="bezel"><div class="rwin" id="rw">${'<div class="reel"></div>'.repeat(3)}<div class="pline on" style="top:145px;left:8px;right:8px;background:#ff9f1c"></div><div class="glare"></div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['連チャン','ledLv','00'],['WIN','ledWin',0]])}
-       <div class="deck" style="height:112px">${[2,3,4,5].map(n=>`<button class="kbtn" data-b="${n}" style="width:70px">${n}枚</button>`).join('')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><span class="chainmsg" id="dmsg"></span><button class="rbtn" id="bSpin" style="--b1:#ffcf80;--b2:#ff9f1c;--b3:#c06a00;--glow:rgba(255,159,28,.9);color:#2b2140;text-shadow:none" aria-label="スピン">SPIN</button></div>
+       <div class="deck" style="height:112px">${betBox('rocket')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><span class="chainmsg" id="dmsg"></span><button class="rbtn" id="bSpin" style="--b1:#ffcf80;--b2:#ff9f1c;--b3:#c06a00;--glow:rgba(255,159,28,.9);color:#2b2140;text-shadow:none" aria-label="スピン">SPIN</button></div>
        ${trayHtml(9)}`,
       `<h3>しくみ</h3><div style="display:flex;justify-content:center">${sym('rocket',30)}${sym('rocket',30)}${sym('rocket',30)}</div>
        <p>ロケットが3つそろうと発射。そのあとは80%で連チャンが続く(BETなし)。上に行くほど配当が大きくなり、10回で月に到着。</p>
@@ -1084,8 +1130,8 @@ MACH.rocket={
       `<h3 style="font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:1px">連チャン記録</h3><div id="rdat"></div>`);
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     this.reels.forEach((el,i)=>makeReel(el,92,220,80,[['star','seven','gem'],['gem','bell','star'],['seven','cherry','bell']][i]));
-    document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{ if(G.busy||this.chain()) return; G.bet.rocket=+b.dataset.b; this.upd(); });
-    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>{ G.auto=!G.auto; this.upd(); if(G.auto&&!G.busy) this.spin(); };
+    bindBet('rocket',()=>!!this.chain());
+    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
     this.upd();
   },
   chain(){ return (G.st.rocket||{}).chain; },
@@ -1095,12 +1141,13 @@ MACH.rocket={
     $('#ledLv').textContent=String(c?c.lv:0).padStart(2,'0');
     $('#chainTag').textContent=c?`連チャン中 ・ 次は +${L[Math.min(10,c.lv+1)]*c.bet}枚`:'';
     $('#dmsg').textContent=c?'BETなしで発射!':'';
-    document.querySelectorAll('[data-b]').forEach(b=>{ b.classList.toggle('sel',+b.dataset.b===(c?c.bet:G.bet.rocket)); b.disabled=G.busy||!!c; });
+    updBet('rocket',!!c,c?c.bet:(G.busy&&this.bet?this.bet:G.bet.rocket));
     $('#bSpin').textContent=c?'発射':'SPIN'; $('#bSpin').disabled=G.busy||(!c&&G.cred<G.bet.rocket);
     $('#bAuto').classList.toggle('on',G.auto);
     $('#rdat').innerHTML=[['いま',c?c.lv+'連':'—'],['前回',s.last?s.last+'連':'—'],['最高',s.best?s.best+'連':'—']].map(([l,v])=>`<div class="dat"><span>${l}</span><b>${v}</b></div>`).join('')+`<p>配当(BETの倍):${L.slice(1).map((x,i)=>(i+1===10?'月':i+1)+'回目 ×'+x).join('、')}</p>`; },
   async spin(){
     if(G.busy) return; const c=this.chain(), bet=G.bet.rocket; if(!c&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
+    this.bet=c?c.bet:bet;
     begin(c?0:bet); $('#ledWin').textContent=0; this.upd(); sfx.spin();
     spinStart(this.reels,this.pool); const t0=Date.now();
     const d=await play('rocket',{bet});
@@ -1115,7 +1162,7 @@ MACH.rocket={
     else if(d.moon){ sfx.big(); winText(rw,`月に到着!! 合計 +${d.win}`,110); }
     else if(d.chain&&d.end){ winText(rw,`連チャン終了 合計 +${d.win}`,110); }
     await finish(d); this.upd();
-    if(this.chain()) setTimeout(()=>{ if(!G.busy&&G.mid==='rocket') this.spin(); },1500); else autoNext(()=>this.spin());
+    if(this.chain()) setTimeout(()=>{ if(!G.busy&&G.mid==='rocket'&&!G.after) this.spin(); },1500); else autoNext(()=>this.spin());
   }
 };
 
@@ -1128,24 +1175,24 @@ MACH.jackpot={
       `<div class="topper">${lampsHtml(20,'top:6px')}${lampsHtml(20,'bottom:6px')}<div class="t1">PROGRESSIVE JACKPOT</div><div class="pool" id="pool">${String(G.jp).padStart(7,'0')}</div></div>
        <div class="bezel gold"><div class="rwin" id="rw">${'<div class="reel"></div>'.repeat(3)}<div class="pline on" style="top:147px;left:10px;right:10px;background:#e6c37a;box-shadow:0 0 10px #e6c37a"></div><div class="glare"></div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',5],['WIN','ledWin',0]])}
-       <div class="deck" style="height:106px"><div style="padding:10px 18px;border:1px solid #b08a3e;color:#e6c37a;font-size:14px;letter-spacing:2px;font-family:var(--f-chic)">BET 5</div><button class="auto" id="bAuto" style="border-radius:4px">AUTO</button><span style="flex:1"></span>
+       <div class="deck" style="height:106px">${betBox('jackpot')}<button class="auto" id="bAuto" style="border-radius:4px">AUTO</button><span style="flex:1"></span>
        <button class="rbtn" id="bSpin" style="--b1:#ff8a8a;--b2:#c41e2e;--b3:#6e0b14;--glow:rgba(230,195,122,.7);border-color:#e6c37a;font-family:var(--f-min);font-weight:800" aria-label="スタート">START</button></div>
        ${trayHtml(5)}`,
       `<h3>配当</h3>${[[['seven','seven','seven'],'JACKPOT'],[['bar','bar','bar'],'50枚'],[['seven','seven'],'20枚'],[['bar','bar'],'10枚'],[['cherry'],'5枚']].map(([ks,v])=>`<div class="row">${ks.map(k=>sym(k)).join('')}<span class="v">${v}</span></div>`).join('')}
-       <p style="color:#4f423c">1回まわすごとに1枚がジャックポットに貯まる。7・7・7で全部もらえる。</p>`,
+       <p style="color:#4f423c">BETは5枚きざみ。5枚ごとに1枚がジャックポットに貯まり、7・7・7も当たりやすくなる(10枚なら2倍)。7・7・7で全部もらえる。ほかの配当はBET5枚のとき。</p>`,
       `<h3 style="font-family:var(--f-chic);font-weight:700;font-size:12px;letter-spacing:3px;color:#e6c37a">DATA</h3><div id="jdat"></div><p>当たっても表示は自分の画面だけ</p>`);
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     this.reels.forEach((el,i)=>makeReel(el,92,200,80,[['bar','seven','cherry'],['cherry','bell','bar'],['seven','lemon','cherry']][i]));
-    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>{ G.auto=!G.auto; this.upd(); if(G.auto&&!G.busy) this.spin(); };
+    bindBet('jackpot'); $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
     this.upd();
   },
   restore(){ this.upd(); },
-  upd(){ if(!$('#bSpin')) return; $('#pool').textContent=String(G.jp).padStart(7,'0'); $('#bSpin').disabled=G.busy||G.cred<5; $('#bAuto').classList.toggle('on',G.auto);
+  upd(){ if(!$('#bSpin')) return; $('#pool').textContent=String(G.jp).padStart(7,'0'); updBet('jackpot',false,G.busy&&this.bet?this.bet:G.bet.jackpot); $('#bSpin').disabled=G.busy||G.cred<G.bet.jackpot; $('#bAuto').classList.toggle('on',G.auto);
     $('#jdat').innerHTML=[['ゲーム数',this.n.g],['リーチ',this.n.reach],['JP',yen(G.jp)]].map(([l,v])=>`<div class="dat"><span>${l}</span><b>${v}</b></div>`).join(''); },
   async spin(){
-    if(G.busy) return; if(G.cred<5){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
-    begin(5); $('#ledWin').textContent=0; this.upd(); sfx.spin(); spinStart(this.reels,this.pool); const t0=Date.now();
-    const d=await play('jackpot',{bet:5});
+    const bet=G.bet.jackpot; if(G.busy) return; if(G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
+    this.bet=bet; begin(bet); $('#ledWin').textContent=0; this.upd(); sfx.spin(); spinStart(this.reels,this.pool); const t0=Date.now();
+    const d=await play('jackpot',{bet});
     if(!d){ this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
     this.n.g++; G.jp=d.out==='jp'?d.pool:d.pool; $('#pool').textContent=String(d.out==='jp'?d.pay:d.pool).padStart(7,'0');
     await sleep(Math.max(0,450-(Date.now()-t0)));
@@ -1168,48 +1215,48 @@ MACH.drop={
       `<div class="topper"><div class="logo">キラリ★ドロップ</div></div>
        <div class="bezel" style="background:linear-gradient(180deg,#fff7dc 0%,#c9a24a 45%,#fff1c9 55%,#b58c32 100%)"><div class="lcd" id="lcd"><div class="tw"><small>TOTAL WIN</small><b id="tw">0</b></div><div class="dgrid" id="dg"></div><div class="odds" id="odds"></div></div></div>
        ${ledsHtml([['BET','ledBet',1],['WIN','ledWin',0],['CREDIT','ledCred',G.cred]])}
-       <div class="deck" style="height:94px;gap:8px">${SP.MACHINES.find(m=>m.id==='drop').bets.map(n=>`<button class="betsel" data-b="${n}" style="border-color:#fff1c9;background:linear-gradient(180deg,#fff,#ffd9ea);color:#880e4f;box-shadow:0 4px 0 #8a1550">${n}</button>`).join('')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span>
+       <div class="deck" style="height:94px;gap:8px">${betBox('drop')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span>
        <button class="rbtn" id="bSpin" style="width:88px;height:88px;--b1:#9be7ff;--b2:#2fa8e0;--b3:#146a96;--glow:rgba(155,231,255,.9);font-size:16px" aria-label="スタート">START</button></div>
        ${trayHtml(7)}`,
       `<h3>あそびかた</h3>${['3×3の8ライン(たて・よこ・ななめ)。1BETで全部有効','そろった絵柄は消える','上から新しい絵柄が落ちてくる','またそろえば連鎖。右のオッズがどんどん上がる','同時に2本以上そろうとCONNECTボーナス'].map((t,i)=>`<div class="how"><i>${i+1}</i><span>${t}</span></div>`).join('')}`,
       `<h3 style="font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:1px">連鎖の記録</h3><div id="ddat"></div>`);
     this.g=this.g||[['grape','bell','lemon'],['cherry','gem','star'],['lemon','grape','bar']];
     this.drawGrid(this.g); this.k=0;
-    document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{ if(G.busy) return; G.bet.drop=+b.dataset.b; this.upd(); });
-    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>{ G.auto=!G.auto; this.upd(); if(G.auto&&!G.busy) this.spin(); };
+    bindBet('drop'); $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
     this.today=this.today||0; this.upd();
   },
   restore(){ this.upd(); },
   drawGrid(g,fallCols){ $('#dg').innerHTML=g.map((row,r)=>row.map((k,c)=>gemHtml(k,fallCols&&fallCols[r+','+c]?'fall':'')).join('')).join(''); },
-  upd(){ if(!$('#bSpin')) return; const bet=G.bet.drop, k=this.k||0, O=SP.consts.D_ODDS, CB=SP.consts.D_COMBO, KK=SP.consts.D_K;
-    $('#ledBet').textContent=bet; document.querySelectorAll('[data-b]').forEach(b=>{ b.classList.toggle('sel',+b.dataset.b===bet); b.disabled=G.busy; });
-    $('#bSpin').disabled=G.busy||G.cred<bet; $('#bAuto').classList.toggle('on',G.auto);
+  upd(){ if(!$('#bSpin')) return; const bet=G.busy&&this.bet?this.bet:G.bet.drop, k=this.k||0, O=SP.consts.D_ODDS, CB=SP.consts.D_COMBO, KK=SP.consts.D_K;
+    updBet('drop',false,bet);
+    $('#bSpin').disabled=G.busy||G.cred<G.bet.drop; $('#bAuto').classList.toggle('on',G.auto);
     const mult=CB[Math.min(k+1,CB.length-1)];
-    $('#odds').innerHTML=`<div class="h">NEXT ODDS ${k?'COMBO '+(k+1):''}</div>`+Object.keys(O).map((s,i)=>`<div class="o ${i===0?'now':''}"><span>${sym(s)}${sym(s)}${sym(s)}</span><span>${Math.round(O[s]*mult*KK*bet*10)/10}</span></div>`).join('');
+    $('#odds').innerHTML=`<div class="h">NEXT ODDS ${k?'COMBO '+(k+1):''}</div>`+Object.keys(O).map((s,i)=>`<div class="o ${i===0?'now':''}"><span>${sym(s)}${sym(s)}${sym(s)}</span><span>${(v=>v>=10?Math.round(v):Math.round(v*10)/10)(O[s]*mult*KK*bet)}</span></div>`).join('');
     const s=G.st.drop||{}; $('#ddat').innerHTML=[['いま',k?k+'連鎖':'—'],['最高',s.best?s.best+'連鎖':'—'],['今日の最高',this.today?'+'+this.today:'—']].map(([l,v])=>`<div class="dat"><span>${l}</span><b>${v}</b></div>`).join('')+'<p>オッズは「BET×連鎖の倍率」。同時に何本もそろうと、その本数倍。</p>'; },
   async spin(){
     if(G.busy) return; const bet=G.bet.drop; if(G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
+    this.bet=bet;
     begin(bet); this.k=0; $('#ledWin').textContent=0; $('#tw').textContent=0; this.upd(); sfx.spin();
     document.querySelectorAll('#dg .gem').forEach((e,i)=>{ e.style.transitionDelay=(i%3)*40+'ms'; e.classList.add('gone'); });
     const t0=Date.now(); const d=await play('drop',{bet});
     if(!d){ this.drawGrid(this.g); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
     await sleep(Math.max(0,350-(Date.now()-t0)));
     const all={}; for(let r=0;r<3;r++) for(let c=0;c<3;c++) all[r+','+c]=1;
-    let tw=0, prev=null; const lcd=$('#lcd');
+    let tw=0, prev=null; const lcd=$('#lcd'), f=G.auto?0.55:1;
     for(let si=0;si<d.steps.length;si++){
       const st=d.steps[si];
       if(si===0) this.drawGrid(st.grid,all);
       else { const fall={}; for(let c=0;c<3;c++){ let n=0; for(let r=0;r<3;r++) if(prev[r+','+c]) n++; for(let r=0;r<n;r++) fall[r+','+c]=1; } this.drawGrid(st.grid,fall); }
-      sfx.stop(); await sleep(si===0?520:480);
+      sfx.stop(); await sleep((si===0?520:480)*f);
       if(!st.hit.length) break;
       const cells=$('#dg').children, clear={};
       st.hit.forEach(h=>SP.consts.D_LINES[h.line].forEach(([r,c])=>{ clear[r+','+c]=1; cells[r*3+c].classList.add('hit'); }));
       this.k=st.combo; tw+=st.pay; $('#tw').textContent=tw; $('#ledWin').textContent=tw; this.upd(); sfx.win();
       const cb=document.createElement('div'); cb.className='combo'; cb.textContent=`COMBO ${st.combo}`; cb.style.top='130px'; lcd.appendChild(cb);
       if(st.connect>1){ const cn=document.createElement('div'); cn.className='connect'; cn.textContent=`CONNECT ×${st.connect}`; lcd.appendChild(cn); setTimeout(()=>cn.remove(),1100); }
-      await sleep(900); cb.remove();
+      await sleep(900*f); cb.remove();
       Object.keys(clear).forEach(k=>{ const [r,c]=k.split(',').map(Number); cells[r*3+c].classList.add('gone'); });
-      await sleep(280); prev=clear;
+      await sleep(280*f); prev=clear;
     }
     this.g=d.steps[d.steps.length-1].grid;
     if(d.combo>=3){ sfx.big(); winText(lcd,`${d.combo}連鎖!! +${d.pay}`,170); }
