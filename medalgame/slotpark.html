@@ -620,7 +620,40 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .meter{position:absolute;left:14px;right:14px;bottom:10px;display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:13px;z-index:4}
 .meter .bar{flex:1;height:12px;border-radius:6px;background:rgba(0,0,0,.35);overflow:hidden}
 .meter .bar i{display:block;height:100%;background:linear-gradient(90deg,#3a86ff,#3ddc84,#ff4d6d,#ffd23f)}
-@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb{animation:none!important}}
+/* KAGUYAのリール(暗い地に光る絵柄) */
+.th-battle .reel{background:linear-gradient(180deg,#0b0f2c 0%,#171d4a 50%,#0b0f2c 100%)}
+.th-battle .reel::after{background:linear-gradient(180deg,rgba(3,4,12,.7) 0%,rgba(3,4,12,0) 26%,rgba(3,4,12,0) 74%,rgba(3,4,12,.7) 100%)}
+.th-battle .reel .cell{border-bottom:1px solid rgba(95,243,255,.08)}
+/* 月夜の荒野(ふだんの液晶) */
+.wsky{position:absolute;inset:0;background:linear-gradient(180deg,#07081f 0%,#1c1650 45%,#4a2c72 72%,#a8577a 92%,#d7807a 100%)}
+.wstars{position:absolute;left:0;right:0;top:0;height:150px;background-image:radial-gradient(1.5px 1.5px at 40px 30px,#fff,transparent),radial-gradient(1px 1px at 130px 70px,#fff,transparent),radial-gradient(1.5px 1.5px at 220px 20px,#dfe6ff,transparent),radial-gradient(1px 1px at 300px 90px,#fff,transparent),radial-gradient(1.5px 1.5px at 390px 44px,#fff,transparent),radial-gradient(1px 1px at 470px 16px,#cfe0ff,transparent),radial-gradient(1px 1px at 560px 110px,#fff,transparent),radial-gradient(1.5px 1.5px at 640px 60px,#fff,transparent);animation:twinkle 3s ease-in-out infinite alternate}
+@keyframes twinkle{to{opacity:.45}}
+.wlay{position:absolute;left:0;right:0;overflow:hidden;pointer-events:none}
+.wtrack{display:flex;width:max-content;height:100%;will-change:transform}
+.wtrack img{display:block;flex-shrink:0;-webkit-user-drag:none}
+.wlay[data-l="near"]{z-index:3}
+.wdust i{position:absolute;left:740px;width:3px;height:3px;border-radius:50%;background:rgba(255,214,200,.55);animation:wdust 3s linear infinite}
+@keyframes wdust{to{transform:translate(-800px,-30px)}}
+.kwalker{position:absolute;z-index:2}
+.kwalker img{display:block;transform-origin:50% 100%}
+.kshadow{position:absolute;left:18%;right:18%;bottom:-4px;height:14px;border-radius:50%;background:rgba(0,0,0,.55);filter:blur(2px);animation:kshadow .34s ease-in-out infinite alternate}
+@keyframes kshadow{to{transform:scaleX(.88);opacity:.75}}
+.kwbob{animation:kwbob .34s ease-in-out infinite alternate}
+@keyframes kwbob{from{transform:translateY(0) rotate(.6deg)}to{transform:translateY(-6px) rotate(-.6deg)}}
+/* 動きの部品 */
+.kfx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.kline{position:absolute;left:0;height:2px;border-radius:1px;background:linear-gradient(90deg,rgba(255,255,255,0),var(--c));animation:kline .4s linear infinite}
+@keyframes kline{from{transform:translateX(780px)}to{transform:translateX(-260px)}}
+.kpetal{position:absolute;top:-16px;width:11px;height:8px;border-radius:70% 0 70% 0;background:#ffc4dc;box-shadow:0 0 4px rgba(255,180,210,.8);animation:kpetal 3.6s linear infinite}
+@keyframes kpetal{from{translate:0 0;rotate:0deg}to{translate:-180px 290px;rotate:600deg}}
+.kspark{position:absolute;bottom:-6px;width:4px;height:4px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c);animation:kspark 1.6s ease-out infinite}
+@keyframes kspark{from{transform:translateY(0);opacity:1}to{transform:translate(-30px,-230px);opacity:0}}
+.kquake{animation:kquake .45s linear}
+@keyframes kquake{10%{transform:translate(-6px,3px)}25%{transform:translate(6px,-4px)}40%{transform:translate(-5px,2px)}55%{transform:translate(4px,-2px)}70%{transform:translate(-2px,1px)}}
+.kpulse{animation:kpulse .7s ease-in-out infinite alternate}
+@keyframes kpulse{to{filter:brightness(1.35);scale:1.04}}
+.kbreath{animation:breathe 1.3s ease-in-out infinite alternate;transform-origin:50% 100%}
+@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb,.wstars,.wdust i,.kwbob,.kshadow,.kline,.kpetal,.kspark,.kquake,.kpulse,.kbreath{animation:none!important}}
 </style>
 </head>
 <body>
@@ -649,6 +682,16 @@ replay:'<circle cx="50" cy="50" r="38" fill="#3a86ff"/><text x="50" y="66" text-
 gem:'<polygon points="26,22 74,22 92,42 50,90 8,42" fill="#4cc9f0" stroke="#0b6e8a" stroke-width="3" stroke-linejoin="round"/><polygon points="26,22 40,42 60,42 74,22" fill="#90e0ef"/><line x1="8" y1="42" x2="92" y2="42" stroke="#0b6e8a" stroke-width="3"/>',
 rocket:'<path d="M50 6C66 20 68 46 64 70L36 70C32 46 34 20 50 6Z" fill="#f1f1f1" stroke="#333355" stroke-width="3"/><circle cx="50" cy="36" r="8" fill="#3a86ff" stroke="#333355" stroke-width="3"/><path d="M36 54L22 74L36 70Z" fill="#e63946"/><path d="M64 54L78 74L64 70Z" fill="#e63946"/><path d="M42 72L50 94L58 72Z" fill="#ff9f1c"/>'
 };
+// KAGUYAのリール絵柄(紅月の7・刀のBAR・鈴・桜・三日月・竹)。光って見えるように、太い半透明の線を下にしいている
+const KSYM={
+seven:'<path d="M66 8A42 42 0 1 0 94 70A34 34 0 1 1 66 8Z" fill="#ffd86b" opacity=".85"/><text x="48" y="84" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="84" fill="none" stroke="#ff2d6a" stroke-width="12" opacity=".35">7</text><text x="48" y="84" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="84" fill="#ff2d55" stroke="#fff" stroke-width="2.5">7</text>',
+bar:'<path d="M12 86L86 14" stroke="#cfd6ff" stroke-width="5" stroke-linecap="round"/><path d="M12 86L24 74" stroke="#2a1270" stroke-width="9" stroke-linecap="round"/><rect x="5" y="31" width="90" height="38" rx="5" fill="#5ff3ff" opacity=".25"/><rect x="9" y="34" width="82" height="32" rx="4" fill="#0b1440" stroke="#5ff3ff" stroke-width="3"/><text x="50" y="59" text-anchor="middle" font-family="Orbitron,monospace" font-weight="900" font-size="24" letter-spacing="2" fill="#e9fdff">BAR</text>',
+bell:'<path d="M50 24V10" stroke="#e63946" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="9" r="5" fill="none" stroke="#e63946" stroke-width="3"/><path d="M44 20L38 30M56 20L62 30" stroke="#e63946" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="58" r="32" fill="#f2c14e" stroke="#8a5a00" stroke-width="3"/><path d="M20 52H80" stroke="#b07a10" stroke-width="3"/><path d="M34 72H66" stroke="#5a3a00" stroke-width="6" stroke-linecap="round"/><circle cx="34" cy="72" r="5" fill="#5a3a00"/><circle cx="66" cy="72" r="5" fill="#5a3a00"/><ellipse cx="38" cy="42" rx="9" ry="6" fill="#fff6c8" opacity=".75"/>',
+cherry:'<g fill="#ffb7d0" stroke="#e0457b" stroke-width="2" stroke-linejoin="round">'+[0,72,144,216,288].map(a=>`<path transform="rotate(${a} 50 52)" d="M50 52C37 40 37 20 45 13L50 20L55 13C63 20 63 40 50 52Z"/>`).join('')+'</g><circle cx="50" cy="52" r="8" fill="#fff0a0"/>'+[0,72,144,216,288].map(a=>`<circle transform="rotate(${a} 50 52)" cx="50" cy="40" r="2" fill="#e0457b"/>`).join(''),
+replay:'<path d="M60 10A40 40 0 1 0 90 66A32 32 0 1 1 60 10Z" fill="#7ab8ff" opacity=".3" transform="translate(-2 2) scale(1.04)"/><path d="M60 10A40 40 0 1 0 90 66A32 32 0 1 1 60 10Z" fill="#9fd0ff" stroke="#eef6ff" stroke-width="2.5"/><polygon points="78,22 80,28 86,30 80,32 78,38 76,32 70,30 76,28" fill="#fff"/><circle cx="70" cy="48" r="2.5" fill="#fff"/>',
+lemon:'<path d="M66 30Q86 18 94 26Q80 36 66 30Z" fill="#7fd68f" stroke="#1e6b36" stroke-width="2"/><rect x="36" y="6" width="26" height="88" rx="7" fill="#4fbf6a" stroke="#1e6b36" stroke-width="3"/><path d="M36 36H62M36 66H62" stroke="#1e6b36" stroke-width="4"/><rect x="41" y="10" width="5" height="80" rx="2" fill="#a8ecb5" opacity=".7"/>'
+};
+const ksym=(k,s)=>`<svg viewBox="0 0 100 100" width="${s||'100%'}" height="${s||'100%'}" aria-hidden="true">${KSYM[k]||SYM[k]||''}</svg>`;
 const sym=(k,s)=>`<svg viewBox="0 0 100 100" width="${s||'100%'}" height="${s||'100%'}" aria-hidden="true">${SYM[k]||''}</svg>`;
 function chr(mood,s){
   const rival=mood==='rival', rim=rival?'#6b7385':'#d9a21b', face=rival?'#c9d0dc':'#ffd84d';
@@ -906,7 +949,7 @@ const MINFO={
   rocket:{op:'ボタン1つ・3リール',memo:'ロケットがそろうと発射。80%で連チャンが続き、月まで行ける。',w:4,bet:'1〜100枚',hd:'#cfe8ff',s:['rocket','rocket','rocket']},
   jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
   drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
-  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'KAGUYAと宿敵シロガネのバトル。演出の色で期待度がわかる。',w:3,bet:'3〜30枚',hd:'#0d1030',img:'kg_bust',s:['seven','replay','bell']}
+  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'月夜の荒野をゆくKAGUYA。宿敵シロガネとのバトルに勝てばボーナス。',w:3,bet:'3〜30枚',hd:'#0d1030',img:'kg_bust',s:['seven','replay','bell']}
 };
 async function openLobby(){
   setTheme(null); bgmPlay('lobby'); G.scr++; G.screen='lobby';
@@ -950,7 +993,18 @@ function toggleAuto(M){ G.auto=!G.auto; M.upd(); if(G.auto&&!G.busy) M.spin(); e
 
 // KAGUYAの絵(先に読みこんでおく)
 const KI=(n,st,cls)=>`<img class="kimg ${cls||''}" src="${ASSET}${n}.webp" alt="" style="${st}">`;
-const KPRE=[]; function kPreload(){ if(KPRE.length) return; ['kg_stand','kg_ready','kg_special','kg_win','kg_lose','kg_bust','sg_ready','sg_bust','sg_attack','sg_lose','sg_win','kg_face1','kg_face2','kg_face3'].forEach(n=>{ const i=new Image(); i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
+const KPRE=[], KOPT={}; function kPreload(){ if(KPRE.length) return; ['kg_stand','kg_ready','kg_special','kg_win','kg_lose','kg_bust','sg_ready','sg_bust','sg_attack','sg_lose','sg_win','kg_face1','kg_face2','kg_face3'].forEach(n=>{ const i=new Image(); i.src=ASSET+n+'.webp'; KPRE.push(i); });
+  // あとから足せる絵(なければ、絵を使わない版で動く)。歩く姿 kg_walk(+まばたき kg_walk_blink)、歩くコマ kg_walk1〜4、荒野の背景 bg_wild_far(遠くの岩山)・bg_wild_near(手前の地面)
+  ['kg_walk','kg_walk_blink','kg_walk1','kg_walk2','kg_walk3','kg_walk4','bg_wild_far','bg_wild_near'].forEach(n=>{ const i=new Image(); i.onload=()=>{ KOPT[n]=i; clearTimeout(KOPT._t); KOPT._t=setTimeout(()=>{ const M=MACH.battle; if(G.mid==='battle'&&!G.busy&&$('#lcd .kidle')) M.scene('normal'); },300); }; i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
+const kWalkN=()=>{ let n=0; while(n<4&&KOPT['kg_walk'+(n+1)]) n++; return n>=2?n:0; };
+// 荒野の背景(絵がないときに使う線画)。左右反転してつなげるので、つなぎ目は気にしなくてよい
+const svgUri=(w,h,body)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${body}</svg>`);
+const WILD={
+  far:{w:800,h:130,src:svgUri(800,130,'<path d="M0 130V70L40 66L60 40L130 38L150 62L210 64L240 80L300 78L320 50L345 30L420 30L440 55L470 58L500 86L560 84L590 60L640 58L660 72L720 74L760 52L800 50V130Z" fill="#2b2160" stroke="#5a48b0" stroke-width="2"/><path d="M60 40L130 38L136 52L70 54Z M345 30L420 30L426 44L352 46Z" fill="#3a2d80"/>')},
+  mid:{w:600,h:100,src:svgUri(600,100,'<path d="M0 100V62Q80 42 160 58T320 52T480 64T600 56V100Z" fill="#1b1540"/><path d="M200 58L198 20M199 40L184 28M199 32L213 18M198 25L190 12" stroke="#1b1540" stroke-width="5" stroke-linecap="round" fill="none"/><rect x="440" y="18" width="10" height="48" fill="#1b1540"/><path d="M436 18H454L450 10H440Z" fill="#1b1540"/><circle cx="445" cy="14" r="2" fill="#5ff3ff"/><ellipse cx="90" cy="56" rx="22" ry="8" fill="#1b1540"/><ellipse cx="540" cy="58" rx="16" ry="7" fill="#1b1540"/>')},
+  ground:{w:400,h:46,src:svgUri(400,46,'<rect width="400" height="46" fill="#120d26"/><rect width="400" height="3" fill="#4a3a8a"/><path d="M20 14L60 20L74 32M150 10L170 24L210 26M260 18L300 14L330 30M340 36L380 30" stroke="#2c2258" stroke-width="2" fill="none"/><circle cx="110" cy="30" r="3" fill="#2c2258"/><circle cx="236" cy="38" r="2" fill="#2c2258"/><circle cx="356" cy="16" r="2.5" fill="#2c2258"/>')},
+  near:{w:900,h:60,src:svgUri(900,60,'<path d="M60 60Q70 30 100 34Q120 22 140 40Q160 36 166 60Z" fill="#07050f"/><path d="M640 60Q646 44 668 46Q684 38 696 60Z" fill="#07050f"/><path d="M300 60L304 40M308 60L314 36M316 60L318 44M760 60L762 46M768 60L774 40" stroke="#07050f" stroke-width="3" stroke-linecap="round"/>')}
+};
 
 /* =========================================================
    機種ごとの作り
@@ -1022,7 +1076,7 @@ function pachi(mid){ return {
          <div class="ktop"><span class="kl">KAGUYA</span><span class="ks">輝夜</span></div>
          <div class="lcdwrap"><div class="lcd2" id="lcd"></div></div>${reelsHtml}
          <div class="ledrow">${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',3],['GET','ledWin',0]])}<button class="auto" id="bAuto">AUTO</button></div>${deck}${trayHtml()}`,
-        `<h3>演出の色と期待度</h3>${[['#3a86ff','青','ふつう'],['#2fb36b','緑','チャンス'],['#e63946','赤','アツい'],['#e0b23a','金','激アツ'],['linear-gradient(135deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd)','虹','当たり確定']].map(([c,n,v])=>`<div class="trust"><i style="background:${c}"></i>${n}<span style="margin-left:auto;font-weight:500;font-size:12px;color:#9fa8e0">${v}</span></div>`).join('')}
+        `<h3>配当</h3>${[['seven','BIG','紅月の7・30ゲーム'],['bar','REG','刀のBAR・12ゲーム'],['bell','鈴','8枚(BET3枚のとき)'],['cherry','桜','4枚(左リールに止める)'],['replay','三日月','リプレイ']].map(([k,n,dd])=>`<div class="row" style="gap:6px">${ksym(k)}<div style="display:flex;flex-direction:column"><b style="font-size:13px">${n}</b><span style="font-size:11px;color:#9fa8e0">${dd}</span></div></div>`).join('')}
          <div style="display:flex;justify-content:center;align-items:flex-end;gap:4px;margin-top:4px"><img src="${ASSET}kg_stand.webp" alt="" style="height:62px"><img src="${ASSET}sg_ready.webp" alt="" style="height:62px"></div><p style="text-align:center;color:#cfd6ff">KAGUYA と 宿敵シロガネ</p>
          <p style="color:#9fa8e0">レバーで回して、ボタンで止める。当たったら液晶の合図で7(BIG)かBAR(REG)をねらってそろえる。</p>`,
         `<h3 style="font-family:var(--f-body);font-weight:800;font-size:12px;letter-spacing:3px">DATA</h3><div id="data"></div><p>PUSHボタン:演出のあとに押すと結果がわかる</p>`);
@@ -1040,7 +1094,7 @@ function pachi(mid){ return {
     this.reels.forEach(el=>{ el.style.width=w+'px'; el.style.height=(h*3)+'px';
       // 3周ぶん、上から下に向かって番号が小さくなるように並べる
       const cells=[]; for(let j=0;j<NS*3;j++) cells.push(STRIP[((NS*3-1-j)%NS+NS)%NS]);
-      el.innerHTML=`<div class="col">${cells.map(k=>`<div class="cell" style="height:${h}px">${sym(k,ss)}</div>`).join('')}</div>`; });
+      const S=battle?ksym:sym; el.innerHTML=`<div class="col">${cells.map(k=>`<div class="cell" style="height:${h}px">${S(k,ss)}</div>`).join('')}</div>`; });
     this.draw();
     $('#bLever').onclick=()=>this.lever(); $('#bAuto').onclick=()=>toggleAuto(this); bindBet(mid,()=>this.P.run.some(x=>x)||!!this.betLock());
     document.querySelectorAll('.stopb').forEach(b=>b.onclick=()=>this.stop(+b.dataset.s));
@@ -1131,28 +1185,60 @@ function pachi(mid){ return {
   scene(name,o){ const L=$('#lcd'); if(!L) return; o=o||{}; let h='';
     const base=(t,moon)=>`<div class="kbg"></div>${t?`<div class="ktint" style="background:${t}"></div>`:''}${moon?'<div class="kmoon"></div>':''}<div class="kgrid"></div>`;
     const face=(n,st,cut)=>`<div class="kface${cut?' cut':''}" style="${st}"><img src="${ASSET}kg_face${n}.webp" alt=""></div>`;
-    if(name==='normal') h=base('',true)+KI('kg_stand','left:46px;bottom:-4px;height:244px','breathe kidle')+`<div class="klogo" style="right:36px;top:140px">KAGUYA</div><div class="ksub" style="right:58px;top:188px">輝夜 ・ 月下の剣</div>`;
-    else if(name==='chance') h=base('radial-gradient(ellipse at 25% 50%,rgba(176,77,255,.75) 0%,rgba(176,77,255,0) 70%)')+`<div class="kflash"></div><div class="rays"></div>`+face(1,'left:60px;top:16px',true)+`<div class="big neon" style="top:96px;left:240px;font-size:56px">CHANCE</div>`;
-    else if(name==='green') h=base('radial-gradient(ellipse at 30% 60%,rgba(47,179,107,.8) 0%,rgba(47,179,107,0) 70%)')+`<div class="rays"></div>`+KI('kg_ready','left:-24px;bottom:-8px;height:232px','kslideL')+`<div class="big neon" style="top:40px;left:330px;font-size:40px;text-shadow:0 0 12px #2fb36b,0 4px 0 #0b3a20">なにか来る…?</div>`;
-    else if(name==='red') h=base('radial-gradient(ellipse at 50% 40%,rgba(230,57,70,.85) 0%,rgba(230,57,70,.15) 75%)')+`<div class="rays"></div>`+KI('sg_bust','left:-44px;bottom:-10px;height:262px','kslideL')+`<div class="big" style="top:26px;left:300px;font-size:60px;text-shadow:0 0 14px #ff3a4f,0 4px 0 #7a0f17">REACH!</div><div style="position:absolute;left:300px;right:0;bottom:26px;display:flex;justify-content:center;gap:10px">${sym('seven',84)}${sym('seven',84)}<span class="shake" style="width:84px;height:84px;border:4px dashed #fff;border-radius:12px"></span></div>`;
-    else if(name==='gold') h=base('radial-gradient(ellipse at 70% 50%,rgba(224,178,58,.9) 0%,rgba(224,178,58,.2) 70%)')+`<div class="kflash"></div><div class="band"></div>`+KI('kg_bust','right:-24px;bottom:-12px;height:272px','kslideR')+`<div class="big" style="top:96px;left:30px;right:auto;font-size:62px;color:#ffd23f;transform:rotate(-8deg);text-shadow:0 0 14px rgba(255,210,63,.9),0 4px 0 #5a3a00">激アツ!!</div>`;
-    else if(name==='battle') h=base('linear-gradient(90deg,rgba(40,90,255,.45) 0%,rgba(0,0,0,0) 45%,rgba(0,0,0,0) 55%,rgba(255,30,60,.5) 100%)')+`
+    const rnd=(a,b)=>a+Math.random()*(b-a);
+    // 動きの部品:流れる線・桜の花びら・火の粉
+    const speed=(c,n)=>`<div class="kfx">${Array.from({length:n||14},()=>`<i class="kline" style="top:${rnd(4,240)|0}px;width:${rnd(80,220)|0}px;--c:${c};animation-duration:${rnd(.28,.5).toFixed(2)}s;animation-delay:-${rnd(0,.5).toFixed(2)}s"></i>`).join('')}</div>`;
+    const petals=n=>`<div class="kfx">${Array.from({length:n||14},()=>`<i class="kpetal" style="left:${rnd(0,760)|0}px;animation-duration:${rnd(2.6,4.6).toFixed(2)}s;animation-delay:-${rnd(0,4).toFixed(2)}s;transform:scale(${rnd(.7,1.3).toFixed(2)})"></i>`).join('')}</div>`;
+    const sparks=(c,n)=>`<div class="kfx">${Array.from({length:n||18},()=>`<i class="kspark" style="left:${rnd(0,700)|0}px;--c:${c};animation-duration:${rnd(1,2.2).toFixed(2)}s;animation-delay:-${rnd(0,2).toFixed(2)}s"></i>`).join('')}</div>`;
+    if(name==='normal'){ // 月夜の荒野を歩く
+      const wn=kWalkN(), one=!wn&&KOPT.kg_walk, src=wn?ASSET+'kg_walk1.webp':one?ASSET+'kg_walk.webp':ASSET+'kg_stand.webp', wh=wn||one?226:236;
+      h=`<div class="wsky"></div><div class="wstars"></div><div class="kmoon" style="right:150px;top:16px;width:78px;height:78px"></div>
+        <div class="wlay" data-l="far"></div><div class="wlay" data-l="mid"></div><div class="wlay" data-l="ground"></div>
+        <div class="wdust">${Array.from({length:12},()=>`<i style="top:${rnd(150,240)|0}px;animation-duration:${rnd(2.4,4.2).toFixed(2)}s;animation-delay:-${rnd(0,4).toFixed(2)}s"></i>`).join('')}</div>
+        <div class="kwalker kidle" style="left:120px;bottom:4px"><div class="kshadow"></div><img id="kWalkImg" class="kwbob" src="${src}" alt="" style="height:${wh}px"></div>
+        <div class="wlay" data-l="near"></div>
+        <div class="klogo" style="right:34px;top:104px;font-size:30px">KAGUYA</div><div class="ksub" style="right:50px;top:146px;font-size:14px">輝夜 ・ 月下の剣</div>`;
+    }
+    else if(name==='chance'){ o.quake=true; h=base('radial-gradient(ellipse at 25% 50%,rgba(176,77,255,.75) 0%,rgba(176,77,255,0) 70%)')+`<div class="kflash"></div><div class="rays"></div>`+speed('rgba(220,190,255,.8)')+petals(16)+face(1,'left:60px;top:16px',true)+`<div class="big neon kpulse" style="top:96px;left:240px;font-size:56px">CHANCE</div>`; }
+    else if(name==='green') h=base('radial-gradient(ellipse at 30% 60%,rgba(47,179,107,.8) 0%,rgba(47,179,107,0) 70%)')+`<div class="rays"></div>`+speed('rgba(140,255,190,.85)',18)+KI('kg_ready','left:-24px;bottom:-8px;height:232px','kslideL')+`<div class="big neon" style="top:40px;left:330px;font-size:40px;text-shadow:0 0 12px #2fb36b,0 4px 0 #0b3a20">なにか来る…?</div>`;
+    else if(name==='red'){ o.quake=true; h=base('radial-gradient(ellipse at 50% 40%,rgba(230,57,70,.85) 0%,rgba(230,57,70,.15) 75%)')+`<div class="rays"></div>`+speed('rgba(255,120,130,.9)',20)+sparks('#ff6a5a',14)+KI('sg_bust','left:-44px;bottom:-10px;height:262px','kslideL')+`<div class="big kpulse" style="top:26px;left:300px;font-size:60px;text-shadow:0 0 14px #ff3a4f,0 4px 0 #7a0f17">REACH!</div><div style="position:absolute;left:300px;right:0;bottom:26px;display:flex;justify-content:center;gap:10px">${ksym('seven',84)}${ksym('seven',84)}<span class="shake" style="width:84px;height:84px;border:4px dashed #fff;border-radius:12px"></span></div>`; }
+    else if(name==='gold'){ o.quake=true; h=base('radial-gradient(ellipse at 70% 50%,rgba(224,178,58,.9) 0%,rgba(224,178,58,.2) 70%)')+`<div class="kflash"></div><div class="rays"></div><div class="band"></div>`+sparks('#ffd23f',26)+KI('kg_bust','right:-24px;bottom:-12px;height:272px','kslideR')+`<div class="big kpulse" style="top:96px;left:30px;right:auto;font-size:62px;color:#ffd23f;transform:rotate(-8deg);text-shadow:0 0 14px rgba(255,210,63,.9),0 4px 0 #5a3a00">激アツ!!</div>`; }
+    else if(name==='battle') h=base('linear-gradient(90deg,rgba(40,90,255,.45) 0%,rgba(0,0,0,0) 45%,rgba(0,0,0,0) 55%,rgba(255,30,60,.5) 100%)')+speed('rgba(255,255,255,.55)',16)+`
       <div class="hp" style="left:16px"><i id="hp1" style="width:100%;background:#5ff3ff;box-shadow:0 0 8px #5ff3ff"></i></div><div class="hp" style="right:16px"><i id="hp2" style="width:100%;background:#ff3a4f;box-shadow:0 0 8px #ff3a4f"></i></div>
-      <div class="chr kslideL" id="c1" style="left:-40px;bottom:-10px"><img src="${ASSET}kg_ready.webp" alt="" style="height:206px;display:block"></div>
-      <div class="chr kslideR" id="c2" style="right:-56px;bottom:-10px"><img src="${ASSET}sg_ready.webp" alt="" style="height:216px;display:block"></div>
-      <div class="big neon" style="top:84px;font-size:72px">VS</div>`;
-    else if(name==='rainbow'||name==='bonusStart') h=base('')+`<div class="krb" style="opacity:.6"></div><div class="kdark" style="background:radial-gradient(ellipse at 22% 60%,rgba(5,6,15,.92) 0%,rgba(5,6,15,.7) 30%,rgba(5,6,15,0) 60%)"></div><div class="kflash"></div><div class="rays"></div>`+KI('kg_special','left:60px;bottom:-6px;height:252px','kzoom')+`<div class="big" style="top:78px;left:250px;font-size:58px;text-shadow:0 4px 0 #3a1a6e,0 0 18px rgba(255,255,255,.9)">${name==='bonusStart'?(o.type==='big'?'BIG BONUS!!':'REG BONUS!!'):'BONUS!!'}</div>`;
-    else if(name==='aim') h=base('radial-gradient(ellipse at 50% 30%,rgba(164,107,255,.5) 0%,rgba(164,107,255,0) 70%)')+`<div class="rays"></div>`+face(2,'left:30px;top:16px')+`<div class="big neon" style="top:34px;left:200px;font-size:50px;color:#ffd23f">${o.held==='reg'?'BAR':'7'}をねらえ!!</div><div style="position:absolute;left:200px;right:0;bottom:26px;display:flex;justify-content:center;gap:12px">${[0,1,2].map(()=>sym(o.held==='reg'?'bar':'seven',90)).join('')}</div>`;
-    else if(name==='bonusGame') h=base('')+`<div class="krb" style="opacity:.32"></div><div class="rays"></div>`+KI('kg_win','left:40px;bottom:-4px;height:244px','breathe')+`<div class="big neon" style="top:50px;left:200px;font-size:44px">BONUS GAME</div><div class="big neon" style="top:116px;left:200px;font-size:34px;font-family:var(--f-led)">のこり ${o.left??''}</div>`;
+      <div class="chr kslideL" id="c1" style="left:-40px;bottom:-10px"><img class="kbreath" src="${ASSET}kg_ready.webp" alt="" style="height:206px;display:block"></div>
+      <div class="chr kslideR" id="c2" style="right:-56px;bottom:-10px"><img class="kbreath" src="${ASSET}sg_ready.webp" alt="" style="height:216px;display:block;animation-delay:-.6s"></div>
+      <div class="big neon kpulse" style="top:84px;font-size:72px">VS</div>`;
+    else if(name==='rainbow'||name==='bonusStart'){ o.quake=true; h=base('')+`<div class="krb" style="opacity:.6"></div><div class="kdark" style="background:radial-gradient(ellipse at 22% 60%,rgba(5,6,15,.92) 0%,rgba(5,6,15,.7) 30%,rgba(5,6,15,0) 60%)"></div><div class="kflash"></div><div class="rays"></div>`+petals(22)+sparks('#fff',20)+KI('kg_special','left:60px;bottom:-6px;height:252px','kzoom')+`<div class="big kpulse" style="top:78px;left:250px;font-size:58px;text-shadow:0 4px 0 #3a1a6e,0 0 18px rgba(255,255,255,.9)">${name==='bonusStart'?(o.type==='big'?'BIG BONUS!!':'REG BONUS!!'):'BONUS!!'}</div>`; }
+    else if(name==='aim') h=base('radial-gradient(ellipse at 50% 30%,rgba(164,107,255,.5) 0%,rgba(164,107,255,0) 70%)')+`<div class="rays"></div>`+sparks('#c9a8ff',14)+face(2,'left:30px;top:16px')+`<div class="big neon kpulse" style="top:34px;left:200px;font-size:50px;color:#ffd23f">${o.held==='reg'?'BAR':'7'}をねらえ!!</div><div style="position:absolute;left:200px;right:0;bottom:26px;display:flex;justify-content:center;gap:12px">${[0,1,2].map(()=>ksym(o.held==='reg'?'bar':'seven',90)).join('')}</div>`;
+    else if(name==='bonusGame') h=base('')+`<div class="krb" style="opacity:.32"></div><div class="rays"></div>`+petals(18)+KI('kg_win','left:40px;bottom:-4px;height:244px','breathe')+`<div class="big neon" style="top:50px;left:200px;font-size:44px">BONUS GAME</div><div class="big neon" style="top:116px;left:200px;font-size:34px;font-family:var(--f-led)">のこり ${o.left??''}</div>`;
     else if(name==='lose') h=base('rgba(60,70,100,.55)',true)+KI('kg_lose','left:10px;bottom:-6px;height:222px','')+KI('sg_win','right:20px;bottom:-6px;height:236px','kslideR')+`<div class="big" style="top:18px;font-size:46px;color:#cfd6ff;text-shadow:0 4px 0 #1a1f40">ざんねん…</div>`;
-    L.innerHTML=`<div class="sc">${h}</div>${o.meter!=null?`<div class="meter">期待度<div class="bar"><i style="width:${o.meter}%"></i></div>${o.meter}%</div>`:''}`;
+    L.innerHTML=`<div class="sc${o.quake?' kquake':''}">${h}</div>`; this.kAfter(L,name);
     document.querySelectorAll('.ledbar').forEach(b=>b.classList.toggle('hot',name!=='normal'&&name!=='lose'));
+  },
+  // 絵を置いたあとの動き(荒野のスクロールと歩く絵の切りかえ)
+  kAfter(L,name){ if(name!=='normal') return;
+    const lay={far:KOPT.bg_wild_far?{img:KOPT.bg_wild_far,h:84,b:58,v:14}:{...WILD.far,b:34,v:12},
+      mid:KOPT.bg_wild_far?null:{...WILD.mid,b:28,v:34},
+      ground:KOPT.bg_wild_near?null:{...WILD.ground,b:0,v:110},
+      near:KOPT.bg_wild_near?{img:KOPT.bg_wild_near,h:112,b:-10,v:150}:{...WILD.near,b:-6,v:190}};
+    L.querySelectorAll('.wlay').forEach(el=>{ const c=lay[el.dataset.l]; if(!c){ el.remove(); return; }
+      const src=c.img?c.img.src:c.src, h=c.img?c.h:c.h, tw=Math.round(c.img?h*c.img.naturalWidth/c.img.naturalHeight:c.w*(h/c.h));
+      const pairs=Math.ceil(760/(2*tw))+1;
+      el.style.bottom=c.b+'px'; el.style.height=h+'px';
+      if(c.img&&el.dataset.l==='near'){ el.style.zIndex=1; const w=L.querySelector('.kwalker'); if(w) w.style.bottom='20px'; } // 手前の地面の絵は、KAGUYAの足もとより後ろに置く
+      el.innerHTML=`<div class="wtrack">${Array.from({length:pairs},()=>`<img src="${src}" alt="" style="width:${tw}px;height:${h}px"><img src="${src}" alt="" style="width:${tw}px;height:${h}px;transform:scaleX(-1)">`).join('')}</div>`;
+      if(!matchMedia('(prefers-reduced-motion:reduce)').matches) el.firstChild.animate([{transform:'translateX(0)'},{transform:`translateX(${-2*tw}px)`}],{duration:2*tw/c.v*1000,iterations:Infinity}); });
+    const n=kWalkN(), img=L.querySelector('#kWalkImg'); clearInterval(this.walkT); clearTimeout(this.walkT);
+    if(n&&img){ let f=0; this.walkT=setInterval(()=>{ if(!img.isConnected){ clearInterval(this.walkT); return; } f=(f+1)%n; img.src=KOPT['kg_walk'+(f+1)].src; },n>=4?150:260); }
+    else if(img&&KOPT.kg_walk&&KOPT.kg_walk_blink){ // ときどき、まばたき
+      const blink=()=>{ if(!img.isConnected) return; img.src=KOPT.kg_walk_blink.src; setTimeout(()=>{ if(img.isConnected) img.src=KOPT.kg_walk.src; },150); this.walkT=setTimeout(blink,2500+Math.random()*3000); };
+      clearTimeout(this.walkT); this.walkT=setTimeout(blink,2000); }
   },
   playFx(d){ const P=this.P, f=d.fx||{scene:'normal'}; P.fxHit=!!f.hit; P.revealed=true; P.fx=f.scene;
     if(f.scene==='bonusGame'){ this.scene('bonusGame',{left:d.bonus?d.bonus.left:''}); return; }
     if(f.scene==='normal'){ if(this.held&&G.st.battle&&G.st.battle.lampOn) this.scene('aim',{held:this.held}); else if(!$('#lcd .kidle')) this.scene('normal'); return; }
-    if(f.scene==='battleWin'||f.scene==='battleLose') this.scene('battle',{meter:f.scene==='battleWin'?72:40});
-    else this.scene(f.scene,{meter:{green:25,chance:20,red:45,gold:80,rainbow:100}[f.scene]});
+    if(f.scene==='battleWin'||f.scene==='battleLose') this.scene('battle');
+    else this.scene(f.scene);
     if(f.scene!=='chance'&&f.scene!=='green') P.revealed=false;
     if(f.scene==='rainbow') P.revealed=true;
   },
