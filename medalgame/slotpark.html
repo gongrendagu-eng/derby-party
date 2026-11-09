@@ -864,6 +864,12 @@ function amtModal(kind){
   }; draw();
 }
 async function info(m){ const r=await PAD.req('g:info',{m},GID); if(r.ok){ G.jp=r.d.jp; G.st[m]=r.d.st; } return r; }
+// Firebaseは中身が空のリスト([])を消して送ってくるので、iPad側で空のリストにもどす
+function fbFix(m,d){ if(!d) return d;
+  if(m==='wide'){ d.wins=(d.wins||[]).map(w=>({...w,cells:w.cells||[]})); d.starCells=d.starCells||[]; d.stars=d.stars||0; }
+  if(m==='drop'){ d.steps=(d.steps||[]).map(x=>({...x,hit:x.hit||[]})); if(!d.steps.length) d.steps=[{grid:MACH.drop.g,hit:[]}]; d.combo=d.combo||0; }
+  if(d.pay==null) d.pay=0;
+  return d; }
 async function play(m,data){
   const r=await PAD.req(data&&data.type||'g:spin',{m,...(data||{})},GID);
   if(!r.ok){
@@ -872,7 +878,7 @@ async function play(m,data){
       else { const mid=G.mid; setTimeout(()=>{ if(G.auto&&!G.busy&&!G.after&&G.mid===mid&&MACH[mid].spin) MACH[mid].spin(); },1500); }
     } else { toast(r.msg); G.auto=false; }
     if(gone()) throw ABORT; return null; }
-  G.fail=0;
+  G.fail=0; fbFix(m,r.d);
   if(r.d.jp!=null) G.jp=r.d.jp; if(r.d.st) G.st[m]=r.d.st;
   if(gone()) throw ABORT;
   return r.d;
@@ -1181,7 +1187,7 @@ MACH.wide={
     this.upd();
   },
   fs(){ return (G.st.wide||{}).fs||0; },
-  restore(){ this.upd(); },
+  restore(){ this.upd(); const scr=G.scr; if(this.fs()) setTimeout(()=>{ if(G.mid==='wide'&&G.scr===scr&&!G.busy&&!G.after&&this.fs()) this.spin(); },900); }, // フリースピンの続きは自動で
   upd(){ if(!$('#bSpin')) return; const fs=this.fs(), s=G.st.wide||{};
     updBet('wide',!!fs,fs?s.fsBet:(G.busy&&this.bet?this.bet:G.bet.wide));
     $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||(!fs&&G.cred<G.bet.wide);
@@ -1231,7 +1237,7 @@ MACH.rocket={
     this.upd();
   },
   chain(){ return (G.st.rocket||{}).chain; },
-  restore(){ this.upd(); },
+  restore(){ this.upd(); const scr=G.scr; if(this.chain()) setTimeout(()=>{ if(G.mid==='rocket'&&G.scr===scr&&!G.busy&&!G.after&&this.chain()) this.spin(); },1200); }, // 連チャンの続きは自動で
   upd(){ if(!$('#bSpin')) return; const c=this.chain(), s=G.st.rocket||{}, L=SP.consts.K_LV;
     $('#alt').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<i class="${c&&n===c.lv?'now':c&&n<c.lv?'done':n===10?'moon':''}">${n===10?'月':n}</i>`).join('');
     $('#ledLv').textContent=String(c?c.lv:0).padStart(2,'0');
