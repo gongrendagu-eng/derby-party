@@ -639,6 +639,8 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .kshadow{position:absolute;left:18%;right:18%;bottom:-4px;height:14px;border-radius:50%;background:rgba(0,0,0,.55);filter:blur(2px);animation:kshadow .34s ease-in-out infinite alternate}
 @keyframes kshadow{to{transform:scaleX(.88);opacity:.75}}
 .kwbob{animation:kwbob .34s ease-in-out infinite alternate}
+.kwsheet{width:155px;height:237px;background-size:800% 100%;background-repeat:no-repeat;animation:kwsheet .96s steps(8) infinite}
+@keyframes kwsheet{from{background-position:0 0}to{background-position:114.2857% 0}}
 @keyframes kwbob{from{transform:translateY(0) rotate(.6deg)}to{transform:translateY(-6px) rotate(-.6deg)}}
 /* 動きの部品 */
 .kfx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
@@ -653,7 +655,7 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .kpulse{animation:kpulse .7s ease-in-out infinite alternate}
 @keyframes kpulse{to{filter:brightness(1.35);scale:1.04}}
 .kbreath{animation:breathe 1.3s ease-in-out infinite alternate;transform-origin:50% 100%}
-@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb,.wstars,.wdust i,.kwbob,.kshadow,.kline,.kpetal,.kspark,.kquake,.kpulse,.kbreath{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb,.wstars,.wdust i,.kwbob,.kwsheet,.kshadow,.kline,.kpetal,.kspark,.kquake,.kpulse,.kbreath{animation:none!important}}
 </style>
 </head>
 <body>
@@ -994,8 +996,8 @@ function toggleAuto(M){ G.auto=!G.auto; M.upd(); if(G.auto&&!G.busy) M.spin(); e
 // KAGUYAの絵(先に読みこんでおく)
 const KI=(n,st,cls)=>`<img class="kimg ${cls||''}" src="${ASSET}${n}.webp" alt="" style="${st}">`;
 const KPRE=[], KOPT={}; function kPreload(){ if(KPRE.length) return; ['kg_stand','kg_ready','kg_special','kg_win','kg_lose','kg_bust','sg_ready','sg_bust','sg_attack','sg_lose','sg_win','kg_face1','kg_face2','kg_face3'].forEach(n=>{ const i=new Image(); i.src=ASSET+n+'.webp'; KPRE.push(i); });
-  // あとから足せる絵(なければ、絵を使わない版で動く)。歩く姿 kg_walk(+まばたき kg_walk_blink)、歩くコマ kg_walk1〜4、荒野の背景 bg_wild_far(遠くの岩山)・bg_wild_near(手前の地面)
-  ['kg_walk','kg_walk_blink','kg_walk1','kg_walk2','kg_walk3','kg_walk4','bg_wild_far','bg_wild_near'].forEach(n=>{ const i=new Image(); i.onload=()=>{ KOPT[n]=i; clearTimeout(KOPT._t); KOPT._t=setTimeout(()=>{ const M=MACH.battle; if(G.mid==='battle'&&!G.busy&&$('#lcd .kidle')) M.scene('normal'); },300); }; i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
+  // あとから足せる絵(なければ、絵を使わない版で動く)。歩くコマを横に8つ並べた kg_walk_sheet(+まばたき kg_walk_sheet_blink)、歩く姿 kg_walk(+まばたき kg_walk_blink)、歩くコマ kg_walk1〜4、荒野の背景 bg_wild_far(遠くの岩山)・bg_wild_near(手前の地面)
+  ['kg_walk_sheet','kg_walk_sheet_blink','kg_walk','kg_walk_blink','kg_walk1','kg_walk2','kg_walk3','kg_walk4','bg_wild_far','bg_wild_near'].forEach(n=>{ const i=new Image(); i.onload=()=>{ KOPT[n]=i; clearTimeout(KOPT._t); KOPT._t=setTimeout(()=>{ const M=MACH.battle; if(G.mid==='battle'&&!G.busy&&$('#lcd .kidle')) M.scene('normal'); },300); }; i.src=ASSET+n+'.webp'; KPRE.push(i); }); }
 const kWalkN=()=>{ let n=0; while(n<4&&KOPT['kg_walk'+(n+1)]) n++; return n>=2?n:0; };
 // 荒野の背景(絵がないときに使う線画)。左右反転してつなげるので、つなぎ目は気にしなくてよい
 const svgUri=(w,h,body)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${body}</svg>`);
@@ -1195,7 +1197,8 @@ function pachi(mid){ return {
       h=`<div class="wsky"></div><div class="wstars"></div><div class="kmoon" style="right:150px;top:16px;width:78px;height:78px"></div>
         <div class="wlay" data-l="far"></div><div class="wlay" data-l="mid"></div><div class="wlay" data-l="ground"></div>
         <div class="wdust">${Array.from({length:12},()=>`<i style="top:${rnd(150,240)|0}px;animation-duration:${rnd(2.4,4.2).toFixed(2)}s;animation-delay:-${rnd(0,4).toFixed(2)}s"></i>`).join('')}</div>
-        <div class="kwalker kidle" style="left:120px;bottom:4px"><div class="kshadow"></div><img id="kWalkImg" class="kwbob" src="${src}" alt="" style="height:${wh}px"></div>
+        ${KOPT.kg_walk_sheet?`<div class="kwalker kidle" style="left:107px;bottom:4px"><div class="kshadow" style="animation-duration:.24s;left:22%;right:14%"></div><div id="kWalkSheet" class="kwsheet" style="background-image:url(${KOPT.kg_walk_sheet.src})"></div></div>`
+          :`<div class="kwalker kidle" style="left:120px;bottom:4px"><div class="kshadow"></div><img id="kWalkImg" class="kwbob" src="${src}" alt="" style="height:${wh}px"></div>`}
         <div class="wlay" data-l="near"></div>
         <div class="klogo" style="right:34px;top:104px;font-size:30px">KAGUYA</div><div class="ksub" style="right:50px;top:146px;font-size:14px">輝夜 ・ 月下の剣</div>`;
     }
@@ -1220,16 +1223,21 @@ function pachi(mid){ return {
     const lay={far:KOPT.bg_wild_far?{img:KOPT.bg_wild_far,h:84,b:58,v:14}:{...WILD.far,b:34,v:12},
       mid:KOPT.bg_wild_far?null:{...WILD.mid,b:28,v:34},
       ground:KOPT.bg_wild_near?null:{...WILD.ground,b:0,v:110},
-      near:KOPT.bg_wild_near?{img:KOPT.bg_wild_near,h:112,b:-10,v:150}:{...WILD.near,b:-6,v:190}};
+      near:KOPT.bg_wild_near?{img:KOPT.bg_wild_near,h:112,b:-10,v:KOPT.kg_walk_sheet?95:150}:{...WILD.near,b:-6,v:190}};
     L.querySelectorAll('.wlay').forEach(el=>{ const c=lay[el.dataset.l]; if(!c){ el.remove(); return; }
       const src=c.img?c.img.src:c.src, h=c.img?c.h:c.h, tw=Math.round(c.img?h*c.img.naturalWidth/c.img.naturalHeight:c.w*(h/c.h));
       const pairs=Math.ceil(760/(2*tw))+1;
       el.style.bottom=c.b+'px'; el.style.height=h+'px';
-      if(c.img&&el.dataset.l==='near'){ el.style.zIndex=1; const w=L.querySelector('.kwalker'); if(w) w.style.bottom='20px'; } // 手前の地面の絵は、KAGUYAの足もとより後ろに置く
+      if(c.img&&el.dataset.l==='near'){ el.style.zIndex=1; const w=L.querySelector('.kwalker'); if(w) w.style.bottom=KOPT.kg_walk_sheet?'18px':'20px'; } // 手前の地面の絵は、KAGUYAの足もとより後ろに置く
       el.innerHTML=`<div class="wtrack">${Array.from({length:pairs},()=>`<img src="${src}" alt="" style="width:${tw}px;height:${h}px"><img src="${src}" alt="" style="width:${tw}px;height:${h}px;transform:scaleX(-1)">`).join('')}</div>`;
       if(!matchMedia('(prefers-reduced-motion:reduce)').matches) el.firstChild.animate([{transform:'translateX(0)'},{transform:`translateX(${-2*tw}px)`}],{duration:2*tw/c.v*1000,iterations:Infinity}); });
     const n=kWalkN(), img=L.querySelector('#kWalkImg'); clearInterval(this.walkT); clearTimeout(this.walkT);
     if(n&&img){ let f=0; this.walkT=setInterval(()=>{ if(!img.isConnected){ clearInterval(this.walkT); return; } f=(f+1)%n; img.src=KOPT['kg_walk'+(f+1)].src; },n>=4?150:260); }
+    const sh=L.querySelector('#kWalkSheet');
+    if(sh&&KOPT.kg_walk_sheet_blink){ // 歩くコマのまま、ときどき、まばたき
+      const A=`url(${KOPT.kg_walk_sheet.src})`, B=`url(${KOPT.kg_walk_sheet_blink.src})`;
+      const blink=()=>{ if(!sh.isConnected) return; sh.style.backgroundImage=B; setTimeout(()=>{ if(sh.isConnected) sh.style.backgroundImage=A; },150); this.walkT=setTimeout(blink,2500+Math.random()*3000); };
+      this.walkT=setTimeout(blink,2000); }
     else if(img&&KOPT.kg_walk&&KOPT.kg_walk_blink){ // ときどき、まばたき
       const blink=()=>{ if(!img.isConnected) return; img.src=KOPT.kg_walk_blink.src; setTimeout(()=>{ if(img.isConnected) img.src=KOPT.kg_walk.src; },150); this.walkT=setTimeout(blink,2500+Math.random()*3000); };
       clearTimeout(this.walkT); this.walkT=setTimeout(blink,2000); }
