@@ -149,33 +149,39 @@ function itemsOf(fm){
 const ITEM_MAX=3;
 const slotName=(fm,id)=>{ const s=slotsOf(fm).find(x=>x.id===id); return s?TEAM[s.t]+(s.nm?`(${s.nm})`:''):''; };
 
-function setupCanvas(cv){ const dpr=Math.min(2,window.devicePixelRatio||1); cv.width=CW*dpr; cv.height=CH*dpr; const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return c; }
+function setupCanvas(cv,dpr){ dpr=dpr||Math.min(2,window.devicePixelRatio||1); cv.width=CW*dpr; cv.height=CH*dpr; const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return c; }
+function layer(w,h,dpr){ const cv=document.createElement('canvas'); cv.width=w*dpr; cv.height=h*dpr; const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); return {cv,ctx}; }
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 const fmtT=s=>s==null?'—':`${Math.floor(s/60)}:${String(Math.max(0,Math.floor(s%60))).padStart(2,'0')}`;
-/* s = {fm, m:[[x,y,r,色]...], q:[x,y]|null, g:{色:ゴール幅(0=閉じた)}, w:ジャマ玉, sp, sc:{色:点}, lv:{色:ライフ}, out:[色], tm, gg}
+/* s = {fm, m:[[x,y,r,色,枠]...], q:[x,y]|null, g:{色:ゴール幅(0=閉じた)}, w:ジャマ玉, sp, sc:{色:点}, lv:{色:ライフ}, out:[色], tm, gg}
    o = {names:{色:名前}, big, bigc, sub, ev, ghost:[x,y,色], zone:[x0,x1,y0,y1,色]} */
-function drawScene(c,s,o){
-  o=o||{}; const fm=s.fm||'1v1', F=FM[fm], w=F.w, h=F.h, X=ox(fm), nm=o.names||{};
-  c.clearRect(0,0,CW,CH);
+// 点数の帯(上の84px)
+function drawHeader(c,s,o){
+  const fm=s.fm||'1v1', F=FM[fm], nm=o.names||{};
   c.fillStyle='#14213a'; rr(c,0,0,CW,TOP-8,16); c.fill();
   c.textBaseline='middle';
+  const tmS=s.gg?'延長':fmtT(s.tm);
   if(fm==='ffa'){
-    const ts=F.teams, cw=(CW-160)/4;
-    ts.forEach((t,i)=>{ const x=20+i*cw+(i>=2?160:0), out=(s.out||[]).includes(t);
+    const cw=(CW-160)/4;
+    F.teams.forEach((t,i)=>{ const x=20+i*cw+(i>=2?160:0), out=(s.out||[]).includes(t);
       c.globalAlpha=out?.35:1; c.fillStyle=COL[t]; c.textAlign='left'; c.font='800 20px "M PLUS Rounded 1c",sans-serif';
       c.fillText((nm[t]||TEAM[t]).slice(0,7),x,24);
       const lv=(s.lv||{})[t]||0; c.font='22px sans-serif'; c.fillText(out?'脱落':'♥'.repeat(Math.max(0,lv)),x,54); c.globalAlpha=1; });
-    c.fillStyle='#fff'; c.textAlign='center'; c.font='800 24px "M PLUS Rounded 1c",sans-serif'; c.fillText(s.gg?'延長':fmtT(s.tm),CW/2,TOP/2-4);
+    c.fillStyle='#fff'; c.textAlign='center'; c.font='800 24px "M PLUS Rounded 1c",sans-serif'; c.fillText(tmS,CW/2,TOP/2-4);
   }else{
     c.font='800 22px "M PLUS Rounded 1c",sans-serif';
     c.fillStyle=COL.b; c.textAlign='left'; c.fillText(nm.b||'青',22,TOP/2-4);
     c.fillStyle=COL.r; c.textAlign='right'; c.fillText(nm.r||'赤',CW-22,TOP/2-4);
     const sc=s.sc||{}; c.textAlign='center'; c.font='52px "Dela Gothic One",sans-serif';
     c.fillStyle=COL.b; c.fillText(sc.b||0,CW/2-90,TOP/2-2); c.fillStyle=COL.r; c.fillText(sc.r||0,CW/2+90,TOP/2-2);
-    c.fillStyle='#fff'; c.font='800 22px "M PLUS Rounded 1c",sans-serif'; c.fillText(s.gg?'延長':fmtT(s.tm),CW/2,TOP/2-4);
+    c.fillStyle='#fff'; c.font='800 22px "M PLUS Rounded 1c",sans-serif'; c.fillText(tmS,CW/2,TOP/2-4);
   }
-  c.save(); c.translate(X,TOP);
-  // リンクの形
+}
+const headerKey=(s,o)=>JSON.stringify([s.fm,o.names,s.sc,s.lv,s.out,s.gg?'延長':fmtT(s.tm)]);
+// リンクの動かない部分(形・線・陣地)。原点はリンクの帯の左上
+function drawRinkBase(c,s,o){
+  const fm=s.fm||'1v1', F=FM[fm], w=F.w, h=F.h;
+  c.save(); c.translate(ox(fm),0);
   const shape=()=>{ if(fm==='ffa'){ c.beginPath(); c.moveTo(CUT,0); c.lineTo(w-CUT,0); c.lineTo(w,CUT); c.lineTo(w,h-CUT); c.lineTo(w-CUT,h); c.lineTo(CUT,h); c.lineTo(0,h-CUT); c.lineTo(0,CUT); c.closePath(); } else rr(c,0,0,w,h,26); };
   c.fillStyle=s.sp?'#fff6db':'#f3f8ff'; shape(); c.fill();
   if(o.zone){ const [x0,x1,y0,y1,t]=o.zone; c.fillStyle=COL[t]+'22'; c.fillRect(x0,y0,x1-x0,y1-y0); }
@@ -185,9 +191,14 @@ function drawScene(c,s,o){
     F.teams.forEach(t=>{ const [x0,x1,y0,y1]=slotsOf(fm).find(q=>q.t===t).z; c.strokeStyle=COL[t]+'55'; c.setLineDash([10,8]); c.strokeRect(x0+3,y0+3,x1-x0-6,y1-y0-6); c.setLineDash([]); }); }
   else{ c.strokeStyle='rgba(255,77,109,.55)'; c.beginPath(); c.moveTo(w/2,8); c.lineTo(w/2,h-8); c.stroke(); c.beginPath(); c.arc(w/2,h/2,70,0,7); c.stroke();
     if(fm==='2v2'){ c.strokeStyle='rgba(20,33,58,.15)'; c.setLineDash([10,10]); c.beginPath(); c.moveTo(10,h/2); c.lineTo(w-10,h/2); c.stroke(); c.setLineDash([]); } }
-  // ゴール
-  F.teams.forEach(t=>{ const gw=(s.g||{})[t]; c.fillStyle=gw?COL[t]:'#9aa6b8'; const L=gw||F.gw;
-    const wl=WALL[t]; if(!gw&&fm!=='ffa') return;
+  c.restore();
+}
+const baseKey=(s,o)=>[s.fm,s.sp?1:0,o.zone?o.zone.join(','):''].join('|');
+// 動く部分(ゴール・ジャマ玉・マレット・パック・文字)。原点はリンクの帯の左上
+function drawRinkDyn(c,s,o){
+  const fm=s.fm||'1v1', F=FM[fm], w=F.w, h=F.h;
+  c.save(); c.translate(ox(fm),0);
+  F.teams.forEach(t=>{ const gw=(s.g||{})[t]; if(!gw&&fm!=='ffa') return; c.fillStyle=gw?COL[t]:'#9aa6b8'; const L=gw||F.gw, wl=WALL[t];
     if(wl==='L') rr(c,-6,h/2-L/2,14,L,6); else if(wl==='R') rr(c,w-8,h/2-L/2,14,L,6);
     else if(wl==='T') rr(c,w/2-L/2,-6,L,14,6); else rr(c,w/2-L/2,h-8,L,14,6);
     c.fill(); });
@@ -200,13 +211,22 @@ function drawScene(c,s,o){
     c.fillStyle=s.sp?'#e07b00':'#14213a'; c.beginPath(); c.arc(x,y,PR,0,7); c.fill(); }
   c.restore();
   // 文字は盤面の真ん中(リンクの幅に関係なく)
-  c.save(); c.translate(0,TOP);
   if(o.big){ c.fillStyle='rgba(255,255,255,.8)'; rr(c,CW/2-330,RH/2-80,660,160,24); c.fill();
-    c.fillStyle=o.bigc||'#14213a'; c.textAlign='center'; c.font='60px "Dela Gothic One",sans-serif'; c.fillText(o.big,CW/2,RH/2-(o.sub?16:0));
+    c.fillStyle=o.bigc||'#14213a'; c.textAlign='center'; c.textBaseline='middle'; c.font='60px "Dela Gothic One",sans-serif'; c.fillText(o.big,CW/2,RH/2-(o.sub?16:0));
     if(o.sub){ c.font='800 22px "M PLUS Rounded 1c",sans-serif'; c.fillStyle='#14213a'; c.fillText(o.sub,CW/2,RH/2+46); } }
-  if(o.ev){ c.font='800 26px "M PLUS Rounded 1c",sans-serif'; const tw=c.measureText(o.ev).width+40;
+  if(o.ev){ c.font='800 26px "M PLUS Rounded 1c",sans-serif'; c.textBaseline='middle'; const tw=c.measureText(o.ev).width+40;
     c.fillStyle='rgba(20,33,58,.85)'; rr(c,CW/2-tw/2,RH-70,tw,48,24); c.fill(); c.fillStyle='#ffd84a'; c.textAlign='center'; c.fillText(o.ev,CW/2,RH-46); }
-  c.restore();
+}
+/* cache を渡すと(iPad)、点数の帯とリンクの動かない部分を別のキャンバスに描いておき、変わったときだけ描き直す */
+function drawScene(c,s,o,cache){
+  o=o||{};
+  c.clearRect(0,0,CW,CH);
+  if(cache){
+    const hk=headerKey(s,o); if(cache.hk!==hk){ cache.hk=hk; cache.h.ctx.clearRect(0,0,CW,TOP); drawHeader(cache.h.ctx,s,o); }
+    const bk=baseKey(s,o);   if(cache.bk!==bk){ cache.bk=bk; cache.b.ctx.clearRect(0,0,CW,RH); drawRinkBase(cache.b.ctx,s,o); }
+    c.drawImage(cache.h.cv,0,0,CW,TOP); c.drawImage(cache.b.cv,0,TOP,CW,RH);
+  }else{ drawHeader(c,s,o); c.save(); c.translate(0,TOP); drawRinkBase(c,s,o); c.restore(); }
+  c.save(); c.translate(0,TOP); drawRinkDyn(c,s,o); c.restore();
 }
 
 /* =========================================================================
@@ -530,7 +550,7 @@ function step(dt){
   slotsOf(M.fm).forEach(sl=>{ const m=S.m[sl.id]; if(!m) return; const r=malR(sl.t), z=sl.z;
     if(M.out.has(sl.t)) return;
     const tx=Math.max(Math.max(r,z[0]+r),Math.min(Math.min(w-r,z[1]-r),m.tx)), ty=Math.max(Math.max(r,z[2]+r),Math.min(Math.min(h-r,z[3]-r),m.ty));
-    let dx=tx-m.x, dy=ty-m.y; const d=Math.hypot(dx,dy), mx=1900*dt;
+    let dx=tx-m.x, dy=ty-m.y; const d=Math.hypot(dx,dy), mx=2600*dt;
     if(d>mx){ dx*=mx/d; dy*=mx/d; }
     m.x+=dx; m.y+=dy; m.vx=dx/dt; m.vy=dy/dt; });
   if(M.ph!=='play'||S.pause>t||S.hide) return;
@@ -618,7 +638,7 @@ function snap(net){
   T.forEach(tm=>g[tm]=goalW(tm));
   const s={t,fm:M.fm,sc:Object.assign({},M.sc),lv:Object.assign({},M.lv),out:[...M.out],gg:M.gg?1:0,g,w:fx('wl')?1:0,sp:fx('sp')?1:0,
     tm:M.ph==='play'?Math.max(0,(M.tEnd-t)/1000):M.ph==='result'?M.tLeft:M.ph==='lobby'||M.ph==='entry'?null:C.tlim,
-    m:slotsOf(M.fm).filter(sl=>!M.out.has(sl.t)&&S.m[sl.id]).map(sl=>[R(S.m[sl.id].x),R(S.m[sl.id].y),malR(sl.t),sl.t]),
+    m:slotsOf(M.fm).filter(sl=>!M.out.has(sl.t)&&S.m[sl.id]).map(sl=>[R(S.m[sl.id].x),R(S.m[sl.id].y),malR(sl.t),sl.t,sl.id]),
     q:S.hide?null:[R(S.q.x),R(S.q.y)]};
   if(net&&M.ev&&M.ev.until>t) s.e=[M.ev.s,M.ev.t];
   return s;
@@ -655,7 +675,8 @@ const sfx=(()=>{ let ac=null, last=0;
 /* =========================================================================
    iPad
    ========================================================================= */
-let PAD=null, PCTX=null;
+let PAD=null, PCTX=null, PCACHE=null;
+const PAD_DPR=1;   // iPadは解像度を1倍にして軽くする
 const G={view:undefined,live:true,games:{},st:null,stAt:0,me:{},buf:[],off:null,touch:null,sent:'',side:'b',bet:10,busy:false,lastEv:0,ev:null,here:null};
 async function padMain(){
   document.body.className='pad'; document.documentElement.classList.add('padmode');
@@ -672,9 +693,19 @@ async function padMain(){
   PAD.be.on(AHp+'/f',v=>{ if(!v) return; const t=now(), o=t-v.t; G.off=G.off==null||o<G.off?o:G.off+(o-G.off)*0.002;
     G.buf.push(v); if(G.buf.length>30) G.buf.shift();
     if(v.e&&v.e[0]!==G.lastEv){ G.lastEv=v.e[0]; G.ev={t:v.e[1],until:t+2500}; } });
-  setInterval(()=>{ if(!meNow().role||!G.touch) return; const j=G.touch[0]+','+G.touch[1]; if(j===G.sent) return; G.sent=j;
-    PAD.be.set(AHp+'/in/'+vk,{x:G.touch[0],y:G.touch[1],t:now()}).catch(()=>{}); },50);
-  const loop=()=>{ if(PCTX) drawScene(PCTX,interp(),padOverlay()); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+  // 出場者の指の位置を送る:動いたらすぐ(1秒に30回まで)。最後の位置も必ず送る
+  G.sendIn=()=>{ if(!meNow().role||!G.touch) return; const t=now(), j=G.touch[0]+','+G.touch[1]; if(j===G.sent) return;
+    if(t-(G.sentAt||0)<33){ clearTimeout(G.sendT); G.sendT=setTimeout(G.sendIn,34-(t-G.sentAt)); return; }
+    G.sent=j; G.sentAt=t; PAD.be.set(AHp+'/in/'+vk,{x:G.touch[0],y:G.touch[1],t}).catch(()=>{}); };
+  setInterval(()=>G.sendIn(),200);
+  // 観戦中は1秒に30回、出場中は60回描く(iPadの負担を減らす)
+  let lastDraw=0;
+  const loop=t=>{ requestAnimationFrame(loop); if(!PCTX) return;
+    const playing=!!meNow().role&&['bet','ready','play'].includes(G.st&&G.st.ph);
+    if(!playing&&t-lastDraw<32) return; lastDraw=t;
+    const s=predict(interp()), o=padOverlay(); if(s.mine) delete o.ghost;
+    drawScene(PCTX,s,o,PCACHE); };
+  requestAnimationFrame(loop);
   setInterval(padTick,250);
 }
 const inThis=()=>CLEAN?!!(G.view&&G.view.cl===CLEAN):seatA()!==null;
@@ -696,10 +727,20 @@ function interp(){
   const a=b[Math.max(0,i-1)], c=b[i];
   if(!a||a===c||rt>=c.t||a.fm!==c.fm) return c;
   const k=Math.max(0,Math.min(1,(rt-a.t)/(c.t-a.t||1))), L=(x,y)=>x+(y-x)*k;
-  const m=c.m.map((cm,j)=>{ const am=a.m[j]; return am&&am[3]===cm[3]?[L(am[0],cm[0]),L(am[1],cm[1]),cm[2],cm[3]]:cm; });
+  const m=c.m.map((cm,j)=>{ const am=a.m[j]; return am&&am[3]===cm[3]?[L(am[0],cm[0]),L(am[1],cm[1]),cm[2],cm[3],cm[4]]:cm; });
   const s=Object.assign({},c,{m,q:a.q&&c.q&&Math.hypot(a.q[0]-c.q[0],a.q[1]-c.q[1])<200?[L(a.q[0],c.q[0]),L(a.q[1],c.q[1])]:c.q});
   if(c.tm!=null&&a.tm!=null) s.tm=L(a.tm,c.tm);
   return s;
+}
+// 自分のマレットは、先生のPCからもどってくるのを待たずに指の位置に描く(陣地の中におさめる)
+function predict(s){
+  const me=meNow(); if(!me.role||!G.touch||!s.m||!['bet','ready','play'].includes(G.st&&G.st.ph)) return s;
+  const i=s.m.findIndex(x=>x[4]===me.role); if(i<0) return s;
+  const fm=s.fm||curFm(), F=FM[fm], sl=slotsOf(fm).find(x=>x.id===me.role); if(!sl) return s;
+  const r=s.m[i][2], z=sl.z;
+  const x=Math.max(Math.max(r,z[0]+r),Math.min(Math.min(F.w-r,z[1]-r),G.touch[0])), y=Math.max(Math.max(r,z[2]+r),Math.min(Math.min(F.h-r,z[3]-r),G.touch[1]));
+  const m=s.m.slice(); m[i]=[x,y,r,s.m[i][3],s.m[i][4]];
+  return Object.assign({},s,{m,mine:1});
 }
 function padOverlay(){
   const st=G.st||{}, me=meNow(), fm=curFm(), o={names:{}}, left=leftP();
@@ -739,13 +780,13 @@ function padRender(){
       <div class="pc" id="act"></div>
       <div class="center" style="margin-top:12px"><a href="${esc(top)}" class="pbtn" style="font-size:14px">トップへ${CLEAN?'':'(メダルは預けたまま)'}</a></div>
       <div id="mod"></div></div>`;
-    PCTX=setupCanvas($('#pcv'));
+    PCTX=setupCanvas($('#pcv'),PAD_DPR); PCACHE={h:layer(CW,TOP,PAD_DPR),b:layer(CW,RH,PAD_DPR),hk:'',bk:''};
     const cv=$('#pcv');
     const pos=e=>{ const me=meNow(); if(!me.role) return; const r=cv.getBoundingClientRect(), fm=curFm(), F=FM[fm];
       const x=(e.clientX-r.left)/r.width*CW-ox(fm), y=(e.clientY-r.top)/r.height*CH-TOP;
       G.touch=[Math.round(Math.max(0,Math.min(F.w,x))),Math.round(Math.max(0,Math.min(F.h,y)))]; };
-    cv.addEventListener('pointerdown',e=>{ if(meNow().role){ e.preventDefault(); cv.setPointerCapture(e.pointerId); pos(e); } });
-    cv.addEventListener('pointermove',e=>{ if(meNow().role){ e.preventDefault(); pos(e); } });
+    cv.addEventListener('pointerdown',e=>{ if(meNow().role){ e.preventDefault(); cv.setPointerCapture(e.pointerId); pos(e); G.sendIn&&G.sendIn(); } });
+    cv.addEventListener('pointermove',e=>{ if(meNow().role){ e.preventDefault(); pos(e); G.sendIn&&G.sendIn(); } });
     if(!CLEAN){
       $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
       $('#tQuit').onclick=async()=>{ if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。${meNow().rsv?'\n(試合が終わってから、自動で貯金にもどします)':''}`)) return;
@@ -778,7 +819,7 @@ function actRender(){
   else if(me.role&&['bet','ready','play'].includes(ph)){
     const t=me.role[0];
     h=`<div class="phase" style="color:${COL[t]}">あなたは ${slotName(fm,me.role)} で出場!</div>
-      <p class="note center">上の盤面の<b>色のついた場所</b>を指でなぞると、マレットが動きます(点線の丸が指の位置)。プロジェクターの画面を見ながら動かすと、ずれが少なくなります。${fm==='2v2'?'味方と上下で分かれて守ります。':fm==='ffa'?'自分の前のゴールを守ろう。入れられるとライフが減ります。':''}</p>`;
+      <p class="note center">上の盤面の<b>色のついた場所</b>を指でなぞると、マレットが指の位置に動きます。パックは少し遅れて届くので、プロジェクターの画面も見ながら動かそう。${fm==='2v2'?'味方と上下で分かれて守ります。':fm==='ffa'?'自分の前のゴールを守ろう。入れられるとライフが減ります。':''}</p>`;
   }
   else if(ph==='bet'){
     const cur=me.bet;
