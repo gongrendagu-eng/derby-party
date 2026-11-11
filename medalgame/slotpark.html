@@ -127,21 +127,26 @@
     return { scene: 'normal' };
   }
 
-  /* ---------- ③ ワイドライン（5リール20ライン） ---------- */
-  const W_SYMS = [['seven', 2], ['gem', 4], ['star', 3], ['bell', 7], ['grape', 9], ['cherry', 10], ['lemon', 10]];
-  const W_PAY = { seven: [0, 0, 0, 2, 10, 50], gem: [0, 0, 0, 1, 4, 15], bell: [0, 0, 0, 0.5, 2, 6], grape: [0, 0, 0, 0.3, 1, 3], cherry: [0, 0, 0, 0.2, 0.6, 2], lemon: [0, 0, 0, 0.2, 0.6, 2] };
-  const W_SCAT = [0, 0, 0, 2, 5, 20];
-  const W_K = 0.74; // 調整係数（シミュレーションで決める）
-  const W_LINES = [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2], [0, 0, 1, 2, 2], [2, 2, 1, 0, 0],
-    [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [0, 1, 1, 1, 0], [2, 1, 1, 1, 2], [1, 0, 1, 2, 1], [1, 2, 1, 0, 1], [0, 1, 0, 1, 0],
-    [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1], [0, 2, 0, 2, 0], [2, 0, 2, 0, 2], [0, 2, 2, 2, 0]];
+  /* ---------- ③ ワイドライン（5リール・243ウェイ） ---------- */
+  // 左のリールから、となりの列のどこかに同じ絵柄があればつながる(ラインなし)。同じ列に2つあれば2通り。
+  // 1本のリールに同じ絵柄は1つまで。WILDはフリースピン中だけ2〜5列目に出て、ほし以外の代わりになり、WILDを含む当たりは配当2倍。
+  // 配当表の数字は「BETに対して何倍か」。いちばん小さい当たりでもBETと同じ枚数(BET割れの当たりはない)。
+  const W_SYMS = [['seven', 2], ['crown', 2.5], ['gem', 3], ['bell', 3.5], ['bar', 3.5], ['melon', 4], ['grape', 4], ['orange', 4], ['cherry', 4.5], ['lemon', 4.5], ['star', 1.4]];
+  const W_FSYMS = [['seven', 2], ['crown', 2.5], ['gem', 3], ['bell', 3.5], ['bar', 3.5], ['melon', 4], ['grape', 4], ['orange', 4], ['cherry', 4.5], ['lemon', 4.5], ['star', 1.4], ['wild', 1.05]];
+  const W_PAY = { // [_,_,_, 3つ, 4つ, 5つ]
+    seven: [0, 0, 0, 3, 10, 50], crown: [0, 0, 0, 2, 5, 30], gem: [0, 0, 0, 2, 4, 20], bell: [0, 0, 0, 1.5, 3, 12], bar: [0, 0, 0, 1.5, 3, 12],
+    melon: [0, 0, 0, 1, 3, 8], grape: [0, 0, 0, 1, 2, 6], orange: [0, 0, 0, 1, 2, 6], cherry: [0, 0, 0, 1, 1.5, 4], lemon: [0, 0, 0, 1, 1.5, 4]
+  };
+  const W_SCAT = [0, 0, 0, 2, 5, 20];   // ほしの数ごとの配当(どこに出てもよい)
+  const W_FSN = [0, 0, 0, 10, 15, 20];  // ほしの数ごとのフリースピン回数(フリースピン中も上乗せ)
+  const W_WILDX = 2;
   const W_FS = 10;
-  function wideGrid() { // grid[row][reel]
+  function wideGrid(free) { // grid[row][reel]
     const g = [[], [], []];
     for (let c = 0; c < 5; c++) {
       const used = {};
       for (let r = 0; r < 3; r++) {
-        let s; do { s = wpick(W_SYMS); } while (s === 'star' && used.star);
+        let s; do { s = wpick(free && c > 0 ? W_FSYMS : W_SYMS); } while (used[s]);
         used[s] = 1; g[r][c] = s;
       }
     }
@@ -149,13 +154,22 @@
   }
   function wideEval(g) {
     let m = 0; const wins = [];
-    W_LINES.forEach((ln, i) => {
-      const first = g[ln[0]][0];
-      if (first === 'star') return;
-      let n = 1; while (n < 5 && g[ln[n]][n] === first) n++;
-      const v = (W_PAY[first] || [])[n] || 0;
-      if (v > 0) { m += v; wins.push({ line: i, n, sym: first, cells: ln.slice(0, n).map((r, c) => [r, c]) }); }
-    });
+    for (const s of Object.keys(W_PAY)) {
+      let n = 0, ways = 1; const cells = [];
+      for (let c = 0; c < 5; c++) {
+        let k = 0;
+        for (let r = 0; r < 3; r++) { const x = g[r][c]; if (x === s || (x === 'wild' && c > 0)) { k++; cells.push([r, c]); } }
+        if (!k) break;
+        n++; ways *= k;
+      }
+      const v = W_PAY[s][n] || 0;
+      if (v > 0) {
+        const wild = cells.some(([r, c]) => g[r][c] === 'wild');
+        const mul = wild ? W_WILDX : 1;
+        m += v * ways * mul;
+        wins.push({ sym: s, n, ways, wild, x: v * ways * mul, cells });
+      }
+    }
     let stars = 0; const starCells = [];
     for (let r = 0; r < 3; r++) for (let c = 0; c < 5; c++) if (g[r][c] === 'star') { stars++; starCells.push([r, c]); }
     m += W_SCAT[Math.min(stars, 5)] || 0;
@@ -164,12 +178,15 @@
   function wideSpin(st, bet) {
     const free = st.fs > 0;
     if (free) { bet = st.fsBet; st.fs--; }
-    const g = wideGrid(); const ev = wideEval(g);
-    const mult = free ? 2 : 1;
-    const pay = payFrac(st, ev.m * W_K * bet * mult);
-    const res = { bet: free ? 0 : bet, pay, grid: g, wins: ev.wins, stars: ev.stars, starCells: ev.starCells, free, mult };
+    const g = wideGrid(free); const ev = wideEval(g);
+    const pay = payFrac(st, ev.m * bet);
+    const res = { bet: free ? 0 : bet, pay, grid: g, wins: ev.wins, stars: ev.stars, starCells: ev.starCells, free };
     if (free) st.fsWin = (st.fsWin || 0) + pay;
-    if (ev.stars >= 3) { if (!free) { st.fsBet = bet; st.fsWin = 0; } st.fs = (st.fs || 0) + W_FS; res.fsStart = true; }
+    if (ev.stars >= 3) {
+      if (!free) { st.fsBet = bet; st.fsWin = 0; }
+      const add = W_FSN[Math.min(ev.stars, 5)];
+      st.fs = (st.fs || 0) + add; res.fsStart = !free; res.fsAdd = add; res.fsMore = free;
+    }
     res.fs = st.fs || 0; res.fsWin = st.fsWin || 0; res.fsBet = st.fsBet || bet;
     if (free && st.fs === 0) res.fsEnd = true;
     return res;
@@ -314,7 +331,7 @@
 
   const API = {
     MACHINES, play, cost,
-    consts: { C_LINES, P_STRIP, W_LINES, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_K }
+    consts: { C_LINES, P_STRIP, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_FSN, W_WILDX }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SP = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -495,7 +512,13 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .th-wide .reel{background:#f3ecff;border-radius:10px}
 .th-wide .reel::after{background:linear-gradient(180deg,rgba(27,16,54,.35),rgba(27,16,54,0) 20%,rgba(27,16,54,0) 80%,rgba(27,16,54,.35))}
 .th-wide .hl{position:absolute;border-radius:10px;box-shadow:0 0 0 3px #ffcf3f,0 0 14px #ffcf3f;background:rgba(255,243,196,.35);pointer-events:none;animation:blink .4s steps(1) 4}
-.th-wide .side.l{background:#fff;border:4px solid #c4a5ff;margin-top:120px}.th-wide .side.l h3{color:#7c3aed}.th-wide .side .v{color:#6d28d9}
+.th-wide .side.l{background:#fff;border:4px solid #c4a5ff;margin-top:20px}
+.th-wide .wpt{display:grid;grid-template-columns:24px 1fr 1fr 1fr;align-items:center;gap:2px 2px;text-align:right;font-family:var(--f-led);font-weight:900;font-size:12px;color:#6d28d9}
+.th-wide .wpt svg{width:24px;height:24px}.th-wide .wpt b{font-family:var(--f-body);font-size:11px;color:#5b4a75}
+.th-wide .side.l p svg{vertical-align:middle}
+.th-wide .wmsg{position:absolute;left:10px;right:10px;top:10px;height:38px;border-radius:8px;background:#ffcf3f;color:#33204f;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:18px;z-index:5;pointer-events:none;animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+.th-wide .wmsg b{font-family:var(--f-num);font-weight:400;font-size:22px}.th-wide .wmsg .w{padding:1px 8px;border-radius:999px;background:#7c3aed;color:#ffcf3f}
+.th-wide .hl.wd{box-shadow:0 0 0 3px #c084fc,0 0 16px #c084fc}.th-wide .side.l h3{color:#7c3aed}.th-wide .side .v{color:#6d28d9}
 .th-wide .side.r{background:#24183d;color:#d6c7f5;margin-top:120px}.th-wide .side.r .dat{background:#150c26}.th-wide .side.r .dat b{color:#ffcf3f}
 /* BETの枚数(どの機種も共通):−/＋/MAX と、数字を押すと入力 */
 .betbox{display:flex;align-items:center;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.28);flex-shrink:0}
@@ -682,6 +705,10 @@ grape:'<path d="M50 22L54 8" stroke="#2d6a4f" stroke-width="5" stroke-linecap="r
 star:'<polygon points="50,6 62,38 96,38 68,58 79,92 50,72 21,92 32,58 4,38 38,38" fill="#ffb703" stroke="#a0600a" stroke-width="3" stroke-linejoin="round"/>',
 replay:'<circle cx="50" cy="50" r="38" fill="#3a86ff"/><text x="50" y="66" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="44" fill="#fff">R</text>',
 gem:'<polygon points="26,22 74,22 92,42 50,90 8,42" fill="#4cc9f0" stroke="#0b6e8a" stroke-width="3" stroke-linejoin="round"/><polygon points="26,22 40,42 60,42 74,22" fill="#90e0ef"/><line x1="8" y1="42" x2="92" y2="42" stroke="#0b6e8a" stroke-width="3"/>',
+crown:'<path d="M12 74L8 30L30 50L50 18L70 50L92 30L88 74Z" fill="#ffc83d" stroke="#9a6a00" stroke-width="3.5" stroke-linejoin="round"/><rect x="12" y="74" width="76" height="12" rx="3" fill="#f4a300" stroke="#9a6a00" stroke-width="3.5"/><circle cx="50" cy="56" r="7" fill="#e63946" stroke="#7a1520" stroke-width="2"/><circle cx="29" cy="62" r="5" fill="#4cc9f0" stroke="#0b6e8a" stroke-width="2"/><circle cx="71" cy="62" r="5" fill="#4cc9f0" stroke="#0b6e8a" stroke-width="2"/><circle cx="8" cy="30" r="5" fill="#ffc83d" stroke="#9a6a00" stroke-width="2.5"/><circle cx="50" cy="16" r="5" fill="#ffc83d" stroke="#9a6a00" stroke-width="2.5"/><circle cx="92" cy="30" r="5" fill="#ffc83d" stroke="#9a6a00" stroke-width="2.5"/>',
+melon:'<path d="M8 34A42 42 0 0 0 92 34Z" fill="#2d8a4e" stroke="#1b5e33" stroke-width="3" stroke-linejoin="round"/><path d="M15 34A35 35 0 0 0 85 34Z" fill="#f4fbe9"/><path d="M19 34A31 31 0 0 0 81 34Z" fill="#ef4f5c"/><g fill="#2b2b2b"><ellipse cx="36" cy="44" rx="2.6" ry="4"/><ellipse cx="50" cy="50" rx="2.6" ry="4"/><ellipse cx="64" cy="44" rx="2.6" ry="4"/><ellipse cx="43" cy="56" rx="2.6" ry="4"/><ellipse cx="57" cy="56" rx="2.6" ry="4"/></g>',
+orange:'<circle cx="50" cy="56" r="34" fill="#ff9f1c" stroke="#b35c00" stroke-width="3"/><ellipse cx="38" cy="44" rx="9" ry="5" fill="#ffd08a"/><path d="M50 24L50 14" stroke="#6b4a1a" stroke-width="4" stroke-linecap="round"/><path d="M52 18Q66 6 76 14Q66 26 52 18Z" fill="#40916c" stroke="#1e6b36" stroke-width="2"/>',
+wild:'<rect x="4" y="20" width="92" height="60" rx="12" fill="#7c3aed" stroke="#ffcf3f" stroke-width="5"/><text x="50" y="62" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="30" fill="#ffcf3f" stroke="#3b0a8a" stroke-width="1.5">WILD</text><polygon points="14,12 17,20 25,22 17,24 14,32 11,24 3,22 11,20" fill="#fff6bf"/><polygon points="86,70 89,78 97,80 89,82 86,90 83,82 75,80 83,78" fill="#fff6bf"/>',
 rocket:'<path d="M50 6C66 20 68 46 64 70L36 70C32 46 34 20 50 6Z" fill="#f1f1f1" stroke="#333355" stroke-width="3"/><circle cx="50" cy="36" r="8" fill="#3a86ff" stroke="#333355" stroke-width="3"/><path d="M36 54L22 74L36 70Z" fill="#e63946"/><path d="M64 54L78 74L64 70Z" fill="#e63946"/><path d="M42 72L50 94L58 72Z" fill="#ff9f1c"/>'
 };
 // KAGUYAのリール絵柄(紅月の7・刀のBAR・鈴・桜・三日月・竹)。光って見えるように、太い半透明の線を下にしいている
@@ -947,7 +974,7 @@ async function finish(d){ await countUp(d.a); RUN=null; G.hold=false; G.busy=fal
 const MINFO={
   classic:{op:'ボタン1つ・3リール',memo:'小さな当たりがよく出る。はじめての人向け。BETの数だけラインが光る。',w:1,bet:'1〜100枚',hd:'#c9f2dc',s:['cherry','lemon','bell']},
   oshi:{op:'レバー＋ボタン3つ',memo:'自分で止めるパチスロ風。ランプが光ったら7かBARをねらえ。',w:3,bet:'3〜30枚',hd:'#e9e3d6',s:['seven','bar','replay']},
-  wide:{op:'ボタン1つ・5リール',memo:'20ライン。ほしが3つでフリースピン10回(配当2倍)。',w:3,bet:'1〜100枚',hd:'#eadcff',s:['star','grape','gem']},
+  wide:{op:'ボタン1つ・5リール',memo:'ラインなし。左から、となりの列のどこかに同じ絵柄があればつながる。ほし3つでフリースピン(上乗せあり・WILDで配当2倍)。',w:3,bet:'1〜100枚',hd:'#eadcff',s:['star','grape','gem']},
   rocket:{op:'ボタン1つ・3リール',memo:'ロケットがそろうと発射。80%で連チャンが続き、月まで行ける。',w:4,bet:'1〜100枚',hd:'#cfe8ff',s:['rocket','rocket','rocket']},
   jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
   drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
@@ -1273,17 +1300,18 @@ MACH.oshi=pachi('oshi'); MACH.battle=pachi('battle');
 
 /* ---------- ③ ワイドライン ---------- */
 MACH.wide={
-  pool:['seven','gem','star','bell','grape','cherry','lemon'],
+  pool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star'],
+  fsPool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star','wild'],
   open(){
-    const W=SP.consts.W_PAY, K=SP.consts.W_K;
+    const W=SP.consts.W_PAY, N=SP.consts.W_FSN, f=v=>+v.toFixed(1);
     screen('th-wide',
       `<div class="topper">${sym('star',44)}<div class="logo">WIDE LINE</div>${sym('gem',44)}</div>
-       <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"><b>20 LINES</b><span>ほしが3つでフリースピン</span></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
+       <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"><b>243 WAYS</b><span>ほしが3つでフリースピン</span></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
        <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ffe680;--b2:#ffcf3f;--b3:#c99400;--glow:rgba(255,207,63,.9);color:#33204f;text-shadow:none" aria-label="スピン">SPIN</button></div>
        ${trayHtml(6)}`,
-      `<h3>PAY TABLE</h3><p style="color:#5b4a75">5つそろったとき(BET1枚あたり。BETを増やすと配当も増える)</p>${['seven','gem','bell','grape','cherry'].map(k=>`<div class="row">${sym(k)}<span style="font-size:11px">×5</span><span class="v">${+(W[k][5]*K).toFixed(1)}</span></div>`).join('')}
-       <div class="row">${sym('star')}<span style="font-size:11px">3つ以上</span><span class="v">FREE</span></div><p style="color:#5b4a75">左のリールから3つ以上つながると当たり。フリースピン中は配当2倍。</p>`,
+      `<h3>PAY TABLE</h3><p style="color:#5b4a75;text-align:center">BETの何倍か</p><div class="wpt"><span></span><b>3つ</b><b>4つ</b><b>5つ</b>${Object.keys(W).map(k=>`${sym(k)}<span>${f(W[k][3])}</span><span>${f(W[k][4])}</span><span>${f(W[k][5])}</span>`).join('')}</div>
+       <div class="row">${sym('star')}<span style="font-size:11px">3/4/5つ</span><span class="v">FREE ${N[3]}/${N[4]}/${N[5]}回</span></div><p style="color:#5b4a75">左のリールから、となりの列のどこかにあればつながる。同じ列に2つなら2通り分。フリースピン中は${sym('wild',16)}WILDが出て、WILDを含む当たりは配当2倍。ほしで回数上乗せ。</p>`,
       `<h3 style="font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:1px">フリースピン</h3><div id="fsd"></div>`);
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     this.reels.forEach((el,i)=>makeReel(el,88,126,74,[this.pool[(i+1)%7],this.pool[(i+3)%7],this.pool[(i+5)%7]]));
@@ -1297,24 +1325,26 @@ MACH.wide={
     updBet('wide',!!fs,fs?s.fsBet:(G.busy&&this.bet?this.bet:G.bet.wide));
     $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||(!fs&&G.cred<G.bet.wide);
     const bar=$('#fsbar'); bar.classList.toggle('on',!!fs);
-    bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffcf3f;color:#33204f">配当 ×2</span>`:'<b>20 LINES</b><span>ほしが3つでフリースピン</span>';
-    $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>ほしが3つ以上でフリースピン10回。BETは入ったときのまま。</p>`; },
+    bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffcf3f;color:#33204f">WILDで配当 ×2</span>`:'<b>243 WAYS</b><span>ほしが3つでフリースピン</span>';
+    $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>ほし3つで10回・4つで15回・5つで20回。フリースピン中もほしで上乗せ。BETは入ったときのまま。</p>`; },
   async spin(){
     if(G.busy) return; const fs=this.fs(), bet=G.bet.wide; if(!fs&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
     this.bet=fs?(G.st.wide||{}).fsBet:bet; this.wasFs=!!fs;
     begin(fs?0:bet); $('#ledWin').textContent=0; document.querySelectorAll('.hl').forEach(x=>x.remove()); this.upd(); sfx.spin();
-    spinStart(this.reels,this.pool); const t0=Date.now();
+    const pool=fs?this.fsPool:this.pool; spinStart(this.reels,pool); const t0=Date.now();
     const d=await play('wide',{bet});
     if(!d){ this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
     await sleep(Math.max(0,450-(Date.now()-t0)));
     for(let i=0;i<5;i++){ const col=[0,1,2].map(r=>d.grid[r][i]); const stars=d.grid.filter(r=>r[i]==='star').length;
-      await spinStop(this.reels[i],col,this.pool,i===0?600:220+(i>=3&&d.starCells.filter(c=>c[1]<i).length>=2?700:0)); }
+      await spinStop(this.reels[i],col,pool,i===0?600:220+(i>=3&&d.starCells.filter(c=>c[1]<i).length>=2?700:0)); }
     const lcd=$('#lcd'), cellsSeen={};
-    const mark=(r,c)=>{ const k=r+','+c; if(cellsSeen[k]) return; cellsSeen[k]=1; const el=this.reels[c]; const d2=document.createElement('div'); d2.className='hl';
+    const mark=(r,c)=>{ const k=r+','+c; if(cellsSeen[k]) return; cellsSeen[k]=1; const el=this.reels[c]; const d2=document.createElement('div'); d2.className='hl'+(d.grid[r][c]==='wild'?' wd':'');
       d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; lcd.appendChild(d2); };
     d.wins.forEach(w=>w.cells.forEach(([r,c])=>mark(r,c))); if(d.stars>=3) d.starCells.forEach(([r,c])=>mark(r,c));
     if(d.pay>0){ $('#ledWin').textContent=d.pay; sfx.win(); if(d.pay>=(d.fsBet||bet)*10) winText(lcd,`BIG WIN! +${d.pay}`,140); }
-    if(d.fsStart){ sfx.big(); winText(lcd,`FREE SPIN ${SP.consts.W_FS}回!`,150); await sleep(1200); }
+    if(d.pay>0&&d.wins.length&&d.pay<(d.fsBet||bet)*10){ const w=d.wins.slice().sort((a,b)=>b.x-a.x)[0]; const m=document.createElement('div'); m.className='wmsg'; m.innerHTML=`${sym(w.sym,26)}<b>${w.n}つ</b>${w.ways>1?`<span>×${w.ways}通り</span>`:''}${w.wild?'<span class="w">WILD ×2</span>':''}<b>+${d.pay}</b>`; lcd.appendChild(m); setTimeout(()=>m.remove(),1800); }
+    if(d.fsStart){ sfx.big(); winText(lcd,`FREE SPIN ${d.fsAdd}回!`,150); await sleep(1200); }
+    if(d.fsMore){ sfx.big(); winText(lcd,`+${d.fsAdd}回 上乗せ!`,130); await sleep(1100); }
     if(d.fsEnd){ winText(lcd,`フリースピン終了 +${d.fsWin}`,150); await sleep(1200); }
     await finish(d); this.upd();
     const scr=G.scr; if(this.fs()) setTimeout(()=>{ if(!G.busy&&!G.after&&G.mid==='wide'&&G.scr===scr) this.spin(); },d.fsStart?900:700); else autoNext(()=>this.spin());
