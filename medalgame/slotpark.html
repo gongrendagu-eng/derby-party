@@ -771,18 +771,52 @@ function chr(mood,s){
   return `<svg viewBox="0 0 100 100" width="${s}" height="${s}" aria-hidden="true">${flame}<ellipse cx="18" cy="56" rx="12" ry="8" fill="#fff" stroke="#c9d2e3" stroke-width="2" transform="rotate(-20 18 56)"/><ellipse cx="82" cy="56" rx="12" ry="8" fill="#fff" stroke="#c9d2e3" stroke-width="2" transform="rotate(20 82 56)"/><line x1="50" y1="22" x2="50" y2="10" stroke="${rim}" stroke-width="3"/><polygon points="50,0 53,7 60,7 54,11 56,18 50,14 44,18 46,11 40,7 47,7" fill="#ffd23f" stroke="#c99400" stroke-width="1.5"/><circle cx="50" cy="58" r="34" fill="${rim}"/><circle cx="50" cy="58" r="29" fill="${face}"/><circle cx="50" cy="58" r="25" fill="none" stroke="${rim}" stroke-width="1.5" stroke-dasharray="3 3"/>${f}${rival?'':'<ellipse cx="33" cy="66" rx="4" ry="2.5" fill="#ff9aa2"/><ellipse cx="67" cy="66" rx="4" ry="2.5" fill="#ff9aa2"/>'}</svg>`;
 }
 
-/* ---------- 効果音(小さく) ---------- */
+/* ---------- 効果音(プログラムで合成。ファイルは使わない) ---------- */
 let AC=null; const snd={on:true};
-function tone(f,d,type,vol,delay){ if(!snd.on) return; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const t=AC.currentTime+(delay||0), o=AC.createOscillator(), g=AC.createGain();
-  o.type=type||'square'; o.frequency.setValueAtTime(f,t); g.gain.setValueAtTime(vol||.04,t); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+d+.02);}catch(e){} }
+const SE_VOL=2.6; // 効果音の大きさ(BGMは0.35)。大きすぎる分はコンプレッサーでおさえる
+let SE=null; // {out:効果音の出口, rev:響き}
+function seBus(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(SE) return SE;
+  const comp=AC.createDynamicsCompressor(); comp.threshold.value=-9; comp.knee.value=6; comp.ratio.value=8; comp.attack.value=.003; comp.release.value=.2; comp.connect(AC.destination);
+  const out=AC.createGain(); out.gain.value=SE_VOL; out.connect(comp);
+  // 響き(小さなホールの残響)
+  const len=Math.floor(AC.sampleRate*1.6), ir=AC.createBuffer(2,len,AC.sampleRate);
+  for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2); }
+  const conv=AC.createConvolver(); conv.buffer=ir; const rg=AC.createGain(); rg.gain.value=.32; conv.connect(rg); rg.connect(out);
+  SE={out,rev:conv}; return SE; }
+let NOISE=null; function noiseBuf(){ if(NOISE) return NOISE; const n=AC.sampleRate, b=AC.createBuffer(1,n,AC.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return NOISE=b; }
+// 1つの音:o=音の形, f=高さ(配列なら高さを変える), a=立ち上がり, d=消えるまで, v=大きさ, w=響きの量
+function nt(o){ if(!snd.on) return; try{ const B=seBus(), t=AC.currentTime+(o.at||0), g=AC.createGain();
+    let src;
+    if(o.noise){ src=AC.createBufferSource(); src.buffer=noiseBuf(); src.loop=true; }
+    else { src=AC.createOscillator(); src.type=o.type||'sine'; const f=[].concat(o.f); src.frequency.setValueAtTime(f[0],t); if(f[1]) src.frequency.exponentialRampToValueAtTime(f[1],t+(o.fd||o.d)); if(o.det) src.detune.value=o.det; }
+    let node=src;
+    if(o.fm){ const m=AC.createOscillator(), mg=AC.createGain(); m.frequency.value=[].concat(o.f)[0]*o.fm; mg.gain.setValueAtTime([].concat(o.f)[0]*(o.fmi||2),t); mg.gain.exponentialRampToValueAtTime(1,t+o.d); m.connect(mg); mg.connect(src.frequency); m.start(t); m.stop(t+o.d+.05); }
+    if(o.lp||o.bp||o.hp){ const fl=AC.createBiquadFilter(); fl.type=o.lp?'lowpass':o.bp?'bandpass':'highpass'; const fr=[].concat(o.lp||o.bp||o.hp); fl.frequency.setValueAtTime(fr[0],t); if(fr[1]) fl.frequency.exponentialRampToValueAtTime(fr[1],t+o.d); fl.Q.value=o.q||1; node.connect(fl); node=fl; }
+    const at=o.a||.004, v=o.v||.3; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+at); g.gain.exponentialRampToValueAtTime(.0001,t+at+o.d);
+    node.connect(g); g.connect(B.out); if(o.w){ const wg=AC.createGain(); wg.gain.value=o.w; g.connect(wg); wg.connect(B.rev); }
+    src.start(t); src.stop(t+at+o.d+.05); }catch(e){} }
+const bell=(f,at,v,d)=>{ nt({f,fm:3.5,fmi:1.6,d:d||.9,v:v||.16,at,w:.8}); nt({f:f*2,d:(d||.9)*.5,v:(v||.16)*.25,at,w:.6}); };
+const brass=(f,at,d,v)=>{ [-6,6].forEach(det=>nt({type:'sawtooth',f,det,a:.04,d:d||.5,v:(v||.09),lp:[900,2600],q:.7,at,w:.5})); };
 const sfx={
-  spin:()=>tone(520,.08,'square',.03),
-  stop:()=>tone(180,.06,'triangle',.08),
-  win:()=>[660,880,990,1320].forEach((f,i)=>tone(f,.12,'square',.035,i*.08)),
-  big:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.18,'square',.04,i*.12)),
-  coin:()=>tone(1500,.04,'square',.02),
-  push:()=>tone(300,.3,'sawtooth',.05)
+  // 回しはじめ:リールが回り出す「シュルッ」
+  spin:()=>{ nt({noise:true,bp:[500,1600],q:1.2,a:.03,d:.22,v:.18,w:.2}); nt({type:'triangle',f:[180,320],d:.18,v:.12}); },
+  // リールが止まる:「ガコン」(低い打音+金具の音)
+  stop:()=>{ nt({type:'sine',f:[160,55],fd:.12,d:.18,v:.8}); nt({noise:true,bp:2200,q:2.5,d:.05,v:.6,w:.25}); nt({type:'triangle',f:[1250,1180],d:.09,v:.06,w:.4}); },
+  // 当たり:鐘のチャイム+キラキラ
+  win:()=>{ [1047,1319,1568,2093].forEach((f,i)=>bell(f,i*.09,.17,1.0)); for(let i=0;i<6;i++) nt({f:2600+Math.random()*1800,d:.12,v:.05,at:.3+i*.06,w:.9}); },
+  // 大当たり・フリースピン:ブラスのファンファーレ+ティンパニ+鐘
+  big:()=>{ nt({noise:true,lp:[260,120],q:.8,a:.02,d:.5,v:.5,w:.3}); nt({type:'sine',f:[90,60],d:.6,v:.45});
+    const C=[[523,659,784],[587,740,880],[659,831,988],[784,988,1175,1568]], T=[0,.18,.36,.6];
+    C.forEach((ch,i)=>ch.forEach(f=>brass(f,T[i],i===3?1.3:.3,i===3?.08:.07)));
+    [0,.18,.36].forEach(at=>nt({noise:true,lp:600,q:.7,d:.12,v:.25,at}));
+    nt({noise:true,lp:[400,180],d:1.0,v:.45,at:.6,w:.4}); nt({type:'sine',f:[80,55],d:1.0,v:.4,at:.6});
+    [1568,2093,2637,3136].forEach((f,i)=>bell(f,.7+i*.08,.12,1.2)); },
+  // メダルが落ちる:「チャリン」
+  coin:()=>{ nt({f:2637,d:.25,v:.12,w:.6}); nt({f:3951,d:.18,v:.07,at:.02,w:.6}); },
+  // PUSHボタン:重い一撃
+  push:()=>{ nt({type:'sine',f:[120,40],fd:.4,d:.5,v:.6}); nt({noise:true,lp:[1800,200],d:.4,v:.35,w:.5}); }
 };
+function tone(f,d,type,vol,delay){ nt({type:type==='square'?'triangle':(type||'triangle'),f,d,v:Math.min(.3,(vol||.04)*3),at:delay||0}); } // 前の書き方の呼び出し用
 
 /* ---------- 絵と音のファイル(medalgame/sp-assets/) ---------- */
 const ASSET='sp-assets/';
@@ -910,7 +944,7 @@ function betModal(mid){
   const pre=(B.step===1?[1,2,3,5,10,20,50,100]:B.step===3?[3,6,9,15,30]:[5,10,20,30,50]).filter(n=>n<=B.max);
   const box=document.createElement('div'); box.className='msgbox'; box.style.background='rgba(40,20,30,.45)'; box.style.zIndex=50; $('#stage').appendChild(box);
   box.innerHTML=`<div class="card" style="width:560px"><h2>BETの枚数</h2><p class="note">1回あたり ${B.min}〜${B.max}枚${B.step>1?`(${B.step}枚きざみ)`:''}。BETを増やすと、当たったときの配当も同じ倍率で増えます。</p>
-    <div style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="bIn" type="number" inputmode="numeric" value="${amt}" min="${B.min}" max="${B.max}" step="${B.step}" style="flex:1;border:3px solid #ff5c8a;border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:34px;text-align:right"><span>枚</span></div>
+    <div style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="bIn" type="number" inputmode="numeric" value="${amt}" min="${B.min}" max="${B.max}" step="${B.step}" style="flex:1;min-width:0;width:100%;border:3px solid #ff5c8a;border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:34px;text-align:right"><span style="flex-shrink:0;font-size:18px;font-weight:800">枚</span></div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${pre.map(n=>`<button class="pbtn" data-q="${n}">${n}枚</button>`).join('')}</div>
     <p id="bErr" style="color:#d63c5e;font-weight:800;min-height:1.4em"></p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="pbtn" id="bNo">やめる</button><button class="pbtn go" id="bGo">決める</button></div></div>`;
   const inp=box.querySelector('#bIn');
@@ -971,7 +1005,7 @@ function amtModal(kind){
   const v=G.view, a=seatA(), max=kind==='add'?v.b||0:a; let amt=Math.min(kind==='add'?100:a,max);
   const box=document.createElement('div'); box.className='msgbox'; box.style.background='rgba(40,20,30,.45)'; box.style.zIndex=50; $('#stage').appendChild(box);
   const draw=()=>{ box.innerHTML=`<div class="card" style="width:520px"><h2>${kind==='add'?'貯金から追加':'一部だけ貯金にもどす'}</h2><p class="note">${kind==='add'?`貯金 ${yen(max)}枚`:`持ち込み ${yen(max)}枚`}</p>
-    <div style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="mIn" type="number" inputmode="numeric" value="${amt}" style="flex:1;border:3px solid #ff5c8a;border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:34px;text-align:right"><span>枚</span></div>
+    <div style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="mIn" type="number" inputmode="numeric" value="${amt}" style="flex:1;min-width:0;width:100%;border:3px solid #ff5c8a;border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:34px;text-align:right"><span style="flex-shrink:0;font-size:18px;font-weight:800">枚</span></div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${[10,50,100].map(n=>`<button class="pbtn" data-q="${n}" ${n>max?'disabled':''}>${n}枚</button>`).join('')}<button class="pbtn" data-q="${max}">全部</button></div>
     <p id="mErr" style="color:#d63c5e;font-weight:800;min-height:1.4em"></p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="pbtn" id="mNo">やめる</button><button class="pbtn go" id="mGo">${kind==='add'?'追加する':'もどす'}</button></div></div>`;
     box.querySelector('#mIn').oninput=e=>{amt=e.target.value};
