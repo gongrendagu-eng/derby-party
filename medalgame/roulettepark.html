@@ -78,6 +78,8 @@ button,select,input{font:inherit;color:inherit}
 .hbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hbar .logo{font-size:26px;margin-right:6px}
 .hbar .sp{flex:1}
+.bgmsel{display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:13px;background:var(--paper);border:2.5px solid var(--ink);border-radius:999px;padding:2px 4px 2px 12px}
+.bgmsel select{border:0;background:transparent;font-weight:800;cursor:pointer;padding:2px 2px}
 .hchip{background:var(--paper);border:2.5px solid var(--ink);border-radius:999px;padding:3px 14px;font-weight:800;font-variant-numeric:tabular-nums}
 .hchip.code{font-family:var(--f-display);font-weight:400;letter-spacing:.12em}
 .hchip.game{background:var(--blue);color:#fff;font-family:var(--f-display);font-weight:400}
@@ -719,6 +721,7 @@ html,body,button,input,.board,.board *{touch-action:manipulation}
       <span class="sp"></span>
       <span class="hchip" id="hConn">接続中…</span>
       <button class="btn small" id="soundBtn" type="button" aria-pressed="false">音を出す</button>
+      <label class="bgmsel" title="BGMの音量（効果音はそのまま）">BGM<select id="bgmVol"><option value="0.55">大</option><option value="0.35" selected>中</option><option value="0.2">小</option><option value="0">なし</option></select></label>
       <button class="btn small" id="quitBtn" type="button">設定にもどる</button>
     </header>
     <div class="hmain">
@@ -1132,6 +1135,64 @@ const sfx={
   tease:(ms)=>{const e=ms/1000;for(let t=0.15;t<e-0.2;t+=0.62){tone(68,0.2,'sine',0.42,t);tone(68,0.2,'sine',0.34,t+0.26)}},
   popout:()=>{tone(260,0.22,'square',0.06,0,980);burst(0.1,0.16,2600)}
 };
+/* ===================== BGM（先生のPCだけで鳴らす） =====================
+   曲は rp-assets フォルダに置く。ファイルがなくてもゲームは効果音だけで動く。
+   場面（H.phase）を見て自動で曲を切りかえ、曲の終わりは頭とクロスフェードしてループする。 */
+const BGM_DIR='rp-assets/';
+const BGM_FILES={lobby:'bgm_lobby.mp3',bet:'bgm_bet.mp3',draw:'bgm_draw.mp3',dbl:'bgm_dbl.mp3',reveal:'bgm_reveal.mp3',sd:'bgm_sd.mp3',ending:'bgm_ending.mp3'};
+const BGM_DELAY={ending:2600}; // 掃除当番が決まった「ドーン」の余韻のあとで流す
+const bgm={vol:0.35,voices:[],key:null,pend:null,pendAt:0,duck:1,duckTo:1,duckUntil:0,last:0,warm:{}};
+function bgmScene(){
+  if(!H||!H.cfg)return null;
+  const p=H.phase;
+  if(p==='lobby')return 'lobby';
+  if(p==='bet')return 'bet';
+  if(p==='draw')return H.dbl?'dbl':'draw';
+  if(p==='result')return (!isFree()&&H.gno>=H.cfg.games)?'reveal':'lobby'; // フリーモードは次のゲームを待つ曲
+  if(p==='reveal')return 'reveal';
+  if(p==='sd_pick'||p==='sd_spin'||p==='gsd_pick'||p==='gsd_spin')return 'sd';
+  if(p==='end')return 'ending';
+  return null; // 設定画面・ダブルアップ抽選中（ドラムロールを聞かせる）・終了
+}
+function bgmVoice(key,fadeSec){
+  const a=new Audio(BGM_DIR+BGM_FILES[key]);a.preload='auto';a.volume=0;
+  const v={a,key,g:0,tgt:1,spd:1/Math.max(0.05,fadeSec),looped:false};
+  a.addEventListener('error',()=>{v.dead=true});
+  const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{v.dead=true});
+  bgm.voices.push(v);return v;
+}
+function bgmFadeAll(sec){bgm.voices.forEach(v=>{v.tgt=0;v.spd=1/Math.max(0.05,sec)})}
+function bgmWarm(){Object.keys(BGM_FILES).forEach(k=>{if(!bgm.warm[k]){const a=new Audio();a.preload='auto';a.src=BGM_DIR+BGM_FILES[k];bgm.warm[k]=a}})}
+function bgmDuck(level,ms){const now=performance.now();if(now>=bgm.duckUntil)bgm.duckTo=1;bgm.duckTo=Math.min(bgm.duckTo,level);bgm.duckUntil=Math.max(bgm.duckUntil,now+ms)}
+function bgmTick(){
+  const now=performance.now(),dt=Math.min(0.5,(now-(bgm.last||now))/1000);bgm.last=now;
+  const want=(soundOn&&bgm.vol>0)?bgmScene():null;
+  if(want!==bgm.key){
+    bgm.key=want;bgmFadeAll(want?1.2:0.8);
+    bgm.pend=want;bgm.pendAt=now+(want&&BGM_DELAY[want]||0);
+  }
+  if(bgm.pend&&now>=bgm.pendAt){bgmVoice(bgm.pend,1.0);bgm.pend=null}
+  // 効果音の間だけBGMを下げる
+  if(now>=bgm.duckUntil)bgm.duckTo=1;
+  bgm.duck+=(bgm.duckTo-bgm.duck)*Math.min(1,dt*(bgm.duckTo<bgm.duck?12:2.5));
+  const XF=2.5;
+  bgm.voices.slice().forEach(v=>{
+    // ループ：曲の終わり XF 秒前から頭の音と重ねる
+    if(!v.looped&&v.tgt>0&&v.key===bgm.key&&v.a.duration>XF*3&&v.a.currentTime>=v.a.duration-XF){
+      v.looped=true;v.tgt=0;v.spd=1/XF;bgmVoice(v.key,XF);
+    }
+    v.g+=Math.sign(v.tgt-v.g)*Math.min(Math.abs(v.tgt-v.g),v.spd*dt);
+    try{v.a.volume=Math.max(0,Math.min(1,v.g*v.g*bgm.vol*bgm.duck))}catch(e){}
+    if(v.dead||(v.g<=0&&v.tgt<=0)||(v.a.ended)){try{v.a.pause()}catch(e){}v.a.removeAttribute('src');bgm.voices.splice(bgm.voices.indexOf(v),1)}
+  });
+}
+// 大きな効果音のときはBGMを少し下げる
+['drum','fanfare','doom','dbl','plus','safe','tease'].forEach(k=>{
+  const f=sfx[k];
+  const lv={drum:0.55,tease:0.5,fanfare:0.35,doom:0.3,dbl:0.35,plus:0.5,safe:0.45}[k];
+  const ms={fanfare:1300,doom:1400,dbl:1000,plus:700,safe:800}[k];
+  sfx[k]=(...a)=>{if(soundOn)bgmDuck(lv,(k==='drum'||k==='tease')?(Number(a[0])||800)+300:ms);return f(...a)};
+});
 const TEASE_P=0.2; // 入りそうで入らない演出の出る割合（じっくり・標準のとき）
 
 /* ===================== ルーレット ===================== */
@@ -1577,7 +1638,7 @@ function hostInit(){
   $('host').hidden=false;
   $('c_use').innerHTML=GKEYS.map(g=>`<label><input type="checkbox" value="${g}" checked>${GAMES[g].name}</label>`).join('');
   fillCfg(lsGet(CFG_KEY,null));
-  $('verLine').textContent=`版 ${APP_VER}`;
+  $('verLine').textContent=`版 ${APP_VER}（BGM付き）`;
   const sv=lsGet(SAVE_KEY,null);
   if(sv&&sv.code&&Date.now()-sv.ts<12*3600e3){$('resumeBtn').hidden=false;$('resumeBtn').textContent=`前回の続きから（${sv.code}・第${sv.gno}ゲームまで）`}
   $('openBtn').addEventListener('click',()=>openRoom(null));
@@ -1588,8 +1649,13 @@ function hostInit(){
     if(soundOn){try{ensureAudio();if(audio.state==='suspended')audio.resume()}catch(e){soundOn=false}}
     if(!soundOn)sfx.roll(0);
     $('soundBtn').textContent=soundOn?'音：ON':'音を出す';$('soundBtn').setAttribute('aria-pressed',String(soundOn));
-    if(soundOn)sfx.chime();
+    if(soundOn){sfx.chime();bgmWarm()}
   });
+  const bv=$('bgmVol'),sv0=lsGet('rp_bgmvol',null);
+  if(sv0!=null&&[...bv.options].some(o=>o.value===String(sv0)))bv.value=String(sv0);
+  bgm.vol=Number(bv.value);
+  bv.addEventListener('change',()=>{bgm.vol=Number(bv.value);lsSet('rp_bgmvol',bgm.vol);if(soundOn&&bgm.vol>0)bgmWarm()});
+  setInterval(bgmTick,50);
   $('quitBtn').addEventListener('click',quitAsk);
   document.addEventListener('keydown',e=>{
     if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
