@@ -787,19 +787,23 @@ const sfx={
 /* ---------- 絵と音のファイル(medalgame/sp-assets/) ---------- */
 const ASSET='sp-assets/';
 // 機種ごとのBGM(lobby=機種選びの画面)
-const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',rocket:'bgm_rocket.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_kaguya.mp3',drop:'bgm_drop.mp3',lobby:'bgm_lobby.mp3'};
+const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',wide_fs:'bgm_wide_fs.mp3',rocket:'bgm_rocket.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_kaguya.mp3',drop:'bgm_drop.mp3',lobby:'bgm_lobby.mp3'};
 const BGM_VOL=0.35; // 小さめ
 const bgm={on:(()=>{ try{ return localStorage.getItem('mg.slotpark.bgm')!=='0'; }catch(e){ return true; } })(),el:null,file:null};
 function acx(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume().catch(()=>{}); return AC; }
 // iPadは画面にさわったときでないと音が出ないので、さわるたびに音の準備を確かめる
 document.addEventListener('pointerdown',()=>{ try{ if(AC&&AC.state==='suspended') AC.resume(); if(bgm.el&&bgm.on&&bgm.el.paused&&!document.hidden) bgm.el.play().catch(()=>{}); }catch(e){} },true);
+const bgmMiss={}; // 置いていない曲(読みこめなかった曲)
 function bgmPlay(mid){
+  // ワイドラインはフリースピン中だけ別の曲(bgm_wide_fs.mp3)。まだ置いていなければ、ふだんの曲のまま
+  if(mid==='wide'&&((G.st.wide||{}).fs||0)>0&&!bgmMiss.wide_fs) mid='wide_fs';
   const f=BGM[mid]; if(!f||!bgm.on){ bgmStop(); return; }
   if(bgm.file===f&&bgm.el){ if(bgm.el.paused&&!document.hidden) bgm.el.play().catch(()=>{}); return; }
   bgmStop();
   const a=new Audio(ASSET+f); a.loop=true; a.preload='auto';
   // iPadは音量の指定がきかないので、Web Audio を通して小さくする
   try{ const ctx=acx(), src=ctx.createMediaElementSource(a), g=ctx.createGain(); g.gain.value=BGM_VOL; src.connect(g); g.connect(ctx.destination); }catch(e){ a.volume=BGM_VOL; }
+  a.onerror=()=>{ if(bgm.el!==a) return; bgmMiss[mid]=1; if(mid==='wide_fs'&&G.mid==='wide') bgmPlay('wide'); };
   bgm.el=a; bgm.file=f; a.play().catch(()=>{});
 }
 function bgmStop(){ if(bgm.el){ try{ bgm.el.pause(); bgm.el.removeAttribute('src'); bgm.el.load(); }catch(e){} } bgm.el=null; bgm.file=null; }
@@ -1366,6 +1370,7 @@ MACH.wide={
     $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||(!fs&&G.cred<G.bet.wide);
     const bar=$('#fsbar'); bar.classList.toggle('on',!!fs);
     bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffd84d;color:#3a1800">WILDで配当 ×2</span>`:'<b>243 WAYS</b><span>たまごが3つでフリースピン</span>';
+    if(G.mid==='wide') bgmPlay('wide');
     $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>たまご3こで10回・4こで15回・5こで20回。フリースピン中もたまごで上乗せ。BETは入ったときのまま。</p>`; },
   async spin(){
     if(G.busy) return; const fs=this.fs(), bet=G.bet.wide; if(!fs&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
