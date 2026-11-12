@@ -187,7 +187,7 @@
       const add = W_FSN[Math.min(ev.stars, 5)];
       st.fs = (st.fs || 0) + add; res.fsStart = !free; res.fsAdd = add; res.fsMore = free;
     }
-    res.fs = st.fs || 0; res.fsWin = st.fsWin || 0; res.fsBet = st.fsBet || bet;
+    res.fs = st.fs || 0; res.fsWin = st.fsWin || 0; res.fsBet = (free || st.fs > 0) ? st.fsBet : bet; // ふだんの回は今のBET(前のフリースピンのBETを使わない)
     if (free && st.fs === 0) res.fsEnd = true;
     return res;
   }
@@ -1417,7 +1417,7 @@ MACH.wide={
     for(let i=0;i<5;i++){ const col=[0,1,2].map(r=>WM[d.grid[r][i]]||d.grid[r][i]);
       if(i===3&&d.starCells.filter(c=>c[1]<3).length>=2) this.say('たまごが2つ…！あと1つ！');
       await spinStop(this.reels[i],col,pool,i===0?600:220+(i>=3&&d.starCells.filter(c=>c[1]<i).length>=2?700:0)); }
-    const lcd=$('#lcd'), cellsSeen={}, B=d.fsBet||bet;
+    const lcd=$('#lcd'), cellsSeen={}, B=d.free?(d.fsBet||bet):bet; // BIG WIN はこの回のBETの10倍以上
     const mark=(r,c)=>{ const k=r+','+c; if(cellsSeen[k]) return; cellsSeen[k]=1; const el=this.reels[c]; const d2=document.createElement('div'); d2.className='hl'+(d.grid[r][c]==='wild'?' wd':'');
       d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; lcd.appendChild(d2);
       // そろった絵柄を動かす(モンスター=跳ねる、たまご=ゆれる、WILD=光る)
