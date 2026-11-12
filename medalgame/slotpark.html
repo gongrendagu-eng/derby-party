@@ -25,12 +25,13 @@
 
   const MACHINES = [
     // BETは min〜max を step きざみで自由に選べる。配当はBETに比例するので、還元率はBETに関係なく同じ
-    { id: 'classic', name: 'フルーツクラシック', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
-    { id: 'oshi', name: '目押しチャレンジ', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } },
+    // いったん休止中の台(行頭の // を消せば元にもどる。中身のプログラムは残してある)
+    // { id: 'classic', name: 'フルーツクラシック', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
+    // { id: 'oshi', name: '目押しチャレンジ', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } },
     { id: 'wide', name: 'ワイドライン', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
     { id: 'rocket', name: '連チャンロケット', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 2 } },
-    { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bet: { min: 5, max: 50, step: 5, def: 5 } },
-    { id: 'drop', name: 'キラリドロップ', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
+    // { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bet: { min: 5, max: 50, step: 5, def: 5 } },
+    // { id: 'drop', name: 'キラリドロップ', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
     // ⑦ は id を 'battle' のまま、中身を KAGUYA に差し替え(先生のPCに保存した台の状態をそのまま使うため)
     { id: 'battle', name: 'KAGUYA', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } }
   ];
@@ -400,7 +401,7 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 /* ロビー */
 .lobby{position:absolute;left:0;top:52px;right:0;bottom:0;padding:22px 24px;display:flex;flex-direction:column;gap:16px}
 .lobby h1{margin:0;font-size:26px;font-weight:800}.lobby h1 small{font-size:14px;color:#6e5a72;font-weight:700;margin-left:12px}
-.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;flex:1}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:14px;flex:1}
 .mcard{border-radius:22px;background:#fff;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 0 #f0e2d2;text-align:left;padding:0}
 .mcard .hd{height:78px;display:flex;align-items:center;justify-content:center;gap:4px}
 .mcard .hd svg{width:46px;height:46px}
@@ -900,7 +901,7 @@ async function hostMain(){
   }catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
   app.innerHTML=`<div class="wrap"><div class="htop"><div class="ttl">${NAME}<small>先生のPC</small></div><span class="sp"></span>
       <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span><button class="btn danger" id="stop">停止する(全員を精算)</button></div>
-    <div class="stats"><div class="stat"><small>遊んでいる人</small><b id="sN">0人</b></div><div class="stat"><small>ジャックポット</small><b id="sJ">0枚</b></div><div class="stat"><small>機種</small><b>7台</b></div><div class="stat"><small>還元率(目安)</small><b>約95%</b></div></div>
+    <div class="stats"><div class="stat"><small>遊んでいる人</small><b id="sN">0人</b></div><div class="stat"><small>ジャックポット</small><b id="sJ">0枚</b></div><div class="stat"><small>機種</small><b>${SP.MACHINES.length}台</b></div><div class="stat"><small>還元率(目安)</small><b>約95%</b></div></div>
     <div class="box"><p class="note">このタブを開いている間、iPadのゲーム一覧に「${NAME}」が出ます。抽選と配当はこのPCで計算します。タブは閉じずに置いておいてください(閉じると遊んでいる人のメダルは預けたままになり、トップの「貯金にもどす」か管理画面の精算で回収できます)。</p></div>
     <div class="box"><h2>遊んでいる人</h2><ul class="pl" id="pl"></ul></div>
     <div class="box"><h2>さいきんの大当たり</h2><ul class="pl" id="fd"></ul></div></div>`;
@@ -1063,7 +1064,7 @@ async function openLobby(){
       <div class="mcard" style="justify-content:center;align-items:center;padding:16px;gap:10px;text-align:center"><div>${chr('happy',110)}</div><div style="font-weight:800">メダまる</div><div class="op">どの台にしようかな？</div></div></div></div>`;
   bindTop();
   $('#stage').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ G.mid=b.dataset.m; openMachine(G.mid); });
-  const r=await info('jackpot'); if(r.ok&&$('#lobJp')) $('#lobJp').textContent=`JP ${yen(G.jp)}枚`;
+  if(MBY.jackpot){ const r=await info('jackpot'); if(r.ok&&$('#lobJp')) $('#lobJp').textContent=`JP ${yen(G.jp)}枚`; }
 }
 
 /* ---------- 機種の画面(共通の部品) ---------- */
