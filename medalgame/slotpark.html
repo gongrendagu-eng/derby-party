@@ -195,38 +195,43 @@
 
   /* ---------- ④ 連チャンロケット ---------- */
   const K_LV = [0, 3, 4, 5, 6, 8, 10, 12, 15, 20, 50]; // レベルごとの配当（BETの倍）
-  const K_CONT = 0.8;
-  const K_OUT = [['rocket', 0, 1 / 61.5], ['bell', 5, 1 / 40], ['cherry', 2, 1 / 8]];
-  const K_FILL = ['seven', 'star', 'gem', 'bell', 'cherry', 'lemon'];
+  const K_CONT = 0.8, K_SUP = 0.9; // 連チャンの続く確率(ふつうの発射/7で発射=スーパー発射)
+  // 当たり:[エンジン名, 配当(BETの倍), 確率]。rocket=発射、seven=スーパー発射、ほかは配当だけ
+  //  star=惑星×10 / bell=衛星×5 / gem=エネルギーコア×3 / lemon=ヘルメット×2 / cherry=彗星(左に1つ)×1
+  const K_OUT = [['rocket', 0, 1 / 61.5], ['seven', 0, 1 / 800], ['star', 10, 1 / 250], ['bell', 5, 1 / 80], ['gem', 3, 1 / 50], ['lemon', 2, 1 / 25], ['cherry', 1, 1 / 20]];
+  const K_FILL = ['seven', 'star', 'gem', 'bell', 'cherry', 'lemon', 'rocket'];
+  const K_FAKE = 0.035; // はずれのうち、ロケット(または7)が2つ並ぶリーチになる割合(演出だけ)
   function rocketReels(sym) {
+    const cnt = (x, k) => x.filter((v) => v === k).length;
+    const bad = (x) => x[0] === 'cherry' || (x[0] === x[1] && x[1] === x[2]) || cnt(x, 'rocket') > 1 || cnt(x, 'seven') > 1 || (x[0] === x[1] && (x[0] === 'rocket' || x[0] === 'seven'));
     let a, tries = 0;
-    do { a = [0, 1, 2].map(() => K_FILL[ri(K_FILL.length)]); tries++; }
-    while (tries < 200 && ((a[0] === a[1] && a[1] === a[2]) || a[0] === 'cherry'));
-    if (sym === 'rocket') a = ['rocket', 'rocket', 'rocket'];
-    else if (sym === 'bell') a = ['bell', 'bell', 'bell'];
-    else if (sym === 'cherry') { a[0] = 'cherry'; if (a[1] === 'cherry') a[1] = 'lemon'; }
-    else if (sym === 'miss') { a = ['rocket', 'rocket', K_FILL[ri(K_FILL.length)]]; }
+    do { a = [0, 1, 2].map(() => K_FILL[ri(K_FILL.length)]); tries++; } while (tries < 300 && bad(a));
+    if (sym === 'cherry') { a[0] = 'cherry'; if (a[1] === 'cherry') a[1] = 'lemon'; }
+    else if (sym === 'miss') a = ['rocket', 'rocket', K_FILL.filter((k) => k !== 'rocket')[ri(6)]];
+    else if (sym === 'fake') { const k = R() < 0.75 ? 'rocket' : 'seven'; a = [k, k, K_FILL.filter((v) => v !== k && v !== 'cherry')[ri(5)]]; }
+    else if (sym) a = [sym, sym, sym];
     return a;
   }
   function rocketSpin(st, bet) {
-    if (st.chain) { // 連チャン中（BETなし）
+    if (st.chain) { // 連チャン中(BETなし)
       const c = st.chain;
-      if (R() < K_CONT && c.lv < 10) {
+      if (R() < (c.cont || K_CONT) && c.lv < 10) {
         c.lv++; const pay = K_LV[c.lv] * c.bet; c.win += pay;
-        const res = { bet: 0, pay, chain: true, lv: c.lv, win: c.win, reels: rocketReels('rocket'), chainBet: c.bet };
-        if (c.lv >= 10) { res.end = true; res.moon = true; st.best = Math.max(st.best || 0, c.lv); st.chain = null; }
+        const res = { bet: 0, pay, chain: true, sup: !!c.sup, lv: c.lv, win: c.win, reels: rocketReels('rocket'), chainBet: c.bet };
+        if (c.lv >= 10) { res.end = true; res.moon = true; st.best = Math.max(st.best || 0, c.lv); st.last = c.lv; st.chain = null; }
         return res;
       }
-      const res = { bet: 0, pay: 0, chain: true, end: true, lv: c.lv, win: c.win, reels: rocketReels('miss'), chainBet: c.bet };
+      const res = { bet: 0, pay: 0, chain: true, sup: !!c.sup, end: true, lv: c.lv, win: c.win, reels: rocketReels('miss'), chainBet: c.bet };
       st.best = Math.max(st.best || 0, c.lv); st.last = c.lv; st.chain = null; return res;
     }
     let r = R(), out = null, mult = 0;
     for (const o of K_OUT) { if (r < o[2]) { out = o[0]; mult = o[1]; break; } r -= o[2]; }
-    if (out === 'rocket') {
-      st.chain = { lv: 1, bet, win: K_LV[1] * bet };
-      return { bet, pay: K_LV[1] * bet, start: true, lv: 1, win: st.chain.win, reels: rocketReels('rocket'), chainBet: bet };
+    if (out === 'rocket' || out === 'seven') {
+      const sup = out === 'seven';
+      st.chain = { lv: 1, bet, win: K_LV[1] * bet, cont: sup ? K_SUP : K_CONT, sup };
+      return { bet, pay: K_LV[1] * bet, start: true, sup, lv: 1, win: st.chain.win, reels: rocketReels(out), chainBet: bet };
     }
-    return { bet, pay: mult * bet, out, reels: rocketReels(out) };
+    return { bet, pay: mult * bet, out, reels: rocketReels(out || (R() < K_FAKE ? 'fake' : null)) };
   }
 
   /* ---------- ⑤ ジャックポット777 ---------- */
@@ -332,7 +337,7 @@
 
   const API = {
     MACHINES, play, cost,
-    consts: { C_LINES, P_STRIP, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_FSN, W_WILDX }
+    consts: { C_LINES, P_STRIP, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, K_SUP, K_OUT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_FSN, W_WILDX }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SP = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1183,7 +1188,7 @@ const MINFO={
   classic:{op:'ボタン1つ・3リール',memo:'小さな当たりがよく出る。はじめての人向け。BETの数だけラインが光る。',w:1,bet:'1〜100枚',hd:'#c9f2dc',s:['cherry','lemon','bell']},
   oshi:{op:'レバー＋ボタン3つ',memo:'自分で止めるパチスロ風。ランプが光ったら7かBARをねらえ。',w:3,bet:'3〜30枚',hd:'#e9e3d6',s:['seven','bar','replay']},
   wide:{op:'ボタン1つ・5リール',memo:'モンスターがあつまるRPGの台。左から、となりの列のどこかに同じモンスターがいればつながる。たまご3つでフリースピン(上乗せあり・WILDで配当2倍)。',w:3,bet:'1〜100枚',hd:'#0a1038',html:`<div class="hdwl"><img class="dr" src="${ASSET}wl_dragon_win.webp" alt=""><div class="tt"><b>DRAGON</b><b>LEGION</b></div><img class="eg" src="${ASSET}wl_egg.webp" alt=""></div>`},
-  rocket:{op:'ボタン1つ・3リール＋液晶',memo:'ロケット3つで発射。80%で連チャンが続き、雲の上・宇宙・月(38万km)まで上がっていく。',w:4,bet:'1〜100枚',hd:'#05070f',html:`<div class="hdrk"><div class="tt"><b>連チャンロケット</b><b>MOON SHOT</b></div></div>`},
+  rocket:{op:'ボタン1つ・3リール＋液晶',memo:'ロケット3つで発射、7が3つでスーパー発射。連チャンで雲の上・宇宙・月(38万km)まで上がっていく。',w:4,bet:'1〜100枚',hd:'#05070f',html:`<div class="hdrk"><div class="tt"><b>連チャンロケット</b><b>MOON SHOT</b></div></div>`},
   jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
   drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
   battle:{op:'レバー＋ボタン3つ＋液晶',memo:'月夜の荒野をゆくKAGUYA。宿敵シロガネとのバトルに勝てばボーナス。',w:3,bet:'3〜30枚',hd:'#0d1030',img:'kg_bust',s:['seven','replay','bell']}
@@ -1602,10 +1607,15 @@ MACH.rocket={
        <div class="ledrow">${ledsHtml([['CREDIT','ledCred',G.cred],['連チャン','ledLv','00'],['WIN','ledWin',0]])}<button class="auto" id="bAuto">AUTO</button></div>
        <div class="deck" style="height:90px">${betBox('rocket')}<span style="flex:1"></span><span class="chainmsg" id="dmsg"></span><button class="rbtn" id="bSpin" style="width:84px;height:84px;--b1:#ffcf80;--b2:#ff9f1c;--b3:#b85a00;--glow:rgba(255,159,28,.9);color:#2a1500;text-shadow:none" aria-label="スピン">SPIN</button></div>
        ${trayHtml(9)}`,
-      `<h3>しくみ</h3><div class="row" style="justify-content:center">${rs('rocket')}${rs('rocket')}${rs('rocket')}</div>
-       <p>ロケットが3つそろうと発射。そのあとは80%で連チャンが続く(BETなし)。上に行くほど配当が大きくなり、10連で月に到着。</p>
-       <div class="row">${rs('bell')}${rs('bell')}${rs('bell')}<span class="v">×5</span></div><div class="row">${rs('cherry')}<span style="font-size:11px">左に1つ</span><span class="v">×2</span></div>
-       <p>3連でブースター、5連で第2段を切り離す。7連からロケットが金色に。</p>`,
+      `<h3>しくみ</h3>
+       <div class="row">${rs('rocket')}${rs('rocket')}${rs('rocket')}<span class="v" style="font-size:12px">発射</span></div>
+       <div class="row">${rs('seven')}${rs('seven')}${rs('seven')}<span class="v" style="font-size:11px">スーパー<br>発射</span></div>
+       <div class="row">${rs('star')}${rs('star')}${rs('star')}<span class="v">×10</span></div>
+       <div class="row">${rs('bell')}${rs('bell')}${rs('bell')}<span class="v">×5</span></div>
+       <div class="row">${rs('gem')}${rs('gem')}${rs('gem')}<span class="v">×3</span></div>
+       <div class="row">${rs('lemon')}${rs('lemon')}${rs('lemon')}<span class="v">×2</span></div>
+       <div class="row">${rs('cherry')}<span style="font-size:11px">左に1つ</span><span class="v">×1</span></div>
+       <p style="font-size:11px">発射すると80%で連チャン(BETなし)。7で発射すると90%。10連で月に到着。</p>`,
       `<h3>連チャン記録</h3><div id="rdat"></div><h3 style="margin-top:4px">高度と配当</h3><div class="rtbl" id="rtbl"></div><p style="font-size:10.5px;color:#8fb4d8">配当はBETの何倍か</p>`);
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     this.reels.forEach((el,i)=>makeReel(el,64,200,56,[['star','seven','gem'],['gem','bell','star'],['seven','cherry','bell']][i].map(k=>this.sk(k))));
@@ -1618,7 +1628,7 @@ MACH.rocket={
     if(c) setTimeout(()=>{ if(G.mid==='rocket'&&G.scr===scr&&!G.busy&&!G.after&&this.chain()) this.spin(); },1200); }, // 連チャンの続きは自動で
   upd(){ if(!$('#bSpin')) return; const c=this.chain(), s=G.st.rocket||{}, L=SP.consts.K_LV;
     $('#ledLv').textContent=String(c?c.lv:0).padStart(2,'0');
-    $('#chainTag').textContent=c?`${c.lv}連チャン中 ・ 次は +${L[Math.min(10,c.lv+1)]*c.bet}枚`:'';
+    $('#chainTag').textContent=c?`${c.sup?'スーパー ':''}${c.lv}連チャン中(続く確率${Math.round((c.cont||.8)*100)}%) ・ 次は +${L[Math.min(10,c.lv+1)]*c.bet}枚`:'';
     $('#dmsg').textContent=c?'BETなしで発射!':'';
     updBet('rocket',!!c,c?c.bet:(G.busy&&this.bet?this.bet:G.bet.rocket));
     $('#bSpin').textContent=c?'発射':'SPIN'; $('#bSpin').disabled=G.busy||(!c&&G.cred<G.bet.rocket);
@@ -1656,13 +1666,13 @@ MACH.rocket={
   // 連チャン中(途中から開いたとき)
   sceneFly(lv){ if(!$('#rlcd')) return; this.clearFx(); this.setBg(RK.bg[lv],false); this.ship(rkForm(lv),'fly'); $('#rlcd').classList.add('flying'); this.hud(lv,false); this.scene='fly'; },
   // ロケット2つでリーチ:3・2・1のカウントダウン
-  async countdown(){ this.pilot(1,'l',2100); vo('reach');
-    for(const n of [3,2,1]){ this.text(String(n),'cd',40,600); sfx.beep(false); await sleep(620); } },
+  async countdown(sev){ this.pilot(1,'l',2100); vo('reach'); if(sev) this.text('SUPER CHANCE','sub',196,2000);
+    for(const n of [3,2,1]){ const t=this.text(String(n),'cd',40,600); if(sev&&t) t.style.textShadow='0 0 24px #ffd84d,0 0 50px #ffb000'; sfx.beep(false); await sleep(620); } },
   // 発射!!
-  async launch(){ const Lc=$('#rlcd'), S=$('#rship'), sm=$('#rsmoke');
+  async launch(sup){ const Lc=$('#rlcd'), S=$('#rship'), sm=$('#rsmoke');
     sfx.launch(); vo('launch'); S.classList.remove('off'); sm.classList.add('on'); Lc.classList.add('rumble'); sfx.beep(true);
     await sleep(650);
-    this.flash(); const e=this.ev('launch'); this.text('LIFT OFF!!','big',70); this.text('連チャンスタート','sub',140); this.pilot(2,'',1500);
+    this.flash(); const e=this.ev('launch'); this.text(sup?'SUPER LIFT OFF!!':'LIFT OFF!!',sup?'gold':'big',70); this.text(sup?'続く確率90%のスーパー連チャン!':'連チャンスタート','sub',140); this.pilot(2,'',1500);
     await sleep(1600); this.clearFx(); this.evOut(e);
     S.classList.add('lift'); await sleep(1150);
     Lc.classList.remove('rumble'); sm.classList.remove('on'); this.flash(); sfx.whoosh();
@@ -1706,26 +1716,26 @@ MACH.rocket={
   async spin(){
     if(G.busy) return; const c=this.chain(), bet=G.bet.rocket; if(!c&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
     if(!c&&this.scene!=='pad') this.scenePad();
-    this.bet=c?c.bet:bet; const gold=!!c&&c.lv>=6;
+    this.bet=c?c.bet:bet; const gold=!!c&&(c.sup||c.lv>=6);
     begin(c?0:bet); $('#ledWin').textContent=0; this.upd(); sfx.spin();
     const pool=this.pool.map(k=>this.sk(k,gold));
     spinStart(this.reels,pool); const t0=Date.now();
     const d=await play('rocket',{bet});
     if(!d){ this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
     await sleep(Math.max(0,450-(Date.now()-t0)));
-    const reach=d.reels[0]==='rocket'&&d.reels[1]==='rocket', col=i=>[pool[(i*2+1)%7],this.sk(d.reels[i],gold),pool[(i*2+4)%6]];
+    const reach=d.reels[0]===d.reels[1]&&(d.reels[0]==='rocket'||d.reels[0]==='seven'), sev=d.reels[0]==='seven', col=i=>{ const m=this.sk(d.reels[i],gold), o=pool.filter(k=>k!==m&&k!=='rk_rocket'&&k!=='rk_rocket_gold'&&k!=='rk_seven'); return [o[(i*2+1)%o.length],m,o[(i*2+3)%o.length]]; };
     for(let i=0;i<2;i++) await spinStop(this.reels[i],col(i),pool,i?260:600);
-    let cd=null; if(reach&&!c){ cd=this.countdown(); cd.catch(()=>{}); }
+    let cd=null; if(reach&&!c){ cd=this.countdown(sev); cd.catch(()=>{}); }
     if(reach&&c){ this.text('NEXT STAGE…','sub',200,1300); sfx.rumble(1.2,.25); }
     await spinStop(this.reels[2],col(2),pool,reach?(c?1300:2000):260);
     if(cd) await cd;
     if(d.pay>0){ $('#ledWin').textContent=d.pay; sfx.win(); }
-    if(d.start) await this.launch();
+    if(d.start) await this.launch(d.sup);
     else if(d.moon) await this.moon(d);
     else if(d.chain&&!d.end) await this.climb(d);
     else if(d.chain&&d.end) await this.ret(d);
     else if(reach){ sfx.abort(); this.text('発射延期…','sub',96,1300); }
-    else if(d.out==='bell'){ winText($('#rw'),`衛星キャッチ! +${d.pay}`,60); }
+    else if(d.out){ const nm={star:'惑星はっけん!',bell:'衛星キャッチ!',gem:'燃料補給!',lemon:'クルー集合!',cherry:'流れ星!'}[d.out]||''; winText($('#rw'),`${nm} +${d.pay}`,60); if(d.pay>=d.bet*5) this.text(nm,'sub',110,1400); }
     await finish(d); this.upd();
     const scr=G.scr; if(this.chain()) setTimeout(()=>{ if(!G.busy&&G.mid==='rocket'&&!G.after&&G.scr===scr) this.spin(); },900); else autoNext(()=>this.spin());
   }
