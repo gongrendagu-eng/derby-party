@@ -32,8 +32,8 @@
     { id: 'rocket', name: '連チャンロケット', style: 'chic', bet: { min: 1, max: 100, step: 1, def: 2 } },
     // { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bet: { min: 5, max: 50, step: 5, def: 5 } },
     // { id: 'drop', name: 'キラリドロップ', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
-    // ⑦ は id を 'battle' のまま、中身を KAGUYA に差し替え(先生のPCに保存した台の状態をそのまま使うため)
-    { id: 'battle', name: 'KAGUYA', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } }
+    // ⑦ は id を 'battle' のまま、中身を GUILD RUSH に差し替え(先生のPCに保存した台の状態をそのまま使うため)
+    { id: 'battle', name: 'GUILD RUSH', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } }
   ];
 
   /* ---------- ① フルーツクラシック ---------- */
@@ -71,9 +71,13 @@
     return { pay, bet, out, line, lines, grid: classicGrid(out, line, lines) };
   }
 
-  /* ---------- ② 目押し / ⑦ KAGUYA（パチスロ） ---------- */
+  /* ---------- ② 目押し / ⑦ GUILD RUSH（パチスロ） ---------- */
   const P_STRIP = ['seven', 'bell', 'replay', 'lemon', 'bell', 'replay', 'cherry', 'bell', 'replay', 'bar', 'bell',
     'replay', 'lemon', 'bell', 'replay', 'cherry', 'bell', 'replay', 'lemon', 'bell', 'replay'];
+  // GUILD RUSH(5ライン)用のリールの並び。絵柄の数は P_STRIP と同じで、並び順だけ5ライン向けに変えた
+  // (よこのラインでベルとリプレイが同時にそろわない・どこで押しても当たった絵柄をそろえやすい並びを、シミュレーションで探した)
+  const G_STRIP = ['bar', 'lemon', 'replay', 'lemon', 'bell', 'bell', 'cherry', 'replay', 'replay', 'seven', 'bell', 'bell', 'replay', 'bell', 'lemon',
+    'cherry', 'replay', 'replay', 'bell', 'replay', 'bell'];
   const P_PROB = { replay: 1 / 7.3, bell: 1 / 7.5, cherry: 1 / 36, big: 1 / 280, reg: 1 / 400 };
   const P_PAY = { replay: 3, bell: 8, cherry: 4, bonusGame: 12 };
   const P_GAMES = { big: 30, reg: 12 };
@@ -116,16 +120,26 @@
     res.held = st.held || null;
     return res;
   }
-  // 液晶演出（KAGUYA）。確率はメダまるバトルのときと同じ
+  // 液晶演出（GUILD RUSH）。期待度 tier: 0=なし 1=青 2=緑 3=赤 4=金 5=虹。prem=プレミア(当たり確定)
+  // 当たりの確率・配当には関係しない(見せ方だけ)。当たったときは緑以上
+  const G_HIT = [[2, 10], [3, 30], [4, 40], [5, 20]];
+  const G_MISS = [[1, 0.10], [2, 0.04], [3, 0.012], [4, 0.0015]];
   function battleEffect(res) {
     if (res.flag === 'bonusGame') return { scene: 'bonusGame' };
-    if (res.newHit) return { scene: wpick([['gold', 30], ['red', 25], ['battleWin', 30], ['rainbow', 15]]), hit: true };
-    const r = R();
-    if (r < 0.05) return { scene: 'green' };
-    if (r < 0.065) return { scene: 'red' };
-    if (r < 0.075) return { scene: 'battleLose' };
-    if (res.flag === 'cherry') return { scene: 'chance' };
-    return { scene: 'normal' };
+    const ch = res.flag === 'cherry';
+    if (res.newHit) return { tier: wpick(G_HIT), hit: true, prem: R() < 0.05, ch };
+    let r = R(), tier = 0;
+    for (const [t, p] of G_MISS) { if (r < p) { tier = t; break; } r -= p; }
+    return { tier, hit: false, ch };
+  }
+  // ダンジョンの階層(30ゲームごとに1つ深く。B1〜B5)とギルドランク(ボーナスが終わるたびに1つ上がる。F〜S)
+  function guildMove(st, res) {
+    if (res.flag === 'bonusGame') {
+      if (res.bonusEnd) { st.rank = (st.rank || 0) + 1; res.rankNew = st.rank; if (st.rank >= 6) { res.rankS = true; st.rank = 0; } st.floor = 0; st.fg = 0; }
+      return;
+    }
+    st.fg = (st.fg || 0) + 1;
+    if (st.fg >= 30) { st.fg = 0; if ((st.floor || 0) < 4) { st.floor = (st.floor || 0) + 1; res.floorUp = st.floor; } }
   }
 
   /* ---------- ③ ワイドライン（5リール・243ウェイ） ---------- */
@@ -316,7 +330,7 @@
       case 'oshi': case 'battle': {
         if (d.type === 'stop') return pachiStop(st, d);
         const res = pachiLever(st, bet);
-        if (mid === 'battle') { res.fx = battleEffect(res); if (res.newHit) res.lamp = true; }
+        if (mid === 'battle') { res.fx = battleEffect(res); guildMove(st, res); if (res.newHit) res.lamp = true; }
         else if (res.newHit) res.lamp = R() < 0.6; // 目押し：告知ランプ（すぐ光る／あとで光る）
         if (mid === 'oshi' && !res.newHit && st.held && !st.lampOn) { if (R() < 0.35) res.lamp = true; }
         if (res.lamp) st.lampOn = true;
@@ -337,7 +351,7 @@
 
   const API = {
     MACHINES, play, cost,
-    consts: { C_LINES, P_STRIP, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, K_SUP, K_OUT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_FSN, W_WILDX }
+    consts: { C_LINES, P_STRIP, G_STRIP, D_LINES, D_ODDS, D_COMBO, D_K, K_LV, K_CONT, K_SUP, K_OUT, J_SEED, C_OUT, P_PAY, P_GAMES, W_PAY, W_SCAT, W_FS, W_FSN, W_WILDX }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SP = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -811,7 +825,169 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .kpulse{animation:kpulse .7s ease-in-out infinite alternate}
 @keyframes kpulse{to{filter:brightness(1.35);scale:1.04}}
 .kbreath{animation:breathe 1.3s ease-in-out infinite alternate;transform-origin:50% 100%}
-@media (prefers-reduced-motion:reduce){.rays,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb,.wstars,.wdust i,.kwbob,.kwsheet,.kshadow,.kline,.kpetal,.kspark,.kquake,.kpulse,.kbreath,.rclouds,.rstreaks i,.rship.fly .rbody,.rlcd.rumble,.rquake{animation:none!important}}
+/* ⑦ GUILD RUSH(冒険者ギルドRPG・5ライン・大液晶) */
+.th-guild{--led:#ffd84d;--ledbox:#120c06;--ledlbl:#e9c98a;background:#120b07 radial-gradient(ellipse at 50% 0%,#3a2414 0%,#140c07 70%);--tb-line:#7a5426;--tb-ttl:#7a3e12;--tb-btnc:#5a3410}
+.th-guild .topbar{background:#fff8ec}
+.gscr{position:absolute;left:0;right:0;top:52px;bottom:0;padding:8px 20px 0;display:flex;flex-direction:column;gap:8px}
+.glcdw{position:relative;height:448px;flex-shrink:0;padding:6px;border-radius:12px;background:linear-gradient(180deg,#f3d995 0%,#9a6a24 45%,#ecc874 55%,#6a4416 100%);box-shadow:0 0 0 2px #2a1808,0 8px 20px rgba(0,0,0,.6)}
+.glcd{position:relative;width:100%;height:100%;border-radius:7px;overflow:hidden;background:#05040a}
+.gbgs,.gstage,.gfx{position:absolute;inset:0;overflow:hidden}
+.gbg{position:absolute;inset:-3% -7%;background-size:cover;background-position:center;transition:opacity .7s;animation:gpan 26s ease-in-out infinite alternate}
+@keyframes gpan{from{transform:translateX(-4%) scale(1.02)}to{transform:translateX(4%) scale(1.07)}}
+.gstage{z-index:2}.gfx{z-index:6;pointer-events:none}
+.gbon .ghud,.gbon .grank{display:none}
+.gdim{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(0,0,0,0) 30%,rgba(0,0,0,.55) 100%);pointer-events:none}
+/* 左上:階層 右上:ギルドランク */
+.ghud{position:absolute;left:12px;top:10px;z-index:7;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.gfloor{display:flex;align-items:baseline;gap:8px;padding:3px 14px 3px 10px;border-radius:8px;background:rgba(10,8,20,.72);border:2px solid rgba(255,216,77,.65);color:#fff;font-weight:800;font-size:15px;text-shadow:0 1px 2px #000}
+.gfloor b{font-family:var(--f-led);font-weight:900;font-size:22px;color:#ffd84d}
+.gprog{width:200px;height:7px;border-radius:4px;background:rgba(0,0,0,.6);overflow:hidden;border:1px solid rgba(255,216,77,.4)}
+.gprog i{display:block;height:100%;background:linear-gradient(90deg,#ffb02e,#ffe27a);transition:width .6s}
+.grank{position:absolute;right:12px;top:10px;z-index:7;width:86px;height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;
+  background:linear-gradient(180deg,#3a2a6a,#160f30);clip-path:polygon(50% 0,100% 14%,100% 70%,50% 100%,0 70%,0 14%);border:0}
+.grank::before{content:"";position:absolute;inset:3px;clip-path:inherit;background:linear-gradient(180deg,#2a1f55,#0d0820)}
+.grank small,.grank b{position:relative}
+.grank small{font-size:9px;font-weight:800;letter-spacing:1px;color:#e9c98a;margin-top:-8px}
+.grank b{font-family:var(--f-num);font-weight:400;font-size:40px;line-height:1;color:#ffd84d;text-shadow:0 0 10px rgba(255,216,77,.8),0 3px 0 #5a3a00}
+.grank.s b{animation:ghue 1.2s linear infinite;color:#ff7a7a}
+/* セリフの窓 */
+.gsay{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:8;min-width:440px;max-width:820px;display:flex;align-items:center;gap:14px;padding:9px 20px;border-radius:10px;background:rgba(10,16,60,.92);border:3px solid #fff;box-shadow:0 0 0 3px #0a1038,0 6px 14px rgba(0,0,0,.5);color:#fff;font-weight:800;font-size:19px;pointer-events:none;animation:pop .25s ease-out}
+.gsay b{flex-shrink:0;padding:1px 10px;border-radius:6px;background:var(--c,#fff);color:#120c06;font-size:15px}
+/* 歩くパーティー */
+.gparty{position:absolute;left:70px;bottom:4px;display:flex;align-items:flex-end;transition:transform .5s cubic-bezier(.3,.7,.3,1),opacity .5s;transform-origin:0 100%;z-index:3}
+.gparty img{margin-left:-48px;transform-origin:50% 100%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6));animation:gwalk .42s ease-in-out infinite alternate}
+.gparty img:first-child{margin-left:0}
+@keyframes gwalk{to{transform:translateY(-7px) rotate(-1.2deg)}}
+.gparty.back{transform:translateX(-30px) scale(.78)}
+.gparty.out{transform:translateX(-120px) scale(.7);opacity:0}
+.gdust i{position:absolute;bottom:10px;width:5px;height:5px;border-radius:50%;background:rgba(255,230,200,.5);animation:gdust 2.6s linear infinite}
+@keyframes gdust{from{transform:translate(0,0);opacity:.8}to{transform:translate(-260px,-40px);opacity:0}}
+/* 絵(キャラ・モンスター) */
+.gspr{position:absolute;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.65));transform-origin:50% 100%}
+.gin-l{animation:ginl .45s cubic-bezier(.2,1.25,.4,1) both}@keyframes ginl{from{transform:translateX(-700px)}}
+.gin-r{animation:ginr .45s cubic-bezier(.2,1.25,.4,1) both}@keyframes ginr{from{transform:translateX(700px)}}
+.gin-z{animation:ginz .55s cubic-bezier(.2,1.4,.4,1) both}@keyframes ginz{from{transform:scale(.2);opacity:0}}
+.gin-d{animation:gind .5s cubic-bezier(.3,1.5,.5,1) both}@keyframes gind{from{transform:translateY(-500px)}}
+.gbreath{animation:gbr 1.4s ease-in-out infinite alternate}@keyframes gbr{to{transform:scale(1.025) translateY(-3px)}}
+.gfloat{animation:gfl 1.8s ease-in-out infinite alternate}@keyframes gfl{to{transform:translateY(-14px)}}
+.ghit{animation:ghit .1s steps(2) 4;filter:brightness(2.6) drop-shadow(0 0 12px #fff)}@keyframes ghit{50%{transform:translateX(12px)}}
+.gfly{animation:gfly .75s ease-in forwards}@keyframes gfly{to{transform:translate(420px,-320px) rotate(560deg) scale(.5);opacity:0}}
+.gflyL{animation:gflyl .75s ease-in forwards}@keyframes gflyl{to{transform:translate(-420px,-320px) rotate(-560deg) scale(.5);opacity:0}}
+.glunge{animation:glunge .28s cubic-bezier(.5,0,.8,1) forwards}@keyframes glunge{to{transform:translateX(-360px)}}
+.gdash{animation:gdash .28s cubic-bezier(.5,0,.8,1) forwards}@keyframes gdash{to{transform:translateX(360px)}}
+.gout{animation:gout .35s ease-in forwards}@keyframes gout{to{opacity:0;transform:scale(.8)}}
+.gsil{filter:brightness(0) drop-shadow(0 0 20px rgba(180,80,255,.8));opacity:.9}
+/* 効果 */
+.gflash{position:absolute;inset:0;background:var(--c);z-index:9;animation:gflash .6s ease-out forwards;pointer-events:none}
+.gflash.rb{background:linear-gradient(90deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd)}
+@keyframes gflash{from{opacity:.9}to{opacity:0}}
+.grays{position:absolute;left:50%;top:50%;width:1700px;height:1700px;margin:-850px 0 0 -850px;background:repeating-conic-gradient(var(--c) 0 8deg,rgba(0,0,0,0) 8deg 22deg);animation:spin 8s linear infinite;opacity:.75;pointer-events:none}
+.grays.rb{background:repeating-conic-gradient(rgba(255,77,109,.45) 0 8deg,rgba(0,0,0,0) 8deg 14deg,rgba(255,210,63,.45) 14deg 22deg,rgba(0,0,0,0) 22deg 28deg,rgba(61,220,132,.45) 28deg 36deg,rgba(0,0,0,0) 36deg 42deg,rgba(58,134,255,.45) 42deg 50deg,rgba(0,0,0,0) 50deg 56deg,rgba(157,78,221,.45) 56deg 64deg,rgba(0,0,0,0) 64deg 72deg)}
+.gtint{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen}
+.gmagic{position:absolute;left:50%;top:50%;width:420px;height:420px;margin:-210px 0 0 -210px;z-index:4;pointer-events:none;animation:gmagic 1.5s ease-out both}
+.gmagic svg{width:100%;height:100%;animation:spin 2.6s linear infinite;filter:drop-shadow(0 0 8px var(--c)) drop-shadow(0 0 22px var(--c))}
+@keyframes gmagic{0%{transform:scale(.15);opacity:0}25%{transform:scale(1);opacity:1}80%{opacity:1}100%{transform:scale(1.4);opacity:0}}
+.gtx{position:absolute;left:0;right:0;text-align:center;font-family:var(--f-num);color:#fff;white-space:nowrap;z-index:8;pointer-events:none;-webkit-text-stroke:2px rgba(20,10,0,.75);paint-order:stroke fill;text-shadow:0 0 14px var(--c),0 0 32px var(--c),0 5px 0 rgba(0,0,0,.55);animation:gtx .4s cubic-bezier(.2,1.6,.4,1) both}
+.gtx.rb{color:#ffe9e9;text-shadow:0 0 14px #ff3b6b,0 0 32px #ff3b6b,0 5px 0 rgba(0,0,0,.55);animation:gtx .4s cubic-bezier(.2,1.6,.4,1) both,ghue 1.2s linear infinite}
+.gtx.sub{font-family:var(--f-body);font-weight:800;-webkit-text-stroke:0;text-shadow:0 2px 4px #000,0 0 12px rgba(0,0,0,.9)}
+@keyframes gtx{from{transform:scale(2.4);opacity:0}}
+@keyframes ghue{to{filter:hue-rotate(360deg)}}
+.gcut{position:absolute;top:26px;width:280px;height:370px;z-index:7;transform:skewX(-9deg);border:4px solid var(--c);background:linear-gradient(160deg,var(--c) 0%,#050308 70%);overflow:hidden;box-shadow:0 0 24px var(--c);animation:gcutl .38s cubic-bezier(.2,1.3,.4,1) both}
+.gcut.r{animation-name:gcutr}
+.gcut img{position:absolute;left:-12%;top:0;width:124%;height:100%;object-fit:cover;object-position:50% 18%;transform:skewX(9deg)}
+.gcut b{position:absolute;left:-10px;right:-10px;bottom:0;padding:4px 0 6px;text-align:center;font-weight:800;font-size:22px;color:#fff;background:linear-gradient(0deg,rgba(0,0,0,.85),rgba(0,0,0,.2));transform:skewX(9deg);text-shadow:0 0 8px var(--c)}
+@keyframes gcutl{from{transform:skewX(-9deg) translateX(-140%)}}
+@keyframes gcutr{from{transform:skewX(-9deg) translateX(140%)}}
+.gwin{position:absolute;z-index:7;padding:10px 18px;border-radius:10px;background:rgba(10,16,60,.93);border:3px solid #fff;box-shadow:0 0 0 3px #0a1038,0 8px 18px rgba(0,0,0,.5);color:#fff;font-weight:800;font-size:22px;animation:pop .25s ease-out}
+.gcmd{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px;font-size:24px}
+.gcmd div{position:relative;padding-left:28px;opacity:.75}
+.gcmd div.on{opacity:1;color:var(--c,#ffd84d);text-shadow:0 0 10px var(--c,#ffd84d)}
+.gcmd div.on::before{content:"";position:absolute;left:2px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:14px solid #fff;border-right:0}
+.ghp{position:absolute;top:58px;width:300px;height:14px;border-radius:7px;background:rgba(0,0,0,.6);border:2px solid #fff;overflow:hidden;z-index:6}
+.ghp i{display:block;height:100%;transition:width 1s ease}
+.gdmg{position:absolute;font-family:var(--f-num);font-size:48px;color:#fff;z-index:9;pointer-events:none;-webkit-text-stroke:2px #5a1010;paint-order:stroke fill;text-shadow:0 0 10px #ff4d4d;animation:gdmg .9s ease-out forwards}
+@keyframes gdmg{0%{transform:translateY(20px) scale(.5);opacity:0}20%{transform:translateY(-10px) scale(1.15);opacity:1}100%{transform:translateY(-60px);opacity:0}}
+.gscroll{position:absolute;right:140px;top:36px;width:250px;height:330px;z-index:7;border-radius:6px;background:linear-gradient(90deg,#d8bb7c 0%,#f6e7c1 12%,#f6e7c1 88%,#d8bb7c 100%);box-shadow:0 10px 24px rgba(0,0,0,.6),inset 0 0 0 3px #b08a3e;display:flex;flex-direction:column;align-items:center;padding-top:18px;color:#5a3a10;transform:rotate(4deg);animation:gscroll .5s cubic-bezier(.2,1.4,.4,1) both}
+.gscroll::before,.gscroll::after{content:"";position:absolute;left:-8px;right:-8px;height:18px;border-radius:9px;background:linear-gradient(180deg,#a8742c,#6a4416)}
+.gscroll::before{top:-9px}.gscroll::after{bottom:-9px}
+.gscroll small{font-weight:800;font-size:22px;letter-spacing:8px}
+.gscroll span{font-size:14px;font-weight:800;margin-top:4px;color:#7a5426}
+.gscroll b{font-family:var(--f-num);font-weight:400;font-size:150px;line-height:1.1;color:var(--c);-webkit-text-stroke:3px #3a2008;paint-order:stroke fill;text-shadow:0 0 18px var(--c)}
+.gscroll b.rb{animation:ghue 1.2s linear infinite}
+@keyframes gscroll{from{transform:rotate(4deg) translateY(-480px)}}
+.gmark{position:absolute;font-family:var(--f-num);font-size:58px;color:#fff;z-index:8;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 0 12px var(--c);animation:gmark .35s cubic-bezier(.2,1.8,.4,1) both}
+@keyframes gmark{from{transform:translateY(30px) scale(.2);opacity:0}}
+.gdark{position:absolute;inset:0;background:#000;z-index:5;pointer-events:none;animation:gdark 1.1s ease-in both}
+@keyframes gdark{from{opacity:0}to{opacity:.88}}
+.geyes{position:absolute;z-index:6;display:flex;gap:28px;animation:gblink 1.2s steps(1) infinite}
+.geyes i{width:34px;height:12px;border-radius:50% 50% 40% 40%;background:#ff3045;box-shadow:0 0 16px #ff3045,0 0 30px #ff3045}
+@keyframes gblink{90%{opacity:0}}
+.gshadow{position:absolute;bottom:-30px;height:520px;z-index:5;pointer-events:none;filter:brightness(0) drop-shadow(0 0 24px rgba(180,80,255,.9));opacity:.92;animation:gshadow 2s ease-in-out both}
+@keyframes gshadow{from{transform:translateX(900px)}to{transform:translateX(-1300px)}}
+.gblack{position:absolute;inset:0;background:#000;z-index:10}
+.gline{position:absolute;left:0;height:3px;border-radius:2px;background:linear-gradient(90deg,rgba(255,255,255,0),var(--c));animation:gline .35s linear infinite;pointer-events:none}
+@keyframes gline{from{transform:translateX(1200px)}to{transform:translateX(-400px)}}
+.gspark{position:absolute;bottom:-8px;width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);animation:gspark 1.6s ease-out infinite;pointer-events:none}
+@keyframes gspark{from{transform:translateY(0);opacity:1}to{transform:translate(-40px,-420px);opacity:0}}
+.gcoin{position:absolute;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c8 0%,#ffd23f 45%,#a87a10 100%);box-shadow:0 0 8px #ffd23f;z-index:8;animation:gcoin 1s cubic-bezier(.2,.6,.4,1) forwards;pointer-events:none}
+@keyframes gcoin{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--dx),var(--dy));opacity:0}}
+.gconf i{position:absolute;top:-20px;width:12px;height:18px;animation:gconf 2.6s linear infinite;pointer-events:none}
+@keyframes gconf{to{transform:translateY(900px) rotate(720deg)}}
+.gvs{position:absolute;inset:0;background:linear-gradient(105deg,rgba(40,110,255,.55) 0 49.6%,#fff 49.6% 50.4%,rgba(120,210,255,.5) 50.4% 100%);z-index:1;animation:pop .3s ease-out}
+.gbigpush{position:absolute;left:50%;top:58%;width:200px;height:200px;margin:-100px 0 0 -100px;z-index:12;border-radius:50%;border:8px solid #fff;
+  background:radial-gradient(circle at 35% 30%,#fff 0%,var(--c) 32%,#2a1a00 100%);color:#fff;font-family:var(--f-num);font-size:44px;letter-spacing:2px;-webkit-text-stroke:2px #000;paint-order:stroke fill;
+  box-shadow:0 0 30px var(--c),0 0 70px var(--c);animation:gpush .5s ease-in-out infinite alternate;pointer-events:auto}
+.gbigpush.rb{background:radial-gradient(circle at 35% 30%,#fff 0%,#ff6b8a 30%,#5a1a7a 100%);animation:gpush .5s ease-in-out infinite alternate,ghue 1.2s linear infinite}
+@keyframes gpush{to{transform:scale(1.1)}}
+.gtap{cursor:pointer}
+/* 画面全体の演出 */
+.gfull{position:absolute;left:0;right:0;top:52px;bottom:0;z-index:30;display:none;overflow:hidden;background:#000}
+.gfull.on{display:block;animation:gfullin .3s ease-out both}
+@keyframes gfullin{from{clip-path:inset(30% 0 30% 0)}to{clip-path:inset(0 0 0 0)}}
+.gfull .gstage,.gfull .gfx,.gfull .gbgs{position:absolute;inset:0;overflow:hidden}
+/* 下の段 */
+.gmid{display:flex;gap:14px;height:210px;flex-shrink:0}
+.gpanel{flex:1;min-width:0;border-radius:10px;background:rgba(20,13,8,.94);border:2px solid #8a6020;box-shadow:inset 0 0 0 1px rgba(255,216,77,.15);padding:8px 10px;color:#f1e2c0;display:flex;flex-direction:column;gap:5px;font-size:12px}
+.gpanel h3{margin:0;font-size:13px;letter-spacing:2px;color:#ffd84d;text-align:center}
+.th-guild .leds{gap:6px;padding:5px 6px}.th-guild .led{padding:2px 8px}.th-guild .led b{font-size:21px}.th-guild .led small{font-size:9.5px;letter-spacing:1px}
+.gpay{display:grid;grid-template-columns:auto 1fr;gap:0 8px;align-items:center}
+.gpay .s{display:flex;align-items:center}.gpay .s svg{width:22px;height:22px;margin-right:-3px}
+.gpay span{font-size:11.5px}.gpay b{color:#ffd84d}
+.gdat{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.gdat div{display:flex;justify-content:space-between;align-items:baseline;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.07)}
+.gdat b{font-family:var(--f-led);font-weight:900;font-size:15px;color:#ffd84d}
+.gtrust{display:flex;align-items:center;gap:4px;font-size:11px;flex-wrap:wrap}
+.gtrust i{width:26px;height:14px;border-radius:4px}
+.greel{flex-shrink:0;display:flex;align-items:stretch;gap:4px;padding:6px;border-radius:10px;background:linear-gradient(180deg,#f3d995,#8a5a1c 50%,#e0b860);box-shadow:0 0 0 2px #2a1808}
+.th-guild .rwin{position:relative;padding:6px;gap:8px;border-radius:4px;background:#0a0710}
+.th-guild .reel{border-radius:3px;background:linear-gradient(180deg,#14102a 0%,#2a2350 50%,#14102a 100%)}
+.th-guild .reel::after{background:linear-gradient(180deg,rgba(5,3,10,.55) 0%,rgba(5,3,10,0) 22%,rgba(5,3,10,0) 78%,rgba(5,3,10,.55) 100%)}
+.th-guild .reel .cell{border-bottom:1px solid rgba(255,216,77,.08)}
+.th-guild .reel .cell svg{filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.glsvg{position:absolute;left:0;top:0;pointer-events:none;z-index:3;overflow:visible}
+.glsvg polyline{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:.13}
+.glsvg polyline.hit{opacity:1;stroke-width:7;filter:drop-shadow(0 0 6px #fff);animation:blink .3s steps(1) 6}
+.glsvg polyline.reach{opacity:.8;stroke-dasharray:14 10;animation:gdash2 .6s linear infinite}
+@keyframes gdash2{to{stroke-dashoffset:-48}}
+.th-guild .reel .cell.gw svg{animation:wlhop .62s ease-out 3}
+.glnum{width:22px;display:flex;flex-direction:column;justify-content:space-between;padding:20px 0}
+.glnum div{display:flex;flex-direction:column;gap:2px;align-items:center}
+.glnum i{width:20px;height:20px;border-radius:50%;font-style:normal;font-family:var(--f-led);font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;color:#120c06;box-shadow:0 0 6px rgba(0,0,0,.6)}
+.gdeck{height:80px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;gap:12px;padding:0 16px;background:linear-gradient(180deg,#3a2410,#1e1208);border:2px solid #8a6020}
+.th-guild .lever button{background:radial-gradient(circle at 35% 30%,#fff 0%,#ffd84d 25%,#c27a10 70%,#5a3000 100%);box-shadow:0 0 14px rgba(255,200,60,.7)}
+.th-guild .lever{height:80px}.th-guild .lever .stick{height:48px}
+.th-guild .stopb{width:70px;height:70px;border-color:#6a4a20;background:radial-gradient(circle at 35% 30%,#5a4430,#21160c);color:#8a7050}
+.th-guild .stopb.on{border-color:#fff2c0;background:radial-gradient(circle at 35% 30%,#fff 0%,#ffe9a8 30%,#e0a23a 100%);color:#3a2008;box-shadow:0 0 16px rgba(255,210,63,.9)}
+.th-guild .push{width:70px;height:70px;border-color:#fff2c0;background:radial-gradient(circle at 35% 30%,#fff 0%,var(--pc,#ffd84d) 30%,#5a3000 100%);font-size:13px;text-shadow:0 1px 2px #000}
+.th-guild .push.ready{animation:pushg .5s ease-in-out infinite alternate;box-shadow:0 0 26px var(--pc,#ffd84d)}
+.th-guild .auto{border-color:#c9a45a;background:#2a1a0c;color:#f1e2c0}.th-guild .auto.on{background:#ffd84d;color:#3a2008;box-shadow:0 0 12px #ffd84d}
+/* 機種選びのカード */
+.hdgr{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(20,10,4,.85) 0%,rgba(20,10,4,.35) 60%,rgba(20,10,4,0) 100%),url(sp-assets/gr_bg1.webp) center 60%/cover;box-shadow:inset 0 -3px 0 #ffd84d}
+.hdgr img{position:absolute;right:2px;bottom:-30px;height:108px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}
+.hdgr .tt{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;line-height:1;text-align:left}
+.hdgr .tt b{font-family:var(--f-num);font-weight:400;font-size:22px;letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:1.5px #3a1a00;text-shadow:0 3px 0 #2a1000}
+.hdgr .tt b+b{font-family:var(--f-body);font-weight:800;font-size:12px;letter-spacing:4px;color:#fff3d0;margin-top:5px;-webkit-text-stroke:0}
+@media (prefers-reduced-motion:reduce){.gbg,.gparty img,.gdust i,.grays,.gmagic svg,.gline,.gspark,.gconf i,.gbreath,.gfloat,.gbigpush,.glsvg polyline,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb,.wstars,.wdust i,.kwbob,.kwsheet,.kshadow,.kline,.kpetal,.kspark,.kquake,.kpulse,.kbreath,.rclouds,.rstreaks i,.rship.fly .rbody,.rlcd.rumble,.rquake{animation:none!important}}
 </style>
 </head>
 <body>
@@ -946,7 +1122,7 @@ function tone(f,d,type,vol,delay){ nt({type:type==='square'?'triangle':(type||'t
 /* ---------- 絵と音のファイル(medalgame/sp-assets/) ---------- */
 const ASSET='sp-assets/';
 // 機種ごとのBGM(lobby=機種選びの画面)
-const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',wide_fs:'bgm_wide_fs.mp3',rocket:'bgm_rocket.mp3',rocket_chain:'bgm_rocket_chain.mp3',rocket_final:'bgm_rocket_final.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_kaguya.mp3',drop:'bgm_drop.mp3',lobby:'bgm_lobby.mp3'};
+const BGM={classic:'bgm_classic.mp3',oshi:'bgm_oshi.mp3',wide:'bgm_wide.mp3',wide_fs:'bgm_wide_fs.mp3',rocket:'bgm_rocket.mp3',rocket_chain:'bgm_rocket_chain.mp3',rocket_final:'bgm_rocket_final.mp3',jackpot:'bgm_jackpot.mp3',battle:'bgm_guild.mp3',battle_bonus:'bgm_guild_bonus.mp3',drop:'bgm_drop.mp3',lobby:'bgm_lobby.mp3'};
 const BGM_VOL=0.35; // 小さめ
 const bgm={on:(()=>{ try{ return localStorage.getItem('mg.slotpark.bgm')!=='0'; }catch(e){ return true; } })(),el:null,file:null};
 function acx(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume().catch(()=>{}); return AC; }
@@ -957,6 +1133,8 @@ function bgmPlay(mid){
   // ワイドラインはフリースピン中だけ別の曲(bgm_wide_fs.mp3)。まだ置いていなければ、ふだんの曲のまま
   if(mid==='wide'&&((G.st.wide||{}).fs||0)>0&&!bgmMiss.wide_fs) mid='wide_fs';
   // 連チャンロケット:連チャン中は別の曲、7連からはさらに別の曲。置いていなければ1つ前の曲
+  // GUILD RUSH:ボーナス中は別の曲(bgm_guild_bonus.mp3)。置いていなければ、ふだんの曲のまま
+  if(mid==='battle'&&((G.st.battle||{}).bonus)&&!bgmMiss.battle_bonus) mid='battle_bonus';
   if(mid==='rocket'){ const c=(G.st.rocket||{}).chain; if(c){ if(c.lv>=7&&!bgmMiss.rocket_final) mid='rocket_final'; else if(!bgmMiss.rocket_chain) mid='rocket_chain'; } }
   // ジングル(月に到着)が鳴っている間は、同じ機種ならそのまま。ほかの画面に移ったら止める
   if(JG){ if(G.mid==='rocket'&&mid.startsWith('rocket')) return; try{ JG.pause(); }catch(e){} JG=null; }
@@ -999,7 +1177,8 @@ const stOf=(sid,m)=>{ ST[sid]=ST[sid]||{}; ST[sid][m]=ST[sid][m]||{}; return ST[
 const locks={};
 async function withLock(sid,fn){ while(locks[sid]) await locks[sid]; let done; locks[sid]=new Promise(r=>done=r); try{ return await fn(); } finally { delete locks[sid]; done(); } }
 function pubState(m,st){
-  if(m==='oshi'||m==='battle') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0};
+  if(m==='oshi') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0};
+  if(m==='battle') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0,floor:st.floor||0,fg:st.fg||0,rank:st.rank||0};
   if(m==='wide') return {fs:st.fs||0,fsWin:st.fsWin||0,fsBet:st.fsBet||0};
   if(m==='rocket') return {chain:st.chain||null,best:st.best||0,last:st.last||0};
   if(m==='drop') return {best:st.best||0};
@@ -1191,7 +1370,7 @@ const MINFO={
   rocket:{op:'ボタン1つ・3リール＋液晶',memo:'ロケット3つで発射、7が3つでスーパー発射。連チャンで雲の上・宇宙・月(38万km)まで上がっていく。',w:4,bet:'1〜100枚',hd:'#05070f',html:`<div class="hdrk"><div class="tt"><b>連チャンロケット</b><b>MOON SHOT</b></div></div>`},
   jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
   drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
-  battle:{op:'レバー＋ボタン3つ＋液晶',memo:'月夜の荒野をゆくKAGUYA。宿敵シロガネとのバトルに勝てばボーナス。',w:3,bet:'3〜30枚',hd:'#0d1030',img:'kg_bust',s:['seven','replay','bell']}
+  battle:{op:'レバー＋ボタン3つ＋大きな液晶',memo:'冒険者ギルドのRPG。仲間とダンジョンにもぐり、敵を倒せばボーナス。5ラインのどこでそろってもよい。依頼書のランクに注目！',w:3,bet:'3〜30枚',hd:'#120b07',html:`<div class="hdgr"><img src="${ASSET}gr_rei_win.webp" alt=""><div class="tt"><b>GUILD RUSH</b><b>冒険者ギルド</b></div></div>`}
 };
 async function openLobby(){
   setTheme(null); bgmPlay('lobby'); G.scr++; G.screen='lobby';
@@ -1301,7 +1480,7 @@ MACH.classic={
   }
 };
 
-/* ---------- ② 目押しチャレンジ / ⑦ メダまるバトル(パチスロ) ---------- */
+/* ---------- ② 目押しチャレンジ(パチスロ。⑦ GUILD RUSH もこの作りを使う) ---------- */
 const STRIP=SP.consts.P_STRIP, NS=STRIP.length, SPEED=13; // 1秒に13コマ
 function pachi(mid){ return {
   mid, P:null,
@@ -1509,7 +1688,454 @@ function pachi(mid){ return {
     if(hit){ G.st.battle=G.st.battle||{}; G.st.battle.lampOn=true; }
   }
 };}
-MACH.oshi=pachi('oshi'); MACH.battle=pachi('battle');
+MACH.oshi=pachi('oshi');
+
+/* ---------- ⑦ GUILD RUSH(冒険者ギルドRPG・5ライン・大液晶) ---------- */
+// キャラ・敵・階層などの設定
+const GR={
+  nm:{rei:'レイ',garm:'ガルム',cecil:'セシル',mil:'ミル',soma:'ソーマ',nina:'ニーナ',freya:'いばらの魔女フレイヤ',grad:'鉄甲将軍グラッド',zeros:'氷仮面の剣士ゼロス',maou:'魔王ゾルディア'},
+  col:{rei:'#4aa8ff',garm:'#ff5a4d',cecil:'#3ddc84',mil:'#8fe9ff',soma:'#ffb02e',nina:'#ffd84d',freya:'#b45cff',grad:'#d08a3a',zeros:'#6fd0ff',maou:'#b04dff'},
+  sk:{garm:'大地割り',cecil:'千の光矢',mil:'星の祈り',soma:'メテオフレア'},
+  h:{rei:210,garm:222,cecil:212,mil:186,soma:206,nina:214},           // 歩くときの背の高さ(px)
+  eh:{freya:330,grad:330,zeros:330,maou:390},                          // 幹部・魔王の背の高さ
+  mh:[0,150,230,220,200,290,310,290,390],                              // モンスターの高さ
+  lose:{freya:'freya_l',grad:'grad_l',zeros:'zeros_l'},
+  floors:[['B1','地下水路'],['B2','古代遺跡'],['B3','溶岩洞'],['B4','氷結洞'],['B5','魔王の間']],
+  boss:[null,'freya','grad','zeros','maou'],
+  mon:['','プルル','ゴブリン兵','影の狼','大サソリ','ガーゴイル','ワイバーン','キメラ','深淵の古代竜'],
+  tc:['#ffffff','#3a8bff','#22d36e','#ff3045','#ffc21a','#ff6bd6'],    // 期待度の色(0=白 1=青 2=緑 3=赤 4=金 5=虹)
+  ranks:['F','E','D','C','B','A','S'],
+  say:{rei:['ここからが本番だ！','もっと奥へ進もう！','みんな、気をつけて！'],garm:['腹がへったな…','まかせとけ！','ガハハ！どんどん行くぞ！'],cecil:['狙いは外さない','何かの気配がする…','油断しないで'],mil:['みんな、がんばって！','けがをしたら言ってね','ちょっとこわいです…'],soma:['ぼくの出番だね','この先にお宝の予感','ふふん、楽勝さ']},
+  taunt:{freya:'フフフ…甘いわね',grad:'効かぬわ！',zeros:'まだ遠いな、レイ',maou:'愚か者め…'},
+  bigFoes:['m1','m2','m3','m4','m5','m6','m7','freya','grad','zeros','m8']
+};
+const gpick=a=>a[(Math.random()*a.length)|0];
+const gImg=n=>ASSET+'gr_'+n+'.webp';
+const hexA=(h,a)=>{ const n=parseInt(h.slice(1),16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; };
+const gtc=t=>GR.tc[Math.max(0,Math.min(5,t|0))];
+// リールの絵柄(エンジンの名前 → 絵)。lemon は当たりのない宝石
+const GSYM={seven:'gr_s7',bar:'gr_sbar',bell:'gr_scoin',cherry:'gr_spot',replay:'gr_sshield',lemon:'gr_sgem'};
+const gsym=(k,s)=>`<svg viewBox="0 0 100 100" width="${s||'100%'}" height="${s||'100%'}" aria-hidden="true"><image href="${ASSET}${GSYM[k]}.webp" x="3" y="3" width="94" height="94" preserveAspectRatio="xMidYMid meet"/>${k==='bar'?'<text x="50" y="60" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="25" fill="#5a3a10" stroke="#fff6d8" stroke-width="3" paint-order="stroke" letter-spacing="1">BAR</text>':''}</svg>`;
+const GPRE=[]; function grPreload(){ if(GPRE.length) return;
+  ['rei','garm','cecil','mil','soma','nina','rei_atk','rei_sp','rei_win','rei_lose','rei_f1','rei_f2','garm_sk','cecil_sk','mil_sk','soma_sk','garm_f','cecil_f','mil_f','soma_f',
+   'freya','grad','zeros','maou','freya_l','grad_l','zeros_l','maou_f','m1','m2','m3','m4','m5','m6','m7','m8','s7','sbar','spot','scoin','sgem','sshield','chest','chest_o','bg0','bg1','bg2','bg3','bg4','bg5']
+  .forEach(n=>{ const i=new Image(); i.src=gImg(n); GPRE.push(i); }); }
+
+/* 5ライン:1=中段 2=上段 3=下段 4=右下がり 5=右上がり(行は 0=上 1=中 2=下) */
+const GLINES=[[1,1,1],[0,0,0],[2,2,2],[0,1,2],[2,1,0]];
+const GLC=['#ffd23f','#4aa8ff','#3ddc84','#ff4d6d','#c77dff'];
+const GSTRIP=SP.consts.G_STRIP; // 5ライン用のリールの並び(長さは STRIP と同じ21コマ)
+const gsAt=c=>GSTRIP[((c%NS)+NS)%NS];
+const GCOL=[]; for(let c=0;c<NS;c++) GCOL.push([gsAt(c+1),gsAt(c),gsAt(c-1)]); // その位置で止まったときの 上・中・下
+const gcol=c=>GCOL[((c%NS)+NS)%NS];
+// その回にそろえる絵柄(want)と、ねらってよいボーナスの絵柄(bs)。当たった回はPUSHの前なのでそろえない
+function gPrep(d){ if(d._p) return d._p;
+  const want=(d.flag==='bell'||d.flag==='bonusGame')?'bell':d.flag==='replay'?'replay':null;
+  const bs=(!d.newHit&&(d.flag==='none'||d.flag==='cherry'))?(d.held==='big'?'seven':d.held==='reg'?'bar':null):null;
+  return d._p={want,bs}; }
+function gLines(pos){ const a=gcol(pos[0]),b=gcol(pos[1]),c=gcol(pos[2]), out=[];
+  for(let li=0;li<5;li++){ const L=GLINES[li], s=a[L[0]]; if(s===b[L[1]]&&s===c[L[2]]) out.push([li,s]); } return out; }
+// ok=当たっていない絵柄がそろっていない hasW=そろえるべき絵柄がそろった aim=ボーナスの絵柄がそろった ch=左リールにチェリー
+function gJudge(pos,d){ const {want,bs}=gPrep(d), L=gLines(pos); let ok=true, hasW=!want, aim=false;
+  for(const [,s] of L){ if(s===want) hasW=true; else if(bs&&s===bs) aim=true; else ok=false; }
+  const ch=gcol(pos[0]).includes('cherry'); if(ch&&d.flag!=='cherry') ok=false;
+  return {ok,hasW,aim,ch,L}; }
+
+function guild(){ const M=pachi('battle'), baseUpd=M.upd;
+Object.assign(M,{
+  open(){
+    setTheme('battle'); this.tok=0; this.scn=''; this.bgN=null;
+    const lnc=n=>`<i style="background:${GLC[n-1]}">${n}</i>`;
+    const pays=[[['seven','seven','seven'],'BIG <b>30ゲーム</b>'],[['bar','bar','bar'],'REG <b>12ゲーム</b>'],[['bell','bell','bell'],'金貨 <b>8枚</b>'],[['cherry'],'ポーション(左) <b>4枚</b>'],[['replay','replay','replay'],'盾 <b>リプレイ</b>']];
+    $('#stage').innerHTML=`<div class="th-guild" style="position:absolute;inset:0">${topbarHtml(MBY.battle.name)}
+      <div class="gscr">
+        <div class="glcdw"><div class="glcd" id="lcd"><div class="gbgs"></div><div class="gstage"></div><div class="gfx"></div>
+          <div class="ghud"><div class="gfloor" id="gFloor"></div><div class="gprog"><i id="gProg"></i></div></div><div class="grank" id="gRank"></div>
+          <div class="gsay" id="gSay" hidden><b id="gSayN"></b><span id="gSayT"></span></div></div></div>
+        <div class="gmid">
+          <div class="gpanel">${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',3],['GET','ledWin',0]])}
+            <h3>配当(BET3枚のとき)</h3><div class="gpay">${pays.map(([ks,t])=>`<div class="s">${ks.map(k=>gsym(k)).join('')}</div><span>${t}</span>`).join('')}</div></div>
+          <div class="greel"><div class="glnum"><div>${lnc(2)}${lnc(4)}</div><div>${lnc(1)}</div><div>${lnc(3)}${lnc(5)}</div></div>
+            <div class="rwin" id="rw">${'<div class="reel"></div>'.repeat(3)}<svg class="glsvg" id="glsvg" width="478" height="198"></svg></div>
+            <div class="glnum"><div>${lnc(2)}${lnc(5)}</div><div>${lnc(1)}</div><div>${lnc(3)}${lnc(4)}</div></div></div>
+          <div class="gpanel"><h3>DATA</h3><div class="gdat" id="data"></div>
+            <div class="gtrust">期待度 ${['#3a8bff','#22d36e','#ff3045','#ffc21a'].map(c=>`<i style="background:${c}"></i>`).join('＜')}＜<i style="background:linear-gradient(90deg,#ff4d6d,#ffd23f,#3ddc84,#3a86ff,#9d4edd)"></i></div>
+            <p style="margin:0;line-height:1.5;color:#c9b48a">5ライン(よこ3本・ななめ2本)のどこでそろってもよい。依頼書のランクとPUSHの色に注目。</p></div>
+        </div>
+        <div class="gdeck">${betBox('battle')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span>
+          <div class="lever"><div class="stick"></div><button id="bLever" aria-label="レバー"></button></div>
+          <button class="push" id="bPush" aria-label="プッシュボタン">PUSH</button><span style="width:8px"></span>
+          ${[0,1,2].map(i=>`<button class="stopb" data-s="${i}" aria-label="${i+1}番目のリールを止める"></button>`).join('')}</div>
+      </div>
+      <div class="gfull" id="gfull"><div class="gbgs"></div><div class="gstage"></div><div class="gfx"></div></div></div>`;
+    bindTop();
+    this.reels=[...$('#rw').querySelectorAll('.reel')];
+    const w=150, h=62, ss=56;
+    this.P={pos:[0,1,2].map(()=>Math.floor(Math.random()*NS)),run:[false,false,false],goal:[null,null,null],res:null,w,h,ss,raf:0,last:0,fxHit:false,revealed:true,stopsSent:false};
+    this.reels.forEach(el=>{ el.style.width=w+'px'; el.style.height=(h*3)+'px';
+      const cells=[]; for(let j=0;j<NS*3;j++) cells.push(GSTRIP[((NS*3-1-j)%NS+NS)%NS]);
+      el.innerHTML=`<div class="col">${cells.map(k=>`<div class="cell" style="height:${h}px">${gsym(k,ss)}</div>`).join('')}</div>`; });
+    // 5ラインの線
+    const X=[0,81,239,397,478], Y=r=>37+r*62;
+    $('#glsvg').innerHTML=GLINES.map((L,li)=>`<polyline data-l="${li}" stroke="${GLC[li]}" points="${X[0]},${Y(L[0])} ${X[1]},${Y(L[0])} ${X[2]},${Y(L[1])} ${X[3]},${Y(L[2])} ${X[4]},${Y(L[2])}"/>`).join('');
+    this.draw();
+    $('#bLever').onclick=()=>this.lever(); $('#bAuto').onclick=()=>toggleAuto(this); bindBet('battle',()=>this.P.run.some(x=>x)||!!this.betLock());
+    document.querySelectorAll('.stopb').forEach(b=>b.onclick=()=>this.stop(+b.dataset.s));
+    $('#bPush').onclick=()=>this.push();
+    // PUSH待ちのときは、液晶をさわってもPUSHと同じ
+    const tap=()=>{ if(this.P&&!this.P.revealed&&!G.busy) this.push(); };
+    $('#lcd').onclick=tap; $('#gfull').onclick=tap;
+    grPreload(); this.walk(); this.upd(); this.drawData();
+  },
+  restore(){ const s=G.st.battle||{}; this.hud(); this.drawData();
+    if(s.bonus) this.bonusSetup(s.bonus.type,s.bonus.left,0);
+    else if(s.held&&s.lampOn) this.aim(s.held); else this.walk(); },
+  upd(){ baseUpd.call(this); if(G.mid==='battle'){ bgmPlay('battle'); this.hud(); } },
+  drawData(){ const s=G.st.battle||{}, c=s.count||{big:0,reg:0}, d=$('#data'); if(!d) return;
+    d.innerHTML=[['ゲーム数',s.games||0],['ボーナス',s.bonus?'あと'+s.bonus.left:'—'],['BIG',c.big||0],['REG',c.reg||0],['階層',GR.floors[s.floor||0][0]],['ランク',GR.ranks[s.rank||0]]].map(([l,v])=>`<div><span>${l}</span><b>${v}</b></div>`).join(''); },
+  floor(){ return (G.st.battle||{}).floor||0; },
+  hud(){ const s=G.st.battle||{}, f=s.floor||0, a=$('#gFloor'); if(!a) return;
+    a.innerHTML=`<b>${GR.floors[f][0]}</b>${GR.floors[f][1]}`; $('#gProg').style.width=(f>=4?100:((s.fg||0)/30*100))+'%';
+    const r=$('#gRank'); r.innerHTML=`<small>GUILD RANK</small><b>${GR.ranks[s.rank||0]}</b>`; },
+
+  /* ---- リール(5ライン) ---- */
+  loop(t){ const P=this.P; const dt=Math.min(.05,(t-(P.last||t))/1000); P.last=t; let any=false;
+    for(let i=0;i<3;i++){ if(!P.run[i]) continue; any=true; P.pos[i]+=SPEED*dt*(P.goal[i]!=null?1.6:1);
+      if(P.goal[i]!=null&&P.pos[i]>=P.goal[i]){ P.pos[i]=P.goal[i]; P.run[i]=false; P.goal[i]=null; sfx.stop();
+        const el=this.reels[i]; el.animate([{transform:'translateY(6px)'},{transform:'none'}],{duration:120});
+        try{ this.onReelStop(i); }catch(e){ console.error(e); }
+        if(P.run.every(x=>!x)) this.allStopped(); } }
+    this.draw(); if(any) P.raf=requestAnimationFrame(x=>this.loop(x)); else P.raf=0; },
+  stop(i){ const P=this.P; if(!P.run[i]||P.goal[i]!=null) return;
+    if(!P.res){ if(!P.q.includes(i)){ P.q.push(i); sfx.stop(); this.upd(); } return; }
+    P.goal[i]=this.gPick(i); this.upd(); },
+  // 押した位置から最大4コマすべらせて止める位置をえらぶ。
+  // 点数:正しい(当たった絵柄がそろい、ほかはそろわない)=3、当たった絵柄がそろわないだけ=1、当たっていない絵柄がそろう=0。
+  // 残りのリールがあるときは「残りのリールをどこで押しても、いちばんよく止めたときの点数」の平均がいちばん高い位置にする
+  gPick(i){ const P=this.P, d=P.res, c0=Math.ceil(P.pos[i]-1e-6), {bs}=gPrep(d);
+    const rest=[0,1,2].filter(j=>j!==i&&P.run[j]), pos=[0,1,2].map(j=>(j===i||P.run[j])?0:this.center(j));
+    const V=()=>{ const J=gJudge(pos,d); return J.ok&&J.hasW?3:J.ok?1:0; }, aimOk=()=>{ const J=gJudge(pos,d); return J.ok&&J.aim; };
+    let best=c0, bestS=-1e9;
+    for(let k=0;k<5;k++){ pos[i]=c0+k; let sc=0, can=false;
+      if(!rest.length){ sc=V(); can=aimOk(); }
+      else if(rest.length===1){ const j=rest[0];
+        for(let p=0;p<NS;p++){ let m=0; for(let q=0;q<5&&m<3;q++){ pos[j]=p+q; m=Math.max(m,V()); } sc+=m; } sc/=NS;
+        if(bs) for(let p=0;p<NS&&!can;p++){ pos[j]=p; can=aimOk(); } }
+      else { const [j1,j2]=rest;
+        for(let p1=0;p1<NS;p1++) for(let p2=0;p2<NS;p2++){ let m=0; for(let q1=0;q1<5&&m<3;q1++) for(let q2=0;q2<5&&m<3;q2++){ pos[j1]=p1+q1; pos[j2]=p2+q2; m=Math.max(m,V()); } sc+=m; } sc/=NS*NS;
+        if(bs) for(let p1=0;p1<NS&&!can;p1++) for(let p2=0;p2<NS&&!can;p2++){ pos[j1]=p1; pos[j2]=p2; can=aimOk(); } }
+      const vis=gcol(c0+k); sc=sc*100+(can?30:0)-k*.01;
+      if(bs&&vis.includes(bs)) sc+=8;
+      if(d.flag==='cherry'&&i===0&&vis.includes('cherry')) sc+=20;
+      if(sc>bestS){ bestS=sc; best=c0+k; } }
+    return best; },
+  cellAt(i,r){ const c=this.center(i), p=c+NS, jt=3*NS-2-p, col=this.reels[i]&&this.reels[i].firstChild; return col&&col.children[jt+r]; },
+  clearLines(){ document.querySelectorAll('#glsvg polyline').forEach(p=>p.classList.remove('hit','reach')); document.querySelectorAll('#rw .cell.gw').forEach(c=>c.classList.remove('gw')); },
+  // 払いのあるラインだけ光らせる(当たった絵柄・そろえたボーナスの絵柄)
+  showLines(J,cherry,d){ const {want}=gPrep(d), bsy=d.held==='big'?'seven':d.held==='reg'?'bar':null;
+    J.L.forEach(([li,s])=>{ if(s!==want&&!(bsy&&s===bsy)) return; const p=document.querySelector(`#glsvg polyline[data-l="${li}"]`); if(p){ p.classList.remove('reach'); p.classList.add('hit'); }
+      GLINES[li].forEach((r,i)=>{ const c=this.cellAt(i,r); if(c) c.classList.add('gw'); }); });
+    if(cherry){ for(let r=0;r<3;r++){ if(gcol(this.center(0))[r]==='cherry'){ const c=this.cellAt(0,r); if(c) c.classList.add('gw'); } } } },
+  // 2つ止めた時点で7(BAR)が2つ並んだラインを光らせる(リーチ)
+  reachLines(){ const P=this.P, st=[0,1,2].filter(i=>!P.run[i]); if(st.length!==2) return;
+    GLINES.forEach((L,li)=>{ const a=gcol(this.center(st[0]))[L[st[0]]], b=gcol(this.center(st[1]))[L[st[1]]];
+      if(a===b&&(a==='seven'||a==='bar')){ const p=document.querySelector(`#glsvg polyline[data-l="${li}"]`); if(p) p.classList.add('reach'); } }); },
+  onReelStop(i){ const P=this.P, n=P.run.filter(x=>!x).length, pl=P.plan;
+    if(n===2) this.reachLines();
+    if(!pl||!P.res||P.res.flag==='bonusGame') return;
+    if(n===1&&pl.enemy) this.run(t=>this.enc(t,pl));
+    if(n===2) this.run(t=>this.step2(t,pl)); },
+  async allStopped(){
+    const P=this.P, d=P.res; this.upd(); if(!d||d.fail||P.stopsSent) return; P.stopsSent=true;
+    const pos=[0,1,2].map(i=>this.center(i)), J=gJudge(pos,d);
+    const bs=d.held==='big'?'seven':d.held==='reg'?'bar':null;
+    const aligned=!!bs&&d.flag!=='bonusGame'&&J.L.some(([,s])=>s===bs);
+    const cherryOk=d.flag==='cherry'&&J.ch;
+    let pay=d.pay||0, a=d.a;
+    // レバーの時点で配当は確定済み。チェリーとボーナスのときだけ先生のPCに知らせる
+    const s=(cherryOk||aligned)?await play('battle',{type:'g:stop',cherryOk,aligned}):null;
+    if(s){ pay+=s.pay||0; a=s.a; }
+    this.showLines(J,cherryOk,d);
+    if(pay>0){ $('#ledWin').textContent=pay; sfx.win(); }
+    const pl=P.plan; let next=450;
+    if(s&&s.bonusStart){ sfx.big(); this.run(t=>this.qstart(t,s.bonusStart)); next=2800; }
+    else if(d.bonusEnd){ this.run(t=>this.qend(t,d,pay)); next=d.rankS?5200:4000; }
+    else if(d.flag==='bonusGame'){ this.run(t=>this.bonusHit(t,d,pay)); next=700; }
+    else if(pl&&pl.push&&!P.revealed){ this.stageP=this.run(t=>this.stage(t,pl)); const b=$('#bPush'); b.classList.add('ready'); b.style.setProperty('--pc',gtc(pl.pushT));
+      P.pushT=setTimeout(()=>{ if(!P.revealed) this.push(); },pl.tier>=3?6000:5000); next=2100; }
+    else this.run(t=>this.small(t,pl,d,pay));
+    this.drawData();
+    await finish({a}); this.upd();
+    if(G.auto&&G.mid==='battle') setTimeout(()=>{ if(G.auto&&!G.busy&&!G.after&&G.mid==='battle') this.spin(); },next);
+  },
+  // AUTO:PUSH待ちならPUSH、演出が終わってからレバー
+  spin(){ const P=this.P; if(G.busy||P.run.some(x=>x)) return;
+    if(!P.revealed){ const hit=P.fxHit; this.push(); setTimeout(()=>{ if(G.auto&&!G.busy&&G.mid==='battle') this.lever(); },hit?4300:2900); return; }
+    this.lever(); },
+
+  /* ---- 演出の土台 ---- */
+  newTok(){ this.tok=(this.tok||0)+1; this.full(false); const g=this.part(false,'fx'); if(g) g.innerHTML=''; clearTimeout(this.sayT); const s=$('#gSay'); if(s) s.hidden=true; return this.tok; },
+  w(ms,tok){ return new Promise((res,rej)=>setTimeout(()=>(tok!==this.tok||G.mid!=='battle'||!$('#lcd'))?rej(0):res(),ms)); },
+  run(fn){ const p=Promise.resolve().then(()=>fn.call(this,this.tok)); p.catch(e=>{ if(e!==0&&e!==ABORT) console.error(e); }); return p; },
+  box(full){ return full?$('#gfull'):$('#lcd'); },
+  part(full,k){ const b=this.box(full); return b&&b.querySelector('.g'+k); },
+  el(parent,html){ if(!parent) return null; const t=document.createElement('div'); t.innerHTML=html.trim(); const n=t.firstElementChild; parent.appendChild(n); return n; },
+  tmp(parent,html,ms){ const n=this.el(parent,html); if(n&&ms) setTimeout(()=>n.remove(),ms); return n; },
+  full(on){ const F=$('#gfull'); if(!F) return; F.querySelectorAll('.gstage,.gfx').forEach(x=>x.innerHTML='');
+    if(on){ F.classList.add('on'); this.setBg(this.floor()+1,true); } else F.classList.remove('on'); this.isFull=!!on; },
+  setBg(n,full){ const B=this.part(full,'bgs'); if(!B) return; if(!full){ if(this.bgN===n&&B.children.length) return; this.bgN=n; }
+    const d=document.createElement('div'); d.className='gbg'; d.style.backgroundImage=`url(${gImg('bg'+n)})`; const old=[...B.children]; B.appendChild(d);
+    if(old.length&&!full){ d.style.opacity=0; requestAnimationFrame(()=>requestAnimationFrame(()=>{ d.style.opacity=1; })); } old.forEach(o=>setTimeout(()=>o.remove(),full?0:750)); },
+  spr(parent,name,st,cls){ return this.el(parent,`<img class="gspr ${cls||''}" src="${gImg(name)}" alt="" style="${st}">`); },
+  flash(full,t){ this.tmp(this.part(full,'fx'),`<div class="gflash${t>=5?' rb':''}" style="--c:${gtc(t)}"></div>`,650); },
+  rays(full,t){ const S=this.part(full,'stage'); if(!S) return null; const n=this.el(S,`<div class="grays${t>=5?' rb':''}" style="--c:${hexA(gtc(t),.38)}"></div>`);
+    const d=S.querySelector('.gdim'); S.insertBefore(n,d?d.nextSibling:S.firstChild); return n; },
+  tint(full,t,a){ return this.el(this.part(full,'fx'),`<div class="gtint" style="background:radial-gradient(ellipse at 50% 55%,${hexA(gtc(t),a||.45)} 0%,rgba(0,0,0,0) 72%)"></div>`); },
+  magic(full,t){ const c=gtc(t), R=(r,o)=>[0,1,2].map(k=>{ const a=(o+k*120)*Math.PI/180; return `${(100+r*Math.cos(a)).toFixed(1)},${(100+r*Math.sin(a)).toFixed(1)}`; }).join(' ');
+    const runes=Array.from({length:16},(_,k)=>{ const a=k*22.5*Math.PI/180; return `<rect x="${(100+85*Math.cos(a)-3).toFixed(1)}" y="${(100+85*Math.sin(a)-3).toFixed(1)}" width="6" height="6" transform="rotate(${k*22.5} ${(100+85*Math.cos(a)).toFixed(1)} ${(100+85*Math.sin(a)).toFixed(1)})"/>`; }).join('');
+    this.tmp(this.part(full,'fx'),`<div class="gmagic" style="--c:${c}"><svg viewBox="0 0 200 200"><g fill="none" stroke="${t>=5?'#fff':c}" stroke-width="2.5"><circle cx="100" cy="100" r="95"/><circle cx="100" cy="100" r="76"/><circle cx="100" cy="100" r="40"/><polygon points="${R(76,-90)}"/><polygon points="${R(76,90)}"/></g><g fill="${t>=5?'#fff':c}">${runes}</g></svg></div>`,1500); },
+  txt(full,text,o){ o=o||{}; const t=o.t??3;
+    return this.tmp(this.part(full,o.stage?'stage':'fx'),`<div class="gtx${t>=5?' rb':''}${o.sub?' sub':''}" style="--c:${gtc(t)};top:${o.top??150}px;font-size:${o.size??64}px;${o.x!=null?`left:${o.x}px;right:auto;`:''}${o.st||''}">${text}</div>`,o.ms); },
+  cut(full,who,o){ o=o||{}; const img=who==='rei'?(o.smile?'rei_f2':'rei_f1'):who==='maou'?'maou_f':who==='nina'?'nina':who+'_f';
+    return this.tmp(this.part(full,'fx'),`<div class="gcut${o.r?' r':''}" style="--c:${GR.col[who]};left:${o.x??40}px;${o.small?'top:60px;width:220px;height:290px;':''}"><img src="${gImg(img)}" alt=""><b>${o.label??GR.nm[who]}</b></div>`,o.ms||1500); },
+  lines(full,t,n){ const c=hexA(gtc(t),.85); this.el(this.part(full,'fx'),`<div>${Array.from({length:n||16},()=>`<i class="gline" style="top:${(Math.random()*420)|0}px;width:${(120+Math.random()*260)|0}px;--c:${c};animation-duration:${(.25+Math.random()*.25).toFixed(2)}s;animation-delay:-${(Math.random()*.5).toFixed(2)}s"></i>`).join('')}</div>`); },
+  sparks(full,c,n){ this.el(this.part(full,'fx'),`<div>${Array.from({length:n||18},()=>`<i class="gspark" style="left:${(Math.random()*1120)|0}px;--c:${c};animation-duration:${(1+Math.random()*1.2).toFixed(2)}s;animation-delay:-${(Math.random()*2).toFixed(2)}s"></i>`).join('')}</div>`); },
+  coins(full,x,y,n){ const X=this.part(full,'fx'); for(let i=0;i<(n||14);i++){ const a=Math.random()*Math.PI*2, r=120+Math.random()*160;
+    this.tmp(X,`<i class="gcoin" style="left:${x}px;top:${y}px;--dx:${(Math.cos(a)*r)|0}px;--dy:${(Math.sin(a)*r-80)|0}px;animation-delay:${(i*.025).toFixed(3)}s"></i>`,1200); } },
+  conf(full){ const cs=['#ff4d6d','#ffd23f','#3ddc84','#3a86ff','#c77dff','#fff']; this.el(this.part(full,'fx'),`<div class="gconf">${Array.from({length:44},()=>`<i style="left:${(Math.random()*1140)|0}px;background:${gpick(cs)};animation-duration:${(1.8+Math.random()*1.6).toFixed(2)}s;animation-delay:-${(Math.random()*2.6).toFixed(2)}s"></i>`).join('')}</div>`); },
+  dmg(full,n,x,y){ this.tmp(this.part(full,'fx'),`<div class="gdmg" style="left:${x}px;top:${y}px">${n}</div>`,950); },
+  quake(full){ const b=this.box(full); if(!b) return; b.classList.remove('kquake'); void b.offsetWidth; b.classList.add('kquake'); setTimeout(()=>b.classList.remove('kquake'),500); },
+  say(who,text,ms){ const b=$('#gSay'); if(!b) return; b.hidden=false; const n=$('#gSayN');
+    if(who){ n.hidden=false; n.textContent=GR.nm[who]||who; b.style.setProperty('--c',GR.col[who]||'#fff'); } else n.hidden=true;
+    $('#gSayT').textContent=text; b.style.animation='none'; void b.offsetWidth; b.style.animation='';
+    clearTimeout(this.sayT); this.sayT=setTimeout(()=>{ b.hidden=true; },ms||2200); },
+
+  /* ---- 場面 ---- */
+  // ふだん:パーティーが迷宮を進む
+  walk(){ const S=this.part(false,'stage'); if(!S) return; this.full(false); this.setBg(this.floor()+1); $('#lcd').classList.remove('gbon');
+    S.innerHTML=`<div class="gdim"></div><div class="gparty" id="gParty">${['soma','mil','cecil','garm','rei'].map((k,i)=>`<img src="${gImg(k)}" alt="" style="height:${GR.h[k]}px;animation-delay:-${(i*.11).toFixed(2)}s">`).join('')}</div>
+      <div class="gdust">${Array.from({length:10},(_,i)=>`<i style="left:${260+i*84}px;animation-delay:-${(i*.27).toFixed(2)}s"></i>`).join('')}</div>`;
+    this.scn='walk'; this.foe=null; this.hero=null; this.mons=[]; this.hud(); },
+  // レバーの結果が届いたら
+  playFx(d){ const P=this.P, f=d.fx||{tier:0}; P.fxHit=!!f.hit; P.revealed=true; P.fx=f; this.clearLines(); this.newTok();
+    if(f.scene==='bonusGame'){ P.plan=null; this.bonusGame(d); return; }
+    const s=G.st.battle||{};
+    if(d.held&&s.lampOn&&!d.newHit){ P.plan=null; if(this.scn!=='aim') this.aim(d.held); return; } // ねらえ中はそのまま
+    const pl=this.makePlan(f,d); P.plan=pl; if(pl.push) P.revealed=false;
+    if(this.scn!=='walk'||d.floorUp!=null) this.walk();
+    this.run(t=>this.leverFx(t,pl,d)); },
+  // 期待度から、この回の演出の組み合わせを決める
+  makePlan(f,d){ const T=f.tier|0, R=Math.random, fl=this.floor();
+    const pl={tier:T,hit:!!f.hit,prem:!!f.prem,ch:!!f.ch,push:T>=2,pre:[],allies:[],btype:null,cmdTo:0,enemy:null};
+    if(pl.prem) pl.pre.push(gpick(['freeze','scrollS']));
+    else if(T===1){ if(R()<.6) pl.pre.push(gpick(['flash','magic','marks'])); }
+    else if(T===2) pl.pre.push(gpick(['flash','magic','marks','scroll']));
+    else if(T===3) pl.pre.push(gpick(['flash','magic','marks','quake','torch','scroll']));
+    else if(T===4) pl.pre.push(gpick(['shadow','scroll','quake','magic','torch']));
+    else if(T===5) pl.pre.push(gpick(['shadow','scroll','magic']));
+    pl.preT=pl.prem?5:(pl.pre[0]==='scroll'?T:Math.max(1,T-(R()<.35?1:0))); // 予告の色は1つ下のこともある
+    if(T>=1){ let e;
+      if(T===1) e={mon:gpick(fl>=2?[1,2,3]:[1,2])};
+      else if(T===2) e=R()<.5?{mon:gpick([3,4])}:{mon:gpick([1,2]),grow:true};
+      else if(T===3) e=R()<.45?{boss:GR.boss[fl]&&GR.boss[fl]!=='maou'?GR.boss[fl]:gpick(['freya','grad'])}:{mon:gpick([5,6]),grow:R()<.3};
+      else if(T===4) e=R()<.5?{boss:gpick(['freya','grad','zeros'])}:{mon:7};
+      else e=R()<.5?{boss:'maou'}:{mon:8};
+      pl.enemy=e; }
+    const AL=['garm','cecil','mil','soma'].sort(()=>R()-.5);
+    const na=T===2?(R()<.5?1:0):T===3?gpick([1,2]):T===4?gpick([2,3]):T===5?4:0;
+    pl.allies=AL.slice(0,na);
+    if(T>=2){
+      if(T===2) pl.btype='cmd';
+      else if(T===3) pl.btype=pl.enemy.boss==='zeros'?'duel':gpick(['cmd','skill','duel']);
+      else if(T===4) pl.btype=gpick(['combo','pinch','cmd','skill']);
+      else pl.btype='blazer';
+      pl.cmdTo=Math.min(3,T-2+(R()<.4?1:0));
+      pl.ally=pl.allies[0]||gpick(['garm','cecil','soma']);
+      pl.pushT=(T===5||pl.prem)?5:(T>=3&&R()<.2?T-1:T); }
+    return pl; },
+  async leverFx(tok,pl,d){
+    if(d.floorUp!=null&&pl.tier===0){ const F=GR.floors[d.floorUp]; this.txt(false,`${F[0]} ${F[1]}へ！`,{t:4,top:150,size:56,ms:1800}); sfx.magic(); this.say('rei',d.floorUp===4?'この先に魔王がいる…！':'新しいフロアだ！',2000); return; }
+    if(pl.tier===0){ if(Math.random()<.2) await this.ev0(tok); return; }
+    for(const p of pl.pre) await this.pre(tok,p,pl); },
+  // ふだんのちょっとした出来事(期待度なし)
+  async ev0(tok){ const k=gpick(['talk','talk','trap','chest','rest']), S=this.part(false,'stage');
+    if(k==='talk'){ const m=gpick(['rei','garm','cecil','mil','soma']); this.say(m,gpick(GR.say[m]),2200); }
+    else if(k==='trap'){ this.quake(false); sfx.rumble(.6,.3); this.txt(false,'落とし穴！？',{t:0,top:140,size:52,ms:900}); await this.w(900,tok); this.txt(false,'…セーフ！',{t:1,top:150,size:40,ms:1000,sub:1}); }
+    else if(k==='chest'){ const c=this.spr(S,'chest','left:720px;bottom:14px;height:86px;z-index:4','gin-d'); await this.w(700,tok); sfx.chest(); if(c) c.src=gImg('chest_o'); this.say('cecil','やくそうを見つけたよ',2000); await this.w(1600,tok); if(c) c.classList.add('gout'); }
+    else { this.say('garm','腹がへったな…',1500); await this.w(1500,tok); this.say('soma','さっき食べたでしょ',1600); } },
+  // 予告
+  async pre(tok,k,pl){ const t=pl.preT, F=false;
+    if(k==='flash'){ this.flash(F,t); this.tint(F,t,.4); sfx.alert(); await this.w(500,tok); }
+    else if(k==='magic'){ this.magic(F,t); sfx.magic(); await this.w(700,tok); }
+    else if(k==='marks'){ const n=Math.max(1,Math.min(3,t)), X=this.part(F,'fx');
+      for(let i=0;i<n;i++){ this.tmp(X,`<div class="gmark" style="--c:${gtc(t)};left:${470+i*44}px;top:${120-i*6}px">！</div>`,1600); sfx.alert(); await this.w(220,tok); } }
+    else if(k==='quake'){ this.quake(F); sfx.rumble(1.2,.4); this.txt(F,'ゴゴゴゴ…',{t,top:60,size:44,ms:1400}); await this.w(500,tok); this.quake(F); }
+    else if(k==='torch'){ const X=this.part(F,'fx'); this.tmp(X,'<div class="gdark"></div>',2400); sfx.rumble(1.4,.25); await this.w(900,tok);
+      this.tmp(X,`<div class="geyes" style="right:220px;top:150px"><i></i><i></i></div>`,1500); this.txt(F,'松明が消えた…',{t,top:330,size:30,sub:1,ms:1400}); await this.w(600,tok); }
+    else if(k==='shadow'){ this.tmp(this.part(F,'fx'),`<img class="gshadow" src="${gImg('maou')}" alt="">`,2100); sfx.roar(); await this.w(900,tok); this.txt(F,'……フフフ',{t,top:120,size:50,ms:1200}); await this.w(500,tok); }
+    else if(k==='scroll'||k==='scrollS'){ const tt=k==='scrollS'?5:pl.tier, L=tt>=5?'S':tt===4?'A':tt===3?'B':tt===2?gpick(['D','C']):gpick(['F','E']);
+      const X=this.part(F,'fx'); this.cut(F,'nina',{x:40,ms:2000,label:'ニーナ「依頼です！」'});
+      this.tmp(X,`<div class="gscroll" style="--c:${gtc(tt)}"><small>依頼書</small><span>ランク</span><b class="${tt>=5?'rb':''}">${L}</b></div>`,2000); sfx.chest(); await this.w(900,tok); }
+    else if(k==='freeze'){ const X=this.part(F,'fx'), B=this.el(X,'<div class="gblack"></div>'); await this.w(2200,tok);
+      sfx.roar(); this.tmp(X,`<img class="gspr gsil gin-z" src="${gImg('m8')}" alt="" style="left:50%;margin-left:-200px;bottom:0;height:420px;z-index:11">`,1200); this.quake(F); await this.w(1100,tok);
+      if(B) B.remove(); this.flash(F,5); this.rays(F,5); sfx.big(); this.txt(F,'！！！',{t:5,top:140,size:90,ms:1200}); await this.w(600,tok); } },
+  // 第1停止:敵があらわれる
+  async enc(tok,pl){ const e=pl.enemy, S=this.part(false,'stage'); if(!S||this.isFull) return; const c=pl.tier;
+    this.flash(false,Math.max(1,c-1)); sfx.alert(); const p=$('#gParty'); if(p) p.classList.add('back');
+    if(e.boss){ this.foe=this.spr(S,e.boss,`right:30px;bottom:0;height:${GR.eh[e.boss]}px;z-index:4`,'gin-r'); this.tint(false,c,.3);
+      this.say(null,`${GR.nm[e.boss]}があらわれた！`,2400); if(e.boss==='maou'){ this.quake(false); sfx.roar(); } }
+    else { this.mons=[]; this.addMon(e.mon); this.say(null,`${GR.mon[e.mon]}があらわれた！`,2200); if(e.mon===8){ this.quake(false); sfx.roar(); } }
+    await this.w(500,tok); if(this.foe) this.foe.classList.add('gbreath'); },
+  addMon(m){ const S=this.part(false,'stage'); if(!S) return; const i=this.mons.length, fly=m===5||m===6;
+    const el=this.spr(S,'m'+m,`right:${24+i*150}px;bottom:${fly?60:(i%2?22:0)}px;height:${GR.mh[m]}px;z-index:${5-i}`,fly?'gin-d gfloat':'gin-d');
+    this.mons.push(el); this.foe=this.mons[0]; },
+  // 第2停止:敵がふえる・仲間がかけつける
+  async step2(tok,pl){ if(this.isFull) return;
+    if(pl.enemy&&pl.enemy.grow&&this.mons&&this.mons.length){ this.addMon(pl.enemy.mon); this.say(null,`${GR.mon[pl.enemy.mon]}がふえた！`,1800); sfx.alert(); await this.w(450,tok); }
+    if(pl.allies.length) await this.allies(tok,pl.allies,pl.tier); },
+  async allies(tok,list,c){ const n=list.length;
+    for(let i=0;i<n;i++){ const x=n===4?20+i*275:830-i*300; this.cut(false,list[i],{x,r:n<4,ms:1500+(n-i)*330}); sfx.slash(); await this.w(330,tok); }
+    if(n===4){ this.txt(false,'全員集合！！',{t:5,top:170,size:78,ms:1500}); sfx.big(); }
+    else this.txt(false,n>=2?'仲間がかけつけた！':`${GR.nm[list[0]]}がかけつけた！`,{t:c,top:372,size:30,sub:1,ms:1300});
+    await this.w(800,tok); },
+  // 第3停止のあと:バトル → PUSH(赤以上は画面全体で)
+  async stage(tok,pl){ const full=pl.tier>=3, T=pl.pushT, bt=pl.btype; if(full) this.full(true); else $('#lcd').classList.add('gbon'); // 液晶でのバトル中は階層とランクを隠す
+    const S=this.part(full,'stage'); if(!S) return; const e=pl.enemy||{mon:1};
+    const foeN=bt==='duel'?'zeros':(e.boss||('m'+e.mon)), fh=bt==='duel'?GR.eh.zeros:e.boss?GR.eh[e.boss]:GR.mh[e.mon];
+    S.innerHTML=`<div class="gdim"></div>${bt==='duel'?'<div class="gvs"></div>':''}`;
+    this.foe=this.spr(S,foeN,`right:${full?70:40}px;bottom:${(e.mon===5||e.mon===6)&&bt!=='duel'?50:0}px;height:${Math.min(fh,full?420:400)}px;z-index:3`,'gin-r gbreath');
+    this.hero=this.spr(S,bt==='pinch'?'rei_lose':bt==='blazer'?'rei_sp':'rei',`left:${full?90:60}px;bottom:0;height:${bt==='blazer'?340:bt==='pinch'?250:300}px;z-index:4`,'gin-l');
+    this.el(S,`<div class="ghp" style="left:30px"><i id="hpL" style="width:${bt==='pinch'?14:100}%;background:${bt==='pinch'?'#ff3045':'#4aa8ff'}"></i></div>`);
+    this.el(S,`<div class="ghp" style="right:30px"><i id="hpR" style="width:100%;background:#ff3045;margin-left:auto"></i></div>`);
+    this.lines(full,T,16); sfx.alert(); await this.w(450,tok);
+    if(bt==='cmd'){ const W=this.el(S,`<div class="gwin" style="left:${full?40:30}px;bottom:24px;--c:${gtc(T)}"><div class="gcmd">${['たたかう','まほう','れんけい','ひっさつ'].map((x,i)=>`<div data-i="${i}" class="${i===0?'on':''}">${x}</div>`).join('')}</div></div>`);
+      const it=W.querySelectorAll('[data-i]'); for(let i=1;i<=pl.cmdTo;i++){ await this.w(380,tok); it.forEach(x=>x.classList.remove('on')); it[i].classList.add('on'); sfx.cursor(); }
+      await this.w(300,tok); this.txt(full,['たたかう！','まほう！','れんけい！！','ひっさつ！！！'][pl.cmdTo],{t:T,top:90,size:62,ms:1500}); }
+    else if(bt==='skill'){ const a=pl.ally; this.spr(S,a+'_sk',`left:${full?380:330}px;bottom:0;height:320px;z-index:5`,'gin-l'); this.cut(full,a,{x:full?860:830,r:1,ms:1600}); sfx.magic(); this.txt(full,GR.sk[a]+'！！',{t:T,top:60,size:58,ms:1600}); }
+    else if(bt==='duel'){ this.txt(full,'一騎打ち！',{t:T,top:40,size:72,ms:1600}); this.sparks(full,'#bff4ff',22); sfx.slash(); await this.w(250,tok); sfx.slash(); }
+    else if(bt==='combo'){ const L=['garm','cecil','soma']; for(let i=0;i<3;i++){ this.cut(full,L[i],{x:300+i*250,small:1,ms:1600-i*200}); sfx.slash(); this.txt(full,`${i+1} HIT`,{t:T,top:340,size:46,ms:380}); await this.w(330,tok); } this.txt(full,'れんけい攻撃！！',{t:T,top:30,size:60,ms:1500}); }
+    else if(bt==='pinch'){ this.quake(full); sfx.hit(); this.txt(full,'ピンチ！',{t:3,top:60,size:72,ms:1300}); await this.w(700,tok); this.cut(full,'mil',{x:830,r:1,ms:1500,label:'ミル「あきらめないで！」'}); sfx.magic(); }
+    else if(bt==='blazer'){ this.rays(full,5); this.sparks(full,'#7fd3ff',30); sfx.charge(); this.txt(full,'ブレイブブレイザー！！',{t:5,top:40,size:64,ms:2000}); }
+    await this.w(500,tok);
+    const pb=this.el(this.part(full,'fx'),`<button class="gbigpush${T>=5?' rb':''}" style="--c:${gtc(T)}${full?'':';width:160px;height:160px;margin:-80px 0 0 -80px;font-size:36px'}">PUSH</button>`);
+    if(pb) pb.onclick=e=>{ e.stopPropagation(); this.push(); }; },
+  push(){ const P=this.P; if(P.revealed){ sfx.push(); return; } clearTimeout(P.pushT); P.revealed=true; const b=$('#bPush'); if(b){ b.classList.remove('ready'); b.style.removeProperty('--pc'); } sfx.push(); this.upd();
+    const pl=P.plan, hit=P.fxHit, sp=this.stageP; if(hit){ G.st.battle=G.st.battle||{}; G.st.battle.lampOn=true; }
+    this.run(async t=>{ if(sp) await sp.catch(()=>{}); if(t!==this.tok) return; await this.reveal(t,pl,hit); }); },
+  // PUSHの結果
+  async reveal(tok,pl,hit){ let full=this.isFull; const S=this.part(full,'stage'); if(!S) return; const T=pl?pl.pushT:3, bt=pl&&pl.btype, foe=this.foe, hero=this.hero, e=(pl&&pl.enemy)||{};
+    this.part(full,'fx').querySelectorAll('.gbigpush').forEach(x=>x.remove());
+    this.flash(full,hit?5:T);
+    if(hit){
+      if(bt==='pinch'&&hero){ const h=$('#hpL'); if(h){ h.style.width='100%'; h.style.background='#4aa8ff'; } this.txt(full,'星の祈り！',{t:2,top:80,size:50,ms:900}); sfx.magic(); await this.w(600,tok); }
+      const sk=bt==='skill'&&S.querySelector(`img[src$="${pl.ally}_sk.webp"]`);
+      if(sk) sk.classList.add('gdash'); else if(hero){ hero.src=gImg(bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); hero.classList.remove('gin-l'); hero.classList.add('gdash'); }
+      sfx.slash(); this.lines(full,5,20); await this.w(260,tok);
+      if(foe){ foe.classList.remove('gbreath','gin-r','gfloat'); foe.classList.add('ghit'); }
+      sfx.hit(); this.quake(full); this.dmg(full,bt==='blazer'?9999:(3000+Math.random()*6000)|0,full?760:700,140); const hr=$('#hpR'); if(hr) hr.style.width='0%';
+      await this.w(480,tok);
+      const ln=foe&&e.boss&&GR.lose[bt==='duel'?'zeros':e.boss];
+      if(foe){ foe.classList.remove('ghit'); if(ln){ foe.src=gImg(ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); }
+      await this.w(500,tok);
+      if(!full){ this.full(true); full=true; }
+      const X=this.part(true,'fx'); X.innerHTML=''; this.part(true,'stage').innerHTML='<div class="gdim"></div>'; this.rays(true,5); this.conf(true); this.flash(true,5); sfx.big();
+      this.spr(this.part(true,'stage'),'rei_win','left:50%;margin-left:-120px;bottom:0;height:360px;z-index:4','gin-d');
+      this.txt(true,'QUEST CLEAR！！',{t:5,top:50,size:92}); this.txt(true,'ボーナス確定！',{t:4,top:170,size:44,sub:1});
+      await this.w(1900,tok); this.full(false); this.aim((G.st.battle||{}).held||'big');
+    } else {
+      const mon=!e.boss&&bt!=='duel';
+      if(foe){ foe.classList.remove('gbreath','gin-r','gfloat'); }
+      if(mon&&Math.random()<.45){ if(foe) foe.classList.add('gout'); this.txt(full,gpick(['にげられた！','かわされた！']),{t:0,top:130,size:52,ms:1500}); }
+      else { if(foe) foe.classList.add('glunge'); await this.w(260,tok); sfx.hit(); this.quake(full);
+        if(hero){ hero.src=gImg('rei_lose'); hero.classList.remove('gin-l'); hero.classList.add('ghit'); } const h=$('#hpL'); if(h){ h.style.width='12%'; h.style.background='#ff3045'; }
+        const foeN=bt==='duel'?'zeros':e.boss; this.txt(full,foeN?`「${GR.taunt[foeN]}」`:'こうげきを防がれた！',{t:0,top:110,size:44,ms:1500}); }
+      await this.w(1500,tok); this.full(false); this.walk(); } },
+  // PUSHのない回の結果
+  async small(tok,pl,d,pay){ const S=this.part(false,'stage');
+    if(pl&&pl.ch&&!pl.push){ this.cut(false,'mil',{x:840,r:1,ms:1300,label:'ミル「チャンス！」'}); }
+    if(pl&&pl.enemy){ await this.w(150,tok); const nm=GR.mon[pl.enemy.mon]||'';
+      if(pay>0){ sfx.slash(); (this.mons||[]).forEach(m=>{ m.classList.remove('gfloat'); m.classList.add('gfly'); }); sfx.hit(); this.say(null,`${nm}をたおした！`,1600); this.txt(false,'VICTORY',{t:4,top:120,size:58,ms:1300}); }
+      else { (this.mons||[]).forEach(m=>{ m.classList.remove('gfloat'); m.classList.add('gout'); }); this.say(null,`${nm}はにげていった…`,1500); }
+      await this.w(1300,tok); this.walk(); return; }
+    if(pay>0){ const f=d.flag;
+      if(f==='bell'){ this.coins(false,560,300,12); this.say(null,`金貨をひろった！ +${pay}`,1500); }
+      else if(f==='replay') this.say(null,'盾でガード！ もう1回',1300);
+      else if(f==='cherry') this.say(null,`ポーションを見つけた！ +${pay}`,1500); } },
+  // ボーナスをねらう画面
+  aim(held){ this.full(false); const S=this.part(false,'stage'); if(!S) return; this.setBg(this.floor()+1); $('#lcd').classList.remove('gbon'); const k=held==='reg'?'bar':'seven';
+    S.innerHTML=`<div class="gdim"></div>`; this.rays(false,4);
+    this.spr(S,'rei_win','left:70px;bottom:0;height:340px;z-index:3','gin-l gbreath');
+    this.el(S,`<div class="gtx" style="--c:#ffd23f;top:56px;left:300px;font-size:80px">${k==='bar'?'BAR':'7'}をねらえ！！</div>`);
+    this.el(S,`<div style="position:absolute;left:300px;right:0;top:190px;display:flex;justify-content:center;gap:20px;z-index:4">${[0,1,2].map((_,i)=>`<div class="gfloat" style="animation-delay:-${i*.3}s">${gsym(k,140)}</div>`).join('')}</div>`);
+    this.say(null,'5ラインのどこでそろえてもOK！',2400); this.scn='aim'; },
+  // ボーナスのはじまり(画面全体)
+  async qstart(tok,type){ this.full(true); this.setBg(0,true); const S=this.part(true,'stage');
+    this.rays(true,5); this.conf(true);
+    ['soma','mil','garm','cecil','rei'].forEach((k,i)=>this.spr(S,k,`left:${110+i*190}px;bottom:0;height:${GR.h[k]*1.25}px;z-index:${i===4?6:3};animation-delay:${i*.08}s`,'gin-d'));
+    this.txt(true,'QUEST START！！',{t:5,top:36,size:88});
+    this.txt(true,type==='big'?'ボス討伐クエスト　30ゲーム':'宝さがしクエスト　12ゲーム',{t:4,top:150,size:40,sub:1});
+    await this.w(2600,tok); this.full(false); this.bonusSetup(type,SP.consts.P_GAMES[type],0); },
+  bonusSetup(type,left,get){ const S=this.part(false,'stage'); if(!S) return; this.full(false); this.setBg(type==='big'?5:2); $('#lcd').classList.add('gbon');
+    S.innerHTML=`<div class="gdim"></div><div class="gwin" id="gBan" style="left:50%;top:12px;transform:translateX(-50%);font-size:20px;white-space:nowrap;z-index:8"></div>`;
+    this.hero=this.spr(S,type==='big'?'rei':'cecil','left:80px;bottom:0;height:290px;z-index:4','gin-l gbreath');
+    this.scn='bonus'; this.bType=type; this.bGet=get||0; this.ban(type,left,SP.consts.P_GAMES[type]-left,this.bGet); },
+  ban(type,left,n,get){ const b=$('#gBan'); if(!b) return;
+    b.innerHTML=`${type==='big'?'ボス討伐クエスト':'宝さがしクエスト'}　のこり <b style="color:#ffd84d">${left}</b>　${type==='big'?'討伐':'宝箱'} <b style="color:#ffd84d">${n}</b>${type==='big'?'体':'こ'}　GET <b style="color:#ffd84d">+${Math.max(0,get)}</b>`; },
+  // ボーナス中の1ゲーム(レバー)
+  bonusGame(d){ const b=d.bonus||{}, type=b.type||'big', total=SP.consts.P_GAMES[type], left=b.left??0, no=total-left;
+    if(this.scn!=='bonus'||this.bType!==type) this.bonusSetup(type,left+1,this.bGet);
+    const S=this.part(false,'stage'); if(!S) return; if(this.foe) this.foe.remove();
+    const who=type==='big'?['rei','garm','cecil','soma','mil'][(no-1)%5]:'cecil';
+    if(this.hero) this.hero.remove(); this.hero=this.spr(S,who,`left:80px;bottom:0;height:${GR.h[who]*1.35}px;z-index:4`,'gin-l gbreath');
+    if(type==='big'){ const f=left<=0?'maou':GR.bigFoes[(no-1)%GR.bigFoes.length], boss=!f.startsWith('m'), m=boss?0:+f.slice(1);
+      this.foe=this.spr(S,f,`right:50px;bottom:${m===5||m===6?50:0}px;height:${boss?GR.eh[f]:Math.min(GR.mh[m],360)}px;z-index:3`,'gin-r gbreath'); this.foeN=f;
+      if(left<=0){ this.txt(false,'最後の敵！ 魔王ゾルディア',{t:5,top:70,size:44,ms:1600}); sfx.roar(); } }
+    else { this.foe=this.spr(S,'chest','right:200px;bottom:20px;height:170px;z-index:3','gin-d'); this.foeN='chest'; }
+    this.ban(type,left+1,no-1,this.bGet); this.bNo=no; this.bLeft=left; },
+  // ボーナス中の1ゲーム(止めたあと)
+  async bonusHit(tok,d,pay){ const type=this.bType||'big', foe=this.foe, hero=this.hero;
+    if(type==='big'){ const who=['rei','garm','cecil','soma','mil'][((this.bNo||1)-1)%5];
+      if(hero){ hero.src=gImg(who==='rei'?'rei_atk':who+'_sk'); hero.classList.remove('gbreath','gin-l'); hero.classList.add('gdash'); }
+      sfx.slash(); await this.w(240,tok); if(foe){ foe.classList.remove('gbreath','gin-r'); foe.classList.add('ghit'); } sfx.hit(); this.dmg(false,(800+Math.random()*1800)|0,760,120);
+      await this.w(380,tok); if(foe){ foe.classList.remove('ghit'); const ln=GR.lose[this.foeN]; if(ln){ foe.src=gImg(ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); } }
+    else { if(foe){ sfx.chest(); foe.src=gImg('chest_o'); foe.classList.remove('gin-d'); foe.classList.add('ghit'); } this.coins(false,840,300,16); }
+    this.txt(false,`+${Math.max(0,pay-(d.bet||0))}`,{t:4,top:150,size:58,ms:1000}); this.bGet=d.bonusGet||this.bGet; this.ban(type,this.bLeft??0,this.bNo||0,this.bGet); },
+  // ボーナスの終わり:ギルドにもどって依頼達成(画面全体)
+  async qend(tok,d,pay){ await this.bonusHit(tok,d,pay).catch(()=>{}); await this.w(700,tok);
+    this.full(true); this.setBg(0,true); const S=this.part(true,'stage'), X=this.part(true,'fx');
+    this.spr(S,'nina','right:120px;bottom:0;height:400px;z-index:3','gin-r');
+    this.el(S,`<div class="gwin" style="left:70px;top:40px;width:560px;font-size:26px;line-height:1.6;z-index:6">ニーナ「依頼達成です！<br>おつかれさまでした！」<div style="margin-top:8px;font-size:40px;color:#ffd84d;font-family:var(--f-num);font-weight:400">GET +${Math.max(0,d.bonusGet||0)}枚</div></div>`);
+    const nr=d.rankNew||1, from=GR.ranks[Math.max(0,nr-1)], to=GR.ranks[Math.min(6,nr)];
+    const B=this.el(S,`<div class="grank" style="left:90px;right:auto;top:290px;transform:scale(1.6);transform-origin:0 0"><small>GUILD RANK</small><b>${from}</b></div>`);
+    sfx.chest(); await this.w(1000,tok);
+    if(B){ B.querySelector('b').textContent=to; if(d.rankS) B.classList.add('s'); B.animate([{transform:'scale(2.6)'},{transform:'scale(1.6)'}],{duration:400,easing:'cubic-bezier(.2,1.6,.4,1)'}); }
+    sfx.lvup(); this.txt(true,'RANK UP！',{t:4,top:320,size:54,x:260,st:'text-align:left'});
+    if(d.rankS){ await this.w(700,tok); this.rays(true,5); this.conf(true); sfx.big(); this.txt(true,'Sランク昇格！！',{t:5,top:500,size:84,x:60,st:'text-align:left'}); this.txt(true,'ギルドの英雄になった！ ランクはFからまた始まる',{t:4,top:610,size:26,x:70,sub:1,st:'text-align:left'}); await this.w(1200,tok); }
+    await this.w(2000,tok); this.full(false); this.walk(); }
+});
+return M; }
+Object.assign(sfx,{
+  // 「！」の合図
+  alert:()=>{ nt({type:'triangle',f:[880,1320],d:.12,v:.18}); nt({type:'triangle',f:[1320,1760],d:.14,v:.16,at:.1}); },
+  // 魔法のキラキラ
+  magic:()=>{ for(let i=0;i<8;i++) nt({f:1200+i*220,d:.25,v:.06,at:i*.04,w:.9}); nt({noise:true,hp:3000,a:.05,d:.6,v:.12,w:.6}); },
+  // 剣を振る「シュッ」
+  slash:()=>{ nt({noise:true,bp:[3200,700],q:1.4,a:.005,d:.18,v:.42,w:.3}); },
+  // 当たる「ドカッ」
+  hit:()=>{ nt({type:'sine',f:[140,45],fd:.2,d:.3,v:.8}); nt({noise:true,lp:[2400,300],d:.25,v:.5,w:.4}); },
+  // コマンドのカーソル
+  cursor:()=>{ nt({type:'triangle',f:1568,d:.06,v:.15}); },
+  // 魔王・竜のほえ声
+  roar:()=>{ nt({type:'sawtooth',f:[110,60],a:.08,d:1.1,v:.22,lp:[700,200],w:.5}); nt({noise:true,lp:[500,120],a:.1,d:1.2,v:.35,w:.4}); },
+  // 力をためる
+  charge:()=>{ nt({type:'sawtooth',f:[200,1200],a:.1,d:1.0,v:.07,lp:[800,4000],w:.5}); nt({noise:true,bp:[400,3000],a:.2,d:1.0,v:.18,w:.4}); },
+  // 宝箱・依頼書
+  chest:()=>{ nt({type:'triangle',f:[300,180],d:.25,v:.18}); [2093,2637,3136].forEach((f,i)=>bell(f,.15+i*.06,.1,.6)); },
+  // ランクアップ
+  lvup:()=>{ [784,988,1175,1568].forEach((f,i)=>bell(f,i*.1,.14,.9)); }
+});
+
+MACH.battle=guild();
 
 /* ---------- ③ ワイドライン ---------- */
 MACH.wide={
