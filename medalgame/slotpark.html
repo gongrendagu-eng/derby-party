@@ -501,25 +501,55 @@ body.chic .topbar .cred{border-radius:0;background:transparent;border-bottom:2px
 .stopb{width:74px;height:74px;border-radius:50%;font-family:var(--f-min);font-weight:800;font-size:22px;border:3px solid #55555f;background:radial-gradient(circle at 35% 30%,#6a6a72,#2c2c33);color:#8a8780}
 .stopb.on{border-color:#e6c37a;background:radial-gradient(circle at 35% 30%,#fff 0%,#ffe9a8 30%,#e0b23a 100%);color:#26262c;box-shadow:0 0 14px rgba(255,210,63,.8)}
 /* ③ ワイドライン */
-.th-wide{--body:linear-gradient(90deg,#6d3fd6 0%,#8b5cf6 20%,#a98bff 50%,#8b5cf6 80%,#6d3fd6 100%);--deck:linear-gradient(180deg,#5b2fc2,#7c3aed);--lampA:#ffcf3f;--lampB:#7cc4ff;--led:#7df9c1;--ledbox:#24183d;--ledlbl:#d6c7f5;--tray:linear-gradient(180deg,#2a1f45,#463a66);background:#efe6ff;--tb-line:#e3d2ff;--tb-ttl:#7c3aed;--tb-btn:#eadcff;--tb-btnc:#4c1d95}
-.th-wide .topper{height:84px;background:#fff;border:6px solid #e6e8ec}
-.th-wide .logo{font-family:var(--f-num);font-size:40px;letter-spacing:3px;color:#7c3aed;text-shadow:3px 3px 0 #ffcf3f}
-.th-wide .lcd{position:relative;padding:10px;border-radius:10px;background:#1b1036;display:flex;flex-direction:column;gap:8px}
-.th-wide .fsbar{height:38px;border-radius:8px;background:#3a2a6b;color:#d6c7f5;display:flex;align-items:center;justify-content:center;gap:14px;font-weight:800}
-.th-wide .fsbar.on{background:#8b5cf6;color:#fff}
-.th-wide .fsbar b{font-family:var(--f-num);font-weight:400;font-size:20px;letter-spacing:2px}
+.th-wide{--body:linear-gradient(90deg,#4a2a14 0%,#7a4a24 18%,#9a6232 50%,#7a4a24 82%,#4a2a14 100%);--deck:linear-gradient(180deg,#3a2210,#5a3518);--lampA:#ffd84d;--lampB:#7fdcff;--led:#ffffff;--ledbox:#2a1a0c;--ledlbl:#ffd84d;--tray:linear-gradient(180deg,#2a1a0c,#4a2c14);background:#5a8fd0 url(sp-assets/wl_bg.webp) center/cover no-repeat}
+.th-wide .topbar{background:rgba(255,255,255,.92)}
+.th-wide .cab{border:6px solid #e0b04a;box-shadow:inset 0 0 0 3px #7a4a1c,0 0 0 3px #3a220c,0 12px 26px rgba(0,0,0,.45)}
+.th-wide .cab::before,.th-wide .cab::after{content:"";position:absolute;top:10px;bottom:10px;width:10px;background:radial-gradient(circle,#ffe7a0 0 3px,#a8741c 3.5px 4.5px,transparent 5px) 0 0/10px 34px repeat-y}
+.th-wide .cab::before{left:2px}.th-wide .cab::after{right:2px}
+.th-wide .topper{height:84px;border-radius:14px;background:repeating-linear-gradient(0deg,#6b3d1e 0 13px,#5c3318 13px 14px),#6b3d1e;border:5px solid #e0b04a;box-shadow:inset 0 0 0 2px #3a220c}
+.th-wide .topper img{width:58px;height:58px;object-fit:contain}
+.th-wide .logo{font-family:var(--f-num);font-size:42px;letter-spacing:4px;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 14px rgba(255,216,77,.6)}
+.th-wide .bezel{border-radius:14px;background:linear-gradient(180deg,#f6d77a 0%,#b07a24 50%,#f6d77a 100%);padding:9px}
+.th-wide .lcd{position:relative;padding:10px;border-radius:8px;background:#0a1038;display:flex;flex-direction:column;gap:8px}
+.th-wide .fsbar{height:38px;border-radius:6px;background:#101a5c;border:3px solid #fff;box-shadow:0 0 0 2px #0a1038;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-weight:800}
+.th-wide .fsbar.on{background:#7a1f1f}
+.th-wide .fsbar b{font-family:var(--f-num);font-weight:400;font-size:20px;letter-spacing:2px;color:#ffd84d}
 .th-wide .rrow{display:flex;gap:6px;justify-content:center}
-.th-wide .reel{background:#f3ecff;border-radius:10px}
-.th-wide .reel::after{background:linear-gradient(180deg,rgba(27,16,54,.35),rgba(27,16,54,0) 20%,rgba(27,16,54,0) 80%,rgba(27,16,54,.35))}
-.th-wide .hl{position:absolute;border-radius:10px;box-shadow:0 0 0 3px #ffcf3f,0 0 14px #ffcf3f;background:rgba(255,243,196,.35);pointer-events:none;animation:blink .4s steps(1) 4}
-.th-wide .side.l{background:#fff;border:4px solid #c4a5ff;margin-top:20px}
-.th-wide .wpt{display:grid;grid-template-columns:24px 1fr 1fr 1fr;align-items:center;gap:2px 2px;text-align:right;font-family:var(--f-led);font-weight:900;font-size:12px;color:#6d28d9}
-.th-wide .wpt svg{width:24px;height:24px}.th-wide .wpt b{font-family:var(--f-body);font-size:11px;color:#5b4a75}
+.th-wide .reel{background:linear-gradient(180deg,#0b1240 0%,#1a2670 50%,#0b1240 100%);border-radius:8px;box-shadow:inset 0 0 0 2px rgba(255,216,77,.35)}
+.th-wide .reel::after{background:linear-gradient(180deg,rgba(5,8,30,.6),rgba(5,8,30,0) 22%,rgba(5,8,30,0) 78%,rgba(5,8,30,.6))}
+.th-wide .reel .cell svg{filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.th-wide .hl{position:absolute;border-radius:8px;box-shadow:0 0 0 3px #ffd84d,0 0 16px #ffd84d;background:rgba(255,216,77,.18);pointer-events:none;animation:blink .4s steps(1) 4}
+.th-wide .hl.wd{box-shadow:0 0 0 3px #ff6b6b,0 0 18px #ff6b6b}
+.th-wide .rpgw{background:rgba(12,20,80,.94);border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 3px #0a1038,0 6px 14px rgba(0,0,0,.35);color:#fff}
+.th-wide .side.l{margin-top:10px;padding:12px}
+.th-wide .side h3{color:#ffd84d;font-family:var(--f-body);font-weight:800;font-size:15px;letter-spacing:2px}
+.th-wide .side p{color:#dfe6ff}
+.th-wide .side .row{border-color:rgba(255,255,255,.18)}.th-wide .side .v{color:#ffd84d}
+.th-wide .wpt{display:grid;grid-template-columns:26px 1fr 1fr 1fr;align-items:center;gap:1px 2px;text-align:right;font-family:var(--f-led);font-weight:900;font-size:12px;color:#ffd84d}
+.th-wide .wpt svg{width:26px;height:26px}.th-wide .wpt b{font-family:var(--f-body);font-size:11px;color:#dfe6ff}
 .th-wide .side.l p svg{vertical-align:middle}
-.th-wide .wmsg{position:absolute;left:10px;right:10px;top:10px;height:38px;border-radius:8px;background:#ffcf3f;color:#33204f;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:18px;z-index:5;pointer-events:none;animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
-.th-wide .wmsg b{font-family:var(--f-num);font-weight:400;font-size:22px}.th-wide .wmsg .w{padding:1px 8px;border-radius:999px;background:#7c3aed;color:#ffcf3f}
-.th-wide .hl.wd{box-shadow:0 0 0 3px #c084fc,0 0 16px #c084fc}.th-wide .side.l h3{color:#7c3aed}.th-wide .side .v{color:#6d28d9}
-.th-wide .side.r{background:#24183d;color:#d6c7f5;margin-top:120px}.th-wide .side.r .dat{background:#150c26}.th-wide .side.r .dat b{color:#ffcf3f}
+.th-wide .side.r{background:none;padding:0;margin-top:0;gap:8px}
+.th-wide .side.r .guide{width:170px;height:190px;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35));transform-origin:50% 100%;animation:wlbob 2.4s ease-in-out infinite}
+@keyframes wlbob{50%{transform:translateY(-6px)}}
+.th-wide .side.r .rpgw{padding:10px;display:flex;flex-direction:column;gap:7px}
+.th-wide .side.r .dat{background:rgba(255,255,255,.1)}.th-wide .side.r .dat b{color:#ffd84d}
+.th-wide .say{position:relative;font-size:12px;line-height:1.5;padding:8px 10px}
+.th-wide .wmsg{position:absolute;left:10px;right:10px;top:10px;height:38px;border-radius:6px;background:#101a5c;border:3px solid #ffd84d;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:18px;z-index:5;pointer-events:none;animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+.th-wide .wmsg b{font-family:var(--f-num);font-weight:400;font-size:22px;color:#ffd84d}.th-wide .wmsg .w{padding:1px 8px;border-radius:999px;background:#c0392b;color:#fff}
+.th-wide .cutin{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,216,77,.35),rgba(10,16,56,.88) 70%);border-radius:8px;pointer-events:none;animation:wlfade 1.9s ease both}
+.th-wide .cutin img{height:300px;animation:wlpop .5s cubic-bezier(.2,1.6,.4,1) both}
+.th-wide .cutin span{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:2px 22px;border-radius:8px;background:rgba(12,20,80,.92);border:3px solid #fff;white-space:nowrap;text-align:center;font-family:var(--f-num);font-size:34px;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800}
+@keyframes wlpop{from{transform:scale(.3) translateY(60px);opacity:0}}
+@keyframes wlfade{0%{opacity:0}8%,85%{opacity:1}100%{opacity:0}}
+.th-wide .reel .cell svg{transform-origin:50% 90%}
+.th-wide .reel .cell.mv svg{animation:wlhop .62s ease-out 3}
+.th-wide .reel .cell.mv:nth-child(2) svg{animation-delay:.08s}.th-wide .reel .cell.mv:nth-child(3) svg{animation-delay:.16s}
+.th-wide .reel .cell.eg svg{transform-origin:50% 85%;animation:wlwobble .5s ease-in-out 4}
+.th-wide .reel .cell.wd svg{transform-origin:50% 50%;animation:wlshine .7s ease-in-out 3}
+@keyframes wlhop{0%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-9px) scale(.95,1.06)}55%{transform:translateY(0) scale(1,1)}70%{transform:translateY(0) scale(1.1,.88)}85%{transform:translateY(0) scale(.97,1.03)}100%{transform:translateY(0) scale(1,1)}}
+@keyframes wlwobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(4deg)}}
+@keyframes wlshine{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,216,77,0))}50%{transform:scale(1.16);filter:drop-shadow(0 0 10px #ffd84d) brightness(1.25)}}
+.th-wide .deck .auto{background:#101a5c;border-color:#fff;color:#fff}.th-wide .deck .auto.on{background:#ffd84d;color:#3a1800}
 /* BETの枚数(どの機種も共通):−/＋/MAX と、数字を押すと入力 */
 .betbox{display:flex;align-items:center;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.28);flex-shrink:0}
 .betbox .bb{width:46px;height:52px;border-radius:10px;background:linear-gradient(180deg,#fff,#e8e2da);color:#3a2a3f;font-size:24px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.4)}
@@ -709,6 +739,8 @@ crown:'<path d="M12 74L8 30L30 50L50 18L70 50L92 30L88 74Z" fill="#ffc83d" strok
 melon:'<path d="M8 34A42 42 0 0 0 92 34Z" fill="#2d8a4e" stroke="#1b5e33" stroke-width="3" stroke-linejoin="round"/><path d="M15 34A35 35 0 0 0 85 34Z" fill="#f4fbe9"/><path d="M19 34A31 31 0 0 0 81 34Z" fill="#ef4f5c"/><g fill="#2b2b2b"><ellipse cx="36" cy="44" rx="2.6" ry="4"/><ellipse cx="50" cy="50" rx="2.6" ry="4"/><ellipse cx="64" cy="44" rx="2.6" ry="4"/><ellipse cx="43" cy="56" rx="2.6" ry="4"/><ellipse cx="57" cy="56" rx="2.6" ry="4"/></g>',
 orange:'<circle cx="50" cy="56" r="34" fill="#ff9f1c" stroke="#b35c00" stroke-width="3"/><ellipse cx="38" cy="44" rx="9" ry="5" fill="#ffd08a"/><path d="M50 24L50 14" stroke="#6b4a1a" stroke-width="4" stroke-linecap="round"/><path d="M52 18Q66 6 76 14Q66 26 52 18Z" fill="#40916c" stroke="#1e6b36" stroke-width="2"/>',
 wild:'<rect x="4" y="20" width="92" height="60" rx="12" fill="#7c3aed" stroke="#ffcf3f" stroke-width="5"/><text x="50" y="62" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="30" fill="#ffcf3f" stroke="#3b0a8a" stroke-width="1.5">WILD</text><polygon points="14,12 17,20 25,22 17,24 14,32 11,24 3,22 11,20" fill="#fff6bf"/><polygon points="86,70 89,78 97,80 89,82 86,90 83,82 75,80 83,78" fill="#fff6bf"/>',
+wl_dragon:'',wl_mimic:'',wl_golem:'',wl_ghost:'',wl_skeleton:'',wl_mushroom:'',wl_bat:'',wl_fluff:'',wl_flower:'',wl_chick:'',wl_egg:'',
+wl_wild:'',
 rocket:'<path d="M50 6C66 20 68 46 64 70L36 70C32 46 34 20 50 6Z" fill="#f1f1f1" stroke="#333355" stroke-width="3"/><circle cx="50" cy="36" r="8" fill="#3a86ff" stroke="#333355" stroke-width="3"/><path d="M36 54L22 74L36 70Z" fill="#e63946"/><path d="M64 54L78 74L64 70Z" fill="#e63946"/><path d="M42 72L50 94L58 72Z" fill="#ff9f1c"/>'
 };
 // KAGUYAのリール絵柄(紅月の7・刀のBAR・鈴・桜・三日月・竹)。光って見えるように、太い半透明の線を下にしいている
@@ -721,6 +753,10 @@ replay:'<path d="M60 10A40 40 0 1 0 90 66A32 32 0 1 1 60 10Z" fill="#7ab8ff" opa
 lemon:'<path d="M66 30Q86 18 94 26Q80 36 66 30Z" fill="#7fd68f" stroke="#1e6b36" stroke-width="2"/><rect x="36" y="6" width="26" height="88" rx="7" fill="#4fbf6a" stroke="#1e6b36" stroke-width="3"/><path d="M36 36H62M36 66H62" stroke="#1e6b36" stroke-width="4"/><rect x="41" y="10" width="5" height="80" rx="2" fill="#a8ecb5" opacity=".7"/>'
 };
 const ksym=(k,s)=>`<svg viewBox="0 0 100 100" width="${s||'100%'}" height="${s||'100%'}" aria-hidden="true">${KSYM[k]||SYM[k]||''}</svg>`;
+// ワイドライン(モンスター)の絵柄は画像(sp-assets/wl_*.webp)。WILDだけ盾の上に文字をのせる
+['wl_dragon','wl_mimic','wl_golem','wl_ghost','wl_skeleton','wl_mushroom','wl_bat','wl_fluff','wl_flower','wl_chick','wl_egg','wl_wild'].forEach(k=>{ SYM[k]=`<image href="sp-assets/${k}.webp" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet"/>`; });
+SYM.wl_wild+='<text x="50" y="56.5" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="15" fill="#fff6d0" stroke="#5a0d0d" stroke-width="3" paint-order="stroke">WILD</text>';
+const WM={seven:'wl_dragon',crown:'wl_mimic',gem:'wl_golem',bell:'wl_ghost',bar:'wl_skeleton',melon:'wl_mushroom',grape:'wl_bat',orange:'wl_fluff',cherry:'wl_flower',lemon:'wl_chick',star:'wl_egg',wild:'wl_wild'};
 const sym=(k,s)=>`<svg viewBox="0 0 100 100" width="${s||'100%'}" height="${s||'100%'}" aria-hidden="true">${SYM[k]||''}</svg>`;
 function chr(mood,s){
   const rival=mood==='rival', rim=rival?'#6b7385':'#d9a21b', face=rival?'#c9d0dc':'#ffd84d';
@@ -974,7 +1010,7 @@ async function finish(d){ await countUp(d.a); RUN=null; G.hold=false; G.busy=fal
 const MINFO={
   classic:{op:'ボタン1つ・3リール',memo:'小さな当たりがよく出る。はじめての人向け。BETの数だけラインが光る。',w:1,bet:'1〜100枚',hd:'#c9f2dc',s:['cherry','lemon','bell']},
   oshi:{op:'レバー＋ボタン3つ',memo:'自分で止めるパチスロ風。ランプが光ったら7かBARをねらえ。',w:3,bet:'3〜30枚',hd:'#e9e3d6',s:['seven','bar','replay']},
-  wide:{op:'ボタン1つ・5リール',memo:'ラインなし。左から、となりの列のどこかに同じ絵柄があればつながる。ほし3つでフリースピン(上乗せあり・WILDで配当2倍)。',w:3,bet:'1〜100枚',hd:'#eadcff',s:['star','grape','gem']},
+  wide:{op:'ボタン1つ・5リール',memo:'モンスターがあつまるRPGの台。左から、となりの列のどこかに同じモンスターがいればつながる。たまご3つでフリースピン(上乗せあり・WILDで配当2倍)。',w:3,bet:'1〜100枚',hd:'#cfe3ff',s:['wl_egg','wl_dragon','wl_ghost']},
   rocket:{op:'ボタン1つ・3リール',memo:'ロケットがそろうと発射。80%で連チャンが続き、月まで行ける。',w:4,bet:'1〜100枚',hd:'#cfe8ff',s:['rocket','rocket','rocket']},
   jackpot:{op:'ボタン1つ・3リール',memo:'ほとんど当たらないが、7・7・7でジャックポットを全部もらえる。',w:5,bet:'5〜50枚',hd:'#f3e3c3',s:['seven','seven','seven']},
   drop:{op:'ボタン1つ・3×3',memo:'そろうと消えて、上から落ちてくる。連鎖するほど配当アップ。',w:3,bet:'1〜100枚',hd:'#ffd9ea',s:['gem','star','cherry']},
@@ -1300,33 +1336,37 @@ MACH.oshi=pachi('oshi'); MACH.battle=pachi('battle');
 
 /* ---------- ③ ワイドライン ---------- */
 MACH.wide={
-  pool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star'],
-  fsPool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star','wild'],
+  pool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star'].map(k=>WM[k]),
+  fsPool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star','wild'].map(k=>WM[k]),
   open(){
     const W=SP.consts.W_PAY, N=SP.consts.W_FSN, f=v=>+v.toFixed(1);
+    Object.values(WM).concat(['wl_dragon_stand','wl_dragon_win']).forEach(k=>{ const im=new Image(); im.src=`sp-assets/${k}.webp`; }); // 先に読みこむ
     screen('th-wide',
-      `<div class="topper">${sym('star',44)}<div class="logo">WIDE LINE</div>${sym('gem',44)}</div>
-       <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"><b>243 WAYS</b><span>ほしが3つでフリースピン</span></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
+      `<div class="topper"><img src="sp-assets/wl_egg.webp" alt=""><div class="logo">WIDE LINE</div><img src="sp-assets/wl_egg.webp" alt=""></div>
+       <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
-       <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ffe680;--b2:#ffcf3f;--b3:#c99400;--glow:rgba(255,207,63,.9);color:#33204f;text-shadow:none" aria-label="スピン">SPIN</button></div>
+       <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ff9a6b;--b2:#e2452c;--b3:#8a1c0c;--glow:rgba(255,120,80,.9)" aria-label="スピン">SPIN</button></div>
        ${trayHtml(6)}`,
-      `<h3>PAY TABLE</h3><p style="color:#5b4a75;text-align:center">BETの何倍か</p><div class="wpt"><span></span><b>3つ</b><b>4つ</b><b>5つ</b>${Object.keys(W).map(k=>`${sym(k)}<span>${f(W[k][3])}</span><span>${f(W[k][4])}</span><span>${f(W[k][5])}</span>`).join('')}</div>
-       <div class="row">${sym('star')}<span style="font-size:11px">3/4/5つ</span><span class="v">FREE ${N[3]}/${N[4]}/${N[5]}回</span></div><p style="color:#5b4a75">左のリールから、となりの列のどこかにあればつながる。同じ列に2つなら2通り分。フリースピン中は${sym('wild',16)}WILDが出て、WILDを含む当たりは配当2倍。ほしで回数上乗せ。</p>`,
-      `<h3 style="font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:1px">フリースピン</h3><div id="fsd"></div>`);
+      `<h3>モンスターの配当</h3><p style="text-align:center">BETの何倍か</p><div class="wpt"><span></span><b>3体</b><b>4体</b><b>5体</b>${Object.keys(W).map(k=>`${sym(WM[k])}<span>${f(W[k][3])}</span><span>${f(W[k][4])}</span><span>${f(W[k][5])}</span>`).join('')}</div>
+       <div class="row">${sym('wl_egg')}<span style="font-size:11px">3/4/5こ</span><span class="v">FREE ${N[3]}/${N[4]}/${N[5]}回</span></div><p>左のリールから、となりの列のどこかにいればつながる。同じ列に2体なら2通り分。フリースピン中は${sym('wl_wild',18)}WILDが出て、WILDを含む当たりは配当2倍。たまごで回数上乗せ。</p>`,
+      `<img class="guide" id="wGuide" src="sp-assets/wl_dragon_stand.webp" alt=""><div class="rpgw say" id="wSay">たまごを3つあつめて、フリースピンだ！</div><div class="rpgw"><h3>フリースピン</h3><div id="fsd"></div></div>`);
+    document.querySelector('.th-wide .side.l').classList.add('rpgw');
     this.reels=[...$('#rw').querySelectorAll('.reel')];
-    this.reels.forEach((el,i)=>makeReel(el,88,126,74,[this.pool[(i+1)%7],this.pool[(i+3)%7],this.pool[(i+5)%7]]));
+    this.reels.forEach((el,i)=>makeReel(el,88,126,80,[this.pool[(i+1)%11],this.pool[(i+4)%11],this.pool[(i+7)%11]]));
     bindBet('wide',()=>!!this.fs()||(G.busy&&this.wasFs));
     $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
     this.upd();
   },
+  say(t){ const e=$('#wSay'); if(e) e.textContent=t; },
+  cutin(text){ const lcd=$('#lcd'); if(!lcd) return; const c=document.createElement('div'); c.className='cutin'; c.innerHTML=`<img src="sp-assets/wl_dragon_win.webp" alt=""><span>${text}</span>`; lcd.appendChild(c); setTimeout(()=>c.remove(),1900); },
   fs(){ return (G.st.wide||{}).fs||0; },
   restore(){ this.upd(); const scr=G.scr; if(this.fs()) setTimeout(()=>{ if(G.mid==='wide'&&G.scr===scr&&!G.busy&&!G.after&&this.fs()) this.spin(); },900); }, // フリースピンの続きは自動で
   upd(){ if(!$('#bSpin')) return; const fs=this.fs(), s=G.st.wide||{};
     updBet('wide',!!fs,fs?s.fsBet:(G.busy&&this.bet?this.bet:G.bet.wide));
     $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||(!fs&&G.cred<G.bet.wide);
     const bar=$('#fsbar'); bar.classList.toggle('on',!!fs);
-    bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffcf3f;color:#33204f">WILDで配当 ×2</span>`:'<b>243 WAYS</b><span>ほしが3つでフリースピン</span>';
-    $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>ほし3つで10回・4つで15回・5つで20回。フリースピン中もほしで上乗せ。BETは入ったときのまま。</p>`; },
+    bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffd84d;color:#3a1800">WILDで配当 ×2</span>`:'<b>243 WAYS</b><span>たまごが3つでフリースピン</span>';
+    $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>たまご3こで10回・4こで15回・5こで20回。フリースピン中もたまごで上乗せ。BETは入ったときのまま。</p>`; },
   async spin(){
     if(G.busy) return; const fs=this.fs(), bet=G.bet.wide; if(!fs&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
     this.bet=fs?(G.st.wide||{}).fsBet:bet; this.wasFs=!!fs;
@@ -1335,17 +1375,22 @@ MACH.wide={
     const d=await play('wide',{bet});
     if(!d){ this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
     await sleep(Math.max(0,450-(Date.now()-t0)));
-    for(let i=0;i<5;i++){ const col=[0,1,2].map(r=>d.grid[r][i]); const stars=d.grid.filter(r=>r[i]==='star').length;
+    for(let i=0;i<5;i++){ const col=[0,1,2].map(r=>WM[d.grid[r][i]]||d.grid[r][i]);
+      if(i===3&&d.starCells.filter(c=>c[1]<3).length>=2) this.say('たまごが2つ…！あと1つ！');
       await spinStop(this.reels[i],col,pool,i===0?600:220+(i>=3&&d.starCells.filter(c=>c[1]<i).length>=2?700:0)); }
-    const lcd=$('#lcd'), cellsSeen={};
+    const lcd=$('#lcd'), cellsSeen={}, B=d.fsBet||bet;
     const mark=(r,c)=>{ const k=r+','+c; if(cellsSeen[k]) return; cellsSeen[k]=1; const el=this.reels[c]; const d2=document.createElement('div'); d2.className='hl'+(d.grid[r][c]==='wild'?' wd':'');
-      d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; lcd.appendChild(d2); };
+      d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; lcd.appendChild(d2);
+      // そろった絵柄を動かす(モンスター=跳ねる、たまご=ゆれる、WILD=光る)
+      const cell=el.querySelectorAll('.cell')[r], k2=d.grid[r][c]; if(cell) cell.classList.add(k2==='star'?'eg':k2==='wild'?'wd':'mv'); };
     d.wins.forEach(w=>w.cells.forEach(([r,c])=>mark(r,c))); if(d.stars>=3) d.starCells.forEach(([r,c])=>mark(r,c));
-    if(d.pay>0){ $('#ledWin').textContent=d.pay; sfx.win(); if(d.pay>=(d.fsBet||bet)*10) winText(lcd,`BIG WIN! +${d.pay}`,140); }
-    if(d.pay>0&&d.wins.length&&d.pay<(d.fsBet||bet)*10){ const w=d.wins.slice().sort((a,b)=>b.x-a.x)[0]; const m=document.createElement('div'); m.className='wmsg'; m.innerHTML=`${sym(w.sym,26)}<b>${w.n}つ</b>${w.ways>1?`<span>×${w.ways}通り</span>`:''}${w.wild?'<span class="w">WILD ×2</span>':''}<b>+${d.pay}</b>`; lcd.appendChild(m); setTimeout(()=>m.remove(),1800); }
-    if(d.fsStart){ sfx.big(); winText(lcd,`FREE SPIN ${d.fsAdd}回!`,150); await sleep(1200); }
-    if(d.fsMore){ sfx.big(); winText(lcd,`+${d.fsAdd}回 上乗せ!`,130); await sleep(1100); }
-    if(d.fsEnd){ winText(lcd,`フリースピン終了 +${d.fsWin}`,150); await sleep(1200); }
+    if(d.pay>0){ $('#ledWin').textContent=d.pay; sfx.win(); }
+    if(d.pay>=B*10&&!d.fsStart){ sfx.big(); this.cutin(`BIG WIN! +${d.pay}`); this.say('やったー！大当たりだ！'); await sleep(1600); }
+    else if(d.pay>0&&d.wins.length){ const w=d.wins.slice().sort((a,b)=>b.x-a.x)[0]; const m=document.createElement('div'); m.className='wmsg'; m.innerHTML=`${sym(WM[w.sym],28)}<b>${w.n}体</b>${w.ways>1?`<span>×${w.ways}通り</span>`:''}${w.wild?'<span class="w">WILD ×2</span>':''}<b>+${d.pay}</b>`; lcd.appendChild(m); setTimeout(()=>m.remove(),1800); this.say(w.n>=5?'5体そろった！すごい！':w.n>=4?'4体つながった！いいぞ！':'モンスターがつながった！'); }
+    else if(!fs) this.say(['つぎはいけるよ！','たまごを3つあつめよう！','ドキドキするね！'][Math.floor(Math.random()*3)]);
+    if(d.fsStart){ sfx.big(); this.cutin(`FREE SPIN ${d.fsAdd}回!`); this.say('たまごがかえった！フリースピンだ！'); await sleep(1800); }
+    if(d.fsMore){ sfx.big(); winText(lcd,`+${d.fsAdd}回 上乗せ!`,130); this.say(`+${d.fsAdd}回 上乗せ！まだまだいくぞ！`); await sleep(1100); }
+    if(d.fsEnd){ winText(lcd,`フリースピン終了 +${d.fsWin}`,150); this.say(`フリースピンで +${d.fsWin}枚 ゲット！`); await sleep(1200); }
     await finish(d); this.upd();
     const scr=G.scr; if(this.fs()) setTimeout(()=>{ if(!G.busy&&!G.after&&G.mid==='wide'&&G.scr===scr) this.spin(); },d.fsStart?900:700); else autoNext(()=>this.spin());
   }
