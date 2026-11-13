@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>スロットパーク</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Orbitron:wght@700;900&family=Shippori+Mincho:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<link rel="stylesheet" href="sp-pad.css">
+<style>
+/* ドラゴンレギオンのカードの絵 */
+.hdwl{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(10,16,56,.92) 0%,rgba(10,16,56,.55) 55%,rgba(10,16,56,.15) 100%),url(dragonlegion/assets/wl_bg.webp) center 40%/cover;box-shadow:inset 0 -3px 0 #e0b04a}
+.hdwl::before{content:"";position:absolute;right:-10px;top:50%;width:120px;height:120px;margin-top:-60px;border-radius:50%;background:radial-gradient(circle,rgba(255,216,77,.55),rgba(255,216,77,0) 70%)}
+.hdwl .dr{position:absolute;right:-6px;bottom:-14px;height:100px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}
+.hdwl .eg{position:absolute;left:8px;bottom:4px;width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 4px #ffd84d)}
+.hdwl .tt{position:absolute;left:12px;top:9px;display:flex;flex-direction:column;line-height:1;text-align:left}
+.hdwl .tt b{font-family:var(--f-num);font-weight:400;font-size:21px;letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:1.5px #5a2a00;text-shadow:0 3px 0 #3a1800,0 0 10px rgba(255,216,77,.6)}
+.hdwl .tt b+b{font-size:15px;letter-spacing:5px;color:#fff6d0;margin-top:2px}
+/* 連チャンロケットのカードの絵 */
+.hdrk{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(4,6,14,.9) 0%,rgba(4,6,14,.45) 55%,rgba(4,6,14,0) 100%),url(rocket/assets/ev_rk_launch.webp) 50% 30%/cover;box-shadow:inset 0 -3px 0 #ff9f1c}
+.hdrk .tt{position:absolute;left:12px;top:10px;display:flex;flex-direction:column;line-height:1;text-align:left}
+.hdrk .tt b{font-family:var(--f-num);font-weight:400;font-size:20px;letter-spacing:2px;color:#fff;text-shadow:0 0 10px rgba(255,159,28,.9),0 2px 0 #7a3300}
+.hdrk .tt b+b{font-family:var(--f-led);font-weight:900;font-size:12px;letter-spacing:5px;color:#7fd3ff;margin-top:4px;text-shadow:0 0 6px #2f8fff}
+/* 機種選びのカード */
+.hdgr{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(20,10,4,.85) 0%,rgba(20,10,4,.35) 60%,rgba(20,10,4,0) 100%),url(guildrush/assets/gr_bg1.webp) center 60%/cover;box-shadow:inset 0 -3px 0 #ffd84d}
+.hdgr img{position:absolute;right:2px;bottom:-30px;height:108px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}
+.hdgr .tt{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;line-height:1;text-align:left}
+.hdgr .tt b{font-family:var(--f-num);font-weight:400;font-size:22px;letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:1.5px #3a1a00;text-shadow:0 3px 0 #2a1000}
+.hdgr .tt b+b{font-family:var(--f-body);font-weight:800;font-size:12px;letter-spacing:4px;color:#fff3d0;margin-top:5px;-webkit-text-stroke:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+<script src="../mg-core.js"></script>
+<script src="sp-engine.js"></script>
+<script>const ASSET='common/', SP_LOBBY='./';</script>
+<script src="sp-pad.js"></script>
+<script>
+'use strict';
+Object.assign(BGM,{lobby:'bgm_lobby.mp3'});
+
+/* =========================================================
+   先生のPC
+   ========================================================= */
+let HOST=null; const feed=[];
+const LSK=()=>'mg.slotpark.'+(MG.LOCAL?'local.':'');
+let ST={}, JP=0, saveT=null;
+function loadHostData(){ try{ ST=JSON.parse(localStorage.getItem(LSK()+'st'))||{}; }catch(e){ ST={}; }
+  JP=+localStorage.getItem(LSK()+'jp')||SP.consts.J_SEED; }
+function saveHostData(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(LSK()+'st',JSON.stringify(ST)); localStorage.setItem(LSK()+'jp',String(JP)); }catch(e){} },300); }
+const jpCtx={jp:{add(n){JP+=n},take(){const p=JP;JP=SP.consts.J_SEED;return p},get(){return JP}}};
+const stOf=(sid,m)=>{ ST[sid]=ST[sid]||{}; ST[sid][m]=ST[sid][m]||{}; return ST[sid][m]; };
+const locks={};
+async function withLock(sid,fn){ while(locks[sid]) await locks[sid]; let done; locks[sid]=new Promise(r=>done=r); try{ return await fn(); } finally { delete locks[sid]; done(); } }
+function pubState(m,st){
+  if(m==='oshi') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0};
+  if(m==='battle') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0,floor:st.floor||0,fg:st.fg||0,rank:st.rank||0};
+  if(m==='wide') return {fs:st.fs||0,fsWin:st.fsWin||0,fsBet:st.fsBet||0};
+  if(m==='rocket') return {chain:st.chain||null,best:st.best||0,last:st.last||0};
+  if(m==='drop') return {best:st.best||0};
+  return {};
+}
+async function hostReq(sid,r){
+  const m=String(r.m||''); if(!MBY[m]) return {ok:false,msg:'その機種はありません'};
+  if(r.type==='g:info') return {ok:true,d:{jp:JP,st:pubState(m,stOf(sid,m))}};
+  if(r.type!=='g:spin'&&r.type!=='g:stop') return {ok:false,msg:'その操作はできません'};
+  return withLock(sid,async()=>{
+    const a=HOST.acc()[sid], st=stOf(sid,m), d={type:r.type==='g:stop'?'stop':'spin',bet:Math.floor(+r.bet||0),cherryOk:!!r.cherryOk,aligned:!!r.aligned};
+    const need=SP.cost(m,st,d);
+    if(!a.seat||a.seat.g!==GID) return {ok:false,msg:'このゲームには入っていません'};
+    if((a.seat.a||0)<need) return {ok:false,msg:'メダルが足りません。「貯金から追加」で足してください',d:{short:true}};
+    const backup=JSON.stringify(st), jp0=JP;
+    let res; try{ res=SP.play(m,st,d,jpCtx); }catch(e){ return {ok:false,msg:e.message}; }
+    const delta=(res.pay||0)-(res.bet||0);
+    let na=a.seat.a;
+    try{ if(delta) na=await HOST.change(sid,delta); }
+    catch(e){ ST[sid][m]=JSON.parse(backup); JP=jp0; return {ok:false,msg:e.message}; }
+    saveHostData();
+    if((res.pay||0)>=50||res.bonusStart||res.out==='jp'){ feed.unshift({n:a.n,m:MBY[m].name,pay:res.pay,bs:res.bonusStart,jp:res.out==='jp',t:Date.now()}); feed.length=Math.min(feed.length,15); }
+    hostRender();
+    return {ok:true,d:{...res,a:na,jp:JP,st:pubState(m,st)}};
+  });
+}
+async function hostMain(){
+  document.body.className='host';
+  if(!MG.keys.get()){ app.innerHTML=`<div class="wrap"><div class="box"><h2>まだ準備ができていません</h2><p class="note">先に、このPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。</p></div></div>`; return; }
+  loadHostData();
+  app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
+  try{
+    HOST=await MG.startHost({gid:GID,name:NAME,art:'slot',hooks:{
+      onReq:(sid,r)=>hostReq(sid,r),
+      onLeave(){ hostRender(); }
+    }});
+  }catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
+  app.innerHTML=`<div class="wrap"><div class="htop"><div class="ttl">${NAME}<small>先生のPC</small></div><span class="sp"></span>
+      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span><button class="btn danger" id="stop">停止する(全員を精算)</button></div>
+    <div class="stats"><div class="stat"><small>遊んでいる人</small><b id="sN">0人</b></div><div class="stat"><small>ジャックポット</small><b id="sJ">0枚</b></div><div class="stat"><small>機種</small><b>${SP.MACHINES.length}台</b></div><div class="stat"><small>還元率(目安)</small><b>約95%</b></div></div>
+    <div class="box"><p class="note">このタブを開いている間、iPadのゲーム一覧に「${NAME}」が出ます。抽選と配当はこのPCで計算します。タブは閉じずに置いておいてください(閉じると遊んでいる人のメダルは預けたままになり、トップの「貯金にもどす」か管理画面の精算で回収できます)。</p></div>
+    <div class="box"><h2>遊んでいる人</h2><ul class="pl" id="pl"></ul></div>
+    <div class="box"><h2>さいきんの大当たり</h2><ul class="pl" id="fd"></ul></div></div>`;
+  HOST.onAcc(hostRender);
+  HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
+  $('#stop').onclick=async()=>{ const n=HOST.seated().length;
+    if(!confirm(`停止しますか?\n遊んでいる ${n}人 のメダルを、全員貯金にもどします。`)) return;
+    $('#stop').disabled=true; await HOST.stop(); HOST=null;
+    app.innerHTML=`<div class="wrap"><div class="box"><h2>停止しました</h2><p class="note">${n}人を精算しました。このタブは閉じてかまいません。</p></div></div>`; };
+  addEventListener('beforeunload',e=>{ if(HOST&&HOST.seated().length){ e.preventDefault(); e.returnValue=''; } });
+  hostRender();
+}
+function hostRender(){
+  if(!HOST||!$('#pl')) return;
+  const acc=HOST.acc(), list=HOST.seated();
+  $('#sN').textContent=list.length+'人'; $('#sJ').textContent=yen(JP)+'枚';
+  $('#pl').innerHTML=list.map(s=>`<li>${esc(acc[s].n)}<small>${esc(s)}</small><b>${yen(acc[s].seat.a)}枚</b></li>`).join('')||'<li><small>まだ誰もいません</small></li>';
+  $('#fd').innerHTML=feed.map(f=>`<li>${esc(f.n)}<span class="tag">${esc(f.m)}</span><small>${f.jp?'ジャックポット!':f.bs?(f.bs==='big'?'BIGボーナス':'REGボーナス'):''}</small><b class="w">${f.pay?'+'+yen(f.pay):''}</b></li>`).join('')||'<li><small>まだありません</small></li>';
+}
+
+
+/* ---------- ロビー ---------- */
+const MINFO={
+  wide:{op:'ボタン1つ・5リール',memo:'モンスターがあつまるRPGの台。左から、となりの列のどこかに同じモンスターがいればつながる。たまご3つでフリースピン(上乗せあり・WILDで配当2倍)。',w:3,bet:'1〜100枚',hd:'#0a1038',html:`<div class="hdwl"><img class="dr" src="dragonlegion/assets/wl_dragon_win.webp" alt=""><div class="tt"><b>DRAGON</b><b>LEGION</b></div><img class="eg" src="dragonlegion/assets/wl_egg.webp" alt=""></div>`},
+  rocket:{op:'ボタン1つ・3リール＋液晶',memo:'ロケット3つで発射、7が3つでスーパー発射。連チャンで雲の上・宇宙・月(38万km)まで上がっていく。',w:4,bet:'1〜100枚',hd:'#05070f',html:`<div class="hdrk"><div class="tt"><b>連チャンロケット</b><b>MOON SHOT</b></div></div>`},
+  battle:{op:'レバー＋ボタン3つ＋大きな液晶',memo:'冒険者ギルドのRPG。仲間とダンジョンにもぐり、敵を倒せばボーナス。5ラインのどこでそろってもよい。依頼書のランクに注目！',w:3,bet:'3〜30枚',hd:'#120b07',html:`<div class="hdgr"><img src="guildrush/assets/gr_rei_win.webp" alt=""><div class="tt"><b>GUILD RUSH</b><b>冒険者ギルド</b></div></div>`}
+};
+// 台のページ(このフォルダからの場所)
+const MURL={wide:'dragonlegion/',rocket:'rocket/',battle:'guildrush/'};
+async function openLobby(){
+  setTheme(null); bgmPlay('lobby'); G.scr++; G.screen='lobby';
+  $('#stage').innerHTML=topbarHtml(NAME)+`<div class="lobby"><h1>どれで遊ぶ？</h1>
+    <div class="mgrid">${MLIST.map(m=>{const i=MINFO[m.id];return `<button class="mcard" data-m="${m.id}"><div class="hd" style="background:${i.hd}">${i.html?i.html:i.img?`<img src="${ASSET}${i.img}.webp" alt="" style="width:100%;height:100%;object-fit:cover;object-position:62% 24%">`:i.s.map(k=>sym(k,46)).join('')}</div>
+      <div class="bd"><span class="tag ${m.style}">${m.style==='pop'?'ポップ':'シック'}</span><div class="nm">${esc(m.name)}</div><div class="op">${i.op}</div><div class="memo">${i.memo}</div>
+      <div class="wave">波 ${[1,2,3,4,5].map(n=>`<i class="${n<=i.w?'on':''}"></i>`).join('')}</div><div class="op">BET ${i.bet}</div>${m.id==='jackpot'?'<div class="jp" id="lobJp">JP —</div>':''}<div class="now" id="now_${m.id}"></div></div></button>`}).join('')}
+      <div class="mcard" style="justify-content:center;align-items:center;padding:16px;gap:10px;text-align:center"><div>${chr('happy',110)}</div><div style="font-weight:800">メダまる</div><div class="op">どの台にしようかな？</div></div></div></div>`;
+  bindTop();
+  $('#stage').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ location.href=MURL[b.dataset.m]+location.search; });
+  if(MBY.jackpot){ const r=await info('jackpot'); if(r.ok&&$('#lobJp')) $('#lobJp').textContent=`JP ${yen(G.jp)}枚`; }
+}
+
+
+/* ---------- はじめる ---------- */
+if(MG.qs.get('mg')) padMain(); else hostMain();
+</script>
+</body>
+</html>
