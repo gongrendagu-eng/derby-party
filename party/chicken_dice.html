@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>チキンダイス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1p:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#fff7e8; --panel:#ffffff; --ink:#2a1a0f; --soft:#7a6655; --line:#ecd9bd;
+  --hot:#e8452c; --hot-ink:#ffffff; --gold:#f5b700; --die:#ffffff; --die-edge:#d9c7ad; --pip:#2a1a0f; --pip1:#d7263d;
+  --row:#fff0cc; --bust:#fde2dd; --ok:#1d8a4e;
+  --f-disp:"Dela Gothic One","Hiragino Sans","Meiryo",sans-serif;
+  --f-body:"M PLUS 1p","Hiragino Sans","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1410; --panel:#261c16; --ink:#fbefe0; --soft:#b9a38d; --line:#3d2f25;
+    --hot:#ff6a4d; --hot-ink:#1b1410; --gold:#ffc933; --die:#fbf6ee; --die-edge:#9c8a74; --pip:#2a1a0f; --pip1:#d7263d;
+    --row:#3a2c17; --bust:#4a2620; --ok:#4fd08a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1410; --panel:#261c16; --ink:#fbefe0; --soft:#b9a38d; --line:#3d2f25;
+  --hot:#ff6a4d; --hot-ink:#1b1410; --gold:#ffc933; --die:#fbf6ee; --die-edge:#9c8a74; --pip:#2a1a0f; --pip1:#d7263d;
+  --row:#3a2c17; --bust:#4a2620; --ok:#4fd08a;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-weight:500;font-variant-numeric:tabular-nums}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.setup{max-width:720px;margin:0 auto;padding:32px 20px 48px;height:100%;overflow:auto}
+.setup h1{font-family:var(--f-disp);font-weight:400;font-size:clamp(2.4rem,6vw,3.6rem);margin:0 0 .2em;color:var(--hot)}
+.lead{line-height:1.9;margin:0 0 22px}
+.rules{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 18px;margin:0 0 18px;line-height:1.9}
+.rules b{color:var(--hot)}
+fieldset{border:2px solid var(--line);border-radius:14px;background:var(--panel);padding:14px 18px 18px;margin:0 0 16px}
+legend{font-weight:800;padding:0 6px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:.9rem;color:var(--soft)}
+label.check{flex-direction:row;align-items:center;gap:10px;margin-top:12px;color:var(--ink)}
+input[type=number],textarea{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 10px;font-size:1.05rem}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--hot)}
+textarea{resize:vertical;line-height:1.6}
+.err{color:var(--hot);font-weight:800;min-height:1.4em}
+.btn{border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 14px;font-weight:800}
+.btn:hover:not(:disabled){border-color:var(--soft)}
+.btn:disabled{opacity:.35;cursor:default}
+.primary{background:var(--hot);border-color:var(--hot);color:var(--hot-ink)}
+.big{font-size:1.25rem;padding:12px 28px}
+
+.game{height:100%;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,1fr);gap:18px;padding:16px 20px}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:20px;min-height:0;position:relative}
+.stage.bust{background:var(--bust);border-color:var(--hot)}
+.round{font-weight:800;color:var(--soft);font-size:1.1rem}
+.who{font-family:var(--f-disp);font-size:clamp(2.4rem,5.5vw,4.4rem);line-height:1}
+.die{--d:clamp(150px,min(18vw,28vh),280px);width:var(--d);height:var(--d);flex:none;background:var(--die);border-radius:22%;box-shadow:inset 0 -8px 0 var(--die-edge),0 6px 18px rgba(0,0,0,.18);
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:calc(var(--d)*.09);gap:calc(var(--d)*.02)}
+.die i{border-radius:50%;background:transparent;width:88%;aspect-ratio:1;place-self:center}
+.die i.p{background:var(--pip)}
+.die.one i.p{background:var(--pip1);transform:scale(1.5)}
+.die.rolling{animation:rattle .12s linear infinite}
+@keyframes rattle{0%{transform:rotate(-8deg) translateY(-3px)}50%{transform:rotate(8deg) translateY(3px)}100%{transform:rotate(-8deg) translateY(-3px)}}
+.turn-score{text-align:center}
+.turn-score .lab{font-weight:800;color:var(--soft)}
+.turn-score .val{font-family:var(--f-disp);font-size:clamp(3rem,7vw,5.5rem);line-height:1;color:var(--hot)}
+.msg{font-family:var(--f-disp);font-size:clamp(1.6rem,3.4vw,2.6rem);color:var(--hot);min-height:1.2em;text-align:center}
+.trail{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:36px}
+.mini{--d:38px;border-radius:8px;box-shadow:inset 0 -3px 0 var(--die-edge)}
+.actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.act{font-family:var(--f-disp);font-weight:400;font-size:clamp(1.4rem,2.6vw,2rem);padding:14px 34px;border-radius:16px;border:3px solid var(--ink);background:var(--panel)}
+.act.roll{background:var(--hot);border-color:var(--hot);color:var(--hot-ink)}
+.act small{display:block;font-family:var(--f-body);font-size:.8rem;font-weight:700;opacity:.8}
+.act:disabled{opacity:.3;cursor:default}
+
+.side{display:flex;flex-direction:column;gap:12px;min-height:0}
+.board{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:12px 14px;overflow:auto;flex:1}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line);font-size:1.1rem}
+th{font-size:.85rem;color:var(--soft);font-weight:800}
+td.nm{text-align:left;font-weight:800;font-size:1.2rem}
+td.tot{font-family:var(--f-disp);font-size:1.5rem}
+tr.cur{background:var(--row)}
+td.live{color:var(--hot);font-weight:800}
+td.zero{color:var(--hot)}
+.rk{color:var(--soft);font-size:.9rem}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.card{background:var(--panel);border-radius:20px;padding:26px 32px;max-width:620px;width:100%;max-height:90%;overflow:auto;border:3px solid var(--line)}
+.card h2{font-family:var(--f-disp);font-weight:400;font-size:2.4rem;margin:0 0 16px;text-align:center;color:var(--hot)}
+.res{list-style:none;padding:0;margin:0 0 18px}
+.res li{display:grid;grid-template-columns:3em 1fr auto auto;gap:12px;align-items:baseline;padding:8px 6px;border-bottom:1px solid var(--line);font-size:1.3rem}
+.res .pt{font-family:var(--f-disp)}
+.res .cl{color:var(--hot);font-weight:800;min-width:5em;text-align:right}
+.res li.clean{background:var(--bust)}
+.tie{color:var(--hot);font-weight:800;text-align:center}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+@media (max-width:900px){ .game{grid-template-columns:1fr;height:auto;min-height:100%} }
+@media (prefers-reduced-motion: reduce){ .die.rolling{animation:none} }
+</style>
+</head>
+<body>
+
+<section id="setup" class="setup">
+  <h1>チキンダイス</h1>
+  <p class="lead">欲張るか、ここでやめるか。合計点がいちばん低い班が掃除当番です。</p>
+  <div class="rules">
+    自分の番では、サイコロを何回でも振れます。出た目はどんどん足されます。<br>
+    好きなところで<b>ストップ</b>すると、その点数が確定します。<br>
+    でも<b>1が出たらバースト</b>。そのターンの点数は0点になって次の班へ。
+  </div>
+  <fieldset>
+    <legend>設定</legend>
+    <div class="row">
+      <label>ラウンド数<input type="number" id="f-rounds" min="1" max="10"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="f-rotate">ラウンドごとに最初の班をずらす(後攻が有利にならないように)</label>
+  </fieldset>
+  <fieldset>
+    <legend>班と掃除場所</legend>
+    <div class="row">
+      <label>班の名前(1行に1つ)<textarea id="f-groups" rows="7"></textarea></label>
+      <label>掃除場所(点数が低い班から順に担当)<textarea id="f-places" rows="7"></textarea></label>
+    </div>
+  </fieldset>
+  <p id="err" class="err" role="alert"></p>
+  <button id="startBtn" class="btn primary big">ゲームをはじめる</button>
+</section>
+
+<section id="game" class="game" hidden>
+  <div id="stage" class="stage">
+    <div id="round" class="round"></div>
+    <div id="who" class="who"></div>
+    <div id="die" class="die"></div>
+    <div id="msg" class="msg"></div>
+    <div class="turn-score"><div class="lab">このターンの点数</div><div id="tscore" class="val">0</div></div>
+    <div id="trail" class="trail"></div>
+    <div class="actions">
+      <button id="rollBtn" class="act roll">振る<small>スペースキー</small></button>
+      <button id="stopBtn" class="act">ストップ<small>Enterキー</small></button>
+    </div>
+  </div>
+  <div class="side">
+    <div class="board"><table id="table"></table></div>
+    <div class="tools">
+      <button id="undoBtn" class="btn">1つもどす</button>
+      <button id="soundBtn" class="btn" aria-label="音のオンオフ">🔊</button>
+      <button id="themeBtn" class="btn">表示切替</button>
+      <button id="quitBtn" class="btn">設定にもどる</button>
+    </div>
+  </div>
+</section>
+
+<div id="endModal" class="modal" hidden>
+  <div class="card">
+    <h2>結果発表</h2>
+    <ul id="res" class="res"></ul>
+    <p id="tie" class="tie" hidden></p>
+    <div class="btns">
+      <button id="closeEnd" class="btn">点数表を見る</button>
+      <button id="againBtn" class="btn primary">設定にもどる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lines=t=>t.split('\n').map(s=>s.trim()).filter(Boolean);
+const PIPS={1:[4],2:[2,6],3:[2,4,6],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const face=v=>Array.from({length:9},(_,i)=>`<i class="${PIPS[v].includes(i)?'p':''}"></i>`).join('');
+
+const DEF={rounds:3,rotate:true,groups:'1班\n2班\n3班\n4班\n5班\n6班',places:'教室\n廊下・トイレ'};
+function loadCfg(){try{const s=localStorage.getItem('chickenDice.cfg');if(s)return Object.assign({},DEF,JSON.parse(s));}catch(e){}return{...DEF};}
+function saveCfg(c){try{localStorage.setItem('chickenDice.cfg',JSON.stringify(c));}catch(e){}}
+function fillForm(c){$('#f-rounds').value=c.rounds;$('#f-rotate').checked=c.rotate;$('#f-groups').value=c.groups;$('#f-places').value=c.places;}
+
+let S=null, hist=[], busy=false, soundOn=true, actx=null;
+function tone(f,d,type='sine',vol=.15,when=0){
+  if(!soundOn) return;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime+when,o=actx.createOscillator(),g=actx.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
+}
+
+function start(){
+  const c={rounds:+$('#f-rounds').value,rotate:$('#f-rotate').checked,groups:$('#f-groups').value,places:$('#f-places').value};
+  const g=lines(c.groups),p=lines(c.places);
+  if(!(c.rounds>=1&&c.rounds<=10)) return $('#err').textContent='ラウンド数は1〜10にしてください。';
+  if(g.length<2) return $('#err').textContent='班は2つ以上入力してください。';
+  if(p.length<1) return $('#err').textContent='掃除場所を1つ以上入力してください。';
+  if(p.length>=g.length) return $('#err').textContent='掃除場所は班の数より少なくしてください。';
+  $('#err').textContent=''; saveCfg(c);
+  S={groups:g,places:p,rounds:c.rounds,rotate:c.rotate,round:1,pos:0,turn:0,rolls:[],face:6,
+     scores:g.map(()=>Array(c.rounds).fill(null)),phase:'play'};
+  hist=[]; $('#setup').hidden=true; $('#game').hidden=false; render();
+}
+const order=r=>{const n=S.groups.length,sh=S.rotate?(r-1)%n:0;return S.groups.map((_,i)=>(i+sh)%n);};
+const curG=()=>order(S.round)[S.pos];
+const totalOf=i=>S.scores[i].reduce((s,v)=>s+(v||0),0);
+
+function render(){
+  const over=S.phase==='end';
+  $('#round').textContent=over?'ゲーム終了':`第${S.round}ラウンド / ${S.rounds}`;
+  $('#who').textContent=over?'おつかれさま!':S.groups[curG()]+' の番';
+  const d=$('#die'); d.className='die'+(S.face===1?' one':''); d.innerHTML=face(S.face);
+  $('#tscore').textContent=S.turn;
+  $('#trail').innerHTML=S.rolls.map(v=>`<div class="die mini${v===1?' one':''}">${face(v)}</div>`).join('');
+  $('#stage').classList.toggle('bust',S.phase==='bust');
+  $('#msg').textContent=S.phase==='bust'?'1が出た!バースト!':'';
+  const rb=$('#rollBtn'), sb=$('#stopBtn');
+  if(S.phase==='bust'){ rb.disabled=true; sb.disabled=false; sb.innerHTML='次の班へ<small>Enterキー</small>'; }
+  else { rb.disabled=over||busy; sb.disabled=over||busy||S.rolls.length===0; sb.innerHTML='ストップ<small>Enterキー</small>'; }
+  $('#undoBtn').disabled=busy||hist.length===0;
+
+  // 点数表
+  const cg=over?-1:curG();
+  const tots=S.groups.map((_,i)=>totalOf(i));
+  const sorted=[...tots].sort((a,b)=>b-a);
+  let h='<tr><th>班</th>'+Array.from({length:S.rounds},(_,r)=>`<th>R${r+1}</th>`).join('')+'<th>合計</th><th></th></tr>';
+  S.groups.forEach((nm,i)=>{
+    h+=`<tr class="${i===cg?'cur':''}"><td class="nm">${esc(nm)}</td>`;
+    for(let r=0;r<S.rounds;r++){
+      const v=S.scores[i][r];
+      if(i===cg&&r===S.round-1&&v===null) h+=`<td class="live">${S.turn||''}</td>`;
+      else h+=`<td class="${v===0?'zero':''}">${v===null?'':v}</td>`;
+    }
+    h+=`<td class="tot">${tots[i]}</td><td class="rk">${sorted.indexOf(tots[i])+1}位</td></tr>`;
+  });
+  $('#table').innerHTML=h;
+}
+const snap=()=>{hist.push(JSON.stringify(S)); if(hist.length>300) hist.shift();};
+
+function roll(){
+  if(busy||S.phase!=='play') return;
+  snap(); busy=true;
+  const d=$('#die'); d.classList.add('rolling');
+  let k=0;
+  const spin=setInterval(()=>{ const v=1+Math.floor(Math.random()*6); d.className='die rolling'+(v===1?' one':''); d.innerHTML=face(v); tone(900+Math.random()*400,.03,'square',.04); k++; },70);
+  setTimeout(()=>{
+    clearInterval(spin);
+    const v=1+Math.floor(Math.random()*6);
+    S.face=v; S.rolls.push(v);
+    if(v===1){ S.turn=0; S.phase='bust'; tone(160,.6,'sawtooth',.2); tone(90,.8,'square',.12,.08); }
+    else { S.turn+=v; tone(700+v*80,.12,'triangle',.18); }
+    busy=false; render();
+  },750);
+}
+function stop(){
+  if(busy) return;
+  if(S.phase==='bust'){ snap(); S.scores[curG()][S.round-1]=0; next(); return; }
+  if(S.phase!=='play'||S.rolls.length===0) return;
+  snap(); S.scores[curG()][S.round-1]=S.turn;
+  tone(523,.12,'triangle',.18); tone(784,.2,'triangle',.18,.1);
+  next();
+}
+function next(){
+  S.turn=0; S.rolls=[]; S.phase='play'; S.face=6; S.pos++;
+  if(S.pos>=S.groups.length){ S.pos=0; S.round++; }
+  if(S.round>S.rounds){ S.round=S.rounds; S.phase='end'; render(); showEnd(); return; }
+  render();
+}
+function showEnd(){
+  const n=S.groups.length,k=S.places.length;
+  const ord=S.groups.map((nm,i)=>({nm,t:totalOf(i)})).sort((a,b)=>b.t-a.t);
+  $('#res').innerHTML=ord.map((o,idx)=>{const fb=n-1-idx, cl=fb<k?S.places[fb]:'';
+    return `<li class="${cl?'clean':''}"><span>${idx+1}位</span><span>${esc(o.nm)}</span><span class="pt">${o.t}点</span><span class="cl">${esc(cl)}</span></li>`;}).join('');
+  const b=n-k, tie=$('#tie');
+  if(ord[b-1].t===ord[b].t){ tie.hidden=false; tie.textContent=`${ord[b-1].nm}と${ord[b].nm}が同点です。この2班で1回ずつ振って、目が小さい方が掃除にしましょう。`; }
+  else tie.hidden=true;
+  $('#endModal').hidden=false;
+  tone(523,.15,'triangle',.2);tone(659,.15,'triangle',.2,.14);tone(784,.35,'triangle',.2,.28);
+}
+
+$('#startBtn').onclick=start;
+$('#rollBtn').onclick=e=>{e.currentTarget.blur();roll();};
+$('#stopBtn').onclick=e=>{e.currentTarget.blur();stop();};
+$('#undoBtn').onclick=()=>{ if(busy||!hist.length) return; S=JSON.parse(hist.pop()); $('#endModal').hidden=true; render(); };
+$('#soundBtn').onclick=()=>{ soundOn=!soundOn; $('#soundBtn').textContent=soundOn?'🔊':'🔇'; };
+$('#closeEnd').onclick=()=>$('#endModal').hidden=true;
+$('#againBtn').onclick=()=>{ $('#endModal').hidden=true; back(); };
+$('#quitBtn').onclick=back;
+function back(){ S=null; $('#game').hidden=true; $('#setup').hidden=false; fillForm(loadCfg()); }
+$('#themeBtn').onclick=()=>{
+  const cur=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const nx=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=nx;
+  try{localStorage.setItem('chickenDice.theme',nx);}catch(e){}
+};
+document.addEventListener('keydown',e=>{
+  if(!S||$('#game').hidden||!$('#endModal').hidden) return;
+  if(e.target.closest('input,textarea')) return;
+  if(e.code==='Space'){ e.preventDefault(); roll(); }
+  else if(e.key==='Enter'){ e.preventDefault(); stop(); }
+});
+try{const t=localStorage.getItem('chickenDice.theme'); if(t) document.documentElement.dataset.theme=t;}catch(e){}
+fillForm(loadCfg());
+</script>
+<!-- iPad配信(先生の画面をiPadに映す)。mirror.js を同じ場所に置く -->
+<script src="mirror.js"></script>
+</body>
+</html>

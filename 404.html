@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ページが見つかりません</title>
+<style>
+  body{font-family:system-ui,"Hiragino Sans","Yu Gothic",sans-serif;background:#f6f7fb;color:#223;margin:0;display:grid;place-items:center;min-height:100vh}
+  .card{background:#fff;border-radius:16px;padding:28px 32px;max-width:520px;box-shadow:0 6px 24px rgba(0,0,0,.08);text-align:center}
+  a{color:#2563eb;font-weight:700}
+</style>
+</head>
+<body>
+<div class="card" id="msg">
+  <h2>移動しています…</h2>
+  <p>自動で切りかわらないときは、<a id="top" href="./">トップ</a>から探してください。</p>
+</div>
+<script>
+/* 場所を移したファイルの「古いURL → 新しい場所」の対応表。
+   GitHub Pages は、存在しないURLに来た人にこの 404.html を表示する。
+   ここで新しい場所へ転送する(?以降の合言葉・ルームコードもそのまま引き継ぐ)。 */
+(function(){
+  var MAP = {
+    'menu.html':'party/menu.html',
+    'souji_masu.html':'party/souji_masu.html',
+    'chicken_dice.html':'party/chicken_dice.html',
+    'numeron.html':'party/numeron.html',
+    'trump.html':'party/trump.html',
+    'daifugo.html':'party/daifugo.html',
+    'doubt.html':'party/doubt.html',
+    'lastone.html':'party/lastone.html',
+    'shichinarabe.html':'party/shichinarabe.html',
+    'shinkei.html':'party/shinkei.html',
+    'kake.html':'party/kake.html',
+    'hagetaka.html':'party/hagetaka.html',
+    'inca.html':'party/inca.html',
+    'saishou.html':'party/saishou.html',
+    'typing.html':'typing/',
+    'slotpark.html':'medalgame/slotpark.html'
+  };
+  var p = location.pathname, ks = Object.keys(MAP);
+  for (var i = 0; i < ks.length; i++) {
+    var k = ks[i];
+    if (p.length >= k.length + 1 && p.slice(-(k.length + 1)) === '/' + k) {
+      var base = p.slice(0, p.length - k.length);
+      location.replace(base + MAP[k] + location.search + location.hash);
+      return;
+    }
+  }
+  // 対応表にないURL
+  var seg = p.split('/').filter(Boolean);
+  var top = seg.length > 1 ? '/' + seg[0] + '/' : './';
+  document.getElementById('top').href = top;
+  document.querySelector('#msg h2').textContent = 'ページが見つかりません';
+})();
+</script>
+</body>
+</html>

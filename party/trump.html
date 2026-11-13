@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>トランプ関連</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&family=Kaisei+Decol:wght@700&family=Zen+Kaku+Gothic+New:wght@900&family=Zen+Antique&family=Dela+Gothic+One&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ホテルのゲームラウンジ */
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --wall:#0f2b23; --wall2:#0c241d; --brass:#caa24c; --brass2:#f1d68c; --ink:#f3ecd9; --soft:#a9bfae;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;height:100%}
+body{color:var(--ink);font-family:var(--f-body);display:flex;flex-direction:column;
+  background:linear-gradient(180deg,rgba(0,0,0,.25),transparent 30%),
+  repeating-linear-gradient(90deg,var(--wall) 0 46px,var(--wall2) 46px 48px);}
+body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:9vh;background:linear-gradient(#3a2412,#24160b);border-top:6px solid var(--brass);z-index:-1}
+header{padding:3vh 4vw 1.4vh;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+h1{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:clamp(32px,4.8vw,70px);line-height:1;margin:0;letter-spacing:.08em;color:var(--brass2);text-shadow:0 3px 0 rgba(0,0,0,.4)}
+header p{margin:0;color:var(--soft);font-size:clamp(14px,1.4vw,20px)}
+.back{margin-left:auto;color:var(--ink);text-decoration:none;font-weight:700;border:2px solid var(--brass);border-radius:999px;padding:10px 20px;font-size:clamp(14px,1.3vw,18px)}
+.back:hover,.back:focus-visible{background:var(--brass);color:#1b1404;outline:none}
+main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr);gap:2vw;padding:2vh 4vw 11vh;align-items:stretch}
+.door{position:relative;display:flex;flex-direction:column;text-decoration:none;color:inherit;border-radius:999px 999px 14px 14px;
+  background:linear-gradient(135deg,#8f6b25,var(--brass2) 30%,#a47d2c 60%,var(--brass));padding:10px;min-height:280px;
+  box-shadow:0 10px 24px rgba(0,0,0,.45);transition:transform .2s}
+.door:hover,.door:focus-visible{transform:translateY(-8px);outline:none}
+.door:focus-visible{box-shadow:0 0 0 5px #fff,0 10px 24px rgba(0,0,0,.45)}
+.in{flex:1;border-radius:999px 999px 8px 8px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.view{flex:1.15;display:grid;place-items:center;position:relative;min-height:110px}
+.txt{padding:14px 14px 16px;background:rgba(0,0,0,.28);display:flex;flex-direction:column;gap:6px}
+.txt h2{margin:0;font-size:clamp(22px,2.3vw,38px);line-height:1.1;font-weight:400}
+.txt p{margin:0;font-size:clamp(12px,1.05vw,16px);line-height:1.5}
+.key{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);background:#1b1404;color:var(--brass2);border:2px solid var(--brass);border-radius:8px;
+  font:700 clamp(13px,1.1vw,17px)/1 var(--f-body);padding:6px 10px}
+.mini{display:flex}
+.mini span{width:clamp(30px,3vw,52px);aspect-ratio:1/1.42;border-radius:5px;background:#fffdf8;display:grid;place-items:center;font:700 clamp(14px,1.5vw,24px)/1 serif;color:#1b1b1f;margin-left:-10px;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.mini span:first-child{margin-left:0}
+.mini span.r{color:#c8102e}
+.mini span.b{background:var(--bk)}
+/* 各ゲームの色 */
+.shinkei .in{background:#0c1424;color:#eef1f7}
+.shinkei .view{background:radial-gradient(ellipse at 50% 0%,rgba(255,244,200,.35),transparent 60%),#101a30}
+.shinkei h2{font-family:"Shippori Mincho B1",serif;font-weight:800;color:#e6c36a}
+.shinkei .mini span{outline:4px solid #d9b25e;outline-offset:0;--bk:#5a1625;margin:0 4px}
+.nana .in{background:#f6efdd;color:#2b2117}
+.nana .view{background:repeating-linear-gradient(0deg,#bdb873 0 2px,#b3ad66 2px 4px)}
+.nana h2{font-family:"Kaisei Decol",serif;color:#c23b2e}
+.nana .txt{background:#f6efdd}
+.nana .mini span{margin-left:3px}
+.doubt .in{background:#17150f;color:#ece3d0}
+.doubt .view{background:radial-gradient(ellipse at 50% 30%,rgba(255,215,140,.25),transparent 65%),#1b1915}
+.doubt h2{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;letter-spacing:.2em;color:#e0a94a}
+.doubt .mini span.b{--bk:#2c2a24;border:2px solid rgba(224,169,74,.55)}
+.doubt .stamp{position:absolute;right:12%;top:18%;color:#e0402f;border:3px solid #e0402f;border-radius:6px;padding:0 6px;font:900 clamp(16px,1.8vw,28px)/1.2 serif;transform:rotate(-14deg)}
+.daifugo .in{background:#240910;color:#fbf1dc}
+.daifugo .view{background:linear-gradient(90deg,transparent 30%,#e9b949 30% 31%,#a3182a 31% 69%,#e9b949 69% 70%,transparent 70%),#2a0b12}
+.daifugo h2{font-family:"Zen Antique",serif;color:#e9b949}
+.daifugo .crown{font-size:clamp(40px,4.4vw,72px);filter:drop-shadow(0 4px 0 rgba(0,0,0,.4))}
+.lastone .in{background:#141a3f;color:#f4f2ff}
+.lastone .view{background:radial-gradient(ellipse,#223479,#121a4a 72%)}
+.lastone h2{font-family:"Dela Gothic One",sans-serif;color:#ffc83d}
+.lastone .mini span{border:3px solid #fff;color:#fff;font-family:"Dela Gothic One",sans-serif}
+.tag{align-self:flex-start;font-size:clamp(11px,.9vw,14px);font-weight:700;padding:.25em .8em;border-radius:999px;background:rgba(255,255,255,.14)}
+.nana .tag{background:#2b2117;color:#fff}
+footer{position:fixed;left:0;right:0;bottom:0;height:9vh;display:flex;align-items:center;justify-content:flex-end;padding:0 4vw 0 180px;color:#e9d7b0;font-size:clamp(12px,1vw,15px)}
+@media (max-width:1000px){ main{grid-template-columns:repeat(3,1fr);padding-bottom:14vh} }
+@media (max-width:640px){ main{grid-template-columns:1fr 1fr} .door{min-height:240px} }
+@media (prefers-reduced-motion:reduce){ .door{transition:none} }
+</style>
+</head>
+<body>
+<header>
+  <h1>トランプ関連</h1>
+  <p>遊ぶゲームの扉を選んでください。キーボードの 1〜5 でも選べます。</p>
+  <a class="back" href="menu.html">← メニューにもどる(0)</a>
+</header>
+<main>
+  <a class="door shinkei" href="shinkei.html" data-k="1"><div class="in">
+    <div class="view" aria-hidden="true"><div class="mini"><span>Q</span><span class="b"></span></div></div>
+    <div class="txt"><h2>神経衰弱</h2><p>夜の美術館。2枚めくって同じ数字をそろえる。</p><span class="tag">手番の班のiPadでめくる</span></div></div><span class="key">1</span></a>
+  <a class="door nana" href="shichinarabe.html" data-k="2"><div class="in">
+    <div class="view" aria-hidden="true"><div class="mini"><span class="r">6</span><span class="r">7</span><span class="r">8</span></div></div>
+    <div class="txt"><h2>7並べ</h2><p>昭和の茶の間。7からつなげて並べる。パスは湯のみ3杯まで。</p><span class="tag">iPadに手札</span></div></div><span class="key">2</span></a>
+  <a class="door doubt" href="doubt.html" data-k="3"><div class="in">
+    <div class="view" aria-hidden="true"><div class="mini"><span class="b"></span><span class="b"></span><span class="b"></span></div><span class="stamp">ウソ</span></div>
+    <div class="txt"><h2>ダウト</h2><p>取調室。伏せて出したカードのウソを見破る。</p><span class="tag">iPadで早押し</span></div></div><span class="key">3</span></a>
+  <a class="door daifugo" href="daifugo.html" data-k="4"><div class="in">
+    <div class="view" aria-hidden="true"><span class="crown">👑</span></div>
+    <div class="txt"><h2>大富豪</h2><p>謁見の間。手札を先になくして大富豪を目指す。</p><span class="tag">iPadに手札</span></div></div><span class="key">4</span></a>
+  <a class="door lastone" href="lastone.html" data-k="5"><div class="in">
+    <div class="view" aria-hidden="true"><div class="mini"><span style="background:#e5322d">9</span><span style="background:#1c9c49">+2</span></div></div>
+    <div class="txt"><h2>ラストワン</h2><p>色か数字をそろえて出すカードゲーム。</p><span class="tag">iPadに手札</span></div></div><span class="key">5</span></a>
+</main>
+<footer>どのゲームも各班のiPadに専用の画面を出すため、開いている間は「iPadに映す」の配信が止まります。</footer>
+<script>
+window.MV_IS_MENU = true;
+document.addEventListener('keydown', function (e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === '0' || e.key === 'Escape') { e.preventDefault(); location.href = 'menu.html'; return; }
+  var a = document.querySelector('.door[data-k="' + e.key + '"]');
+  if (a) { e.preventDefault(); location.href = a.getAttribute('href'); }
+});
+</script>
+<script src="mirror.js"></script>
+</body>
+</html>
