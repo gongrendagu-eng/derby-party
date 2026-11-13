@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>スロットパーク ドラゴンレギオン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Orbitron:wght@700;900&family=Shippori+Mincho:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<link rel="stylesheet" href="../sp-pad.css">
+<style>
+/* ③ ワイドライン */
+.th-wide{--body:linear-gradient(90deg,#4a2a14 0%,#7a4a24 18%,#9a6232 50%,#7a4a24 82%,#4a2a14 100%);--deck:linear-gradient(180deg,#3a2210,#5a3518);--lampA:#ffd84d;--lampB:#7fdcff;--led:#ffffff;--ledbox:#2a1a0c;--ledlbl:#ffd84d;--tray:linear-gradient(180deg,#2a1a0c,#4a2c14);background:#5a8fd0 url(assets/wl_bg.webp) center/cover no-repeat}
+.th-wide .topbar{background:rgba(255,255,255,.92)}
+.th-wide .cab{border:6px solid #e0b04a;box-shadow:inset 0 0 0 3px #7a4a1c,0 0 0 3px #3a220c,0 12px 26px rgba(0,0,0,.45)}
+.th-wide .cab::before,.th-wide .cab::after{content:"";position:absolute;top:10px;bottom:10px;width:10px;background:radial-gradient(circle,#ffe7a0 0 3px,#a8741c 3.5px 4.5px,transparent 5px) 0 0/10px 34px repeat-y}
+.th-wide .cab::before{left:2px}.th-wide .cab::after{right:2px}
+.th-wide .topper{height:84px;border-radius:14px;background:repeating-linear-gradient(0deg,#6b3d1e 0 13px,#5c3318 13px 14px),#6b3d1e;border:5px solid #e0b04a;box-shadow:inset 0 0 0 2px #3a220c}
+.th-wide .topper img{width:58px;height:58px;object-fit:contain}
+.th-wide .logo{font-family:var(--f-num);font-size:36px;letter-spacing:3px;white-space:nowrap;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 14px rgba(255,216,77,.6)}
+.th-wide .bezel{border-radius:14px;background:linear-gradient(180deg,#f6d77a 0%,#b07a24 50%,#f6d77a 100%);padding:9px}
+.th-wide .lcd{position:relative;padding:10px;border-radius:8px;background:#0a1038;display:flex;flex-direction:column;gap:8px}
+.th-wide .fsbar{height:38px;border-radius:6px;background:#101a5c;border:3px solid #fff;box-shadow:0 0 0 2px #0a1038;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-weight:800}
+.th-wide .fsbar.on{background:#7a1f1f}
+.th-wide .fsbar b{font-family:var(--f-num);font-weight:400;font-size:20px;letter-spacing:2px;color:#ffd84d}
+.th-wide .rrow{display:flex;gap:6px;justify-content:center}
+.th-wide .reel{background:linear-gradient(180deg,#0b1240 0%,#1a2670 50%,#0b1240 100%);border-radius:8px;box-shadow:inset 0 0 0 2px rgba(255,216,77,.35)}
+.th-wide .reel::after{background:linear-gradient(180deg,rgba(5,8,30,.6),rgba(5,8,30,0) 22%,rgba(5,8,30,0) 78%,rgba(5,8,30,.6))}
+.th-wide .reel .cell svg{filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.th-wide .hl{position:absolute;border-radius:8px;box-shadow:0 0 0 3px #ffd84d,0 0 16px #ffd84d;background:rgba(255,216,77,.18);pointer-events:none;animation:blink .4s steps(1) 4}
+.th-wide .hl.wd{box-shadow:0 0 0 3px #ff6b6b,0 0 18px #ff6b6b}
+.th-wide .rpgw{background:rgba(12,20,80,.94);border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 3px #0a1038,0 6px 14px rgba(0,0,0,.35);color:#fff}
+.th-wide .side.l{margin-top:10px;padding:12px}
+.th-wide .side h3{color:#ffd84d;font-family:var(--f-body);font-weight:800;font-size:15px;letter-spacing:2px}
+.th-wide .side p{color:#dfe6ff}
+.th-wide .side .row{border-color:rgba(255,255,255,.18)}.th-wide .side .v{color:#ffd84d}
+.th-wide .wpt{display:grid;grid-template-columns:26px 1fr 1fr 1fr;align-items:center;gap:1px 2px;text-align:right;font-family:var(--f-led);font-weight:900;font-size:12px;color:#ffd84d}
+.th-wide .wpt svg{width:26px;height:26px}.th-wide .wpt b{font-family:var(--f-body);font-size:11px;color:#dfe6ff}
+.th-wide .side.l p svg{vertical-align:middle}
+.th-wide .side.r{background:none;padding:0;margin-top:0;gap:8px}
+.th-wide .side.r .guide{width:170px;height:190px;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35));transform-origin:50% 100%;animation:wlbob 2.4s ease-in-out infinite}
+@keyframes wlbob{50%{transform:translateY(-6px)}}
+.th-wide .side.r .rpgw{padding:10px;display:flex;flex-direction:column;gap:7px}
+.th-wide .side.r .dat{background:rgba(255,255,255,.1)}.th-wide .side.r .dat b{color:#ffd84d}
+.th-wide .say{position:relative;font-size:12px;line-height:1.5;padding:8px 10px}
+.th-wide .wmsg{position:absolute;left:10px;right:10px;top:10px;height:38px;border-radius:6px;background:#101a5c;border:3px solid #ffd84d;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:18px;z-index:5;pointer-events:none;animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+.th-wide .wmsg b{font-family:var(--f-num);font-weight:400;font-size:22px;color:#ffd84d}.th-wide .wmsg .w{padding:1px 8px;border-radius:999px;background:#c0392b;color:#fff}
+.th-wide .cutin{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,216,77,.35),rgba(10,16,56,.88) 70%);border-radius:8px;pointer-events:none;animation:wlfade 1.9s ease both}
+.th-wide .cutin img{height:300px;animation:wlpop .5s cubic-bezier(.2,1.6,.4,1) both}
+.th-wide .cutin span{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:2px 22px;border-radius:8px;background:rgba(12,20,80,.92);border:3px solid #fff;white-space:nowrap;text-align:center;font-family:var(--f-num);font-size:34px;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800}
+@keyframes wlpop{from{transform:scale(.3) translateY(60px);opacity:0}}
+@keyframes wlfade{0%{opacity:0}8%,85%{opacity:1}100%{opacity:0}}
+.th-wide .reel .cell svg{transform-origin:50% 90%}
+.th-wide .reel .cell.mv svg{animation:wlhop .62s ease-out 3}
+.th-wide .reel .cell.mv:nth-child(2) svg{animation-delay:.08s}.th-wide .reel .cell.mv:nth-child(3) svg{animation-delay:.16s}
+.th-wide .reel .cell.eg svg{transform-origin:50% 85%;animation:wlwobble .5s ease-in-out 4}
+.th-wide .reel .cell.wd svg{transform-origin:50% 50%;animation:wlshine .7s ease-in-out 3}
+@keyframes wlhop{0%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-9px) scale(.95,1.06)}55%{transform:translateY(0) scale(1,1)}70%{transform:translateY(0) scale(1.1,.88)}85%{transform:translateY(0) scale(.97,1.03)}100%{transform:translateY(0) scale(1,1)}}
+@keyframes wlwobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(4deg)}}
+@keyframes wlshine{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,216,77,0))}50%{transform:scale(1.16);filter:drop-shadow(0 0 10px #ffd84d) brightness(1.25)}}
+.th-wide .deck .auto{background:#101a5c;border-color:#fff;color:#fff}.th-wide .deck .auto.on{background:#ffd84d;color:#3a1800}
+/* BETの枚数(どの機種も共通):−/＋/MAX と、数字を押すと入力 */
+.betbox{display:flex;align-items:center;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.28);flex-shrink:0}
+.betbox .bb{width:46px;height:52px;border-radius:10px;background:linear-gradient(180deg,#fff,#e8e2da);color:#3a2a3f;font-size:24px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.4)}
+.betbox .bb.max{width:56px;font-size:14px;background:linear-gradient(180deg,#fff3b0,#ffd23f);color:#4a3500}
+.betbox .bb:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.betbox .bv{min-width:92px;height:52px;padding:0 8px;border-radius:10px;background:#100a0c;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.betbox .bv small{font-size:10px;font-weight:800;letter-spacing:2px;color:#d8c8cc}
+.betbox .bv b{font-family:var(--f-led);font-size:26px;font-weight:900;color:var(--led,#ff4a2e);text-shadow:0 0 8px var(--led,#ff4a2e)}
+.betbox button:disabled{opacity:.45}
+.auto.on::after{content:" ■"}
+.betsel{width:58px;height:56px;border-radius:10px;font-family:var(--f-led);font-size:21px;font-weight:900;border:3px solid #c4a5ff;background:linear-gradient(180deg,#fff,#e3d2ff);color:#4c1d95;box-shadow:0 4px 0 #3b1f8a}
+.betsel.sel{border-color:#fff;background:linear-gradient(180deg,#fff7c2,#ffcf3f);color:#33204f;box-shadow:0 0 12px #ffcf3f}
+.betsel:disabled{opacity:.5}
+.rev{position:absolute;inset:0;z-index:7;overflow:hidden;animation:rev .35s ease-out both}
+.rev img{width:100%;height:100%;object-fit:cover;display:block;animation:revz 3.5s ease-out both}
+@keyframes rev{from{opacity:0}}@keyframes revz{from{transform:scale(1.18)}}
+.rev.out{animation:revout .5s ease-in forwards}@keyframes revout{to{opacity:0}}
+.gem{border-radius:18px;padding:5px;transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .25s}
+.gem>div{width:100%;height:100%;border-radius:13px;display:flex;align-items:center;justify-content:center}
+.gem svg{width:72px;height:72px}
+.gem.hit{box-shadow:0 0 18px #ffe66d;animation:blink .25s steps(1) 4}
+.gem.gone{transform:scale(.2);opacity:0}
+.combo{position:absolute;left:30px;width:332px;top:20px;text-align:center;font-family:var(--f-num);font-size:50px;color:#ffe66d;text-shadow:0 4px 0 #b3361f,0 0 18px rgba(255,230,109,.9);z-index:5;pointer-events:none;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+.connect{position:absolute;left:250px;top:250px;padding:4px 12px;border-radius:10px;background:#ff5fa2;color:#fff;font-family:var(--f-num);font-size:18px;transform:rotate(-6deg);box-shadow:0 0 14px #ff5fa2;z-index:5;animation:pop .35s}
+.push{width:64px;height:64px;border-radius:50%;border:4px solid #d8c8ff;background:radial-gradient(circle at 35% 30%,#fff 0%,#c9a8ff 25%,#8a4dff 70%,#3a1a8a 100%);color:#fff;font-size:11px;font-weight:800;text-shadow:0 1px 2px #2a0a6a}
+.cutin{animation:cutin .45s cubic-bezier(.2,1.4,.4,1) both}@keyframes cutin{from{transform:translateX(-500px)}}
+.hp{position:absolute;top:10px;height:12px;border-radius:6px;background:rgba(0,0,0,.35);overflow:hidden;width:280px}
+.hp i{display:block;height:100%;border-radius:6px;transition:width 1.2s ease}
+@media (prefers-reduced-motion:reduce){.gbg,.gparty img,.gdust i,.grays,.gmagic svg,.gline,.gspark,.gconf i,.gbreath,.gfloat,.gbigpush,.glsvg polyline,.walk,.cloud,.lamps.chase i,.rainbow,.kgrid,.breathe,.krb,.wstars,.wdust i,.kwbob,.kwsheet,.kshadow,.kline,.kpetal,.kspark,.kquake,.kpulse,.kbreath,.rclouds,.rstreaks i,.rship.fly .rbody,.rlcd.rumble,.rquake{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+<script src="../../mg-core.js"></script>
+<script src="../sp-engine.js"></script>
+<script>const ASSET='assets/', SP_LOBBY='../';</script>
+<script src="../sp-pad.js"></script>
+<script>
+'use strict';
+Object.assign(BGM,{wide:'bgm_wide.mp3',wide_fs:'bgm_wide_fs.mp3'});
+// ワイドライン(モンスター)の絵柄は画像(${ASSET}wl_*.webp)。WILDだけ盾の上に文字をのせる
+['wl_dragon','wl_mimic','wl_golem','wl_ghost','wl_skeleton','wl_mushroom','wl_bat','wl_fluff','wl_flower','wl_chick','wl_egg','wl_wild'].forEach(k=>{ SYM[k]=`<image href="${ASSET}${k}.webp" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet"/>`; });
+SYM.wl_wild+='<text x="50" y="56.5" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="15" fill="#fff6d0" stroke="#5a0d0d" stroke-width="3" paint-order="stroke">WILD</text>';
+const WM={seven:'wl_dragon',crown:'wl_mimic',gem:'wl_golem',bell:'wl_ghost',bar:'wl_skeleton',melon:'wl_mushroom',grape:'wl_bat',orange:'wl_fluff',cherry:'wl_flower',lemon:'wl_chick',star:'wl_egg',wild:'wl_wild'};
+
+/* ---------- ③ ワイドライン ---------- */
+MACH.wide={
+  pool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star'].map(k=>WM[k]),
+  fsPool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star','wild'].map(k=>WM[k]),
+  open(){
+    const W=SP.consts.W_PAY, N=SP.consts.W_FSN, f=v=>+v.toFixed(1);
+    Object.values(WM).concat(['wl_dragon_stand','wl_dragon_win']).forEach(k=>{ const im=new Image(); im.src=`${ASSET}${k}.webp`; }); // 先に読みこむ
+    screen('th-wide',
+      `<div class="topper"><img src="${ASSET}wl_egg.webp" alt=""><div class="logo">DRAGON LEGION</div><img src="${ASSET}wl_egg.webp" alt=""></div>
+       <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
+       ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
+       <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ff9a6b;--b2:#e2452c;--b3:#8a1c0c;--glow:rgba(255,120,80,.9)" aria-label="スピン">SPIN</button></div>
+       ${trayHtml(6)}`,
+      `<h3>モンスターの配当</h3><p style="text-align:center">BETの何倍か</p><div class="wpt"><span></span><b>3体</b><b>4体</b><b>5体</b>${Object.keys(W).map(k=>`${sym(WM[k])}<span>${f(W[k][3])}</span><span>${f(W[k][4])}</span><span>${f(W[k][5])}</span>`).join('')}</div>
+       <div class="row">${sym('wl_egg')}<span style="font-size:11px">3/4/5こ</span><span class="v">FREE ${N[3]}/${N[4]}/${N[5]}回</span></div><p>左のリールから、となりの列のどこかにいればつながる。同じ列に2体なら2通り分。フリースピン中は${sym('wl_wild',18)}WILDが出て、WILDを含む当たりは配当2倍。たまごで回数上乗せ。</p>`,
+      `<img class="guide" id="wGuide" src="${ASSET}wl_dragon_stand.webp" alt=""><div class="rpgw say" id="wSay">たまごを3つあつめて、フリースピンだ！</div><div class="rpgw"><h3>フリースピン</h3><div id="fsd"></div></div>`);
+    document.querySelector('.th-wide .side.l').classList.add('rpgw');
+    this.reels=[...$('#rw').querySelectorAll('.reel')];
+    this.reels.forEach((el,i)=>makeReel(el,88,126,80,[this.pool[(i+1)%11],this.pool[(i+4)%11],this.pool[(i+7)%11]]));
+    bindBet('wide',()=>!!this.fs()||(G.busy&&this.wasFs));
+    $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
+    this.upd();
+  },
+  say(t){ const e=$('#wSay'); if(e) e.textContent=t; },
+  cutin(text){ const lcd=$('#lcd'); if(!lcd) return; const c=document.createElement('div'); c.className='cutin'; c.innerHTML=`<img src="${ASSET}wl_dragon_win.webp" alt=""><span>${text}</span>`; lcd.appendChild(c); setTimeout(()=>c.remove(),1900); },
+  fs(){ return (G.st.wide||{}).fs||0; },
+  restore(){ this.upd(); const scr=G.scr; if(this.fs()) setTimeout(()=>{ if(G.mid==='wide'&&G.scr===scr&&!G.busy&&!G.after&&this.fs()) this.spin(); },900); }, // フリースピンの続きは自動で
+  upd(){ if(!$('#bSpin')) return; const fs=this.fs(), s=G.st.wide||{};
+    updBet('wide',!!fs,fs?s.fsBet:(G.busy&&this.bet?this.bet:G.bet.wide));
+    $('#bAuto').classList.toggle('on',G.auto); $('#bSpin').disabled=G.busy||(!fs&&G.cred<G.bet.wide);
+    const bar=$('#fsbar'); bar.classList.toggle('on',!!fs);
+    bar.innerHTML=fs?`<b>FREE SPIN</b><span>のこり ${fs}回</span><span style="padding:2px 10px;border-radius:999px;background:#ffd84d;color:#3a1800">WILDで配当 ×2</span>`:'<b>243 WAYS</b><span>たまごが3つでフリースピン</span>';
+    if(G.mid==='wide') bgmPlay('wide');
+    $('#fsd').innerHTML=`<div class="dat"><span>のこり</span><b>${fs}回</b></div><div class="dat"><span>獲得</span><b>+${s.fsWin||0}</b></div><p>たまご3こで10回・4こで15回・5こで20回。フリースピン中もたまごで上乗せ。BETは入ったときのまま。</p>`; },
+  async spin(){
+    if(G.busy) return; const fs=this.fs(), bet=G.bet.wide; if(!fs&&G.cred<bet){ G.auto=false; this.upd(); return toast('メダルが足りません'); }
+    this.bet=fs?(G.st.wide||{}).fsBet:bet; this.wasFs=!!fs;
+    begin(fs?0:bet); $('#ledWin').textContent=0; document.querySelectorAll('.hl').forEach(x=>x.remove()); this.upd(); sfx.spin();
+    const pool=fs?this.fsPool:this.pool; spinStart(this.reels,pool); const t0=Date.now();
+    const d=await play('wide',{bet});
+    if(!d){ this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
+    await sleep(Math.max(0,450-(Date.now()-t0)));
+    for(let i=0;i<5;i++){ const col=[0,1,2].map(r=>WM[d.grid[r][i]]||d.grid[r][i]);
+      if(i===3&&d.starCells.filter(c=>c[1]<3).length>=2) this.say('たまごが2つ…！あと1つ！');
+      await spinStop(this.reels[i],col,pool,i===0?600:220+(i>=3&&d.starCells.filter(c=>c[1]<i).length>=2?700:0)); }
+    const lcd=$('#lcd'), cellsSeen={}, B=d.free?(d.fsBet||bet):bet; // BIG WIN はこの回のBETの10倍以上
+    const mark=(r,c)=>{ const k=r+','+c; if(cellsSeen[k]) return; cellsSeen[k]=1; const el=this.reels[c]; const d2=document.createElement('div'); d2.className='hl'+(d.grid[r][c]==='wild'?' wd':'');
+      d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; lcd.appendChild(d2);
+      // そろった絵柄を動かす(モンスター=跳ねる、たまご=ゆれる、WILD=光る)
+      const cell=el.querySelectorAll('.cell')[r], k2=d.grid[r][c]; if(cell) cell.classList.add(k2==='star'?'eg':k2==='wild'?'wd':'mv'); };
+    d.wins.forEach(w=>w.cells.forEach(([r,c])=>mark(r,c))); if(d.stars>=3) d.starCells.forEach(([r,c])=>mark(r,c));
+    if(d.pay>0){ $('#ledWin').textContent=d.pay; sfx.win(); }
+    if(d.pay>=B*10&&!d.fsStart){ sfx.big(); this.cutin(`BIG WIN! +${d.pay}`); this.say('やったー！大当たりだ！'); await sleep(1600); }
+    else if(d.pay>0&&d.wins.length){ const w=d.wins.slice().sort((a,b)=>b.x-a.x)[0]; const m=document.createElement('div'); m.className='wmsg'; m.innerHTML=`${sym(WM[w.sym],28)}<b>${w.n}体</b>${w.ways>1?`<span>×${w.ways}通り</span>`:''}${w.wild?'<span class="w">WILD ×2</span>':''}<b>+${d.pay}</b>`; lcd.appendChild(m); setTimeout(()=>m.remove(),1800); this.say(w.n>=5?'5体そろった！すごい！':w.n>=4?'4体つながった！いいぞ！':'モンスターがつながった！'); }
+    else if(!fs) this.say(['つぎはいけるよ！','たまごを3つあつめよう！','ドキドキするね！'][Math.floor(Math.random()*3)]);
+    if(d.fsStart){ sfx.big(); this.cutin(`FREE SPIN ${d.fsAdd}回!`); this.say('たまごがかえった！フリースピンだ！'); await sleep(1800); }
+    if(d.fsMore){ sfx.big(); winText(lcd,`+${d.fsAdd}回 上乗せ!`,130); this.say(`+${d.fsAdd}回 上乗せ！まだまだいくぞ！`); await sleep(1100); }
+    if(d.fsEnd){ winText(lcd,`フリースピン終了 +${d.fsWin}`,150); this.say(`フリースピンで +${d.fsWin}枚 ゲット！`); await sleep(1200); }
+    await finish(d); this.upd();
+    const scr=G.scr; if(this.fs()) setTimeout(()=>{ if(!G.busy&&!G.after&&G.mid==='wide'&&G.scr===scr) this.spin(); },d.fsStart?900:700); else autoNext(()=>this.spin());
+  }
+};
+
+
+['wide'].forEach(k=>{ const M=MACH[k], f=M.spin; M.spin=async function(){ try{ return await f.apply(this,arguments); }catch(e){ recover(e); } }; });
+
+/* ---------- はじめる ---------- */
+// 台のページは iPad 専用。?mg= がないとき(先生のPCなど)は、ロビー(先生の稼働画面)のページへ
+if(MG.qs.get('mg')){ G.mid='wide'; padMain(); } else location.replace(SP_LOBBY+location.search);
+</script>
+</body>
+</html>

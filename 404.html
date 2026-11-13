@@ -36,9 +36,10 @@
     'inca.html':'party/inca.html',
     'saishou.html':'party/saishou.html',
     'typing.html':'typing/',
-    'slotpark.html':'medalgame/slotpark.html'
+    'slotpark.html':'medalgame/slotpark/',
+    'medalgame/slotpark.html':'medalgame/slotpark/'
   };
-  var p = location.pathname, ks = Object.keys(MAP);
+  var p = location.pathname, ks = Object.keys(MAP).sort(function(a,b){ return b.length - a.length; }); // 長いキーを先に
   for (var i = 0; i < ks.length; i++) {
     var k = ks[i];
     if (p.length >= k.length + 1 && p.slice(-(k.length + 1)) === '/' + k) {

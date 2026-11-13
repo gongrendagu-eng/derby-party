@@ -3,144 +3,741 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>スロットパーク</title>
+<title>メダルゲーム</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Orbitron:wght@700;900&family=Shippori+Mincho:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
-<link rel="stylesheet" href="sp-pad.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="mg-core.js"></script>
 <style>
-/* ドラゴンレギオンのカードの絵 */
-.hdwl{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(10,16,56,.92) 0%,rgba(10,16,56,.55) 55%,rgba(10,16,56,.15) 100%),url(dragonlegion/assets/wl_bg.webp) center 40%/cover;box-shadow:inset 0 -3px 0 #e0b04a}
-.hdwl::before{content:"";position:absolute;right:-10px;top:50%;width:120px;height:120px;margin-top:-60px;border-radius:50%;background:radial-gradient(circle,rgba(255,216,77,.55),rgba(255,216,77,0) 70%)}
-.hdwl .dr{position:absolute;right:-6px;bottom:-14px;height:100px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}
-.hdwl .eg{position:absolute;left:8px;bottom:4px;width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 4px #ffd84d)}
-.hdwl .tt{position:absolute;left:12px;top:9px;display:flex;flex-direction:column;line-height:1;text-align:left}
-.hdwl .tt b{font-family:var(--f-num);font-weight:400;font-size:21px;letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:1.5px #5a2a00;text-shadow:0 3px 0 #3a1800,0 0 10px rgba(255,216,77,.6)}
-.hdwl .tt b+b{font-size:15px;letter-spacing:5px;color:#fff6d0;margin-top:2px}
-/* 連チャンロケットのカードの絵 */
-.hdrk{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(4,6,14,.9) 0%,rgba(4,6,14,.45) 55%,rgba(4,6,14,0) 100%),url(rocket/assets/ev_rk_launch.webp) 50% 30%/cover;box-shadow:inset 0 -3px 0 #ff9f1c}
-.hdrk .tt{position:absolute;left:12px;top:10px;display:flex;flex-direction:column;line-height:1;text-align:left}
-.hdrk .tt b{font-family:var(--f-num);font-weight:400;font-size:20px;letter-spacing:2px;color:#fff;text-shadow:0 0 10px rgba(255,159,28,.9),0 2px 0 #7a3300}
-.hdrk .tt b+b{font-family:var(--f-led);font-weight:900;font-size:12px;letter-spacing:5px;color:#7fd3ff;margin-top:4px;text-shadow:0 0 6px #2f8fff}
-/* 機種選びのカード */
-.hdgr{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(90deg,rgba(20,10,4,.85) 0%,rgba(20,10,4,.35) 60%,rgba(20,10,4,0) 100%),url(guildrush/assets/gr_bg1.webp) center 60%/cover;box-shadow:inset 0 -3px 0 #ffd84d}
-.hdgr img{position:absolute;right:2px;bottom:-30px;height:108px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}
-.hdgr .tt{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;line-height:1;text-align:left}
-.hdgr .tt b{font-family:var(--f-num);font-weight:400;font-size:22px;letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:1.5px #3a1a00;text-shadow:0 3px 0 #2a1000}
-.hdgr .tt b+b{font-family:var(--f-body);font-weight:800;font-size:12px;letter-spacing:4px;color:#fff3d0;margin-top:5px;-webkit-text-stroke:0}
+:root{
+  --f-num:"Dela Gothic One","Hiragino Sans",sans-serif;
+  --f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  --gold:#f2b705;--gold-d:#a86f00;--gold-l:#ffe38a;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--f-body);font-weight:500;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.medal{display:inline-block;flex:none}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1b2b27;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;z-index:99;max-width:92vw;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+
+/* ===================== 先生のPC(管理画面) ===================== */
+body.admin{--bg:#f5efe1;--paper:#fffaf0;--ink:#1e1a14;--soft:#6f6555;--line:#dccfb4;--acc:#0f8a66;--acc-l:#dff4ea;--warn:#c8102e;background:var(--bg);color:var(--ink)}
+.a-wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
+.a-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.a-title{display:flex;align-items:center;gap:10px;font-family:var(--f-num);font-size:28px;letter-spacing:.04em}
+.a-title small{font-family:var(--f-body);font-size:14px;color:var(--soft);font-weight:700}
+.sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--paper);border-radius:999px;padding:3px 12px;font-weight:800;font-size:14px;white-space:nowrap}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:#1f9d4a}
+.chip.off .dot{background:var(--warn)}
+.chip.try{background:#fff1b8;border-color:#e0b84a}
+.btn{border:2px solid var(--line);background:var(--paper);border-radius:10px;padding:8px 14px;font-weight:800;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--soft)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold-d);color:#3a2600}
+.btn.danger{color:var(--warn);border-color:#e9b3bd}
+.btn.sm{padding:4px 10px;font-size:13px;border-radius:8px}
+.tabs{display:flex;gap:6px;border-bottom:3px double var(--ink);margin-bottom:16px;flex-wrap:wrap}
+.tabs button{border:2px solid var(--line);border-bottom:0;background:var(--bg);border-radius:10px 10px 0 0;padding:8px 18px;font-weight:800;color:var(--soft)}
+.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink);border-color:var(--ink)}
+.tabs .cnt{display:inline-block;margin-left:6px;background:var(--acc);color:#fff;border-radius:999px;padding:0 8px;font-size:12px}
+.box{background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.box+.box{margin-top:14px}
+.box h2{margin:0 0 10px;font-size:18px}
+.note{color:var(--soft);font-size:14px;line-height:1.7;margin:6px 0 0}
+.note.warn{color:var(--warn);font-weight:800}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:8px 16px;min-width:150px}
+.stat small{display:block;color:var(--soft);font-weight:800;font-size:12px}
+.stat b{font-family:var(--f-num);font-weight:400;font-size:24px}
+.stat.bad b{color:var(--warn)}
+.tool{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.tool label{display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px}
+.tool input,.tool select,.fld input,.fld select{border:2px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px}
+.tbl{overflow:auto;border:2px solid var(--ink);border-radius:12px;background:#fff;max-height:66vh}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{position:sticky;top:0;background:var(--ink);color:var(--paper);font-size:13px;text-align:left;padding:7px 10px;white-space:nowrap;z-index:1}
+td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.r,th.r{text-align:right}
+td.nm{font-weight:800}
+tr:hover td{background:#fffbe9}
+.pin-ok{color:#1f8a4a;font-weight:800}
+.pin-no{color:var(--warn);font-weight:800;background:#fde8ec;border-radius:6px;padding:1px 8px}
+.where{display:inline-block;background:var(--acc-l);color:#0c5d45;border-radius:999px;padding:1px 10px;font-weight:800;font-size:13px}
+.where.stop{background:#fde8ec;color:var(--warn)}
+.where.lv{background:#fff1b8;color:#7a5a00}
+.ops{display:flex;gap:4px;justify-content:flex-end}
+.bank{font-family:var(--f-num);font-weight:400;font-size:17px}
+textarea{width:100%;border:2px solid var(--line);border-radius:10px;padding:10px;background:#fff;line-height:1.6;font-size:15px;resize:vertical}
+.st-new{color:#0f8a66;font-weight:800}.st-up{color:#b37400;font-weight:800}.st-err{color:var(--warn);font-weight:800}.st-same{color:var(--soft)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px}
+.gcard{background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:12px 14px}
+.gcard h3{margin:0 0 8px;display:flex;align-items:center;gap:10px;font-size:18px}
+.gcard h3 .art{width:44px;height:44px}
+.gcard ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.gcard li{display:flex;align-items:center;gap:8px;border-bottom:1px dashed var(--line);padding:4px 0}
+.gcard li .bank{margin-left:auto}
+.keyline{font-family:ui-monospace,Menlo,monospace;background:#fff;border:2px dashed var(--line);border-radius:8px;padding:8px 10px;word-break:break-all;font-size:14px}
+pre.rules{background:#1e1a14;color:#f5efe1;border-radius:10px;padding:12px;overflow:auto;font-size:13px;line-height:1.5}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.mcard{background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:20px 22px;width:min(560px,100%);max-height:90vh;overflow:auto}
+.mcard.wide{width:min(820px,100%)}
+.mcard h2{margin:0 0 12px;font-size:20px}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;font-weight:800;font-size:14px}
+.fld input{font-size:17px}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.qrbig{display:flex;gap:22px;align-items:center;flex-wrap:wrap;justify-content:center}
+#qrBox{background:#fff;padding:14px;border-radius:12px;border:2px solid var(--ink);line-height:0}
+.loglist{list-style:none;margin:0;padding:0;font-size:14px}
+.loglist li{display:grid;grid-template-columns:9.5em 1fr auto auto;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.loglist .d.p{color:#0f8a66;font-weight:800}.loglist .d.m{color:var(--warn);font-weight:800}
+.cl-wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+@media (max-width:980px){.cl-wrap{grid-template-columns:1fr}}
+.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:10px}
+.cl-p{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-weight:700;background:#fffaf0;border:2px dashed var(--line);color:var(--soft);cursor:pointer}
+.cl-p.on{background:#fff1b8;border:2px solid #d19a00;color:var(--ink)}
+.cl-p.dis{opacity:.5;cursor:not-allowed}
+.cl-p input{width:20px;height:20px}
+.cl-p .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-p .od{font-size:12px;color:var(--line)}.cl-p .od.y{color:#1f9a4a}
+.cl-p small{font-size:11px;color:var(--warn)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--paper);font-weight:800}
+.seg button[aria-pressed="true"]{border:3px solid var(--ink);background:var(--gold)}
+.cl-side{display:flex;flex-direction:column;gap:12px}
+.cl-side .fld{margin:0}
+.cl-side .fld input,.cl-side .fld select{font-size:18px}
+.cl-go{min-height:60px;border-radius:12px;border:0;background:#c8102e;color:#fff;font-family:var(--f-num);font-size:22px}
+.cl-go:disabled{opacity:.4}
+.ses{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:12px 16px;margin-bottom:12px}
+.ses .st{font-weight:800;border-radius:999px;padding:2px 12px;font-size:13px;background:var(--acc-l);color:#0c5d45}
+.ses .st.done{background:#fff1b8;color:#7a5a00}.ses .st.ready{background:#e8eefc;color:#2a4a9a}
+a.btn{text-decoration:none;color:inherit;display:inline-block}a.btn.pri{color:#fff}
+.res-wrap{display:grid;grid-template-columns:400px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:980px){.res-wrap{grid-template-columns:1fr}}
+.res-dark{background:#1e1a14;color:#fffaf0;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.res-dark h3{margin:0;font-family:var(--f-num);font-weight:400;font-size:26px;color:#ffcf3a}
+.res-c{display:flex;align-items:center;gap:12px;background:#3a2a20;border:2px solid #c8102e;border-radius:10px;padding:10px 14px}
+.res-c span{color:#ffb3c0;font-weight:800;width:3em;font-size:14px}.res-c b{flex:1;font-size:22px}.res-c em{font-style:normal;font-weight:800;color:#ffb13a;font-size:20px}
+.res-all{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.res-all div{display:flex;gap:8px;align-items:center;padding:7px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.res-all div.c{background:#fde3e6;border:2px solid #c8102e}
+.res-all span{color:var(--soft);font-size:13px;width:2.2em;flex:none}.res-all i{flex:1;min-width:0;font-style:normal;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bankbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff1b8;border:2px solid #d19a00;border-radius:12px;padding:14px 18px;margin-top:14px}
+.bankbar div{flex:1;min-width:240px;line-height:1.6}
+.setup{max-width:720px;margin:6vh auto;padding:0 20px}
+.setup .box{padding:22px 24px}
+
+/* ===================== iPad ===================== */
+body.pad{--ink:#173b33;--soft:#5d7c74;--mint:#bff0dc;--mint-d:#12a37a;--card:#fff;--line:#d5efe5;--warn:#d63c5e;
+  background:radial-gradient(circle at 10% 0,#e9fff6 0,transparent 50%),linear-gradient(180deg,#d4f7e8,#bdeedb 60%,#a9e6cf);background-attachment:fixed;color:var(--ink);min-height:100vh}
+html.padmode,html.padmode *{touch-action:manipulation}
+.p-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+  background:rgba(255,255,255,.82);backdrop-filter:blur(8px);border-bottom:2px solid var(--line)}
+.p-logo{display:flex;align-items:center;gap:8px;font-family:var(--f-num);font-size:22px;color:var(--mint-d)}
+.p-who{font-weight:800}
+.p-net{background:var(--warn);color:#fff;text-align:center;font-weight:800;padding:6px}
+.p-main{max-width:960px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 60px max(16px,env(safe-area-inset-left,0px))}
+.pc{background:var(--card);border-radius:28px;padding:22px;box-shadow:0 8px 0 rgba(18,163,122,.18),0 14px 30px rgba(23,59,51,.08)}
+.pc+.pc{margin-top:16px}
+.pbtn{border:0;border-radius:999px;padding:14px 26px;font-weight:800;font-size:18px;background:#eaf8f2;color:var(--ink);box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.pbtn:active{transform:translateY(2px)}
+.pbtn:disabled{opacity:.4}
+.pbtn.go{background:var(--mint-d);color:#fff}
+.pbtn.gold{background:linear-gradient(#ffd84a,var(--gold));color:#3a2600}
+.pbtn.sm{padding:8px 16px;font-size:15px}
+.pbtn.ghost{background:transparent;box-shadow:none;color:var(--soft);text-decoration:underline}
+.login{max-width:520px;margin:4vh auto 0;text-align:center}
+.login h1{font-family:var(--f-num);font-weight:400;font-size:clamp(30px,6vw,44px);margin:10px 0 4px;color:var(--mint-d)}
+.login p{color:var(--soft);margin:4px 0 14px;line-height:1.7}
+.flds{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.pf{display:flex;align-items:center;gap:12px;border:3px solid var(--line);border-radius:18px;padding:10px 16px;background:#f7fdfa;text-align:left;cursor:pointer}
+.pf.on{border-color:var(--mint-d);background:#fff;box-shadow:0 0 0 4px rgba(18,163,122,.15)}
+.pf small{width:5.5em;color:var(--soft);font-weight:800;font-size:14px}
+.pf .v{flex:1;font-family:var(--f-num);font-size:28px;letter-spacing:.12em;min-height:1.3em}
+.pf input{flex:1;border:0;background:transparent;font-family:var(--f-num);font-size:26px;letter-spacing:.08em;min-width:0}
+.pf input:focus{outline:none}
+.dots{display:flex;gap:12px}
+.dots i{width:20px;height:20px;border-radius:50%;border:3px solid var(--mint-d)}
+.dots i.f{background:var(--mint-d)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.keys button{border:0;border-radius:18px;padding:16px 0;font-family:var(--f-num);font-size:28px;background:#eaf8f2;color:var(--ink);box-shadow:inset 0 -5px 0 rgba(0,0,0,.08)}
+.keys button.al{background:#fff3c2;color:#8a5a00}
+.keys button.w2{grid-column:span 2}
+.keys button.fn{font-family:var(--f-body);font-weight:800;font-size:17px}
+.keys button:active{transform:translateY(2px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.08)}
+.perr{color:var(--warn);font-weight:800;min-height:1.6em;margin:6px 0 0}
+.bankcard{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.bankcard .lbl{color:var(--soft);font-weight:800}
+.bankcard .num{font-family:var(--f-num);font-size:clamp(44px,8vw,64px);line-height:1.05;color:#8a5a00}
+.bankcard .num small{font-size:.4em;margin-left:4px}
+.hi{font-size:20px;font-weight:800}
+.seatbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(90deg,#fff6cf,#fffbe8);border:3px solid var(--gold);border-radius:22px;padding:14px 18px}
+.seatbar .art{width:64px;height:64px}
+.seatbar .t{flex:1;min-width:220px;font-weight:800;font-size:18px;line-height:1.5}
+.seatbar .t b{font-family:var(--f-num);font-weight:400;font-size:26px;color:#8a5a00}
+.sec{font-weight:800;font-size:20px;margin:22px 4px 10px;display:flex;align-items:baseline;gap:10px}
+.sec small{color:var(--soft);font-size:14px}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.game{background:var(--card);border-radius:26px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 8px 0 rgba(18,163,122,.18)}
+.game .art{width:120px;height:120px}
+.game b{font-size:20px}
+.game small{color:var(--soft);font-weight:700;min-height:1.4em}
+.game .pbtn{width:100%}
+.empty{text-align:center;color:var(--soft);font-weight:800;padding:26px}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:flex;gap:10px;padding:8px 2px;border-bottom:2px dashed var(--line);font-weight:700}
+.hist li span:first-child{color:var(--soft);width:6em;flex:none}
+.hist li b{margin-left:auto;font-family:var(--f-num);font-weight:400}
+.hist .p{color:var(--mint-d)}.hist .m{color:var(--warn)}
+.pmodal{position:fixed;inset:0;background:rgba(23,59,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
+.pmodal .pc{width:min(560px,100%);max-height:94vh;overflow:auto}
+.bring h2{margin:0 0 4px;display:flex;align-items:center;gap:10px;font-size:22px}
+.bring h2 .art{width:52px;height:52px}
+.bring .have{color:var(--soft);font-weight:800}
+.amt{display:flex;align-items:center;gap:10px;margin:14px 0 8px}
+.amt input{flex:1;min-width:0;border:3px solid var(--mint-d);border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:40px;text-align:right;background:#fff}
+.amt span{font-weight:800}
+.steps,.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.steps button,.quick button{border:0;border-radius:14px;padding:12px 0;font-weight:800;font-size:17px;background:#eaf8f2;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.quick button{background:#fff3c2}
+.quick button.all{background:var(--gold);color:#3a2600}
+.mrow{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+@media (max-width:600px){.keys button{padding:12px 0;font-size:24px}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" class="toast" hidden></div>
-<script src="../mg-core.js"></script>
-<script src="sp-engine.js"></script>
-<script>const ASSET='common/', SP_LOBBY='./';</script>
-<script src="sp-pad.js"></script>
 <script>
-'use strict';
-Object.assign(BGM,{lobby:'bgm_lobby.mp3'});
+const {esc,yen,normSid}=MG;
+const $=s=>document.querySelector(s);
+const app=$('#app');
+let toastT=null;
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3800)}
+const fmtT=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`};
+const medalSvg=(s=56)=>`<svg class="medal" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#f2b705" stroke="#a86f00" stroke-width="3"/><circle cx="32" cy="32" r="22.5" fill="#ffd23a" stroke="#ffe9a0" stroke-width="2.5" stroke-dasharray="3 3"/><text x="32" y="43.5" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="29" fill="#8a5a00">M</text></svg>`;
+// ゲームのイラスト(ゲームが art で名前を指定する)
+const ART={
+  coin:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#fff6cf"/><ellipse cx="46" cy="74" rx="28" ry="28" fill="#f2b705" stroke="#a86f00" stroke-width="4"/><text x="46" y="85" text-anchor="middle" font-family="Dela Gothic One" font-size="28" fill="#8a5a00">表</text><ellipse cx="78" cy="48" rx="24" ry="24" fill="#d9dde6" stroke="#6b7385" stroke-width="4"/><text x="78" y="58" text-anchor="middle" font-family="Dela Gothic One" font-size="24" fill="#4a5163">裏</text></svg>`,
+  horse:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#dff4ea"/><path d="M30 96 L36 62 C38 48 50 36 64 34 L70 22 L76 34 C86 38 94 46 96 56 L88 60 L80 54 L76 66 L84 96 L72 96 L66 74 L50 76 L44 96Z" fill="#8b5a2b" stroke="#173b33" stroke-width="4" stroke-linejoin="round"/><circle cx="80" cy="44" r="3.5" fill="#173b33"/><path d="M58 40 C52 50 50 58 52 66" stroke="#2b1a0e" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+  roulette:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#ffe1ea"/><circle cx="60" cy="60" r="44" fill="#ffcf33" stroke="#173b33" stroke-width="4"/>${Array.from({length:10},(_,i)=>{const a=i*Math.PI/5,b=(i+1)*Math.PI/5,r=36;return `<path d="M60 60 L${60+r*Math.cos(a)} ${60+r*Math.sin(a)} A${r} ${r} 0 0 1 ${60+r*Math.cos(b)} ${60+r*Math.sin(b)}Z" fill="${['#ff5f8f','#3a9bff','#22c79a','#ff9a3c','#8a6cff'][i%5]}"/>`}).join('')}<circle cx="60" cy="60" r="14" fill="#fff" stroke="#173b33" stroke-width="3"/><circle cx="84" cy="34" r="6" fill="#fff" stroke="#173b33" stroke-width="2.5"/></svg>`,
+  hockey:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#dcecff"/><rect x="18" y="30" width="84" height="60" rx="12" fill="#fff" stroke="#173b33" stroke-width="4"/><path d="M60 30 V90" stroke="#ff5f8f" stroke-width="3"/><circle cx="60" cy="60" r="10" fill="none" stroke="#ff5f8f" stroke-width="3"/><circle cx="38" cy="60" r="10" fill="#3a9bff" stroke="#173b33" stroke-width="3"/><ellipse cx="80" cy="62" rx="7" ry="5" fill="#173b33"/></svg>`,
+  slot:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#ffe3ec"/><rect x="22" y="26" width="70" height="74" rx="12" fill="#ff5c8a" stroke="#173b33" stroke-width="4"/><rect x="30" y="44" width="54" height="30" rx="5" fill="#fff" stroke="#173b33" stroke-width="3"/><text x="38" y="67" font-family="Dela Gothic One" font-size="20" fill="#e63946">7</text><text x="52" y="67" font-family="Dela Gothic One" font-size="20" fill="#e63946">7</text><text x="66" y="67" font-family="Dela Gothic One" font-size="20" fill="#e63946">7</text><rect x="34" y="31" width="46" height="8" rx="4" fill="#ffd23f"/><circle cx="57" cy="87" r="7" fill="#3ddc84" stroke="#173b33" stroke-width="3"/><path d="M92 50 L102 40" stroke="#173b33" stroke-width="4" stroke-linecap="round"/><circle cx="104" cy="37" r="7" fill="#e63946" stroke="#173b33" stroke-width="3"/></svg>`,
+  medal:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#fff6cf"/><circle cx="60" cy="60" r="34" fill="#f2b705" stroke="#a86f00" stroke-width="4"/><text x="60" y="74" text-anchor="middle" font-family="Dela Gothic One" font-size="38" fill="#8a5a00">M</text></svg>`
+};
+const art=k=>ART[k]||ART.medal;
+
+if(MG.qs.get('mg')) padMain(); else adminMain();
 
 /* =========================================================
-   先生のPC
+   先生のPC:管理画面
    ========================================================= */
-let HOST=null; const feed=[];
-const LSK=()=>'mg.slotpark.'+(MG.LOCAL?'local.':'');
-let ST={}, JP=0, saveT=null;
-function loadHostData(){ try{ ST=JSON.parse(localStorage.getItem(LSK()+'st'))||{}; }catch(e){ ST={}; }
-  JP=+localStorage.getItem(LSK()+'jp')||SP.consts.J_SEED; }
-function saveHostData(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(LSK()+'st',JSON.stringify(ST)); localStorage.setItem(LSK()+'jp',String(JP)); }catch(e){} },300); }
-const jpCtx={jp:{add(n){JP+=n},take(){const p=JP;JP=SP.consts.J_SEED;return p},get(){return JP}}};
-const stOf=(sid,m)=>{ ST[sid]=ST[sid]||{}; ST[sid][m]=ST[sid][m]||{}; return ST[sid][m]; };
-const locks={};
-async function withLock(sid,fn){ while(locks[sid]) await locks[sid]; let done; locks[sid]=new Promise(r=>done=r); try{ return await fn(); } finally { delete locks[sid]; done(); } }
-function pubState(m,st){
-  if(m==='oshi') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0};
-  if(m==='battle') return {bonus:st.bonus||null,held:st.held||null,lampOn:!!st.lampOn,games:st.games||0,count:st.count||{big:0,reg:0},hk:st.hk||0,floor:st.floor||0,fg:st.fg||0,rank:st.rank||0};
-  if(m==='wide') return {fs:st.fs||0,fsWin:st.fsWin||0,fsBet:st.fsBet||0};
-  if(m==='rocket') return {chain:st.chain||null,best:st.best||0,last:st.last||0};
-  if(m==='drop') return {best:st.best||0};
-  return {};
+let HOST=null;
+const A={tab:'roster',cls:'',q:'',paste:'',rows:[],over:false,cl:{cls:null,sel:{},med:'same',n:100,paste:'',mul:2,games:5,clean:4,view:'',pre:''}};
+function adminMain(){
+  document.body.className='admin';
+  if(!MG.keys.get()) return adminSetup();
+  app.innerHTML=`<div class="a-wrap"><p class="note">接続しています…</p></div>`;
+  MG.startHost({}).then(h=>{
+    HOST=h; adminShell();
+    h.onAcc(()=>adminRender());
+    h.onGames(()=>{ adminTabs(); if(A.tab==='games'||A.tab==='roster'||A.tab==='clean') adminRender(); });
+    h.onClean(()=>{ adminTabs(); if(A.tab==='clean'||A.tab==='roster') adminRender(); });
+    h.onOnline(()=>{ if(A.tab==='clean') adminRender(); });
+    h.onConn(ok=>{ const c=$('#conn'); if(c){ c.classList.toggle('off',!ok); c.lastChild.textContent=ok?(MG.LOCAL?'お試しモード':'接続中'):'通信が切れています'; } });
+  }).catch(e=>{ app.innerHTML=`<div class="setup"><div class="box"><h2>つながりませんでした</h2><p class="note warn">${esc(e.message)}</p>
+    <p class="note">firebase-config.js を medalgame フォルダの1つ上(リポジトリの一番上)に置いてください。PCでファイルを直接開いた場合は、URLの最後に <b>?local=1</b> をつけると、お試しモードで動かせます。</p></div></div>`; });
 }
-async function hostReq(sid,r){
-  const m=String(r.m||''); if(!MBY[m]) return {ok:false,msg:'その機種はありません'};
-  if(r.type==='g:info') return {ok:true,d:{jp:JP,st:pubState(m,stOf(sid,m))}};
-  if(r.type!=='g:spin'&&r.type!=='g:stop') return {ok:false,msg:'その操作はできません'};
-  return withLock(sid,async()=>{
-    const a=HOST.acc()[sid], st=stOf(sid,m), d={type:r.type==='g:stop'?'stop':'spin',bet:Math.floor(+r.bet||0),cherryOk:!!r.cherryOk,aligned:!!r.aligned};
-    const need=SP.cost(m,st,d);
-    if(!a.seat||a.seat.g!==GID) return {ok:false,msg:'このゲームには入っていません'};
-    if((a.seat.a||0)<need) return {ok:false,msg:'メダルが足りません。「貯金から追加」で足してください',d:{short:true}};
-    const backup=JSON.stringify(st), jp0=JP;
-    let res; try{ res=SP.play(m,st,d,jpCtx); }catch(e){ return {ok:false,msg:e.message}; }
-    const delta=(res.pay||0)-(res.bet||0);
-    let na=a.seat.a;
-    try{ if(delta) na=await HOST.change(sid,delta); }
-    catch(e){ ST[sid][m]=JSON.parse(backup); JP=jp0; return {ok:false,msg:e.message}; }
-    saveHostData();
-    if((res.pay||0)>=50||res.bonusStart||res.out==='jp'){ feed.unshift({n:a.n,m:MBY[m].name,pay:res.pay,bs:res.bonusStart,jp:res.out==='jp',t:Date.now()}); feed.length=Math.min(feed.length,15); }
-    hostRender();
-    return {ok:true,d:{...res,a:na,jp:JP,st:pubState(m,st)}};
+function adminSetup(){
+  app.innerHTML=`<div class="setup">
+    <div class="a-title" style="margin-bottom:14px">${medalSvg(46)}メダルゲーム <small>はじめの準備${MG.LOCAL?'(お試しモード)':''}</small></div>
+    <div class="box"><h2>このPCで、はじめて使う</h2>
+      <p class="note">口座のデータを入れる場所の「鍵」を作ります。鍵は、このPCのブラウザに保存されます。別のPCで使うときや、ブラウザのデータを消したときのために、作ったあと「設定」で鍵を控えておいてください。</p>
+      <div class="mbtns" style="justify-content:flex-start"><button class="btn pri" id="mk">鍵を作ってはじめる</button></div></div>
+    <div class="box"><h2>ほかのPCで作った鍵を使う</h2>
+      <p class="note">ほかのPCの「設定」に出ている鍵(MGKEY- で始まる文字)を貼りつけてください。同じ名簿・同じ貯金が使えます。</p>
+      <div class="tool" style="margin-top:8px"><input id="kin" style="flex:1;min-width:260px" placeholder="MGKEY-…"><button class="btn" id="kgo">この鍵を使う</button></div></div>
+    ${MG.LOCAL?'':`<p class="note">iPadがなくても試せます:<a href="?local=1">お試しモード(このPCの別タブをiPadの代わりにする)</a></p>`}</div>`;
+  $('#mk').onclick=()=>{ MG.keys.create(); adminMain(); };
+  $('#kgo').onclick=()=>{ const k=MG.keys.parse($('#kin').value); if(!k) return toast('鍵の形がちがいます'); MG.keys.set(k); adminMain(); };
+}
+function adminShell(){
+  app.innerHTML=`<div class="a-wrap">
+    <header class="a-head"><div class="a-title">${medalSvg(44)}メダルゲーム <small>管理画面</small></div><span class="sp"></span>
+      <span class="chip ${MG.LOCAL?'try':''}" id="conn"><i class="dot"></i><span>${MG.LOCAL?'お試しモード':'接続中'}</span></span>
+      <button class="btn gold" id="qrBtn">iPadのQRコード</button></header>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <main id="body"></main></div>`;
+  $('#qrBtn').onclick=showQR;
+  adminTabs();
+}
+function adminTabs(){
+  const t=$('#tabs'); if(!t) return;
+  const g=Object.keys(HOST.games()).length;
+  const ac=Object.values(HOST.clean.all()).filter(c=>['ready','playing','done','banking'].includes(c.st)).length;
+  t.innerHTML=[['roster','名簿'],['games','稼働中のゲーム',g],['clean','掃除決め',ac],['add','名簿の登録'],['set','設定・バックアップ']]
+    .map(([k,n,c])=>`<button role="tab" data-tab="${k}" aria-selected="${A.tab===k}">${n}${c?`<span class="cnt">${c}</span>`:''}</button>`).join('');
+  t.querySelectorAll('button').forEach(b=>b.onclick=()=>{A.tab=b.dataset.tab;adminTabs();adminRender(true)});
+}
+const accList=()=>{const a=HOST.acc();return Object.keys(a).map(sid=>({sid,...a[sid]})).sort((x,y)=>(x.c||'').localeCompare(y.c||'','ja')||x.sid.localeCompare(y.sid,'ja',{numeric:true}))};
+const classes=()=>[...new Set(accList().map(a=>a.c||''))].sort((a,b)=>a.localeCompare(b,'ja'));
+function whereHtml(a){
+  const s=a.seat; if(a.cl&&!s) return '<span class="where lv">掃除決め中</span>';
+  if(!s) return '<span class="st-same">貯金のみ</span>';
+  const live=!!HOST.games()[s.g];
+  return `<span class="where ${s.leave?'lv':live?'':'stop'}">${esc(s.gn)} ${yen(s.a)}枚${s.leave?'(精算待ち)':live?'':'(停止中)'}</span>`;
+}
+let renderT=null;
+function adminRender(now){
+  if(!HOST) return;
+  if(!now){ clearTimeout(renderT); renderT=setTimeout(()=>adminRender(true),80); return; }
+  const b=$('#body'); if(!b) return;
+  if(A.tab==='roster') return renderRoster(b);
+  if(A.tab==='games') return renderGames(b);
+  if(A.tab==='add') return renderAdd(b);
+  if(A.tab==='set') return renderSet(b);
+  if(A.tab==='clean') return renderClean(b);
+}
+/* ---- 名簿 ---- */
+function renderRoster(b){
+  if(!$('#rTbl')){
+    b.innerHTML=`<div class="stats" id="rStats"></div>
+      <div class="tool"><label>クラス<select id="rCls"></select></label><label>さがす<input id="rQ" placeholder="学籍番号・名前" value="${esc(A.q)}"></label>
+        <span class="sp"></span><button class="btn sm" id="rAdd">名簿を登録する</button></div>
+      <div class="tbl"><table><thead><tr><th>学籍番号</th><th>名前</th><th>クラス</th><th>合言葉</th><th class="r">貯金</th><th>いまいる場所</th><th class="r">操作</th></tr></thead><tbody id="rTbl"></tbody></table></div>`;
+    $('#rCls').onchange=e=>{A.cls=e.target.value;renderRoster(b)};
+    $('#rQ').oninput=e=>{A.q=e.target.value;renderRoster(b)};
+    $('#rAdd').onclick=()=>{A.tab='add';adminTabs();adminRender(true)};
+    $('#rTbl').onclick=onRosterClick;
+  }
+  const cs=classes(); if(A.cls&&!cs.includes(A.cls)) A.cls='';
+  $('#rCls').innerHTML=`<option value="">すべて</option>`+cs.map(c=>`<option value="${esc(c)}"${c===A.cls?' selected':''}>${esc(c||'(クラスなし)')}</option>`).join('');
+  const q=A.q.trim().toUpperCase();
+  const all=accList().filter(a=>(!A.cls||(a.c||'')===A.cls));
+  const list=all.filter(a=>!q||a.sid.includes(normSid(q)||'\u0000')||String(a.n).toUpperCase().includes(q));
+  const nopin=all.filter(a=>!a.h).length, sum=all.reduce((s,a)=>s+(a.b||0)+(a.seat?a.seat.a||0:0),0), playing=all.filter(a=>a.seat).length;
+  $('#rStats').innerHTML=`<div class="stat"><small>人数${A.cls?`(${esc(A.cls)})`:''}</small><b>${all.length}</b>人</div>
+    <div class="stat ${nopin?'bad':''}"><small>合言葉 未設定</small><b>${nopin}</b>人</div>
+    <div class="stat"><small>ゲームで遊んでいる</small><b>${playing}</b>人</div>
+    <div class="stat"><small>メダルの合計(貯金+ゲーム内)</small><b>${yen(sum)}</b>枚</div>`;
+  $('#rTbl').innerHTML=list.length?list.map(a=>`<tr data-sid="${esc(a.sid)}"><td>${esc(a.sid)}</td><td class="nm">${esc(a.n)}</td><td>${esc(a.c||'')}</td>
+    <td>${a.h?'<span class="pin-ok">設定済み</span>':'<span class="pin-no">未設定</span>'}</td><td class="r bank">${yen(a.b)}</td><td>${whereHtml(a)}</td>
+    <td><div class="ops"><button class="btn sm" data-op="edit">編集</button><button class="btn sm" data-op="coin">メダル</button><button class="btn sm" data-op="log">履歴</button>
+    ${a.h?'<button class="btn sm" data-op="pin">合言葉リセット</button>':''}${a.seat?'<button class="btn sm danger" data-op="settle">精算</button>':''}</div></td></tr>`).join('')
+    :`<tr><td colspan="7" style="text-align:center;color:var(--soft);padding:26px">${all.length?'見つかりません':'まだ名簿がありません。「名簿の登録」から貼り付けてください'}</td></tr>`;
+}
+function onRosterClick(e){
+  const b=e.target.closest('[data-op]'); if(!b) return;
+  const sid=b.closest('tr').dataset.sid, a=HOST.acc()[sid]; if(!a) return;
+  const op=b.dataset.op;
+  if(op==='edit') editModal(sid);
+  if(op==='coin') coinModal(sid);
+  if(op==='log') logModal(sid);
+  if(op==='pin') confirmModal(`${a.n}さんの合言葉をリセットしますか?`,'次にログインするとき、本人がもう一度合言葉を決めます。いまログインしているiPadはログアウトします。','リセットする',async()=>{ await HOST.admin.resetPin(sid); toast('合言葉をリセットしました'); });
+  if(op==='settle') settleModal(sid);
+}
+/* ---- 小さな画面(モーダル) ---- */
+function modal(html,wide){ const m=document.createElement('div'); m.className='modal'; m.innerHTML=`<div class="mcard ${wide?'wide':''}">${html}</div>`;
+  m.addEventListener('click',e=>{ if(e.target===m||e.target.closest('[data-x]')) m.remove(); }); document.body.appendChild(m); return m; }
+function confirmModal(t,msg,ok,fn){ const m=modal(`<h2>${esc(t)}</h2><p class="note">${msg}</p><div class="mbtns"><button class="btn" data-x>やめる</button><button class="btn pri" id="cOk">${esc(ok)}</button></div>`);
+  m.querySelector('#cOk').onclick=async()=>{ try{ await fn(); m.remove(); }catch(e){ toast(e.message); } }; }
+function editModal(sid){
+  const a=HOST.acc()[sid];
+  const m=modal(`<h2>${esc(sid)} を編集</h2>
+    <label class="fld">名前<input id="eN" value="${esc(a.n)}" maxlength="20"></label>
+    <label class="fld">クラス<input id="eC" value="${esc(a.c||'')}" maxlength="20" list="clsList"></label><datalist id="clsList">${classes().map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+    <p class="note">学籍番号は変えられません。番号をまちがえて登録したときは、この人を削除して登録しなおしてください。</p>
+    <div class="mbtns"><button class="btn danger" id="eDel" style="margin-right:auto">この人を削除</button><button class="btn" data-x>やめる</button><button class="btn pri" id="eOk">保存</button></div>`);
+  m.querySelector('#eOk').onclick=async()=>{ const n=m.querySelector('#eN').value.trim(); if(!n) return toast('名前を入れてください');
+    try{ await HOST.admin.edit(sid,{n,c:m.querySelector('#eC').value.trim()}); m.remove(); toast('保存しました'); }catch(e){ toast(e.message); } };
+  m.querySelector('#eDel').onclick=()=>{ m.remove(); confirmModal(`${a.n}さん(${sid})を削除しますか?`,`貯金 ${yen(a.b)}枚と履歴も消えます。元にもどせません。`,'削除する',async()=>{ await HOST.admin.remove(sid); toast('削除しました'); }); };
+}
+function coinModal(sid){
+  const a=HOST.acc()[sid];
+  const m=modal(`<h2>${esc(a.n)}さんのメダル</h2><p class="note">いまの貯金 <b class="bank">${yen(a.b)}</b>枚${a.seat?`(ほかに ${esc(a.seat.gn)} に ${yen(a.seat.a)}枚)`:''}</p>
+    <label class="fld">増やす枚数(減らすときはマイナス。例:-50)<input id="cD" type="number" step="1" value="100"></label>
+    <label class="fld">理由(履歴に残ります)<input id="cW" value="先生から" maxlength="30"></label>
+    <div class="mbtns"><button class="btn" data-x>やめる</button><button class="btn pri" id="cOk">反映する</button></div>`);
+  m.querySelector('#cOk').onclick=async()=>{ const d=Math.round(+m.querySelector('#cD').value||0); if(!d) return toast('枚数を入れてください');
+    try{ await HOST.admin.adjust(sid,d,m.querySelector('#cW').value.trim()||'先生が調整'); m.remove(); toast(`${d>0?'+':''}${d}枚にしました`); }catch(e){ toast(e.message); } };
+}
+function settleModal(sid){
+  const a=HOST.acc()[sid], s=a.seat; if(!s) return;
+  const live=!!HOST.games()[s.g];
+  confirmModal(`${a.n}さんを精算しますか?`,`${esc(s.gn)}にある ${yen(s.a)}枚を貯金にもどして、ゲームから退出させます。${live?'<br>ゲームの中で賭けている途中のメダルは、精算のときの枚数に入りません。':''}`,'精算する',async()=>{ const x=await HOST.admin.settle(sid); toast(`${yen(x.amt)}枚を貯金にもどしました`); });
+}
+async function logModal(sid){
+  const a=HOST.acc()[sid];
+  const m=modal(`<h2>${esc(a.n)}さんの履歴</h2><ul class="loglist" id="lg"><li>読み込み中…</li></ul><div class="mbtns"><button class="btn" data-x>閉じる</button></div>`,true);
+  const list=await HOST.getLog(sid);
+  m.querySelector('#lg').innerHTML=list.length?list.slice(0,200).map(x=>`<li><span>${fmtT(x.t)}</span><span>${esc(x.w)}</span><span class="d ${x.d>0?'p':x.d<0?'m':''}">${x.d>0?'+':''}${yen(x.d)}</span><span>貯金 ${yen(x.b)}</span></li>`).join('')
+    :'<li>まだ履歴はありません</li>';
+}
+function showQR(){
+  const url=HOST.padUrl();
+  const m=modal(`<h2>iPadで参加</h2><div class="qrbig"><div id="qrBox"></div><div style="flex:1;min-width:240px">
+    <p class="note">iPadのカメラで読み取ると、ログイン画面が開きます。学籍番号と4桁の合言葉でログインして、稼働中のゲームを選びます。</p>
+    <p class="keyline">${esc(url)}</p>${MG.LOCAL?'<p class="note"><a href="'+esc(url)+'" target="_blank">お試し:iPadの画面を別タブで開く</a></p>':''}
+    ${location.protocol==='file:'?'<p class="note warn">PCでファイルを直接開いているため、iPadからはこのアドレスを開けません。GitHub Pagesのアドレスで開いてください。</p>':''}</div></div>
+    <div class="mbtns"><button class="btn pri" data-x>閉じる</button></div>`,true);
+  try{ new QRCode(m.querySelector('#qrBox'),{text:url,width:280,height:280,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ m.querySelector('#qrBox').textContent='QRコードを表示できません'; }
+}
+/* ---- 稼働中のゲーム ---- */
+// 管理画面から起動できるゲーム(このフォルダの中のファイル)
+const GAME_LIST=[{id:'g1road',n:'G1ロード',art:'horse',f:'g1road.html',d:'競馬。馬を買って育て、馬券でメダルを増やす'},
+  {id:'roulettepark',n:'ルーレットパーク',art:'roulette',f:'roulettepark.html',d:'フリーモード。自動で次々にゲームが進む'},
+  {id:'slotpark',n:'スロットパーク',art:'slot',f:'slotpark/',d:'3機種のスロット。ひとりずつ好きな台で遊ぶ'},
+  {id:'airhockey',n:'エアホッケー',art:'hockey',f:'airhockey.html',d:'1対1の対戦。観戦者はBETとおじゃまアイテム'},
+  {id:'cointoss',n:'コイントス(テスト機)',art:'coin',f:'cointoss.html',d:'しくみの確認用'}];
+const launching={};
+function launchGame(x){
+  const u=new URL(x.f,location.href); u.searchParams.set('launch','1'); if(MG.LOCAL) u.searchParams.set('local','1');
+  const w=window.open(u.href,'mg_'+x.id);
+  if(!w) return toast('新しいタブを開けませんでした。ブラウザの「ポップアップをブロック」を解除してください');
+  launching[x.id]=Date.now(); adminRender(true);
+  setTimeout(()=>{ if(launching[x.id]&&!HOST.games()[x.id]){ delete launching[x.id]; adminRender(true); } },30000);
+}
+function renderGames(b){
+  const g=HOST.games(), acc=HOST.acc(), ids=Object.keys(g);
+  ids.forEach(id=>delete launching[id]);
+  const idle=GAME_LIST.filter(x=>!g[x.id]);
+  const by={}; Object.keys(acc).forEach(sid=>{ const s=acc[sid].seat; if(s) (by[s.g]=by[s.g]||[]).push(sid); });
+  const li=sid=>{ const a=acc[sid]; return `<li><span>${esc(a.n)}</span><small style="color:var(--soft)">${esc(sid)}・${esc(a.c||'')}</small>${a.seat.leave?'<span class="where lv">精算待ち</span>':''}<span class="bank">${yen(a.seat.a)}</span><button class="btn sm danger" data-settle="${esc(sid)}">精算</button></li>`; };
+  const stopped=Object.keys(by).filter(k=>!g[k]);
+  b.innerHTML=`<div class="grid2">${ids.length?ids.map(id=>{ const list=by[id]||[]; const sum=list.reduce((s,x)=>s+(acc[x].seat.a||0),0);
+      return `<div class="gcard"><h3>${art(g[id].art)}${esc(g[id].n)}<span class="sp"></span><span class="chip"><i class="dot"></i>稼働中</span></h3>
+        <p class="note">遊んでいる人 ${list.length}人 ・ 持ち込み中 ${yen(sum)}枚</p><ul>${list.map(li).join('')||'<li style="color:var(--soft)">まだ誰もいません</li>'}</ul></div>`; }).join('')
+      :`<div class="box"><h2>いま動いているゲームはありません</h2><p class="note">下の「稼働する」を押すと、このPCの新しいタブでゲームが始まり、iPadのゲーム一覧に出ます。<b>そのタブは閉じずに置いておいてください</b>(閉じると停止します)。</p></div>`}
+    ${idle.map(x=>`<div class="gcard" style="border-style:dashed;opacity:.95"><h3>${art(x.art)}${esc(x.n)}<span class="sp"></span><span class="chip off"><i class="dot"></i>停止中</span></h3>
+      <p class="note">${esc(x.d)}</p><div class="mbtns"><button class="btn pri" data-launch="${x.id}" ${launching[x.id]?'disabled':''}>${launching[x.id]?'起動しています…':'稼働する'}</button></div></div>`).join('')}
+    ${stopped.length?`<div class="gcard" style="border-color:var(--warn)"><h3>停止中のゲームに残っているメダル</h3><p class="note">ゲームのタブが閉じられたときに残ったメダルです。本人がiPadで「貯金にもどす」を押すか、ここで精算してください。</p><ul>${stopped.flatMap(k=>by[k]).map(li).join('')}</ul>
+      <div class="mbtns"><button class="btn" id="setAllStop">まとめて精算</button></div></div>`:''}</div>`;
+  b.querySelectorAll('[data-settle]').forEach(x=>x.onclick=()=>settleModal(x.dataset.settle));
+  b.querySelectorAll('[data-launch]').forEach(x=>x.onclick=()=>launchGame(GAME_LIST.find(y=>y.id===x.dataset.launch)));
+  const sa=$('#setAllStop'); if(sa) sa.onclick=async()=>{ for(const sid of stopped.flatMap(k=>by[k])){ try{await HOST.admin.settle(sid)}catch(e){} } toast('精算しました'); };
+}
+/* ---- 名簿の登録(貼り付け) ---- */
+function parseRoster(t){
+  const out=[], seen=new Set();
+  String(t||'').split(/\r?\n/).forEach((line,i)=>{
+    const raw=line.replace(/　/g,' ').trim(); if(!raw) return;
+    let cols=raw.split('\t'); if(cols.length<2) cols=raw.split(/\s*[,，]\s*|\s{2,}|\s+/);
+    cols=cols.map(c=>c.trim());
+    const sid=normSid(cols[0]), n=(cols[1]||'').replace(/\s+/g,' ').trim().slice(0,20), c=(cols[2]||'').trim().slice(0,20);
+    if(i===0&&/学籍|番号|ID/i.test(cols[0])) return;
+    if(!sid||!n){ out.push({err:'読めません',raw}); return; }
+    if(seen.has(sid)){ out.push({err:'学籍番号が重なっています',raw,sid}); return; }
+    seen.add(sid); out.push({sid,n,c,raw});
   });
+  return out;
 }
-async function hostMain(){
-  document.body.className='host';
-  if(!MG.keys.get()){ app.innerHTML=`<div class="wrap"><div class="box"><h2>まだ準備ができていません</h2><p class="note">先に、このPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。</p></div></div>`; return; }
-  loadHostData();
-  app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
-  try{
-    HOST=await MG.startHost({gid:GID,name:NAME,art:'slot',hooks:{
-      onReq:(sid,r)=>hostReq(sid,r),
-      onLeave(){ hostRender(); }
-    }});
-  }catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
-  app.innerHTML=`<div class="wrap"><div class="htop"><div class="ttl">${NAME}<small>先生のPC</small></div><span class="sp"></span>
-      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span><button class="btn danger" id="stop">停止する(全員を精算)</button></div>
-    <div class="stats"><div class="stat"><small>遊んでいる人</small><b id="sN">0人</b></div><div class="stat"><small>ジャックポット</small><b id="sJ">0枚</b></div><div class="stat"><small>機種</small><b>${SP.MACHINES.length}台</b></div><div class="stat"><small>還元率(目安)</small><b>約95%</b></div></div>
-    <div class="box"><p class="note">このタブを開いている間、iPadのゲーム一覧に「${NAME}」が出ます。抽選と配当はこのPCで計算します。タブは閉じずに置いておいてください(閉じると遊んでいる人のメダルは預けたままになり、トップの「貯金にもどす」か管理画面の精算で回収できます)。</p></div>
-    <div class="box"><h2>遊んでいる人</h2><ul class="pl" id="pl"></ul></div>
-    <div class="box"><h2>さいきんの大当たり</h2><ul class="pl" id="fd"></ul></div></div>`;
-  HOST.onAcc(hostRender);
-  HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
-  $('#stop').onclick=async()=>{ const n=HOST.seated().length;
-    if(!confirm(`停止しますか?\n遊んでいる ${n}人 のメダルを、全員貯金にもどします。`)) return;
-    $('#stop').disabled=true; await HOST.stop(); HOST=null;
-    app.innerHTML=`<div class="wrap"><div class="box"><h2>停止しました</h2><p class="note">${n}人を精算しました。このタブは閉じてかまいません。</p></div></div>`; };
-  addEventListener('beforeunload',e=>{ if(HOST&&HOST.seated().length){ e.preventDefault(); e.returnValue=''; } });
-  hostRender();
+function renderAdd(b){
+  if(!$('#pT')){
+    b.innerHTML=`<div class="box"><h2>Excelから貼り付けて一括登録</h2>
+      <p class="note">Excelで「学籍番号・名前・クラス」の3列を<b>この順で</b>選んでコピーし、下に貼り付けてください(1行目が見出しでもOK)。新しく作った口座のメダルは0枚です。すでにある学籍番号はクラスを書きかえます(進級・クラス替え)。</p>
+      <textarea id="pT" rows="8" placeholder="2401001	大原 太郎	1年A組&#10;2401002	名古屋 花子	1年A組">${esc(A.paste)}</textarea>
+      <div class="tool" style="margin-top:8px"><label><input type="checkbox" id="pOver" ${A.over?'checked':''}> 名前がちがう人は、名前も貼り付けた内容に直す</label><span class="sp"></span><button class="btn pri" id="pGo" disabled>登録する</button></div>
+      <div id="pPrev"></div></div>
+      <div class="box"><h2>クラス名をまとめて書きかえる(進級など)</h2>
+      <div class="tool"><label>いまのクラス<select id="cFrom">${classes().map(c=>`<option>${esc(c)}</option>`).join('')}</select></label><label>新しいクラス名<input id="cTo" placeholder="例:2年A組"></label><button class="btn" id="cGo">書きかえる</button></div></div>`;
+    $('#pT').oninput=e=>{A.paste=e.target.value;prev()};
+    $('#pOver').onchange=e=>{A.over=e.target.checked;prev()};
+    $('#pGo').onclick=async()=>{ const rows=A.rows.filter(r=>!r.err); if(!rows.length) return;
+      try{ const r=await HOST.admin.addRows(rows,A.over); toast(`新しく ${r.fresh}人、書きかえ ${r.changed}人`); A.paste=''; $('#pT').value=''; prev(); }catch(e){ toast(e.message); } };
+    $('#cGo').onclick=()=>{ const f=$('#cFrom').value, to=$('#cTo').value.trim(); if(!to) return toast('新しいクラス名を入れてください');
+      confirmModal(`「${f}」を「${to}」に書きかえますか?`,'このクラスの全員のクラス名が変わります。','書きかえる',async()=>{ const n=await HOST.admin.renameClass(f,to); toast(`${n}人を書きかえました`); renderAdd(Object.assign(b,{innerHTML:''})); }); };
+  }
+  prev();
+  function prev(){
+    const acc=HOST.acc(); A.rows=parseRoster(A.paste);
+    let nNew=0,nUp=0,nErr=0;
+    const rows=A.rows.map(r=>{ let st,cl;
+      if(r.err){ st=r.err; cl='st-err'; nErr++; }
+      else { const a=acc[r.sid];
+        if(!a){ st='新しく登録'; cl='st-new'; nNew++; }
+        else { const ch=[]; if((a.c||'')!==r.c) ch.push(`クラス ${esc(a.c||'なし')}→${esc(r.c||'なし')}`); if(a.n!==r.n) ch.push(A.over?`名前 ${esc(a.n)}→${esc(r.n)}`:`名前がちがう(いまは ${esc(a.n)})`);
+          if((a.c||'')!==r.c||(A.over&&a.n!==r.n)){ st=ch.join('、'); cl='st-up'; nUp++; } else { st=ch.length?ch.join('、')+'(そのまま)':'変更なし'; cl='st-same'; } } }
+      return `<tr><td>${esc(r.sid||'')}</td><td>${esc(r.n||r.raw)}</td><td>${esc(r.c||'')}</td><td class="${cl}">${st}</td></tr>`; });
+    $('#pPrev').innerHTML=A.rows.length?`<p class="note">新しく登録 <b>${nNew}</b>人 ・ 書きかえ <b>${nUp}</b>人${nErr?` ・ <span class="st-err">読めない行 ${nErr}</span>`:''}</p>
+      <div class="tbl" style="max-height:40vh;margin-top:6px"><table><thead><tr><th>学籍番号</th><th>名前</th><th>クラス</th><th>どうなるか</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`:'';
+    $('#pGo').disabled=!(nNew+nUp);
+  }
 }
-function hostRender(){
-  if(!HOST||!$('#pl')) return;
-  const acc=HOST.acc(), list=HOST.seated();
-  $('#sN').textContent=list.length+'人'; $('#sJ').textContent=yen(JP)+'枚';
-  $('#pl').innerHTML=list.map(s=>`<li>${esc(acc[s].n)}<small>${esc(s)}</small><b>${yen(acc[s].seat.a)}枚</b></li>`).join('')||'<li><small>まだ誰もいません</small></li>';
-  $('#fd').innerHTML=feed.map(f=>`<li>${esc(f.n)}<span class="tag">${esc(f.m)}</span><small>${f.jp?'ジャックポット!':f.bs?(f.bs==='big'?'BIGボーナス':'REGボーナス'):''}</small><b class="w">${f.pay?'+'+yen(f.pay):''}</b></li>`).join('')||'<li><small>まだありません</small></li>';
+/* ---- 掃除決め(デザイン⑥開始・⑦結果) ---- */
+const CL_ST={ready:'準備OK',playing:'進行中',done:'結果が出ました',banking:'貯金に入れています',banked:'貯金に入れました',cancel:'中止'};
+// エアホッケーから始める掃除決めは、エアホッケーが終わるまでエアホッケーを開く
+const clStage=c=>c.pre==='airhockey'&&!(c.ah&&c.ah.done)?{f:'airhockey.html',n:'エアホッケー'}:{f:'roulettepark.html',n:c.gn||'ルーレットパーク'};
+const cleanGameUrl=c=>{ const u=new URL(clStage(c).f,location.href); u.searchParams.set('clean',c.id); if(MG.LOCAL) u.searchParams.set('local','1'); return u.href; };
+const clActive=()=>Object.values(HOST.clean.all()).filter(c=>['ready','playing','done','banking'].includes(c.st)).sort((a,b)=>b.at-a.at);
+// 小テストの点数:1行に「学籍番号(または名前) 点数」
+function parseScores(t){
+  const acc=HOST.acc(), byName={}; Object.keys(acc).forEach(s=>{ byName[String(acc[s].n).replace(/\s+/g,'')]=s; });
+  const out={}, bad=[];
+  String(t||'').split(/\r?\n/).forEach(line=>{ const raw=line.replace(/　/g,' ').trim(); if(!raw) return;
+    const m=raw.match(/^(.+?)[\t ,，]+(-?\d+(?:\.\d+)?)\s*点?\s*$/); if(!m){ bad.push(raw); return; }
+    const key=m[1].trim(), sid=acc[normSid(key)]?normSid(key):byName[key.replace(/\s+/g,'')];
+    if(!sid){ bad.push(raw); return; } out[sid]=+m[2]; });
+  return {out,bad};
+}
+function clMedals(sids){
+  const C=A.cl, m={}; let sc=null;
+  if(C.med==='score') sc=parseScores(C.paste);
+  sids.forEach(sid=>{ let v=C.med==='same'?Math.round(+C.n||0):(sc.out[sid]!=null?Math.round(sc.out[sid]*(+C.mul||0)):null); m[sid]=v; });
+  return {m,sc};
+}
+function renderClean(b){
+  const C=A.cl, act=clActive();
+  if(C.view){ const c=HOST.clean.all()[C.view]; if(c&&c.res) return renderCleanResult(b,c); C.view=''; }
+  const acc=HOST.acc(), cs=classes(), on=HOST.onlineSids();
+  if(C.cls==null||!cs.includes(C.cls)){ C.cls=cs[0]||''; C.sel={}; accList().filter(a=>(a.c||'')===C.cls).forEach(a=>C.sel[a.sid]=true); }
+  const people=accList().filter(a=>(a.c||'')===C.cls);
+  const busy=sid=>{ const a=acc[sid]; return a&&a.cl&&HOST.clean.all()[a.cl]&&['ready','playing','done','banking'].includes(HOST.clean.all()[a.cl].st); };
+  const chosen=people.filter(p=>C.sel[p.sid]&&!busy(p.sid)).map(p=>p.sid);
+  const {m,sc}=clMedals(chosen), noScore=chosen.filter(s=>m[s]==null), low=chosen.filter(s=>m[s]!=null&&m[s]<10), seated=chosen.filter(s=>acc[s].seat);
+  const ses=act.map(c=>{ const n=Object.keys(c.m||{}).length;
+    return `<div class="ses"><b>${c.pre==='airhockey'?'エアホッケー → ':''}${esc(c.gn)}</b><span>${esc(c.cls||'')} ・ ${n}人 ・ ${c.games}ゲーム ・ 掃除 ${c.clean}人${c.room?` ・ ルーム ${esc(c.room)}`:''}</span>
+      <span class="st ${c.st==='done'?'done':c.st==='ready'?'ready':''}">${CL_ST[c.st]||c.st}</span><span class="sp"></span>
+      ${c.st==='ready'||c.st==='playing'?`<a class="btn pri" href="${esc(cleanGameUrl(c))}" target="_blank" rel="noopener">${esc(clStage(c).n)}を開く</a>`:''}
+      ${c.res?`<button class="btn gold" data-cv="${esc(c.id)}">結果と貯金</button>`:''}
+      ${c.st!=='banking'?`<button class="btn sm danger" data-cx="${esc(c.id)}">中止</button>`:''}</div>`; }).join('');
+  b.innerHTML=`${ses}<div class="cl-wrap">
+    <section class="box"><div class="tool"><label>1 クラス<select id="clCls">${cs.map(c=>`<option value="${esc(c)}"${c===C.cls?' selected':''}>${esc(c||'(クラスなし)')}(${accList().filter(a=>(a.c||'')===c).length}人)</option>`).join('')}</select></label>
+      <button class="btn sm" id="clAll">全員を選ぶ</button><button class="btn sm" id="clOn" style="border-color:#1f6f3a;color:#1f6f3a">ログインしている人だけ</button><button class="btn sm" id="clNone">全員外す</button>
+      <span class="sp"></span><b>参加 <span style="color:#c8102e;font-size:22px">${chosen.length}人</span> / ${people.length}人</b></div>
+      <p class="note">2 欠席者のチェックを外す(<span style="color:#1f9a4a">●</span>はいまメダルゲームにログインしている人)</p>
+      <div class="cl-grid" id="clGrid">${people.map(p=>{ const bz=busy(p.sid), sel=C.sel[p.sid]&&!bz;
+        return `<label class="cl-p ${sel?'on':''} ${bz?'dis':''}"><input type="checkbox" data-sid="${esc(p.sid)}" ${sel?'checked':''} ${bz?'disabled':''}><span class="nm">${esc(p.n)}</span>${bz?'<small>掃除決め中</small>':p.seat?'<small>遊び中</small>':''}<span class="od ${on.has(p.sid)?'y':''}">●</span></label>`; }).join('')||'<p class="note">このクラスには誰もいません</p>'}</div></section>
+    <section class="box cl-side"><b>3 設定</b>
+      <label class="fld">ゲーム<select id="clGame"><option value=""${C.pre?'':' selected'}>ルーレットパークだけ</option><option value="airhockey"${C.pre==='airhockey'?' selected':''}>エアホッケー → ルーレットパーク</option></select></label>
+      ${C.pre==='airhockey'?'<p class="note">エアホッケーでメダルを増やしてから、先生が「ルーレットパークへ進む」を押すと、そのときの枚数でルーレットパークが始まります。</p>':''}
+      <div class="fld">配るメダル<div class="seg"><button id="clSame" aria-pressed="${C.med==='same'}">全員同じ枚数</button><button id="clScore" aria-pressed="${C.med==='score'}">小テストの点数</button></div></div>
+      ${C.med==='same'?`<label class="fld">1人あたりの枚数<input id="clN" type="number" min="10" step="10" value="${esc(C.n)}"></label>`
+        :`<label class="fld">点数を貼り付け(1行に「学籍番号 点数」か「名前 点数」)<textarea id="clPaste" rows="4" placeholder="2401001	85&#10;2401002	72">${esc(C.paste)}</textarea></label>
+        <label class="fld" style="flex-direction:row;align-items:center;gap:8px">点数 ×<input id="clMul" type="number" min="0" step="0.5" value="${esc(C.mul)}" style="width:5em">枚 を配る</label>
+        <p class="note">${Object.keys(sc.out).length}人分を読みました${sc.bad.length?`<br><span class="st-err">読めなかった行:${sc.bad.slice(0,3).map(esc).join('/')}${sc.bad.length>3?' ほか':''}</span>`:''}${noScore.length?`<br><span class="st-err">点数がない参加者 ${noScore.length}人:${noScore.slice(0,4).map(s=>esc(acc[s].n)).join('・')}${noScore.length>4?' ほか':''}(10枚にします)</span>`:''}</p>`}
+      <div class="grid2" style="grid-template-columns:1fr 1fr;gap:10px"><label class="fld">ゲーム数<input id="clGames" type="number" min="1" max="10" value="${esc(C.games)}"></label><label class="fld">掃除の人数<input id="clClean" type="number" min="1" max="20" value="${esc(C.clean)}"></label></div>
+      <p class="note">${low.length?`10枚未満になる ${low.length}人 は10枚にします。`:''}${seated.length?`フリーモードで遊んでいる ${seated.length}人 は、精算して貯金にもどしてから掃除決めに入ります。`:'フリーモードで遊んでいる参加者は、精算して貯金にもどしてから掃除決めに入ります。'}掃除決めのメダルは、この日だけのメダルです(貯金からは出しません)。</p>
+      <button class="cl-go" id="clGo" ${chosen.length?'':'disabled'}>掃除決めをはじめる</button></section></div>
+    ${renderCleanHist()}`;
+  const rer=()=>renderClean(b);
+  $('#clCls').onchange=e=>{ C.cls=e.target.value; C.sel={}; accList().filter(a=>(a.c||'')===C.cls).forEach(a=>C.sel[a.sid]=true); rer(); };
+  $('#clAll').onclick=()=>{ people.forEach(p=>C.sel[p.sid]=true); rer(); };
+  $('#clNone').onclick=()=>{ people.forEach(p=>C.sel[p.sid]=false); rer(); };
+  $('#clOn').onclick=()=>{ people.forEach(p=>C.sel[p.sid]=on.has(p.sid)); rer(); if(!on.size) toast('いまログインしている人はいません'); };
+  $('#clGrid').onchange=e=>{ const i=e.target.closest('input[data-sid]'); if(!i) return; C.sel[i.dataset.sid]=i.checked; rer(); };
+  $('#clSame').onclick=()=>{ C.med='same'; rer(); }; $('#clScore').onclick=()=>{ C.med='score'; rer(); };
+  const bindN=(id,k)=>{ const el=$(id); if(el) el.onchange=e=>{ C[k]=e.target.value; rer(); }; };
+  $('#clGame').onchange=e=>{ C.pre=e.target.value; rer(); };
+  bindN('#clN','n'); bindN('#clMul','mul'); bindN('#clGames','games'); bindN('#clClean','clean');
+  const pa=$('#clPaste'); if(pa) pa.onchange=e=>{ C.paste=e.target.value; rer(); };
+  b.querySelectorAll('[data-cv]').forEach(x=>x.onclick=()=>{ C.view=x.dataset.cv; rer(); });
+  b.querySelectorAll('[data-cx]').forEach(x=>x.onclick=()=>{ const c=HOST.clean.all()[x.dataset.cx];
+    confirmModal('この掃除決めを中止しますか?',`参加者 ${Object.keys(c.m||{}).length}人 の「掃除決め中」を外します。${c.st==='done'?'<b>残りのメダルは貯金に入りません。</b>':'配ったメダルはなくなります。'}`,'中止する',async()=>{ await HOST.clean.cancel(c.id); toast('中止しました'); }); });
+  $('#clGo').onclick=()=>{
+    const games=Math.max(1,Math.min(10,Math.floor(+C.games||5))), clean=Math.max(1,Math.min(20,Math.floor(+C.clean||1)));
+    if(clean>=chosen.length) return toast('掃除の人数は、参加者より少なくしてください');
+    if(C.med==='same'&&!(+C.n>=10)) return toast('配るメダルは10枚以上にしてください');
+    const mm={}; chosen.forEach(s=>mm[s]=Math.max(10,m[s]==null?10:m[s]));
+    confirmModal(`${chosen.length}人で掃除決めをはじめますか?`,`${esc(C.cls)} ・ ${C.pre==='airhockey'?'エアホッケー → ':''}ルーレットパーク ${games}ゲーム ・ 掃除 ${clean}人${seated.length?`<br>遊んでいる ${seated.length}人 は精算して貯金にもどします。`:''}<br>このあと、先生のPCで${C.pre==='airhockey'?'エアホッケー':'ルーレットパーク'}を開きます。`,'はじめる',async()=>{
+      const pre=C.pre==='airhockey'?'airhockey':'';
+      const c=await HOST.clean.create({g:'roulettepark',gn:'ルーレットパーク',cls:C.cls,m:mm,games,clean});
+      if(pre){ await HOST.clean.update(c.id,{pre}); c.pre=pre; }
+      window.open(cleanGameUrl(c),'_blank'); toast(`${pre?'エアホッケー':'ルーレットパーク'}を開きました`); });
+  };
+}
+function renderCleanHist(){
+  const list=Object.values(HOST.clean.all()).filter(c=>c.st==='banked'||c.st==='cancel').sort((a,b)=>b.at-a.at).slice(0,12);
+  if(!list.length) return '';
+  const acc=HOST.acc();
+  return `<div class="box" style="margin-top:14px"><h2>これまでの掃除決め</h2><div class="tbl" style="max-height:40vh"><table><thead><tr><th>日時</th><th>クラス</th><th>ゲーム</th><th class="r">人数</th><th>掃除当番</th><th>状態</th><th></th></tr></thead><tbody>
+    ${list.map(c=>`<tr><td>${fmtT(c.at)}</td><td>${esc(c.cls||'')}</td><td>${esc(c.gn)}</td><td class="r">${Object.keys(c.m||{}).length}</td><td>${c.res?(c.res.cl||[]).map(s=>esc(acc[s]?acc[s].n:s)).join('・'):''}</td><td>${CL_ST[c.st]}</td><td>${c.res?`<button class="btn sm" data-cv="${esc(c.id)}">結果</button>`:''}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function renderCleanResult(b,c){
+  const acc=HOST.acc(), f=c.res.f||{}, cl=c.res.cl||[], nm=s=>esc(acc[s]?acc[s].n:s);
+  const all=Object.keys(f).sort((x,y)=>f[x]-f[y]), n=Object.keys(c.m||{}).length;
+  b.innerHTML=`<div class="tool"><button class="btn sm" id="crBack">← 掃除決めにもどる</button></div>
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:12px"><span class="a-title" style="font-size:28px">掃除決め 結果</span><span class="note">${esc(c.cls||'')} ・ ${esc(c.gn)} ${c.games}ゲーム終了 ・ 参加${n}人 ・ ${fmtT(c.end||c.at)}</span></div>
+    <div class="res-wrap"><section class="res-dark"><h3>今日の掃除当番</h3><span style="font-size:14px;color:#d8cdb6">メダルが少なかった${cl.length}人</span>
+      ${cl.map((s,i)=>`<div class="res-c"><span>${i+1}人目</span><b>${nm(s)}</b><em>${yen(f[s])}枚</em></div>`).join('')}</section>
+      <section class="box"><b>全員の残りメダル(少ない順)</b><div class="res-all" style="margin-top:10px">${all.map((s,i)=>`<div class="${cl.includes(s)?'c':''}"><span>${i+1}</span><i>${nm(s)}</i><b>${yen(f[s])}枚</b></div>`).join('')}</div>
+      <div class="bankbar"><div><b style="font-size:17px">残ったメダルを、全員の貯金にまるごと入れます</b><br>掃除当番の人も、残った分は貯金になります。入れたあとは、フリーモードで遊べます。</div>
+      ${c.st==='banked'?'<b style="color:#0f8a66">貯金に入れました</b>':`<button class="cl-go" id="crBank" style="padding:0 26px;font-size:20px" ${c.st==='done'||c.st==='banking'?'':'disabled'}>貯金に入れる(${all.length}人)</button>`}</div></section></div>`;
+  $('#crBack').onclick=()=>{ A.cl.view=''; renderClean(b); };
+  const bk=$('#crBank'); if(bk) bk.onclick=async()=>{ bk.disabled=true; bk.textContent='入れています…'; try{ const k=await HOST.clean.bank(c.id); toast(`${k}人の貯金に入れました`); }catch(e){ toast(e.message); bk.disabled=false; } };
 }
 
-
-/* ---------- ロビー ---------- */
-const MINFO={
-  wide:{op:'ボタン1つ・5リール',memo:'モンスターがあつまるRPGの台。左から、となりの列のどこかに同じモンスターがいればつながる。たまご3つでフリースピン(上乗せあり・WILDで配当2倍)。',w:3,bet:'1〜100枚',hd:'#0a1038',html:`<div class="hdwl"><img class="dr" src="dragonlegion/assets/wl_dragon_win.webp" alt=""><div class="tt"><b>DRAGON</b><b>LEGION</b></div><img class="eg" src="dragonlegion/assets/wl_egg.webp" alt=""></div>`},
-  rocket:{op:'ボタン1つ・3リール＋液晶',memo:'ロケット3つで発射、7が3つでスーパー発射。連チャンで雲の上・宇宙・月(38万km)まで上がっていく。',w:4,bet:'1〜100枚',hd:'#05070f',html:`<div class="hdrk"><div class="tt"><b>連チャンロケット</b><b>MOON SHOT</b></div></div>`},
-  battle:{op:'レバー＋ボタン3つ＋大きな液晶',memo:'冒険者ギルドのRPG。仲間とダンジョンにもぐり、敵を倒せばボーナス。5ラインのどこでそろってもよい。依頼書のランクに注目！',w:3,bet:'3〜30枚',hd:'#120b07',html:`<div class="hdgr"><img src="guildrush/assets/gr_rei_win.webp" alt=""><div class="tt"><b>GUILD RUSH</b><b>冒険者ギルド</b></div></div>`}
-};
-// 台のページ(このフォルダからの場所)
-const MURL={wide:'dragonlegion/',rocket:'rocket/',battle:'guildrush/'};
-async function openLobby(){
-  setTheme(null); bgmPlay('lobby'); G.scr++; G.screen='lobby';
-  $('#stage').innerHTML=topbarHtml(NAME)+`<div class="lobby"><h1>どれで遊ぶ？</h1>
-    <div class="mgrid">${MLIST.map(m=>{const i=MINFO[m.id];return `<button class="mcard" data-m="${m.id}"><div class="hd" style="background:${i.hd}">${i.html?i.html:i.img?`<img src="${ASSET}${i.img}.webp" alt="" style="width:100%;height:100%;object-fit:cover;object-position:62% 24%">`:i.s.map(k=>sym(k,46)).join('')}</div>
-      <div class="bd"><span class="tag ${m.style}">${m.style==='pop'?'ポップ':'シック'}</span><div class="nm">${esc(m.name)}</div><div class="op">${i.op}</div><div class="memo">${i.memo}</div>
-      <div class="wave">波 ${[1,2,3,4,5].map(n=>`<i class="${n<=i.w?'on':''}"></i>`).join('')}</div><div class="op">BET ${i.bet}</div>${m.id==='jackpot'?'<div class="jp" id="lobJp">JP —</div>':''}<div class="now" id="now_${m.id}"></div></div></button>`}).join('')}
-      <div class="mcard" style="justify-content:center;align-items:center;padding:16px;gap:10px;text-align:center"><div>${chr('happy',110)}</div><div style="font-weight:800">メダまる</div><div class="op">どの台にしようかな？</div></div></div></div>`;
-  bindTop();
-  $('#stage').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ location.href=MURL[b.dataset.m]+location.search; });
-  if(MBY.jackpot){ const r=await info('jackpot'); if(r.ok&&$('#lobJp')) $('#lobJp').textContent=`JP ${yen(G.jp)}枚`; }
+/* ---- 設定・バックアップ ---- */
+function renderSet(b){
+  const kt=MG.keys.text();
+  b.innerHTML=`<div class="box"><h2>鍵(このPCに保存されています)</h2>
+    <p class="note">別のPCで同じ名簿を使うときは、この鍵をそのPCの「はじめの準備」に貼り付けます。<b>学生には見せないでください。</b>なくすと名簿にたどりつけなくなるので、どこかに控えておいてください。</p>
+    <p class="keyline" id="kv">●●●●●●●●●●●●(「表示」を押すと出ます)</p>
+    <div class="tool"><button class="btn" id="kShow">表示</button><button class="btn" id="kCopy">コピー</button><span class="sp"></span><button class="btn danger" id="kOut">このPCから鍵を消す</button></div></div>
+  <div class="box"><h2>バックアップ</h2><p class="note">名簿・貯金・履歴をファイルに保存します。ふだんはFirebaseに自動で保存されています。学期の終わりなどに念のため保存しておくと安心です。</p>
+    <div class="tool"><button class="btn" id="bSave">ファイルに保存</button><label class="btn">ファイルから読み込む<input type="file" id="bLoad" accept=".json" hidden></label></div></div>
+  <div class="box"><h2>Firebaseのルール(おすすめ)</h2>
+    <p class="note">メダルゲームのデータは、鍵を知らないと場所が分からない作りです。データベースの一番上(ルート)が誰でも読める設定だと、場所を一覧で見られてしまいます。Firebaseのコンソール →Realtime Database→ルール で、一番上の <b>".read": true</b> をやめて、使っている場所ごとに許可してください。下は例です(「データ」タブで一番上にある名前を全部書き出してください)。</p>
+    <pre class="rules">{
+  "rules": {
+    "rooms": { ".read": true, ".write": true },
+    "mg": {
+      "$space": { ".read": true, ".write": true }
+    }
+  }
+}</pre><p class="note">"mg" の中は「場所の名前を知っている人だけ」読めます(一覧は見られません)。</p></div>`;
+  $('#kShow').onclick=()=>{$('#kv').textContent=kt};
+  $('#kCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText(kt); toast('コピーしました'); }catch(e){ $('#kv').textContent=kt; toast('表示した鍵を選んでコピーしてください'); } };
+  $('#kOut').onclick=()=>confirmModal('このPCから鍵を消しますか?','データは消えません。鍵を控えていないと、このPCから名簿に入れなくなります。','鍵を消す',async()=>{ MG.keys.clear(); location.reload(); });
+  $('#bSave').onclick=async()=>{ const d=await HOST.admin.exportAll(); const blob=new Blob([JSON.stringify(d)],{type:'application/json'}), u=URL.createObjectURL(blob), el=document.createElement('a');
+    const t=new Date(); el.href=u; el.download=`メダルゲーム_${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}.json`; document.body.appendChild(el); el.click(); el.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); };
+  $('#bLoad').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ let d=null; try{ d=JSON.parse(r.result); }catch(x){}
+    if(!d||!d.acc) return toast('メダルゲームのバックアップではないようです');
+    confirmModal('バックアップを読み込みますか?',`${Object.keys(d.acc).length}人分。いまの名簿・貯金・履歴は、ファイルの内容に置きかわります。`,'読み込む',async()=>{ await HOST.admin.importAll(d); toast('読み込みました'); }); }; r.readAsText(f); e.target.value=''; };
 }
 
-
-/* ---------- はじめる ---------- */
-if(MG.qs.get('mg')) padMain(); else hostMain();
+/* =========================================================
+   iPad
+   ========================================================= */
+let PAD=null;
+const U={step:'sid',sid:'',pin:'',pin1:'',kb:false,err:'',busy:false,view:undefined,games:{},bring:null,lost:false};
+async function padMain(){
+  document.body.className='pad'; document.documentElement.classList.add('padmode');
+  const vp=document.querySelector('meta[name=viewport]'); vp.content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+  app.innerHTML=`<header class="p-top"><div class="p-logo">${medalSvg(34)}メダルゲーム</div><span class="sp"></span><span class="p-who" id="pWho"></span></header>
+    <div class="p-net" id="pNet" hidden>通信が切れています。Wi-Fiを確認してください</div><main class="p-main" id="pm"><div class="pc empty">接続しています…</div></main>`;
+  try{ PAD=await MG.startPad(); }catch(e){ $('#pm').innerHTML=`<div class="pc empty">つながりません。ページを読み込みなおしてください<br><small>${esc(e.message)}</small></div>`; return; }
+  PAD.onConn(ok=>{ $('#pNet').hidden=ok; });
+  PAD.onGames(g=>{ U.games=g; if(U.view) padRender(); });
+  watchView();
+}
+let viewOff=null;
+function watchView(){
+  if(viewOff) viewOff(); U.view=undefined;
+  if(!PAD.vk()){ U.view=null; padRender(); return; }
+  let first=true;
+  viewOff=PAD.onView(v=>{
+    if(!v){ if(first){ setTimeout(()=>{ if(U.view===undefined){ PAD.logout(); U.view=null; padRender(); } },3000); first=false; return; }
+      PAD.logout(); U.view=null; U.lost=true; U.step='sid'; padRender(); return; }
+    first=false; U.view=v; padRender(); });
+}
+function padRender(){
+  const m=$('#pm'); if(!m) return;
+  const v=U.view;
+  $('#pWho').innerHTML=v?`${esc(v.n)} さん <button class="pbtn sm ghost" id="lo">ログアウト</button>`:'';
+  if(v){ const lo=$('#lo'); lo.onclick=()=>{ if(confirm('ログアウトしますか?')){ PAD.logout(); U.step='sid'; U.sid='';U.pin=''; watchView(); } }; }
+  if(v===undefined){ m.innerHTML='<div class="pc empty">読み込み中…</div>'; return; }
+  if(!v) return renderLogin(m);
+  renderHome(m);
+}
+/* ---- ログイン ---- */
+function renderLogin(m){
+  const st=U.step, pinStep=st!=='sid';
+  const title={sid:'ログイン',pin:'ログイン',set1:'合言葉を決めよう',set2:'もう一度入れてください'}[st];
+  const lead={sid:'学籍番号を入れて「次へ」を押してください。',pin:'4桁の合言葉を入れてください。',
+    set1:'はじめてのログインです。自分で4桁の数字を決めてください。忘れないようにしてね。',set2:'確認のため、同じ4桁をもう一度入れてください。'}[st];
+  const val=pinStep?(st==='set2'?U.pin1b||'':st==='set1'?U.pin1||'':U.pin):U.sid;
+  const dots=`<div class="dots">${[0,1,2,3].map(i=>`<i class="${i<val.length?'f':''}"></i>`).join('')}</div>`;
+  m.innerHTML=`<div class="login"><div>${medalSvg(84)}</div><h1>${title}</h1><p>${lead}</p><div class="pc">
+    ${U.lost?'<p class="perr">合言葉がリセットされたので、ログインしなおしてください</p>':''}
+    <div class="flds">
+      <div class="pf ${!pinStep?'on':''}" id="fSid"><small>学籍番号</small>${!pinStep&&U.kb?`<input id="sidIn" value="${esc(U.sid)}" autocomplete="off" autocapitalize="characters" spellcheck="false">`:`<span class="v">${esc(U.sid)}</span>`}</div>
+      ${pinStep?`<div class="pf on"><small>合言葉</small>${dots}</div>`:''}
+    </div>
+    <div class="keys" ${!pinStep&&U.kb?'hidden':''}>${!pinStep?'<button class="al" data-k="N">N</button><button class="al" data-k="A">A</button><button class="fn" data-k="c">けす</button>':''}${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}${pinStep?'<button class="fn" data-k="c">けす</button><button data-k="0">0</button>':'<button data-k="0" class="w2">0</button>'}<button class="fn" data-k="b">1文字<br>もどす</button></div>
+    <p class="perr">${esc(U.err)}</p>
+    <div class="mrow" style="justify-content:space-between">${pinStep?'<button class="pbtn sm" id="bk">もどる</button>':`<button class="pbtn sm ghost" id="kb">${U.kb?'数字キーで入力':'ほかの英字はこちら'}</button>`}
+      ${!pinStep?`<button class="pbtn go" id="nx" ${U.busy?'disabled':''}>${U.busy?'確認中…':'次へ'}</button>`:''}</div></div></div>`;
+  m.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>key(b.dataset.k));
+  const nx=$('#nx'); if(nx) nx.onclick=checkSid;
+  const kb=$('#kb'); if(kb) kb.onclick=()=>{U.kb=!U.kb;padRender();const i=$('#sidIn');if(i)i.focus()};
+  const si=$('#sidIn'); if(si){ si.oninput=e=>{U.sid=normSid(e.target.value)}; si.onkeydown=e=>{if(e.key==='Enter')checkSid()}; }
+  const bk=$('#bk'); if(bk) bk.onclick=()=>{U.step='sid';U.pin='';U.pin1='';U.pin1b='';U.err='';padRender()};
+}
+function key(k){
+  if(U.busy) return; U.err=''; U.lost=false;
+  const st=U.step, f=st==='sid'?'sid':st==='pin'?'pin':st==='set1'?'pin1':'pin1b';
+  let v=U[f]||'';
+  if(k==='c') v=''; else if(k==='b') v=v.slice(0,-1); else if(st==='sid'){ if(v.length<20) v+=k; } else if(v.length<4) v+=k;
+  U[f]=v; padRender();
+  if(st!=='sid'&&v.length===4) setTimeout(pinDone,150);
+}
+async function checkSid(){
+  U.sid=normSid(U.sid); if(!U.sid){ U.err='学籍番号を入れてください'; return padRender(); }
+  U.busy=true; padRender();
+  const r=await PAD.req('check',{sid:U.sid}); U.busy=false;
+  if(!r.ok){ U.err=r.msg; return padRender(); }
+  U.step=r.d&&r.d.ps?'pin':'set1'; U.pin='';U.pin1='';U.pin1b=''; padRender();
+}
+async function pinDone(){
+  if(U.step==='set1'){ U.step='set2'; return padRender(); }
+  if(U.step==='set2'&&U.pin1b!==U.pin1){ U.err='1回目とちがいます。最初から入れなおしてください'; U.step='set1'; U.pin1='';U.pin1b=''; return padRender(); }
+  const pin=U.step==='pin'?U.pin:U.pin1;
+  U.busy=true; padRender();
+  const r=await PAD.req('login',{sid:U.sid,pin,set:U.step==='set2'}); U.busy=false;
+  if(!r.ok){ U.err=r.msg; if(r.d&&r.d.needSet){ U.step='set1'; } U.pin='';U.pin1='';U.pin1b=''; return padRender(); }
+  PAD.setVk(r.d.vk); U.step='sid'; U.pin='';U.pin1='';U.pin1b=''; U.err='';
+  if(r.msg) toast(r.msg); watchView();
+}
+/* ---- ホーム(貯金と稼働中のゲーム) ---- */
+function goGame(gid){ const g=U.games[gid]; if(!g) return toast('このゲームはいま止まっています');
+  const u=new URL(g.url); u.searchParams.set('mg',PAD.pub); if(MG.LOCAL) u.searchParams.set('local','1'); location.href=u.href; }
+function renderHome(m){
+  const v=U.view, s=v.seat, games=U.games, ids=Object.keys(games).filter(id=>!games[id].clean).sort((a,b)=>(games[a].t||0)-(games[b].t||0));
+  const clId=v.cl?Object.keys(games).find(id=>games[id].clean===v.cl):null;
+  const live=s&&games[s.g];
+  let seat='';
+  if(s) seat=`<div class="seatbar">${medalSvg(52)}<div class="t">${esc(s.gn)}に <b>${yen(s.a)}</b>枚 あります${s.leave?'<br><small>払い戻しが終わったら、自動で貯金にもどります</small>':live?'':'<br><small>このゲームはいま止まっています</small>'}</div>
+    ${live&&!s.leave?`<button class="pbtn go" id="sGo">続ける</button>`:''}${s.leave?'':`<button class="pbtn gold" id="sBack">貯金にもどす</button>`}</div>`;
+  const cards=ids.map(id=>{ const g=games[id], here=s&&s.g===id, block=s&&!here||!!v.cl;
+    return `<div class="game">${art(g.art)}<b>${esc(g.n)}</b><small>${here?`${yen(s.a)}枚 持ち込み中`:block?(v.cl?'掃除決めに参加中':'ほかのゲームで遊んでいます'):'稼働中'}</small>
+      <button class="pbtn ${here?'go':'gold'}" data-g="${esc(id)}" ${block||(here&&s.leave)?'disabled':''}>${here?'続ける':'遊ぶ'}</button></div>`; }).join('');
+  const lg=(v.lg||[]).map(x=>`<li><span>${fmtT(x.t)}</span><span>${esc(x.w)}</span><b class="${x.d>0?'p':x.d<0?'m':''}">${x.d>0?'+':''}${yen(x.d)}</b></li>`).join('');
+  m.innerHTML=`<div class="pc bankcard">${medalSvg(96)}<div><div class="hi">${esc(v.n)} さん</div><div class="lbl">貯金</div><div class="num">${yen(v.b)}<small>枚</small></div></div></div>
+    ${seat?`<div style="margin-top:16px">${seat}</div>`:''}
+    ${v.cl?`<div style="margin-top:16px" class="seatbar">${art(clId?games[clId].art:'roulette')}<div class="t">掃除決めに参加します${clId?`<br><small>${esc(games[clId].n)}が始まっています</small>`:'<br><small>先生がゲームを開くまで待ってね</small>'}</div>${clId?'<button class="pbtn go" id="clGo">参加する</button>':''}</div>`:''}
+    <div class="sec">稼働中のゲーム<small>同時に遊べるのは1つだけ</small></div>
+    ${ids.length?`<div class="games">${cards}</div>`:'<div class="pc empty">いま動いているゲームはありません<br><small>先生がゲームを始めると、ここに出ます</small></div>'}
+    ${lg?`<div class="sec">さいきんの記録</div><div class="pc"><ul class="hist">${lg}</ul></div>`:''}
+    <div id="pmod"></div>`;
+  m.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const id=b.dataset.g; if(s&&s.g===id) goGame(id); else openBring(id); });
+  const sg=$('#sGo'); if(sg) sg.onclick=()=>goGame(s.g);
+  const cg=$('#clGo'); if(cg) cg.onclick=()=>goGame(clId);
+  const sb=$('#sBack'); if(sb) sb.onclick=async()=>{ if(!confirm(`${s.gn}の ${yen(s.a)}枚 を貯金にもどしますか?`)) return;
+    sb.disabled=true; const r=await PAD.req('quit',{},live?s.g:'*'); toast(r.msg||(r.ok?'もどしました':'できませんでした')); sb.disabled=false; };
+  if(U.bring) renderBring();
+}
+/* ---- 持ち込む枚数 ---- */
+function openBring(gid){ U.bring={gid,amt:Math.min(100,U.view.b||0)}; renderBring(); }
+function renderBring(){
+  const B=U.bring, g=U.games[B.gid], v=U.view, box=$('#pmod'); if(!box) return;
+  if(!g){ U.bring=null; box.innerHTML=''; return; }
+  const max=v.b||0; B.amt=Math.max(0,Math.min(max,Math.floor(+B.amt||0)));
+  box.innerHTML=`<div class="pmodal"><div class="pc bring"><h2>${art(g.art)}${esc(g.n)}</h2><div class="have">貯金 ${yen(max)}枚 ・ 持ち込む枚数を選んでください</div>
+    <div class="amt"><input id="bIn" type="number" inputmode="numeric" min="0" max="${max}" value="${B.amt}" aria-label="持ち込む枚数"><span>枚</span></div>
+    <div class="steps">${[-100,-10,10,100].map(d=>`<button data-d="${d}">${d>0?'+':'−'}${Math.abs(d)}</button>`).join('')}</div>
+    <div class="quick">${[100,300,500].map(n=>`<button data-q="${n}" ${n>max?'disabled':''}>${n}枚</button>`).join('')}<button class="all" data-q="${max}">全部</button></div>
+    ${max<1?'<p class="perr">貯金がありません。掃除モードやほかのゲームでメダルをためよう</p>':''}
+    <p class="perr" id="bErr"></p>
+    <div class="mrow"><button class="pbtn" id="bNo">やめる</button><button class="pbtn go" id="bGo" ${B.amt<1?'disabled':''}>${yen(B.amt)}枚 持ち込んで遊ぶ</button></div></div></div>`;
+  const inp=$('#bIn');
+  inp.oninput=()=>{ B.amt=Math.max(0,Math.min(max,Math.floor(+inp.value||0))); $('#bGo').textContent=`${yen(B.amt)}枚 持ち込んで遊ぶ`; $('#bGo').disabled=B.amt<1; };
+  inp.onblur=()=>{ inp.value=B.amt; };
+  box.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{ B.amt+= +b.dataset.d; renderBring(); });
+  box.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ B.amt= +b.dataset.q; renderBring(); });
+  $('#bNo').onclick=()=>{ U.bring=null; box.innerHTML=''; };
+  $('#bGo').onclick=async()=>{ const go=$('#bGo'); go.disabled=true; go.textContent='持ち込んでいます…';
+    const r=await PAD.req('enter',{amt:B.amt},B.gid);
+    if(!r.ok){ $('#bErr').textContent=r.msg; go.disabled=false; go.textContent=`${yen(B.amt)}枚 持ち込んで遊ぶ`; return; }
+    const gid=B.gid; U.bring=null; goGame(gid); };
+}
 </script>
 </body>
 </html>
