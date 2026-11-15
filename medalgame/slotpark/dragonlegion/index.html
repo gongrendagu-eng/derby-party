@@ -15,9 +15,9 @@
 .th-wide .cab{border:6px solid #e0b04a;box-shadow:inset 0 0 0 3px #7a4a1c,0 0 0 3px #3a220c,0 12px 26px rgba(0,0,0,.45)}
 .th-wide .cab::before,.th-wide .cab::after{content:"";position:absolute;top:10px;bottom:10px;width:10px;background:radial-gradient(circle,#ffe7a0 0 3px,#a8741c 3.5px 4.5px,transparent 5px) 0 0/10px 34px repeat-y}
 .th-wide .cab::before{left:2px}.th-wide .cab::after{right:2px}
-.th-wide .topper{height:84px;border-radius:14px;background:repeating-linear-gradient(0deg,#6b3d1e 0 13px,#5c3318 13px 14px),#6b3d1e;border:5px solid #e0b04a;box-shadow:inset 0 0 0 2px #3a220c}
-.th-wide .topper img{width:58px;height:58px;object-fit:contain}
-.th-wide .logo{font-family:var(--f-num);font-size:36px;letter-spacing:3px;white-space:nowrap;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 14px rgba(255,216,77,.6)}
+.th-wide .topper{height:60px;border-radius:14px;background:repeating-linear-gradient(0deg,#6b3d1e 0 13px,#5c3318 13px 14px),#6b3d1e;border:5px solid #e0b04a;box-shadow:inset 0 0 0 2px #3a220c}
+.th-wide .topper img{width:42px;height:42px;object-fit:contain}
+.th-wide .logo{font-family:var(--f-num);font-size:32px;letter-spacing:3px;white-space:nowrap;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 14px rgba(255,216,77,.6)}
 .th-wide .bezel{border-radius:14px;background:linear-gradient(180deg,#f6d77a 0%,#b07a24 50%,#f6d77a 100%);padding:9px}
 .th-wide .lcd{position:relative;padding:10px;border-radius:8px;background:#0a1038;display:flex;flex-direction:column;gap:8px}
 .th-wide .fsbar{height:38px;border-radius:6px;background:#101a5c;border:3px solid #fff;box-shadow:0 0 0 2px #0a1038;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-weight:800}
@@ -58,6 +58,31 @@
 @keyframes wlhop{0%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-9px) scale(.95,1.06)}55%{transform:translateY(0) scale(1,1)}70%{transform:translateY(0) scale(1.1,.88)}85%{transform:translateY(0) scale(.97,1.03)}100%{transform:translateY(0) scale(1,1)}}
 @keyframes wlwobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(4deg)}}
 @keyframes wlshine{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,216,77,0))}50%{transform:scale(1.16);filter:drop-shadow(0 0 10px #ffd84d) brightness(1.25)}}
+/* ===== 演出画面(ステージ)：リールの上。草原を歩くドラゴンの子に、期待度ごとの予告が起こる ===== */
+.th-wide .dlstage{position:relative;height:210px;flex-shrink:0;border-radius:8px;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,#5aa8ec 0%,#9fd3f7 62%,#d7efff 100%);box-shadow:inset 0 0 0 2px rgba(255,216,77,.55)}
+.th-wide .dlstage .fsbar{position:absolute;left:8px;right:8px;top:6px;height:28px;z-index:9;opacity:.94;font-size:13px;gap:10px;border-width:2px}
+.th-wide .dlstage .fsbar b{font-size:16px}
+.th-wide .rwrap{position:relative;transform-origin:50% 0}
+.dls-world,.dls-tint,.dls-rays,.dls-fx,.dls-flash,.dls-txt,.dls-actors{position:absolute;inset:0;pointer-events:none}
+.dls-world{overflow:hidden}
+.dls-strip{position:absolute;left:0;bottom:0;display:flex;will-change:transform}
+.dls-strip svg{display:block;flex:none}
+.dls-strip[data-s=clouds]{top:0;bottom:auto}
+.dls-tint{opacity:0}
+.dls-rays{opacity:0;overflow:hidden}
+.dls-rays i{position:absolute;border-radius:50%;will-change:transform;background:repeating-conic-gradient(rgba(255,244,170,.6) 0 7deg,rgba(255,244,170,0) 7deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 6%,transparent 60%);mask-image:radial-gradient(circle,#000 6%,transparent 60%);animation:dlsspin 16s linear infinite}
+.dls-rays.rb i{background:repeating-conic-gradient(#ff5f6d 0 12deg,#ffc371 12deg 24deg,#fff96a 24deg 36deg,#6dff8e 36deg 48deg,#6dd5ff 48deg 60deg,#c06dff 60deg 72deg);opacity:.6;animation-duration:9s}
+@keyframes dlsspin{to{transform:rotate(360deg)}}
+.dls-fx{width:100%;height:100%}
+.dls-flash{opacity:0;background:#fff}
+.dls-a{position:absolute;left:0;bottom:0;transform-origin:50% 100%;will-change:transform}
+.dls-a img{display:block;transform-origin:50% 100%;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.3))}
+.dls-a::after{content:"";position:absolute;left:8%;right:8%;bottom:-3px;height:9px;border-radius:50%;background:rgba(0,0,0,.28);z-index:-1}
+.dls-a.fly::after{display:none}
+.dls-shadow{position:absolute;left:0;bottom:0;border-radius:50%;background:rgba(10,20,50,.32)}
+.dls-mark{position:absolute;left:0;bottom:0;z-index:9;font-family:var(--f-num);font-size:28px;color:#fff;-webkit-text-stroke:3px #c0392b;text-shadow:0 3px 0 #7a1f1f;white-space:nowrap}
+.dls-b{position:absolute;left:50%;top:42%;z-index:9;white-space:nowrap;font-family:var(--f-num);letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:3px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 16px rgba(255,216,77,.7)}
+.dls-b.rb{background:linear-gradient(90deg,#ff5f6d,#ffc371,#fff96a,#6dff8e,#6dd5ff,#c06dff);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:1.5px #3a1800;text-shadow:none;filter:drop-shadow(0 3px 0 #3a1800) drop-shadow(0 0 3px #3a1800) drop-shadow(0 0 12px rgba(255,255,255,.9))}
 .th-wide .deck .auto{background:#101a5c;border-color:#fff;color:#fff}.th-wide .deck .auto.on{background:#ffd84d;color:#3a1800}
 /* BETの枚数(どの機種も共通):−/＋/MAX と、数字を押すと入力 */
 .betbox{display:flex;align-items:center;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.28);flex-shrink:0}
@@ -105,6 +130,171 @@ Object.assign(BGM,{wide:'bgm_wide.mp3',wide_fs:'bgm_wide_fs.mp3'});
 SYM.wl_wild+='<text x="50" y="56.5" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="15" fill="#fff6d0" stroke="#5a0d0d" stroke-width="3" paint-order="stroke">WILD</text>';
 const WM={seven:'wl_dragon',crown:'wl_mimic',gem:'wl_golem',bell:'wl_ghost',bar:'wl_skeleton',melon:'wl_mushroom',grape:'wl_bat',orange:'wl_fluff',cherry:'wl_flower',lemon:'wl_chick',star:'wl_egg',wild:'wl_wild'};
 
+/* ---------- 演出画面(ステージ) ----------
+   リールの上に出す予告のアニメ。期待度は 青<緑<赤<金<虹(画面に数字や名前は出さない。出てくるもので伝える)。
+   動かすのは transform / opacity だけ(iPadでもなめらか)。新しい絵は使わず、今ある wl_*.webp だけで動く。
+   途中でエラーが出てもゲームは止めない(DLS の関数はぜんぶ try/catch ずみ)。 */
+const DLS_H=210, DLS_REEL_SCALE=.82; // 演出画面の高さ(px)／リールを何倍に縮めるか(1で今のまま)
+const DLS=(()=>{
+  const A=ASSET, TAU=Math.PI*2, ok=typeof Element!=='undefined'&&!!Element.prototype.animate;
+  const wait=ms=>new Promise(r=>setTimeout(r,ms)), rnd=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)];
+  let root,world,actors,cv,cx,fl,tn,rays,txt,W=680,H=DLS_H,G=27,D=204,tok=0,raf=0,last=0,dpr=1,hero=null,boss=null,egg=null,pals=[],temp=[],strips=[],parts=[],sprites={};
+  const live=t=>t===tok&&!!root&&root.isConnected;
+  const tf=(x,y,s,r,sx)=>`translate(${x}px,${-y}px) translateX(-50%) rotate(${r||0}deg) scale(${(s==null?1:s)*(sx||1)},${s==null?1:s})`;
+  const snd=n=>{ try{ if(typeof sfx!=='undefined'&&sfx[n]) sfx[n](); }catch(e){} };
+  const an=(el,kf,o)=>{ try{ const a=el.animate(kf,Object.assign({duration:400,easing:'ease-out',fill:'both'},o)); return a.finished.then(()=>a,()=>a); }catch(e){ return Promise.resolve(); } };
+
+  /* --- 背景(横にながれる草原・丘・お城・雲)。1枚の絵を2つ並べて、1画面ぶん動かすとつながる --- */
+  const per=(w,h,base,amp,k,ph)=>{ let d=`M0,${h} L0,${(base+amp*Math.sin(ph)).toFixed(1)}`; for(let i=1;i<=48;i++) d+=` L${(w*i/48).toFixed(1)},${(base+amp*Math.sin(TAU*k*i/48+ph)).toFixed(1)}`; return d+` L${w},${h} Z`; };
+  const castle=(x,y,s)=>{ const u=s/10; return `<g fill="#b9b4e0"><rect x="${x-5*u}" y="${y-5*u}" width="${10*u}" height="${5*u}"/><rect x="${x-6*u}" y="${y-8*u}" width="${3*u}" height="${8*u}"/><rect x="${x+3*u}" y="${y-8*u}" width="${3*u}" height="${8*u}"/><rect x="${x-1.5*u}" y="${y-10*u}" width="${3*u}" height="${10*u}"/></g><g fill="#a29cd2"><polygon points="${x-6.4*u},${y-8*u} ${x-4.5*u},${y-11*u} ${x-2.6*u},${y-8*u}"/><polygon points="${x+2.6*u},${y-8*u} ${x+4.5*u},${y-11*u} ${x+6.4*u},${y-8*u}"/><polygon points="${x-1.9*u},${y-10*u} ${x},${y-13.5*u} ${x+1.9*u},${y-10*u}"/></g>`; };
+  const cloud=(x,y,s)=>`<g fill="#fff" opacity=".88"><ellipse cx="${x}" cy="${y}" rx="${34*s}" ry="${12*s}"/><ellipse cx="${x-20*s}" cy="${y+3*s}" rx="${20*s}" ry="${9*s}"/><ellipse cx="${x+22*s}" cy="${y+3*s}" rx="${22*s}" ry="${10*s}"/><ellipse cx="${x+4*s}" cy="${y-9*s}" rx="${20*s}" ry="${11*s}"/></g>`;
+  const svg=(w,h,b)=>`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${b}</svg>`;
+  const cloudSvg=(w,h)=>svg(w,h,cloud(w*.14,h*.55,1)+cloud(w*.46,h*.32,.7)+cloud(w*.78,h*.62,.9));
+  const farSvg=(w,h)=>svg(w,h,`<path d="${per(w,h,h*.5,h*.07,1,.6)}" fill="#a9dcae"/>${castle(w*.62,h*.64,h*.46)}<path d="${per(w,h,h*.66,h*.06,2,2.1)}" fill="#86c98f"/>`);
+  const nearSvg=(w,h)=>svg(w,h,`<path d="${per(w,h,h*.4,h*.1,3,1.2)}" fill="#6cc472"/>`);
+  const grassSvg=(w,h)=>{ let f=''; const cs=['#ffffff','#ffd84d','#ff9bb8']; for(let i=0;i<16;i++){ const x=w*(i+.5)/16+((i*37)%11)-5, y=h*(.45+((i*53)%9)/22); f+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${cs[i%3]}"/><path d="M${(x-4).toFixed(1)},${(y+7).toFixed(1)} L${x.toFixed(1)},${(y+1).toFixed(1)} L${(x+4).toFixed(1)},${(y+7).toFixed(1)}" stroke="#2f7d3a" stroke-width="1.6" fill="none"/>`; } return svg(w,h,`<defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#63c85f"/><stop offset="1" stop-color="#3c9444"/></linearGradient></defs><path d="${per(w,h,5,3,6,0)}" fill="url(#gg)"/>${f}`); };
+
+  /* --- きらきら・コイン・紙ふぶき(canvas。数をおさえて軽く) --- */
+  const sprite=c=>{ if(sprites[c]) return sprites[c]; const s=document.createElement('canvas'); s.width=s.height=32; const g=s.getContext('2d'), r=g.createRadialGradient(16,16,0,16,16,16); r.addColorStop(0,'#fff'); r.addColorStop(.28,c); r.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=r; g.fillRect(0,0,32,32); return sprites[c]=s; };
+  const P=o=>Object.assign({shape:'glow',x:0,y:0,vx:0,vy:0,g:0,life:1,t:0,size:10,c:'#ffd84d',r:0,vr:0,grow:0},o);
+  function emit(n,mk){ n=Math.min(n,260-parts.length); for(let i=0;i<n;i++) parts.push(mk(i)); if(!raf&&root&&root.isConnected) raf=requestAnimationFrame(tick); }
+  function tick(ts){ raf=0; if(!cx||!root||!root.isConnected){ parts.length=0; last=0; return; }
+    const dt=Math.min(.05,last?(ts-last)/1000:.016); last=ts; cx.setTransform(dpr,0,0,dpr,0,0); cx.clearRect(0,0,W,H);
+    for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.t+=dt; if(p.t>=p.life){ parts.splice(i,1); continue; }
+      p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.r+=p.vr*dt; const u=p.t/p.life, a=1-u;
+      if(p.shape==='glow'){ cx.globalCompositeOperation='lighter'; cx.globalAlpha=a; const s=p.size*(1+p.grow*u)*2; cx.drawImage(sprite(p.c),p.x-s/2,p.y-s/2,s,s); }
+      else if(p.shape==='ring'){ cx.globalCompositeOperation='lighter'; cx.globalAlpha=a; cx.lineWidth=2+6*a; cx.strokeStyle=p.c; cx.beginPath(); cx.arc(p.x,p.y,p.size*(.2+u),0,TAU); cx.stroke(); }
+      else if(p.shape==='puff'){ cx.globalCompositeOperation='source-over'; cx.globalAlpha=a*.6; cx.fillStyle=p.c; cx.beginPath(); cx.arc(p.x,p.y,p.size*(1+u*1.2),0,TAU); cx.fill(); }
+      else if(p.shape==='star'){ cx.globalCompositeOperation='source-over'; cx.globalAlpha=Math.min(1,a*4); cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r); cx.fillStyle=p.c; cx.beginPath(); for(let j=0;j<8;j++){ const rr=j%2?p.size*.35:p.size; cx.lineTo(Math.cos(j*Math.PI/4)*rr,Math.sin(j*Math.PI/4)*rr); } cx.closePath(); cx.fill(); cx.restore(); }
+      else if(p.shape==='coin'){ cx.globalCompositeOperation='source-over'; cx.globalAlpha=Math.min(1,a*4); cx.fillStyle='#ffd84d'; cx.strokeStyle='#a8741c'; cx.lineWidth=2; cx.beginPath(); cx.ellipse(p.x,p.y,Math.max(1.5,Math.abs(Math.cos(p.r))*p.size),p.size,0,0,TAU); cx.fill(); cx.stroke(); }
+    }
+    cx.globalAlpha=1; cx.globalCompositeOperation='source-over';
+    if(parts.length) raf=requestAnimationFrame(tick); else { last=0; cx.clearRect(0,0,W,H); } }
+  const sparks=(x,y,n,cols,sp)=>emit(n,()=>{ const a=rnd(0,TAU), v=rnd(.3,1)*sp; return P({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-sp*.25,g:260,life:rnd(.5,1),size:rnd(8,16),c:pick(cols)}); });
+  const ring=(x,y,size,c)=>emit(1,()=>P({shape:'ring',x,y,life:.6,size,c}));
+  const puff=(x,n)=>emit(n,()=>P({shape:'puff',x:x+rnd(-20,20),y:H-G+rnd(-2,6),vx:rnd(-60,60),vy:rnd(-45,-10),g:20,life:rnd(.45,.85),size:rnd(7,15),c:'#fff6e0'}));
+  const confetti=n=>{ const cols=['#ff5f6d','#ffc371','#fff96a','#6dff8e','#6dd5ff','#c06dff','#ffffff']; emit(n,()=>P({shape:'star',x:rnd(0,W),y:rnd(-30,H*.3),vx:rnd(-40,40),vy:rnd(40,130),g:140,life:rnd(1.2,2.2),size:rnd(7,13),c:pick(cols),r:rnd(0,TAU),vr:rnd(-6,6)})); };
+  const coins=n=>emit(n,()=>P({shape:'coin',x:rnd(W*.1,W*.9),y:rnd(-60,-5),vx:rnd(-20,20),vy:rnd(20,100),g:380,life:rnd(1.1,1.7),size:rnd(11,16),r:rnd(0,TAU),vr:rnd(6,14)}));
+
+  /* --- 画面ぜんたいの効果 --- */
+  const flashing=(op,dur,c)=>{ fl.style.background=c||'#fff'; fl.animate([{opacity:op},{opacity:0}],{duration:dur,easing:'ease-out'}); };
+  const shake=(a,dur)=>{ const n=Math.max(4,Math.round(dur/45)), kf=[]; for(let i=0;i<=n;i++){ const d=1-i/n; kf.push({transform:`translate(${(rnd(-a,a)*d).toFixed(1)}px,${(rnd(-a,a)*d*.7).toFixed(1)}px)`}); } kf[n]={transform:'translate(0,0)'}; world.animate(kf,{duration:dur,easing:'linear'}); };
+  const tintTo=(c,op,ms)=>{ tn.style.transition=`opacity ${ms}ms`; tn.style.background=c; tn.style.opacity=op; };
+  const raysTo=(op,ms,rb)=>{ rays.classList.toggle('rb',!!rb); rays.style.transition=`opacity ${ms}ms`; rays.style.opacity=op; };
+  const speed=r=>strips.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} });
+  function banner(text,o){ o=o||{}; const b=document.createElement('div'); b.className='dls-b'+(o.rb?' rb':''); b.textContent=text; b.style.fontSize=(o.size||44)+'px'; txt.appendChild(b);
+    const c=s=>`translate(-50%,-50%) scale(${s})`;
+    an(b,[{transform:c(2.6),opacity:0},{transform:c(.92),opacity:1,offset:.3},{transform:c(1),opacity:1,offset:.45},{transform:c(1),opacity:1,offset:.82},{transform:c(1.15),opacity:0}],{duration:o.dur||1400}).then(()=>b.remove()); }
+
+  /* --- キャラ(wrapper=位置と動き、中のimg=ゆらゆら) --- */
+  function actor(key,o){ const w=document.createElement('div'); w.className='dls-a'+(o.fly?' fly':''); const im=new Image(); im.src=A+key+'.webp'; im.alt=''; im.draggable=false; im.style.height=o.h+'px'; w.appendChild(im);
+    w.style.zIndex=o.z||2; w._x=o.x; w._y=o.y==null?G-4:o.y; w._h=o.h; w.style.transform=tf(w._x,w._y); actors.appendChild(w); return w; }
+  const spawn=(key,o)=>{ const w=actor(key,o); temp.push(w); return w; };
+  const spawnEl=(cls,css,x,y)=>{ const e=document.createElement('div'); e.className=cls; e.style.cssText=css; e._x=x; e._y=y; e.style.transform=tf(x,y); actors.appendChild(e); temp.push(e); return e; };
+  const pose=k=>{ if(hero) hero.firstChild.src=A+k+'.webp'; };
+  const bob=(im,amp,per,delay)=>im.animate([{transform:'translateY(0) rotate(-1.5deg)'},{transform:`translateY(${-amp}px) rotate(1.5deg)`}],{duration:per*1000,iterations:Infinity,direction:'alternate',easing:'ease-in-out',delay:(delay||0)*1000});
+  const hop=(im,amp,per,delay)=>im.animate([{transform:'translateY(0) scale(1.08,.92)',offset:0},{transform:`translateY(${-amp}px) scale(.95,1.06)`,offset:.45},{transform:'translateY(0) scale(1.08,.92)',offset:1}],{duration:per*1000,iterations:Infinity,easing:'ease-in-out',delay:(delay||0)*1000});
+  const squash=w=>w.firstChild.animate([{transform:'scale(1,1)'},{transform:'scale(1.2,.8)',offset:.3},{transform:'scale(.92,1.1)',offset:.6},{transform:'scale(1,1)'}],{duration:450,easing:'ease-out'});
+  const slide=(w,x1,dur)=>{ const x0=w._x; w._x=x1; return an(w,[{transform:tf(x0,w._y)},{transform:tf(x1,w._y)}],{duration:dur,easing:'cubic-bezier(.2,.8,.3,1)'}); };
+  const run=(w,x1,dur,hh)=>{ const x0=w._x, n=Math.max(3,Math.round(dur/260)), kf=[]; for(let i=0;i<=n*2;i++){ const u=i/(n*2); kf.push({transform:tf(x0+(x1-x0)*u,w._y+(i%2?(hh||16):0),i%2?.96:1.04)}); } w._x=x1; return an(w,kf,{duration:dur,easing:'linear'}); };
+  const popIn=(w,dur)=>an(w,[{transform:tf(w._x,w._y,0)},{transform:tf(w._x,w._y,1.18),offset:.6},{transform:tf(w._x,w._y,1)}],{duration:dur||420});
+  const heroJump=(h,dur)=>an(hero,[{transform:tf(hero._x,hero._y)},{transform:tf(hero._x,hero._y+h,1.04),offset:.45},{transform:tf(hero._x,hero._y)}],{duration:dur||520,fill:'none'});
+  function mark(w,t){ const m=document.createElement('div'); m.className='dls-mark'; m.textContent=t; const x=w._x+Math.round(w._h*.5), y=w._y+Math.round(w._h*.62); m.style.transform=tf(x,y); actors.appendChild(m);
+    an(m,[{opacity:0,transform:tf(x,y-8,.3)},{opacity:1,transform:tf(x,y+6,1.3),offset:.3},{opacity:1,transform:tf(x,y,1),offset:.5},{opacity:1,transform:tf(x,y,1),offset:.85},{opacity:0,transform:tf(x,y,1)}],{duration:1100}).then(()=>m.remove()); }
+  function clean(){ temp.forEach(e=>e.remove()); temp=[]; boss=null; egg=null; }
+
+  function mkHero(){ pals.forEach(p=>p.remove()); if(hero) hero.remove();
+    hero=actor('wl_dragon_stand',{x:D,h:Math.round(H*.62),z:5}); bob(hero.firstChild,6,.42);
+    pals=[actor('wl_chick',{x:D-Math.round(W*.15),h:Math.round(H*.24),z:4}),actor('wl_fluff',{x:D-Math.round(W*.25),h:Math.round(H*.22),z:4})];
+    pals.forEach((p,i)=>hop(p.firstChild,7,.5+i*.07,i*.2)); }
+
+  /* --- 予告(期待度ごと)。k=1が普通、フリースピン中は短く。この間リールは回っている --- */
+  const L0=['wl_chick','wl_fluff','wl_flower','wl_mushroom'];
+  async function sc0(t,k){ // 青：ちいさなモンスターが走りぬけるだけ
+    const e=spawn(pick(L0),{x:W+40,h:Math.round(H*.22),z:2}); run(e,-60,2200,18); await wait(250*k); }
+  async function sc1(t,k){ // 緑：地面がゆれて、影とコウモリが横ぎる
+    shake(3,480); puff(D,6); puff(D+90,6); mark(hero,'！');
+    const sh=spawnEl('dls-shadow',`width:${Math.round(W*.26)}px;height:${Math.round(H*.12)}px`,W+60,G-8); an(sh,[{transform:tf(W+60,G-8)},{transform:tf(-120,G-8)}],{duration:1300,easing:'ease-in-out'});
+    const b=spawn('wl_bat',{x:W+50,y:Math.round(H*.62),h:Math.round(H*.2),z:6,fly:1}); b.firstChild.animate([{transform:'scaleY(1)'},{transform:'scaleY(.65)'}],{duration:160,iterations:Infinity,direction:'alternate'});
+    an(b,[{transform:tf(W+50,b._y)},{transform:tf(W*.62,b._y-14),offset:.35},{transform:tf(W*.3,b._y+10),offset:.7},{transform:tf(-60,b._y-8)}],{duration:1300,easing:'ease-in-out'});
+    await wait(850*k); }
+  async function sc2(t,k){ // 赤：空が赤くなり、中ボスが地ひびきとともに現れる
+    tintTo('#ff3b30',.2,350); shake(4,300); await wait(220*k); if(!live(t)) return;
+    const b=boss=spawn(pick(['wl_skeleton','wl_ghost','wl_mimic']),{x:W+110,h:Math.round(H*.5),z:4}); slide(b,Math.round(W*.74),520);
+    await wait(500*k); if(!live(t)) return;
+    snd('push'); shake(7,320); puff(b._x,10); ring(b._x,H-G,34,'#ff8a70'); squash(b); mark(hero,'！！'); slide(hero,D-16,160);
+    b.firstChild.animate([{transform:'scale(1)'},{transform:'scale(1.06)'}],{duration:480,iterations:Infinity,direction:'alternate',easing:'ease-in-out'});
+    await wait(750*k); }
+  async function sc3(t,k){ // 金：光がさし、ゴーレムが踏みこみ、仲間がかけつけ、たまごが光って降りてくる
+    tintTo('#ffd24a',.2,450); raysTo(1,500,false); shake(3,260);
+    const g=boss=spawn('wl_golem',{x:W+130,h:Math.round(H*.64),z:4}); slide(g,Math.round(W*.78),620);
+    await wait(560*k); if(!live(t)) return;
+    snd('push'); shake(9,360); puff(g._x,14); flashing(.35,260,'#ffe7a0'); squash(g);
+    const a1=spawn('wl_ghost',{x:-50,y:G+8,h:Math.round(H*.32),z:3,fly:1}), a2=spawn('wl_mimic',{x:-110,h:Math.round(H*.3),z:3});
+    run(a1,Math.round(W*.5),700,6); run(a2,Math.round(W*.6),760);
+    await wait(500*k); if(!live(t)) return;
+    pose('wl_dragon_win'); heroJump(34,560); sparks(hero._x,H*.4,22,['#ffe27a','#fff6c0'],150);
+    const e=egg=spawn('wl_egg',{x:Math.round(W*.5),y:Math.round(H*.44),h:Math.round(H*.26),z:8,fly:1});
+    an(e,[{transform:tf(e._x,e._y+60,.4),opacity:0},{transform:tf(e._x,e._y,1.1),opacity:1,offset:.6},{transform:tf(e._x,e._y)}],{duration:520}); bob(e.firstChild,5,.5);
+    banner('CHANCE!!',{size:44,dur:1300}); await wait(800*k); }
+  async function sc4(t,k){ // 虹：全員集合！画面が七色に光り、たまごが大きくゆれる
+    flashing(.95,550,'#fff'); tintTo('#0e1650',.36,450); raysTo(1,500,true); shake(6,500); snd('push');
+    const Lg=[['wl_mimic',.42,.34,0],['wl_golem',.54,.5,0],['wl_ghost',.66,.34,0],['wl_skeleton',.78,.42,0],['wl_mushroom',.9,.28,0],['wl_bat',.48,.22,14],['wl_flower',.72,.22,8]];
+    for(const [key,px,hp,yo] of Lg){ const m=spawn(key,{x:Math.round(W*px),y:G-4+yo,h:Math.round(H*hp),z:3+(yo?0:1),fly:yo>10?1:0}); popIn(m,360); sparks(m._x,H-G-m._h*.5,6,['#fff','#ffd84d'],90); await wait(110*k); if(!live(t)) return; }
+    pose('wl_dragon_win'); heroJump(38,600);
+    const e=egg=spawn('wl_egg',{x:Math.round(W*.6),y:Math.round(H*.4),h:Math.round(H*.3),z:9,fly:1});
+    an(e,[{transform:tf(e._x,e._y+80,.3),opacity:0},{transform:tf(e._x,e._y,1.15),opacity:1,offset:.6},{transform:tf(e._x,e._y)}],{duration:560}); bob(e.firstChild,6,.4);
+    banner('LEGION!!',{rb:true,size:52,dur:1700}); confetti(40); shake(3,900); await wait(1500*k); }
+  const SC=[sc0,sc1,sc2,sc3,sc4];
+
+  /* --- 結果(リールが止まったあと) --- */
+  function settle(t){ if(!live(t)) return; tintTo('#000',0,600); raysTo(0,600); speed(1);
+    setTimeout(()=>{ if(!live(t)) return; pose('wl_dragon_stand'); slide(hero,D,300); temp.forEach(e=>an(e,[{opacity:1},{opacity:0}],{duration:450})); setTimeout(()=>{ if(t===tok) clean(); },500); },500); }
+  async function hatch(t,d){ // たまごがかえって、フリースピン確定
+    if(!egg){ egg=spawn('wl_egg',{x:Math.round(W*.55),y:Math.round(H*.36),h:Math.round(H*.32),z:8,fly:1}); popIn(egg,300); await wait(300); if(!live(t)) return; }
+    const e=egg, x=e._x, y=e._y, cy=H-(y+e._h/2); pose('wl_dragon_win');
+    an(e,[{transform:tf(x,y,1,0)},{transform:tf(x,y,1.08,-14)},{transform:tf(x,y,1.1,12)},{transform:tf(x,y,1.12,-10)},{transform:tf(x,y,1.14,8)},{transform:tf(x,y,1.2,0)}],{duration:900,easing:'ease-in-out'});
+    shake(2,900); sparks(x,cy,10,['#fff6c0','#ffd84d'],80);
+    await wait(880); if(!live(t)) return;
+    flashing(1,700,'#fff'); shake(9,450); e.remove(); egg=null; ring(x,cy,70,'#fff'); ring(x,cy,40,'#ffd84d'); confetti(70); sparks(x,cy,24,['#fff','#ffd84d','#6dd5ff'],200); heroJump(44,700);
+    banner(`FREE SPIN ${d.fsAdd||''}回!`,{size:40,dur:1600,rb:true}); await wait(1500); }
+  async function result(d,tier,B){ if(!ok||!root) return; const t=tok;
+    if(d.fsStart){ await hatch(t,d); return settle(t); }
+    if((d.pay||0)>0){ const r=(d.pay||0)/(B||1); pose('wl_dragon_win'); heroJump(30,520); sparks(hero._x,H*.5,12+Math.min(30,Math.round(r*3)),['#ffe27a','#fff'],140); if(r>=3) coins(Math.min(60,10+Math.round(r*4)));
+      if(boss){ const b=boss; boss=null; flashing(.5,260,'#fff'); sparks(b._x,H*.45,18,['#fff','#ffd84d'],170); an(b,[{transform:tf(b._x,b._y),opacity:1},{transform:tf(b._x+60,b._y+H*.9,.5,480),opacity:0}],{duration:650,easing:'ease-in'}); }
+      await wait(900); }
+    else if(boss&&tier>=2){ const b=boss; boss=null; an(b,[{transform:tf(b._x,b._y)},{transform:tf(W+160,b._y)}],{duration:700,easing:'ease-in'}); mark(hero,'…'); slide(hero,D,300); await wait(700); }
+    settle(t); }
+
+  /* --- 期待度のえらび方：実際の結果に合わせて、強い予告ほど当たりやすい(ハズレでも赤・金が出ることがある) --- */
+  function pickTier(d,B){ const r=Math.random()*100, w=a=>{ let s=0; for(let i=0;i<a.length;i++){ s+=a[i]; if(r<s) return i; } return a.length-1; }; // 青,緑,赤,金,虹
+    if(d.fsStart) return (d.stars||0)>=5?4:w([0,0,15,50,35]);
+    if(d.fsMore) return w([0,0,25,50,25]);
+    if((d.pay||0)>=B*10) return w([0,5,35,40,20]);
+    if((d.stars||0)===2) return w([20,35,30,15,0]);
+    if((d.pay||0)>0) return w([35,40,20,5,0]);
+    return w([62,26,10,2,0]); }
+
+  /* --- 外から使う口 --- */
+  function mount(el){ root=el; if(!ok||!root) return;
+    for(let n=0;n<4;n++){ let over=0; for(let e=root.parentElement;e&&e!==document.body&&e!==document.documentElement;e=e.parentElement) over=Math.max(over,e.scrollHeight-e.clientHeight); if(over<=1||root.offsetHeight<=120) break; root.style.height=Math.max(120,root.offsetHeight-over)+'px'; } // 画面からはみ出すぶんだけ低くする
+    W=root.clientWidth||680; H=root.clientHeight||DLS_H; G=Math.round(H*.13); D=Math.round(W*.3); dpr=Math.min(2,window.devicePixelRatio||1);
+    const S=Math.round(Math.max(W,H)*2.4);
+    root.insertAdjacentHTML('afterbegin',`<div class="dls-world"><div class="dls-strip" data-s="clouds"></div><div class="dls-strip" data-s="far"></div><div class="dls-strip" data-s="near"></div><div class="dls-strip" data-s="grass"></div><div class="dls-rays"><i style="left:${Math.round(W*.5-S/2)}px;top:${Math.round(H*.62-S/2)}px;width:${S}px;height:${S}px"></i></div><div class="dls-actors"></div></div><div class="dls-tint"></div><canvas class="dls-fx"></canvas><div class="dls-flash"></div><div class="dls-txt"></div>`);
+    world=root.querySelector('.dls-world'); actors=root.querySelector('.dls-actors'); tn=root.querySelector('.dls-tint'); rays=root.querySelector('.dls-rays'); fl=root.querySelector('.dls-flash'); txt=root.querySelector('.dls-txt'); cv=root.querySelector('.dls-fx');
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); cx=cv.getContext('2d');
+    const def={clouds:[H*.5,cloudSvg,70000],far:[H*.66,farSvg,42000],near:[H*.42,nearSvg,16000],grass:[G+18,grassSvg,4200]}; strips=[];
+    world.querySelectorAll('.dls-strip').forEach(s=>{ const [hh,fn,dur]=def[s.dataset.s], h=Math.round(hh); s.style.width=2*W+'px'; s.style.height=h+'px'; s.innerHTML=fn(W,h)+fn(W,h);
+      strips.push(s.animate([{transform:'translateX(0)'},{transform:`translateX(${-W}px)`}],{duration:dur,iterations:Infinity,easing:'linear'})); });
+    temp=[]; boss=egg=null; mkHero(); }
+  function begin(){ if(!ok||!root) return; tok++; clean(); tintTo('#000',0,200); raysTo(0,200); speed(2.4); parts.length=0; if(cx) cx.clearRect(0,0,W,H); txt.textContent=''; pose('wl_dragon_stand'); slide(hero,D,200); }
+  async function yokoku(tier,fs){ if(!ok||!root) return; const t=tok; await SC[tier](t,fs?.55:1); }
+  function reach(){ if(!ok||!root) return; mark(hero,'！'); flashing(.25,300,'#ffe7a0'); ring(W*.5,H*.4,44,'#ffd84d'); }
+  function abort(){ if(ok&&root) settle(tok); }
+  const safe=f=>function(){ try{ const r=f.apply(null,arguments); return (r&&r.catch)?r.catch(e=>console.warn('stage',e)):r; }catch(e){ console.warn('stage',e); } };
+  return { on:()=>ok&&!!root, mount:safe(mount), begin:safe(begin), yokoku:safe(yokoku), reach:safe(reach), result:safe(result), abort:safe(abort), pick:pickTier };
+})();
+
 /* ---------- ③ ワイドライン ---------- */
 MACH.wide={
   pool:['seven','crown','gem','bell','bar','melon','grape','orange','cherry','lemon','star'].map(k=>WM[k]),
@@ -114,7 +304,7 @@ MACH.wide={
     Object.values(WM).concat(['wl_dragon_stand','wl_dragon_win']).forEach(k=>{ const im=new Image(); im.src=`${ASSET}${k}.webp`; }); // 先に読みこむ
     screen('th-wide',
       `<div class="topper"><img src="${ASSET}wl_egg.webp" alt=""><div class="logo">DRAGON LEGION</div><img src="${ASSET}wl_egg.webp" alt=""></div>
-       <div class="bezel"><div class="lcd" id="lcd"><div class="fsbar" id="fsbar"></div><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div>
+       <div class="bezel"><div class="lcd" id="lcd"><div class="dlstage" id="dlstage"><div class="fsbar" id="fsbar"></div></div><div class="rwrap" id="rwrap"><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
        <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ff9a6b;--b2:#e2452c;--b3:#8a1c0c;--glow:rgba(255,120,80,.9)" aria-label="スピン">SPIN</button></div>
        ${trayHtml(6)}`,
@@ -124,6 +314,9 @@ MACH.wide={
     document.querySelector('.th-wide .side.l').classList.add('rpgw');
     this.reels=[...$('#rw').querySelectorAll('.reel')];
     this.reels.forEach((el,i)=>makeReel(el,88,126,80,[this.pool[(i+1)%11],this.pool[(i+4)%11],this.pool[(i+7)%11]]));
+    // リールを少し縮めて演出画面の場所をつくる(縮めたぶんの空きは詰める)。そのあと演出画面を取りつける
+    const rwp=$('#rwrap'); if(rwp&&DLS_REEL_SCALE<1){ const h=rwp.offsetHeight||264; rwp.style.transform=`scale(${DLS_REEL_SCALE})`; rwp.style.marginBottom=(-h*(1-DLS_REEL_SCALE))+'px'; }
+    DLS.mount($('#dlstage'));
     bindBet('wide',()=>!!this.fs()||(G.busy&&this.wasFs));
     $('#bSpin').onclick=()=>this.spin(); $('#bAuto').onclick=()=>toggleAuto(this);
     this.upd();
@@ -144,15 +337,19 @@ MACH.wide={
     this.bet=fs?(G.st.wide||{}).fsBet:bet; this.wasFs=!!fs;
     begin(fs?0:bet); $('#ledWin').textContent=0; document.querySelectorAll('.hl').forEach(x=>x.remove()); this.upd(); sfx.spin();
     const pool=fs?this.fsPool:this.pool; spinStart(this.reels,pool); const t0=Date.now();
+    DLS.begin();
     const d=await play('wide',{bet});
-    if(!d){ this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
+    if(!d){ DLS.abort(); this.reels.forEach(el=>{ drawCol(el,el._cur,0); el.classList.remove('blur'); }); G.busy=false; G.hold=false; G.cred=seatA()||0; updTop(); this.upd(); return; }
     await sleep(Math.max(0,450-(Date.now()-t0)));
+    const B=d.free?(d.fsBet||bet):bet, tier=DLS.pick(d,B); // 期待度(0青 1緑 2赤 3金 4虹)
+    if(DLS.on()) await DLS.yokoku(tier,!!fs); // 予告：リールが回っている間に演出画面で何かが起こる(強いほど長い)
     for(let i=0;i<5;i++){ const col=[0,1,2].map(r=>WM[d.grid[r][i]]||d.grid[r][i]);
-      if(i===3&&d.starCells.filter(c=>c[1]<3).length>=2) this.say('たまごが2つ…！あと1つ！');
+      if(i===3&&d.starCells.filter(c=>c[1]<3).length>=2){ this.say('たまごが2つ…！あと1つ！'); DLS.reach(); }
       await spinStop(this.reels[i],col,pool,i===0?600:220+(i>=3&&d.starCells.filter(c=>c[1]<i).length>=2?700:0)); }
-    const lcd=$('#lcd'), cellsSeen={}, B=d.free?(d.fsBet||bet):bet; // BIG WIN はこの回のBETの10倍以上
+    const lcd=$('#lcd'), cellsSeen={}; // BIG WIN はこの回のBETの10倍以上(B は上で決めている)
+    const stRes=DLS.on()?DLS.result(d,tier,B):null; // 演出画面の結果(当たりの喜び・ボスをたおす・たまごがかえる)。下のメッセージと同時に流れる
     const mark=(r,c)=>{ const k=r+','+c; if(cellsSeen[k]) return; cellsSeen[k]=1; const el=this.reels[c]; const d2=document.createElement('div'); d2.className='hl'+(d.grid[r][c]==='wild'?' wd':'');
-      d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; lcd.appendChild(d2);
+      d2.style.left=el.offsetLeft+'px'; d2.style.top=(el.offsetTop+r*88)+'px'; d2.style.width='126px'; d2.style.height='88px'; (el.offsetParent||lcd).appendChild(d2);
       // そろった絵柄を動かす(モンスター=跳ねる、たまご=ゆれる、WILD=光る)
       const cell=el.querySelectorAll('.cell')[r], k2=d.grid[r][c]; if(cell) cell.classList.add(k2==='star'?'eg':k2==='wild'?'wd':'mv'); };
     d.wins.forEach(w=>w.cells.forEach(([r,c])=>mark(r,c))); if(d.stars>=3) d.starCells.forEach(([r,c])=>mark(r,c));
@@ -160,7 +357,7 @@ MACH.wide={
     if(d.pay>=B*10&&!d.fsStart){ sfx.big(); this.cutin(`BIG WIN! +${d.pay}`); this.say('やったー！大当たりだ！'); await sleep(1600); }
     else if(d.pay>0&&d.wins.length){ const w=d.wins.slice().sort((a,b)=>b.x-a.x)[0]; const m=document.createElement('div'); m.className='wmsg'; m.innerHTML=`${sym(WM[w.sym],28)}<b>${w.n}体</b>${w.ways>1?`<span>×${w.ways}通り</span>`:''}${w.wild?'<span class="w">WILD ×2</span>':''}<b>+${d.pay}</b>`; lcd.appendChild(m); setTimeout(()=>m.remove(),1800); this.say(w.n>=5?'5体そろった！すごい！':w.n>=4?'4体つながった！いいぞ！':'モンスターがつながった！'); }
     else if(!fs) this.say(['つぎはいけるよ！','たまごを3つあつめよう！','ドキドキするね！'][Math.floor(Math.random()*3)]);
-    if(d.fsStart){ sfx.big(); this.cutin(`FREE SPIN ${d.fsAdd}回!`); this.say('たまごがかえった！フリースピンだ！'); await sleep(1800); }
+    if(d.fsStart){ sfx.big(); if(!DLS.on()) this.cutin(`FREE SPIN ${d.fsAdd}回!`); this.say('たまごがかえった！フリースピンだ！'); await (DLS.on()?stRes:sleep(1800)); } // 演出画面があれば、たまごがかえる演出がカットインのかわり
     if(d.fsMore){ sfx.big(); winText(lcd,`+${d.fsAdd}回 上乗せ!`,130); this.say(`+${d.fsAdd}回 上乗せ！まだまだいくぞ！`); await sleep(1100); }
     if(d.fsEnd){ winText(lcd,`フリースピン終了 +${d.fsWin}`,150); this.say(`フリースピンで +${d.fsWin}枚 ゲット！`); await sleep(1200); }
     await finish(d); this.upd();
@@ -169,7 +366,7 @@ MACH.wide={
 };
 
 
-['wide'].forEach(k=>{ const M=MACH[k], f=M.spin; M.spin=async function(){ try{ return await f.apply(this,arguments); }catch(e){ recover(e); } }; });
+['wide'].forEach(k=>{ const M=MACH[k], f=M.spin; M.spin=async function(){ try{ return await f.apply(this,arguments); }catch(e){ DLS.abort(); recover(e); } }; });
 
 /* ---------- はじめる ---------- */
 // 台のページは iPad 専用。?mg= がないとき(先生のPCなど)は、ロビー(先生の稼働画面)のページへ
