@@ -201,6 +201,10 @@
 .glunge{animation:glunge .28s cubic-bezier(.5,0,.8,1) forwards}@keyframes glunge{to{transform:translateX(-360px)}}
 .gdash{animation:gdash .28s cubic-bezier(.5,0,.8,1) forwards}@keyframes gdash{to{transform:translateX(360px)}}
 .gout{animation:gout .35s ease-in forwards}@keyframes gout{to{opacity:0;transform:scale(.8)}}
+.gknock{animation:gknock .45s ease-out forwards}@keyframes gknock{from{transform:translateX(360px)}to{transform:translateX(-30px)}}
+.gdodge{animation:gdodge .6s ease-out forwards}@keyframes gdodge{0%{transform:none}35%{transform:translate(90px,-80px) rotate(10deg)}100%{transform:none}}
+.gguard{position:absolute;width:280px;height:280px;border-radius:50%;border:10px solid #cfeeff;box-shadow:0 0 40px #7fd3ff,inset 0 0 40px #7fd3ff;z-index:8;pointer-events:none;animation:gguard .55s ease-out forwards}
+@keyframes gguard{from{transform:scale(.3);opacity:1}to{transform:scale(1.35);opacity:0}}
 .gsil{filter:brightness(0) drop-shadow(0 0 20px rgba(180,80,255,.8));opacity:.9}
 /* 効果 */
 .gflash{position:absolute;inset:0;background:var(--c);z-index:9;animation:gflash .6s ease-out forwards;pointer-events:none}
@@ -713,8 +717,8 @@ Object.assign(M,{
     this.showLines(J,cherryOk,d);
     if(pay>0){ $('#ledWin').textContent=pay; sfx.win(); }
     const pl=P.plan; let next=450;
-    if(s&&s.bonusStart){ sfx.big(); this.run(t=>this.qstart(t,s.bonusStart)); next=2800; }
-    else if(d.bonusEnd){ this.run(t=>this.qend(t,d,pay)); next=d.rankS?5200:4000; }
+    if(s&&s.bonusStart){ sfx.big(); this.run(t=>this.qstart(t,s.bonusStart)); next=4800; }
+    else if(d.bonusEnd){ this.run(t=>this.qend(t,d,pay)); next=d.rankS?6600:5600; }
     else if(d.flag==='bonusGame'){ this.run(t=>this.bonusHit(t,d,pay)); next=700; }
     else if(pl&&pl.push&&!P.revealed){ this.stageP=this.run(t=>this.stage(t,pl)); const b=$('#bPush'); b.classList.add('ready'); b.style.setProperty('--pc',gtc(pl.pushT));
       P.pushT=setTimeout(()=>{ if(!P.revealed) this.push(); },pl.tier>=3?6000:5000); next=2100; }
@@ -725,7 +729,7 @@ Object.assign(M,{
   },
   // AUTO:PUSH待ちならPUSH、演出が終わってからレバー
   spin(){ const P=this.P; if(G.busy||P.run.some(x=>x)) return;
-    if(!P.revealed){ const hit=P.fxHit; this.push(); setTimeout(()=>{ if(G.auto&&!G.busy&&G.mid==='battle') this.lever(); },hit?4300:2900); return; }
+    if(!P.revealed){ const hit=P.fxHit; this.push(); setTimeout(()=>{ if(G.auto&&!G.busy&&G.mid==='battle') this.lever(); },hit?9000:5600); return; }
     this.lever(); },
 
   /* ---- 演出の土台 ---- */
@@ -771,13 +775,19 @@ Object.assign(M,{
     S.innerHTML=`<div class="gdim"></div><div class="gparty" id="gParty">${['soma','mil','cecil','garm','rei'].map((k,i)=>`<img src="${gImg(k)}" alt="" style="height:${GR.h[k]}px;animation-delay:-${(i*.11).toFixed(2)}s">`).join('')}</div>
       <div class="gdust">${Array.from({length:10},(_,i)=>`<i style="left:${260+i*84}px;animation-delay:-${(i*.27).toFixed(2)}s"></i>`).join('')}</div>`;
     this.scn='walk'; this.foe=null; this.hero=null; this.mons=[]; this.hud(); },
+  // 前の演出が途中で打ち切られたとき、ふだん画面に残った敵・宝箱・HPバーなどを片づける(パーティーと背景だけ残す)
+  sweep(){ const S=this.part(false,'stage'); if(!S) return;
+    if(!S.querySelector('#gParty')){ this.walk(); return; } // バトル画面に置きかわっていたら、ふだん画面にもどす
+    [...S.children].forEach(c=>{ if(!(c.classList.contains('gdim')||c.classList.contains('gparty')||c.classList.contains('gdust'))) c.remove(); });
+    const p=$('#gParty'); if(p) p.classList.remove('back','out'); const l=$('#lcd'); if(l) l.classList.remove('gbon');
+    this.foe=null; this.hero=null; this.mons=[]; },
   // レバーの結果が届いたら
   playFx(d){ const P=this.P, f=d.fx||{tier:0}; P.fxHit=!!f.hit; P.revealed=true; P.fx=f; this.clearLines(); this.newTok();
     if(f.scene==='bonusGame'){ P.plan=null; this.bonusGame(d); return; }
     const s=G.st.battle||{};
     if(d.held&&s.lampOn&&!d.newHit){ P.plan=null; if(this.scn!=='aim') this.aim(d.held); return; } // ねらえ中はそのまま
     const pl=this.makePlan(f,d); P.plan=pl; if(pl.push) P.revealed=false;
-    if(this.scn!=='walk'||d.floorUp!=null) this.walk();
+    if(this.scn!=='walk'||d.floorUp!=null) this.walk(); else this.sweep();
     this.run(t=>this.leverFx(t,pl,d)); },
   // 期待度から、この回の演出の組み合わせを決める
   makePlan(f,d){ const T=f.tier|0, R=Math.random, fl=this.floor();
@@ -862,7 +872,9 @@ Object.assign(M,{
     this.hero=this.spr(S,bt==='pinch'?'rei_lose':bt==='blazer'?'rei_sp':'rei',`left:${full?90:60}px;bottom:0;height:${bt==='blazer'?340:bt==='pinch'?250:300}px;z-index:4`,'gin-l');
     this.el(S,`<div class="ghp" style="left:30px"><i id="hpL" style="width:${bt==='pinch'?14:100}%;background:${bt==='pinch'?'#ff3045':'#4aa8ff'}"></i></div>`);
     this.el(S,`<div class="ghp" style="right:30px"><i id="hpR" style="width:100%;background:#ff3045;margin-left:auto"></i></div>`);
-    this.lines(full,T,16); sfx.alert(); await this.w(450,tok);
+    this.lines(full,T,16); sfx.alert();
+    if(full){ const nm=bt==='duel'?GR.nm.zeros:e.boss?GR.nm[e.boss]:GR.mon[e.mon]; this.txt(full,`${nm}との戦いだ！`,{t:T,top:430,size:34,sub:1,ms:2000}); }
+    await this.w(full?900:450,tok);
     if(bt==='cmd'){ const W=this.el(S,`<div class="gwin" style="left:${full?40:30}px;bottom:24px;--c:${gtc(T)}"><div class="gcmd">${['たたかう','まほう','れんけい','ひっさつ'].map((x,i)=>`<div data-i="${i}" class="${i===0?'on':''}">${x}</div>`).join('')}</div></div>`);
       const it=W.querySelectorAll('[data-i]'); for(let i=1;i<=pl.cmdTo;i++){ await this.w(380,tok); it.forEach(x=>x.classList.remove('on')); it[i].classList.add('on'); sfx.cursor(); }
       await this.w(300,tok); this.txt(full,['たたかう！','まほう！','れんけい！！','ひっさつ！！！'][pl.cmdTo],{t:T,top:90,size:62,ms:1500}); }
@@ -878,33 +890,77 @@ Object.assign(M,{
     const pl=P.plan, hit=P.fxHit, sp=this.stageP; if(hit){ G.st.battle=G.st.battle||{}; G.st.battle.lampOn=true; }
     this.run(async t=>{ if(sp) await sp.catch(()=>{}); if(t!==this.tok) return; await this.reveal(t,pl,hit); }); },
   // PUSHの結果
-  async reveal(tok,pl,hit){ let full=this.isFull; const S=this.part(full,'stage'); if(!S) return; const T=pl?pl.pushT:3, bt=pl&&pl.btype, foe=this.foe, hero=this.hero, e=(pl&&pl.enemy)||{};
+  async reveal(tok,pl,hit){ let full=this.isFull; let S=this.part(full,'stage'); if(!S) return; const T=pl?pl.pushT:3, bt=pl&&pl.btype, foe=this.foe, hero=this.hero, e=(pl&&pl.enemy)||{};
+    const hpL=S.querySelector('#hpL'), hpR=S.querySelector('#hpR');
     this.part(full,'fx').querySelectorAll('.gbigpush').forEach(x=>x.remove());
     this.flash(full,hit?5:T);
+    const retrig=(el,cls)=>{ if(!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
     if(hit){
-      if(bt==='pinch'&&hero){ const h=$('#hpL'); if(h){ h.style.width='100%'; h.style.background='#4aa8ff'; } this.txt(full,'星の祈り！',{t:2,top:80,size:50,ms:900}); sfx.magic(); await this.w(600,tok); }
+      if(bt==='pinch'&&hero){ if(hpL){ hpL.style.width='100%'; hpL.style.background='#4aa8ff'; } this.rays(full,4); this.txt(full,'星の祈り！',{t:2,top:80,size:56,ms:1300}); sfx.magic(); this.sparks(full,'#fff6a0',26); await this.w(1200,tok);
+        hero.src=gImg('rei_sp'); this.txt(full,'力がみなぎる…！',{t:4,top:170,size:40,sub:1,ms:1100}); await this.w(800,tok); }
+      // 1 溜め
       const sk=bt==='skill'&&S.querySelector(`img[src$="${pl.ally}_sk.webp"]`);
-      if(sk) sk.classList.add('gdash'); else if(hero){ hero.src=gImg(bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); hero.classList.remove('gin-l'); hero.classList.add('gdash'); }
+      if(hero&&!sk){ hero.src=gImg(bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); }
+      this.rays(full,5); this.sparks(full,'#ffe27a',26); sfx.charge(); this.quake(full);
+      this.txt(full,bt==='blazer'?'ブレイブ…ブレイザー！！':bt==='duel'?'これで終わりだ！':'いっけぇぇぇ！',{t:5,top:60,size:64,ms:1100});
+      await this.w(1100,tok);
+      // 2 突進
+      if(sk) sk.classList.add('gdash'); else if(hero){ hero.classList.remove('gin-l','gbreath'); hero.classList.add('gdash'); }
       sfx.slash(); this.lines(full,5,20); await this.w(260,tok);
-      if(foe){ foe.classList.remove('gbreath','gin-r','gfloat'); foe.classList.add('ghit'); }
-      sfx.hit(); this.quake(full); this.dmg(full,bt==='blazer'?9999:(3000+Math.random()*6000)|0,full?760:700,140); const hr=$('#hpR'); if(hr) hr.style.width='0%';
-      await this.w(480,tok);
+      if(foe) foe.classList.remove('gbreath','gin-r','gfloat');
+      // 3 連撃
+      const n=bt==='blazer'?7:(full?5:3);
+      for(let i=0;i<n;i++){ retrig(foe,'ghit'); sfx.hit(); if(i%2===0) sfx.slash(); this.quake(full); this.lines(full,5,8);
+        this.dmg(full,(900+Math.random()*2600)|0,(full?560:520)+((i*83)%260),80+((i*57)%170));
+        if(hpR) hpR.style.width=Math.max(8,(n-1-i)/n*100)+'%';
+        await this.w(i<n-1?230:300,tok); }
+      // 4 とどめ
+      if(foe) foe.classList.remove('ghit');
+      this.flash(full,5); sfx.big(); this.dmg(full,bt==='blazer'?99999:((9000+Math.random()*8000)|0),full?700:640,40); if(hpR) hpR.style.width='0%';
       const ln=foe&&e.boss&&GR.lose[bt==='duel'?'zeros':e.boss];
-      if(foe){ foe.classList.remove('ghit'); if(ln){ foe.src=gImg(ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); }
-      await this.w(500,tok);
+      if(foe){ if(ln){ foe.src=gImg(ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); }
+      await this.w(1000,tok);
+      // 5 クエストクリア(画面全体)
       if(!full){ this.full(true); full=true; }
-      const X=this.part(true,'fx'); X.innerHTML=''; this.part(true,'stage').innerHTML='<div class="gdim"></div>'; this.rays(true,5); this.conf(true); this.flash(true,5); sfx.big();
-      this.spr(this.part(true,'stage'),'rei_win','left:50%;margin-left:-120px;bottom:0;height:360px;z-index:4','gin-d');
-      this.txt(true,'QUEST CLEAR！！',{t:5,top:50,size:92}); this.txt(true,'ボーナス確定！',{t:4,top:170,size:44,sub:1});
-      await this.w(1900,tok); this.full(false); this.aim((G.st.battle||{}).held||'big');
+      const X=this.part(true,'fx'); X.innerHTML=''; const S2=this.part(true,'stage'); S2.innerHTML='<div class="gdim"></div>';
+      this.rays(true,5); this.conf(true); this.flash(true,5); sfx.big();
+      [['garm',70],['cecil',300],['mil',650],['soma',880]].forEach(([k,x],i)=>this.spr(S2,k,`left:${x}px;bottom:0;height:${GR.h[k]*1.1}px;z-index:3;animation-delay:${(.15+i*.12).toFixed(2)}s`,'gin-d'));
+      this.spr(S2,'rei_win','left:50%;margin-left:-120px;bottom:0;height:380px;z-index:5','gin-d');
+      this.txt(true,'QUEST CLEAR！！',{t:5,top:50,size:92}); this.coins(true,570,360,26);
+      await this.w(900,tok); sfx.chest(); this.txt(true,'ボーナス確定！',{t:4,top:180,size:50,sub:1}); this.coins(true,570,360,22);
+      await this.w(1000,tok); sfx.lvup(); this.txt(true,'次は 7 をそろえろ！',{t:4,top:250,size:38,sub:1,ms:1800}); this.sparks(true,'#ffe27a',30); this.conf(true);
+      await this.w(2000,tok); this.full(false); this.aim((G.st.battle||{}).held||'big');
     } else {
-      const mon=!e.boss&&bt!=='duel';
-      if(foe){ foe.classList.remove('gbreath','gin-r','gfloat'); }
-      if(mon&&Math.random()<.45){ if(foe) foe.classList.add('gout'); this.txt(full,gpick(['にげられた！','かわされた！']),{t:0,top:130,size:52,ms:1500}); }
-      else { if(foe) foe.classList.add('glunge'); await this.w(260,tok); sfx.hit(); this.quake(full);
-        if(hero){ hero.src=gImg('rei_lose'); hero.classList.remove('gin-l'); hero.classList.add('ghit'); } const h=$('#hpL'); if(h){ h.style.width='12%'; h.style.background='#ff3045'; }
-        const foeN=bt==='duel'?'zeros':e.boss; this.txt(full,foeN?`「${GR.taunt[foeN]}」`:'こうげきを防がれた！',{t:0,top:110,size:44,ms:1500}); }
-      await this.w(1500,tok); this.full(false); this.walk(); } },
+      const mon=!e.boss&&bt!=='duel', sk=bt==='skill'&&S.querySelector(`img[src$="${pl.ally}_sk.webp"]`);
+      if(foe) foe.classList.remove('gbreath','gin-r','gfloat');
+      // 1 こちらの攻撃
+      if(sk) sk.classList.add('gdash'); else if(hero){ hero.src=gImg(bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); hero.classList.remove('gin-l','gbreath'); hero.classList.add('gdash'); }
+      sfx.slash(); this.lines(full,T,14); await this.w(300,tok);
+      if(mon&&Math.random()<.45){
+        // かわされた／にげられた:敵は無傷、こちらの攻撃は空ぶり
+        const flee=Math.random()<.5;
+        if(flee){ if(foe) foe.classList.add('gout'); sfx.slash(); this.txt(full,'にげられた！',{t:0,top:130,size:52,ms:1700}); }
+        else { retrig(foe,'gdodge'); sfx.slash(); this.txt(full,'ひらりとかわされた！',{t:0,top:130,size:52,ms:1700}); }
+        await this.w(500,tok); if(sk) sk.classList.remove('gdash'); else if(hero){ hero.classList.remove('gdash'); hero.classList.add('gknock'); }
+        await this.w(1500,tok);
+      } else {
+        // 防がれた → 反撃をうける
+        if(foe){ const r=foe.getBoundingClientRect(), b=this.box(full).getBoundingClientRect();
+          this.tmp(this.part(full,'fx'),`<div class="gguard" style="left:${Math.max(0,r.left-b.left+r.width*.1)|0}px;top:${Math.max(0,r.top-b.top+r.height*.2)|0}px"></div>`,600); }
+        sfx.hit(); this.sparks(full,'#cfeeff',22); this.quake(full);
+        this.txt(full,bt==='blazer'?'ブレイブブレイザーがはじかれた！':'こうげきを防がれた！',{t:0,top:110,size:bt==='blazer'?44:50,ms:1400});
+        await this.w(700,tok);
+        if(sk) sk.classList.remove('gdash'); else if(hero){ hero.classList.remove('gdash'); hero.classList.add('gknock'); }
+        await this.w(700,tok);
+        // 敵の反撃
+        if(foe) foe.classList.add('glunge'); await this.w(260,tok); sfx.hit(); this.quake(full);
+        if(hero){ hero.src=gImg('rei_lose'); hero.classList.remove('gknock'); hero.classList.add('ghit'); }
+        if(hpL){ hpL.style.width='12%'; hpL.style.background='#ff3045'; }
+        const foeN=bt==='duel'?'zeros':e.boss;
+        this.txt(full,bt==='pinch'?'ミルの祈りもとどかない…':'反撃をうけた！',{t:0,top:110,size:46,ms:1500});
+        if(foeN&&GR.taunt[foeN]) this.txt(full,`「${GR.taunt[foeN]}」`,{t:0,top:200,size:36,sub:1,ms:1700});
+        await this.w(1600,tok); }
+      await this.w(full?700:200,tok); this.full(false); this.walk(); } },
   // PUSHのない回の結果
   async small(tok,pl,d,pay){ const S=this.part(false,'stage');
     if(pl&&pl.ch&&!pl.push){ this.cut(false,'mil',{x:840,r:1,ms:1300,label:'ミル「チャンス！」'}); }
@@ -929,7 +985,10 @@ Object.assign(M,{
     ['soma','mil','garm','cecil','rei'].forEach((k,i)=>this.spr(S,k,`left:${110+i*190}px;bottom:0;height:${GR.h[k]*1.25}px;z-index:${i===4?6:3};animation-delay:${i*.08}s`,'gin-d'));
     this.txt(true,'QUEST START！！',{t:5,top:36,size:88});
     this.txt(true,type==='big'?'ボス討伐クエスト　30ゲーム':'宝さがしクエスト　12ゲーム',{t:4,top:150,size:40,sub:1});
-    await this.w(2600,tok); this.full(false); this.bonusSetup(type,SP.consts.P_GAMES[type],0); },
+    this.coins(true,570,360,22); await this.w(1700,tok);
+    this.flash(true,5); sfx.big(); this.conf(true); this.coins(true,570,360,28);
+    this.txt(true,type==='big'?'ダンジョンの最深部へ…！':'お宝がまっている！',{t:4,top:260,size:46,sub:1,ms:2500});
+    await this.w(2800,tok); this.full(false); this.bonusSetup(type,SP.consts.P_GAMES[type],0); },
   bonusSetup(type,left,get){ const S=this.part(false,'stage'); if(!S) return; this.full(false); this.setBg(type==='big'?5:2); $('#lcd').classList.add('gbon');
     S.innerHTML=`<div class="gdim"></div><div class="gwin" id="gBan" style="left:50%;top:12px;transform:translateX(-50%);font-size:20px;white-space:nowrap;z-index:8"></div>`;
     this.hero=this.spr(S,type==='big'?'rei':'cecil','left:80px;bottom:0;height:290px;z-index:4','gin-l gbreath');
@@ -959,14 +1018,16 @@ Object.assign(M,{
   async qend(tok,d,pay){ await this.bonusHit(tok,d,pay).catch(()=>{}); await this.w(700,tok);
     this.full(true); this.setBg(0,true); const S=this.part(true,'stage'), X=this.part(true,'fx');
     this.spr(S,'nina','right:120px;bottom:0;height:400px;z-index:3','gin-r');
-    this.el(S,`<div class="gwin" style="left:70px;top:40px;width:560px;font-size:26px;line-height:1.6;z-index:6">ニーナ「依頼達成です！<br>おつかれさまでした！」<div style="margin-top:8px;font-size:40px;color:#ffd84d;font-family:var(--f-num);font-weight:400">GET +${Math.max(0,d.bonusGet||0)}枚</div></div>`);
+    this.el(S,`<div class="gwin" style="left:70px;top:40px;width:560px;font-size:26px;line-height:1.6;z-index:6">ニーナ「依頼達成です！<br>おつかれさまでした！」<div style="margin-top:8px;font-size:40px;color:#ffd84d;font-family:var(--f-num);font-weight:400">GET +<span id="gGetN">0</span>枚</div></div>`);
+    { const gn=S.querySelector('#gGetN'), tg=Math.max(0,d.bonusGet||0), t0=performance.now();
+      const tick=()=>{ if(!gn||!gn.isConnected) return; const q=Math.min(1,(performance.now()-t0)/1600); gn.textContent=Math.round(tg*(1-Math.pow(1-q,3))); if(q<1) requestAnimationFrame(tick); }; tick(); this.coins(true,330,200,30); this.conf(true); }
     const nr=d.rankNew||1, from=GR.ranks[Math.max(0,nr-1)], to=GR.ranks[Math.min(6,nr)];
     const B=this.el(S,`<div class="grank" style="left:90px;right:auto;top:290px;transform:scale(1.6);transform-origin:0 0"><small>GUILD RANK</small><b>${from}</b></div>`);
     sfx.chest(); await this.w(1000,tok);
     if(B){ B.querySelector('b').textContent=to; if(d.rankS) B.classList.add('s'); B.animate([{transform:'scale(2.6)'},{transform:'scale(1.6)'}],{duration:400,easing:'cubic-bezier(.2,1.6,.4,1)'}); }
     sfx.lvup(); this.txt(true,'RANK UP！',{t:4,top:320,size:54,x:260,st:'text-align:left'});
     if(d.rankS){ await this.w(700,tok); this.rays(true,5); this.conf(true); sfx.big(); this.txt(true,'Sランク昇格！！',{t:5,top:500,size:84,x:60,st:'text-align:left'}); this.txt(true,'ギルドの英雄になった！ ランクはFからまた始まる',{t:4,top:610,size:26,x:70,sub:1,st:'text-align:left'}); await this.w(1200,tok); }
-    await this.w(2000,tok); this.full(false); this.walk(); }
+    await this.w(2800,tok); this.full(false); this.walk(); }
 });
 return M; }
 Object.assign(sfx,{
