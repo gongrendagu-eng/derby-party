@@ -15,9 +15,9 @@
 .th-wide .cab{border:6px solid #e0b04a;box-shadow:inset 0 0 0 3px #7a4a1c,0 0 0 3px #3a220c,0 12px 26px rgba(0,0,0,.45)}
 .th-wide .cab::before,.th-wide .cab::after{content:"";position:absolute;top:10px;bottom:10px;width:10px;background:radial-gradient(circle,#ffe7a0 0 3px,#a8741c 3.5px 4.5px,transparent 5px) 0 0/10px 34px repeat-y}
 .th-wide .cab::before{left:2px}.th-wide .cab::after{right:2px}
-.th-wide .topper{height:60px;border-radius:14px;background:repeating-linear-gradient(0deg,#6b3d1e 0 13px,#5c3318 13px 14px),#6b3d1e;border:5px solid #e0b04a;box-shadow:inset 0 0 0 2px #3a220c}
-.th-wide .topper img{width:42px;height:42px;object-fit:contain}
-.th-wide .logo{font-family:var(--f-num);font-size:32px;letter-spacing:3px;white-space:nowrap;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 14px rgba(255,216,77,.6)}
+.th-wide .topper{height:50px;border-radius:14px;background:repeating-linear-gradient(0deg,#6b3d1e 0 13px,#5c3318 13px 14px),#6b3d1e;border:5px solid #e0b04a;box-shadow:inset 0 0 0 2px #3a220c}
+.th-wide .topper img{width:36px;height:36px;object-fit:contain}
+.th-wide .logo{font-family:var(--f-num);font-size:28px;letter-spacing:3px;white-space:nowrap;color:#ffd84d;-webkit-text-stroke:2px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 14px rgba(255,216,77,.6)}
 .th-wide .bezel{border-radius:14px;background:linear-gradient(180deg,#f6d77a 0%,#b07a24 50%,#f6d77a 100%);padding:9px}
 .th-wide .lcd{position:relative;padding:10px;border-radius:8px;background:#0a1038;display:flex;flex-direction:column;gap:8px}
 .th-wide .fsbar{height:38px;border-radius:6px;background:#101a5c;border:3px solid #fff;box-shadow:0 0 0 2px #0a1038;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-weight:800}
@@ -83,7 +83,23 @@
 .dls-mark{position:absolute;left:0;bottom:0;z-index:9;font-family:var(--f-num);font-size:28px;color:#fff;-webkit-text-stroke:3px #c0392b;text-shadow:0 3px 0 #7a1f1f;white-space:nowrap}
 .dls-b{position:absolute;left:50%;top:42%;z-index:9;white-space:nowrap;font-family:var(--f-num);letter-spacing:2px;color:#ffd84d;-webkit-text-stroke:3px #5a2a00;text-shadow:0 4px 0 #3a1800,0 0 16px rgba(255,216,77,.7)}
 .dls-b.rb{background:linear-gradient(90deg,#ff5f6d,#ffc371,#fff96a,#6dff8e,#6dd5ff,#c06dff);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:1.5px #3a1800;text-shadow:none;filter:drop-shadow(0 3px 0 #3a1800) drop-shadow(0 0 3px #3a1800) drop-shadow(0 0 12px rgba(255,255,255,.9))}
-.th-wide .deck .auto{background:#101a5c;border-color:#fff;color:#fff}.th-wide .deck .auto.on{background:#ffd84d;color:#3a1800}
+.th-wide .deck .auto{background:#101a5c;border-color:#fff;color:#fff}
+/* 下の段(CREDIT/BET/WIN・BET・SPIN・メダル受け)を小さくして、演出画面を広げる */
+.th-wide .cab{gap:7px}
+.th-wide .leds{padding:4px 8px;gap:6px}
+.th-wide .led{flex-direction:row;align-items:center;justify-content:space-between;padding:2px 10px}
+.th-wide .led b{font-size:19px}
+.th-wide .led small{font-size:9.5px}
+.th-wide .deck{padding:0 16px}
+.th-wide .deck .rbtn{width:58px;height:58px;border-width:4px;font-size:13px;box-shadow:0 4px 0 #6b6f78,0 0 14px var(--glow)}
+.th-wide .deck .auto{height:36px;width:66px;font-size:12px}
+.th-wide .betbox{padding:4px;gap:5px}
+.th-wide .betbox .bb{width:40px;height:40px;font-size:20px;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.th-wide .betbox .bb.max{width:48px;font-size:12px}
+.th-wide .betbox .bv{height:40px;min-width:76px;flex-direction:row;gap:6px}
+.th-wide .betbox .bv b{font-size:20px}
+.th-wide .tray{height:18px}
+.th-wide .tray i{width:16px;height:8px}.th-wide .deck .auto.on{background:#ffd84d;color:#3a1800}
 /* BETの枚数(どの機種も共通):−/＋/MAX と、数字を押すと入力 */
 .betbox{display:flex;align-items:center;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.28);flex-shrink:0}
 .betbox .bb{width:46px;height:52px;border-radius:10px;background:linear-gradient(180deg,#fff,#e8e2da);color:#3a2a3f;font-size:24px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.4)}
@@ -181,7 +197,7 @@ const DLS=(()=>{
   const shake=(a,dur)=>{ const n=Math.max(4,Math.round(dur/45)), kf=[]; for(let i=0;i<=n;i++){ const d=1-i/n; kf.push({transform:`translate(${(rnd(-a,a)*d).toFixed(1)}px,${(rnd(-a,a)*d*.7).toFixed(1)}px)`}); } kf[n]={transform:'translate(0,0)'}; world.animate(kf,{duration:dur,easing:'linear'}); };
   const tintTo=(c,op,ms)=>{ tn.style.transition=`opacity ${ms}ms`; tn.style.background=c; tn.style.opacity=op; };
   const raysTo=(op,ms,rb)=>{ rays.classList.toggle('rb',!!rb); rays.style.transition=`opacity ${ms}ms`; rays.style.opacity=op; };
-  const speed=r=>strips.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} });
+  const speed=r=>{ strips.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} }); walkFast=r>1.5; walkRate(r>1.5?1.8:1); };
   function banner(text,o){ o=o||{}; const b=document.createElement('div'); b.className='dls-b'+(o.rb?' rb':''); b.textContent=text; b.style.fontSize=(o.size||44)+'px'; txt.appendChild(b);
     const c=s=>`translate(-50%,-50%) scale(${s})`;
     an(b,[{transform:c(2.6),opacity:0},{transform:c(.92),opacity:1,offset:.3},{transform:c(1),opacity:1,offset:.45},{transform:c(1),opacity:1,offset:.82},{transform:c(1.15),opacity:0}],{duration:o.dur||1400}).then(()=>b.remove()); }
@@ -203,10 +219,20 @@ const DLS=(()=>{
     an(m,[{opacity:0,transform:tf(x,y-8,.3)},{opacity:1,transform:tf(x,y+6,1.3),offset:.3},{opacity:1,transform:tf(x,y,1),offset:.5},{opacity:1,transform:tf(x,y,1),offset:.85},{opacity:0,transform:tf(x,y,1)}],{duration:1100}).then(()=>m.remove()); }
   function clean(){ temp.forEach(e=>e.remove()); temp=[]; boss=null; egg=null; }
 
-  function mkHero(){ pals.forEach(p=>p.remove()); if(hero) hero.remove();
-    hero=actor('wl_dragon_stand',{x:D,h:Math.round(H*.62),z:5}); bob(hero.firstChild,6,.42);
+  /* 歩く：左足・右足と体を左右にかたむけながら上下に弾む(1歩ごとに足もとに小さな土ぼこり) */
+  let walkers=[], dustT=0;
+  function walk(w,amp,step,delay){ const im=w.firstChild, k=[];
+    [[0,-5,1.04,.96],[.25,0,.97,1.04],[.5,5,1.04,.96],[.75,0,.97,1.04],[1,-5,1.04,.96]].forEach(([o,r,sx,sy])=>k.push({offset:o,transform:`translateY(${(o===.25||o===.75)?-amp:0}px) rotate(${r}deg) scale(${sx},${sy})`,easing:(o===.25||o===.75)?'ease-in':'ease-out'}));
+    const a=im.animate(k,{duration:step*2000,iterations:Infinity,delay:(delay||0)*1000}); a._base=1; walkers.push(a); return a; }
+  const walkRate=r=>walkers.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} });
+  function dustLoop(){ clearTimeout(dustT); if(!root||!root.isConnected) return;
+    if(hero&&!temp.length){ emit(2,()=>P({shape:'puff',x:hero._x-hero._h*.18+rnd(-6,6),y:H-G+rnd(0,4),vx:rnd(-70,-30),vy:rnd(-25,-8),g:10,life:rnd(.35,.55),size:rnd(3,6),c:'#f3ead2'})); }
+    dustT=setTimeout(dustLoop,(walkFast?190:380)); }
+  let walkFast=false;
+  function mkHero(){ pals.forEach(p=>p.remove()); if(hero) hero.remove(); walkers.forEach(a=>{ try{ a.cancel(); }catch(e){} }); walkers=[];
+    hero=actor('wl_dragon_stand',{x:D,h:Math.round(H*.62),z:5}); walk(hero,8,.38);
     pals=[actor('wl_chick',{x:D-Math.round(W*.15),h:Math.round(H*.24),z:4}),actor('wl_fluff',{x:D-Math.round(W*.25),h:Math.round(H*.22),z:4})];
-    pals.forEach((p,i)=>hop(p.firstChild,7,.5+i*.07,i*.2)); }
+    pals.forEach((p,i)=>walk(p,6,.26+i*.03,i*.13)); dustLoop(); }
 
   /* --- 予告(期待度ごと)。k=1が普通、フリースピン中は短く。この間リールは回っている --- */
   const L0=['wl_chick','wl_fluff','wl_flower','wl_mushroom'];
@@ -277,6 +303,7 @@ const DLS=(()=>{
 
   /* --- 外から使う口 --- */
   function mount(el){ root=el; if(!ok||!root) return;
+    try{ const st=document.getElementById('stage')||document.body, cab=root.closest('.cab'); if(cab){ let top=0; for(let e=cab;e&&e!==st;e=e.offsetParent) top+=e.offsetTop; const free=820-12-(top+cab.offsetHeight); if(free>0) root.style.height=(root.offsetHeight+free)+'px'; } }catch(e){} // 下の段を小さくしてあいたぶん、演出画面を高くする
     for(let n=0;n<4;n++){ let over=0; for(let e=root.parentElement;e&&e!==document.body&&e!==document.documentElement;e=e.parentElement) over=Math.max(over,e.scrollHeight-e.clientHeight); if(over<=1||root.offsetHeight<=120) break; root.style.height=Math.max(120,root.offsetHeight-over)+'px'; } // 画面からはみ出すぶんだけ低くする
     W=root.clientWidth||680; H=root.clientHeight||DLS_H; G=Math.round(H*.13); D=Math.round(W*.3); dpr=Math.min(2,window.devicePixelRatio||1);
     const S=Math.round(Math.max(W,H)*2.4);
@@ -306,7 +333,7 @@ MACH.wide={
       `<div class="topper"><img src="${ASSET}wl_egg.webp" alt=""><div class="logo">DRAGON LEGION</div><img src="${ASSET}wl_egg.webp" alt=""></div>
        <div class="bezel"><div class="lcd" id="lcd"><div class="dlstage" id="dlstage"><div class="fsbar" id="fsbar"></div></div><div class="rwrap" id="rwrap"><div class="rrow" id="rw">${'<div class="reel"></div>'.repeat(5)}</div></div></div></div>
        ${ledsHtml([['CREDIT','ledCred',G.cred],['BET','ledBet',1],['WIN','ledWin',0]])}
-       <div class="deck" style="height:106px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ff9a6b;--b2:#e2452c;--b3:#8a1c0c;--glow:rgba(255,120,80,.9)" aria-label="スピン">SPIN</button></div>
+       <div class="deck" style="height:66px;gap:9px">${betBox('wide')}<button class="auto" id="bAuto">AUTO</button><span style="flex:1"></span><button class="rbtn" id="bSpin" style="--b1:#ff9a6b;--b2:#e2452c;--b3:#8a1c0c;--glow:rgba(255,120,80,.9)" aria-label="スピン">SPIN</button></div>
        ${trayHtml(6)}`,
       `<h3>モンスターの配当</h3><p style="text-align:center">BETの何倍か</p><div class="wpt"><span></span><b>3体</b><b>4体</b><b>5体</b>${Object.keys(W).map(k=>`${sym(WM[k])}<span>${f(W[k][3])}</span><span>${f(W[k][4])}</span><span>${f(W[k][5])}</span>`).join('')}</div>
        <div class="row">${sym('wl_egg')}<span style="font-size:11px">3/4/5こ</span><span class="v">FREE ${N[3]}/${N[4]}/${N[5]}回</span></div><p>左のリールから、となりの列のどこかにいればつながる。同じ列に2体なら2通り分。フリースピン中は${sym('wl_wild',18)}WILDが出て、WILDを含む当たりは配当2倍。たまごで回数上乗せ。</p>`,
