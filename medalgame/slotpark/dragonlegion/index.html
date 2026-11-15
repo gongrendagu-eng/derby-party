@@ -76,6 +76,14 @@
 .dls-fx{width:100%;height:100%}
 .dls-flash{opacity:0;background:#fff}
 .dls-a{position:absolute;left:0;bottom:0;transform-origin:50% 100%;will-change:transform}
+.dls-a .bd{position:relative;transform-origin:50% 100%}
+.dls-a .spr{display:none;position:relative;overflow:hidden;filter:drop-shadow(0 3px 2px rgba(0,0,0,.3))}
+.dls-a .spr img{position:absolute;left:0;top:0;height:100%;max-width:none;filter:none;will-change:transform}
+.dls-a.has-spr .spr{display:block}.dls-a.has-spr .bd>img{display:none}
+.dls-a.has-spr.still .spr{display:none}.dls-a.has-spr.still .bd>img{display:block}
+.dls-paint{position:absolute;left:0;display:flex;will-change:transform}
+.dls-paint img{display:block;flex:none;max-width:none}
+.dls-paint img.fl{transform:scaleX(-1)}
 .dls-a img{display:block;transform-origin:50% 100%;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.3))}
 .dls-a::after{content:"";position:absolute;left:8%;right:8%;bottom:-3px;height:9px;border-radius:50%;background:rgba(0,0,0,.28);z-index:-1}
 .dls-a.fly::after{display:none}
@@ -197,22 +205,34 @@ const DLS=(()=>{
   const shake=(a,dur)=>{ const n=Math.max(4,Math.round(dur/45)), kf=[]; for(let i=0;i<=n;i++){ const d=1-i/n; kf.push({transform:`translate(${(rnd(-a,a)*d).toFixed(1)}px,${(rnd(-a,a)*d*.7).toFixed(1)}px)`}); } kf[n]={transform:'translate(0,0)'}; world.animate(kf,{duration:dur,easing:'linear'}); };
   const tintTo=(c,op,ms)=>{ tn.style.transition=`opacity ${ms}ms`; tn.style.background=c; tn.style.opacity=op; };
   const raysTo=(op,ms,rb)=>{ rays.classList.toggle('rb',!!rb); rays.style.transition=`opacity ${ms}ms`; rays.style.opacity=op; };
-  const speed=r=>{ strips.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} }); walkFast=r>1.5; walkRate(r>1.5?1.8:1); };
+  const speed=r=>{ strips.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} }); walkFast=r>1.3; walkRate(r>1.3?1.5:1); };
   function banner(text,o){ o=o||{}; const b=document.createElement('div'); b.className='dls-b'+(o.rb?' rb':''); b.textContent=text; b.style.fontSize=(o.size||44)+'px'; txt.appendChild(b);
     const c=s=>`translate(-50%,-50%) scale(${s})`;
     an(b,[{transform:c(2.6),opacity:0},{transform:c(.92),opacity:1,offset:.3},{transform:c(1),opacity:1,offset:.45},{transform:c(1),opacity:1,offset:.82},{transform:c(1.15),opacity:0}],{duration:o.dur||1400}).then(()=>b.remove()); }
 
   /* --- キャラ(wrapper=位置と動き、中のimg=ゆらゆら) --- */
-  function actor(key,o){ const w=document.createElement('div'); w.className='dls-a'+(o.fly?' fly':''); const im=new Image(); im.src=A+key+'.webp'; im.alt=''; im.draggable=false; im.style.height=o.h+'px'; w.appendChild(im);
-    w.style.zIndex=o.z||2; w._x=o.x; w._y=o.y==null?G-4:o.y; w._h=o.h; w.style.transform=tf(w._x,w._y); actors.appendChild(w); return w; }
-  const spawn=(key,o)=>{ const w=actor(key,o); temp.push(w); return w; };
+  /* 歩くコマ(assets/walk_<名前>.webp)：横に正方形のコマを並べた1枚。あればコマ送りで歩く。なければ1枚の絵を弾ませる */
+  const SPR={}, sprName=k=>k.replace(/^wl_/,'').replace(/_stand$/,'');
+  const walkSheet=key=>SPR[key]||(SPR[key]=new Promise(res=>{ const im=new Image(); im.onload=()=>res(im.naturalHeight?{src:im.src,n:Math.max(1,Math.round(im.naturalWidth/im.naturalHeight))}:null); im.onerror=()=>res(null); im.src=A+'walk_'+sprName(key)+'.webp'; }));
+  function actor(key,o){ const w=document.createElement('div'); w.className='dls-a'+(o.fly?' fly':''); const bd=document.createElement('div'); bd.className='bd';
+    const im=new Image(); im.src=A+key+'.webp'; im.alt=''; im.draggable=false; im.style.height=o.h+'px'; bd.appendChild(im); w.appendChild(bd);
+    w.style.zIndex=o.z||2; w._x=o.x; w._y=o.y==null?G-4:o.y; w._h=o.h; w._face=o.face||1; w._always=!!o.always; w.style.transform=tf(w._x,w._y); actors.appendChild(w);
+    walkSheet(key).then(sp=>{ if(!sp||!w.isConnected) return; const box=document.createElement('div'); box.className='spr'; box.style.width=box.style.height=Math.round(o.h*1.05)+'px'; if(w._face<0) box.style.transform='scaleX(-1)';
+      const si=new Image(); si.src=sp.src; si.alt=''; si.draggable=false; box.appendChild(si); bd.appendChild(box); w.classList.add('has-spr');
+      w._sa=si.animate([{transform:'translateX(0)'},{transform:'translateX(-100%)'}],{duration:Math.round((o.fly?70:95)*sp.n),iterations:Infinity,easing:`steps(${sp.n})`});
+      if(!w._always) frames(w,false);
+      if(w._walkA){ try{ w._walkA.cancel(); }catch(e){} walkers=walkers.filter(a=>a!==w._walkA); w._walkA=bd.animate([{transform:'translateY(0)'},{transform:'translateY(-3px)'}],{duration:Math.round((o.fly?70:95)*sp.n/2),iterations:Infinity,direction:'alternate',easing:'ease-in-out'}); walkers.push(w._walkA); } });
+    return w; }
+  function frames(w,on){ const a=w&&w._sa; if(!a) return; try{ if(on) a.play(); else { a.pause(); a.currentTime=0; } }catch(e){} } // コマ送りを動かす/止める
+  const spawn=(key,o)=>{ const w=actor(key,Object.assign({face:-1},o)); temp.push(w); return w; };
   const spawnEl=(cls,css,x,y)=>{ const e=document.createElement('div'); e.className=cls; e.style.cssText=css; e._x=x; e._y=y; e.style.transform=tf(x,y); actors.appendChild(e); temp.push(e); return e; };
-  const pose=k=>{ if(hero) hero.firstChild.src=A+k+'.webp'; };
+  const pose=k=>{ if(!hero) return; hero.firstChild.firstChild.src=A+k+'.webp'; hero.classList.toggle('still',k!=='wl_dragon_stand'); };
   const bob=(im,amp,per,delay)=>im.animate([{transform:'translateY(0) rotate(-1.5deg)'},{transform:`translateY(${-amp}px) rotate(1.5deg)`}],{duration:per*1000,iterations:Infinity,direction:'alternate',easing:'ease-in-out',delay:(delay||0)*1000});
   const hop=(im,amp,per,delay)=>im.animate([{transform:'translateY(0) scale(1.08,.92)',offset:0},{transform:`translateY(${-amp}px) scale(.95,1.06)`,offset:.45},{transform:'translateY(0) scale(1.08,.92)',offset:1}],{duration:per*1000,iterations:Infinity,easing:'ease-in-out',delay:(delay||0)*1000});
   const squash=w=>w.firstChild.animate([{transform:'scale(1,1)'},{transform:'scale(1.2,.8)',offset:.3},{transform:'scale(.92,1.1)',offset:.6},{transform:'scale(1,1)'}],{duration:450,easing:'ease-out'});
-  const slide=(w,x1,dur)=>{ const x0=w._x; w._x=x1; return an(w,[{transform:tf(x0,w._y)},{transform:tf(x1,w._y)}],{duration:dur,easing:'cubic-bezier(.2,.8,.3,1)'}); };
-  const run=(w,x1,dur,hh)=>{ const x0=w._x, n=Math.max(3,Math.round(dur/260)), kf=[]; for(let i=0;i<=n*2;i++){ const u=i/(n*2); kf.push({transform:tf(x0+(x1-x0)*u,w._y+(i%2?(hh||16):0),i%2?.96:1.04)}); } w._x=x1; return an(w,kf,{duration:dur,easing:'linear'}); };
+  const moving=(w,p)=>{ frames(w,true); return p.then(r=>{ if(!w._always) frames(w,false); return r; }); };
+  const slide=(w,x1,dur)=>{ const x0=w._x; w._x=x1; return moving(w,an(w,[{transform:tf(x0,w._y)},{transform:tf(x1,w._y)}],{duration:dur,easing:'cubic-bezier(.2,.8,.3,1)'})); };
+  const run=(w,x1,dur,hh)=>{ const x0=w._x, n=Math.max(3,Math.round(dur/260)), kf=[], sp=w.classList.contains('has-spr'); for(let i=0;i<=n*2;i++){ const u=i/(n*2); kf.push({transform:tf(x0+(x1-x0)*u,w._y+(i%2&&!sp?(hh||16):i%2?4:0),sp?1:i%2?.96:1.04)}); } w._x=x1; return moving(w,an(w,kf,{duration:dur,easing:'linear'})); };
   const popIn=(w,dur)=>an(w,[{transform:tf(w._x,w._y,0)},{transform:tf(w._x,w._y,1.18),offset:.6},{transform:tf(w._x,w._y,1)}],{duration:dur||420});
   const heroJump=(h,dur)=>an(hero,[{transform:tf(hero._x,hero._y)},{transform:tf(hero._x,hero._y+h,1.04),offset:.45},{transform:tf(hero._x,hero._y)}],{duration:dur||520,fill:'none'});
   function mark(w,t){ const m=document.createElement('div'); m.className='dls-mark'; m.textContent=t; const x=w._x+Math.round(w._h*.5), y=w._y+Math.round(w._h*.62); m.style.transform=tf(x,y); actors.appendChild(m);
@@ -223,16 +243,16 @@ const DLS=(()=>{
   let walkers=[], dustT=0;
   function walk(w,amp,step,delay){ const im=w.firstChild, k=[];
     [[0,-5,1.04,.96],[.25,0,.97,1.04],[.5,5,1.04,.96],[.75,0,.97,1.04],[1,-5,1.04,.96]].forEach(([o,r,sx,sy])=>k.push({offset:o,transform:`translateY(${(o===.25||o===.75)?-amp:0}px) rotate(${r}deg) scale(${sx},${sy})`,easing:(o===.25||o===.75)?'ease-in':'ease-out'}));
-    const a=im.animate(k,{duration:step*2000,iterations:Infinity,delay:(delay||0)*1000}); a._base=1; walkers.push(a); return a; }
-  const walkRate=r=>walkers.forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} });
+    const a=im.animate(k,{duration:step*2000,iterations:Infinity,delay:(delay||0)*1000}); walkers.push(a); if(!w.classList.contains('has-spr')) w._walkA=a; else { a.cancel(); } return a; }
+  const walkRate=r=>[...walkers,...[hero,...pals].map(w=>w&&w._sa).filter(Boolean)].forEach(a=>{ try{ if(a.updatePlaybackRate) a.updatePlaybackRate(r); else a.playbackRate=r; }catch(e){} });
   function dustLoop(){ clearTimeout(dustT); if(!root||!root.isConnected) return;
     if(hero&&!temp.length){ emit(2,()=>P({shape:'puff',x:hero._x-hero._h*.18+rnd(-6,6),y:H-G+rnd(0,4),vx:rnd(-70,-30),vy:rnd(-25,-8),g:10,life:rnd(.35,.55),size:rnd(3,6),c:'#f3ead2'})); }
-    dustT=setTimeout(dustLoop,(walkFast?190:380)); }
+    dustT=setTimeout(dustLoop,(walkFast?260:460)); }
   let walkFast=false;
   function mkHero(){ pals.forEach(p=>p.remove()); if(hero) hero.remove(); walkers.forEach(a=>{ try{ a.cancel(); }catch(e){} }); walkers=[];
-    hero=actor('wl_dragon_stand',{x:D,h:Math.round(H*.62),z:5}); walk(hero,8,.38);
-    pals=[actor('wl_chick',{x:D-Math.round(W*.15),h:Math.round(H*.24),z:4}),actor('wl_fluff',{x:D-Math.round(W*.25),h:Math.round(H*.22),z:4})];
-    pals.forEach((p,i)=>walk(p,6,.26+i*.03,i*.13)); dustLoop(); }
+    hero=actor('wl_dragon_stand',{x:D,h:Math.round(H*.62),z:5,always:1}); walk(hero,8,.46);
+    pals=[actor('wl_chick',{x:D-Math.round(W*.15),h:Math.round(H*.24),z:4,always:1}),actor('wl_fluff',{x:D-Math.round(W*.25),h:Math.round(H*.22),z:4,always:1})];
+    pals.forEach((p,i)=>walk(p,6,.32+i*.03,i*.13)); dustLoop(); }
 
   /* --- 予告(期待度ごと)。k=1が普通、フリースピン中は短く。この間リールは回っている --- */
   const L0=['wl_chick','wl_fluff','wl_flower','wl_mushroom'];
@@ -240,9 +260,9 @@ const DLS=(()=>{
     const e=spawn(pick(L0),{x:W+40,h:Math.round(H*.22),z:2}); run(e,-60,2200,18); await wait(250*k); }
   async function sc1(t,k){ // 緑：地面がゆれて、影とコウモリが横ぎる
     shake(3,480); puff(D,6); puff(D+90,6); mark(hero,'！');
-    const sh=spawnEl('dls-shadow',`width:${Math.round(W*.26)}px;height:${Math.round(H*.12)}px`,W+60,G-8); an(sh,[{transform:tf(W+60,G-8)},{transform:tf(-120,G-8)}],{duration:1300,easing:'ease-in-out'});
-    const b=spawn('wl_bat',{x:W+50,y:Math.round(H*.62),h:Math.round(H*.2),z:6,fly:1}); b.firstChild.animate([{transform:'scaleY(1)'},{transform:'scaleY(.65)'}],{duration:160,iterations:Infinity,direction:'alternate'});
-    an(b,[{transform:tf(W+50,b._y)},{transform:tf(W*.62,b._y-14),offset:.35},{transform:tf(W*.3,b._y+10),offset:.7},{transform:tf(-60,b._y-8)}],{duration:1300,easing:'ease-in-out'});
+    const sh=spawnEl('dls-shadow',`width:${Math.round(W*.26)}px;height:${Math.round(H*.12)}px`,W+60,G-8); an(sh,[{transform:tf(W+60,G-8)},{transform:tf(-120,G-8)}],{duration:2400,easing:'ease-in-out'});
+    const b=spawn('wl_bat',{x:W+50,y:Math.round(H*.62),h:Math.round(H*.2),z:6,fly:1}); if(!b.classList.contains('has-spr')) b.firstChild.animate([{transform:'scaleY(1)'},{transform:'scaleY(.7)'}],{duration:230,iterations:Infinity,direction:'alternate'});
+    moving(b,an(b,[{transform:tf(W+50,b._y)},{transform:tf(W*.62,b._y-14),offset:.35},{transform:tf(W*.3,b._y+10),offset:.7},{transform:tf(-60,b._y-8)}],{duration:2800,easing:'ease-in-out'}));
     await wait(850*k); }
   async function sc2(t,k){ // 赤：空が赤くなり、中ボスが地ひびきとともに現れる
     tintTo('#ff3b30',.2,350); shake(4,300); await wait(220*k); if(!live(t)) return;
@@ -256,7 +276,7 @@ const DLS=(()=>{
     const g=boss=spawn('wl_golem',{x:W+130,h:Math.round(H*.64),z:4}); slide(g,Math.round(W*.78),620);
     await wait(560*k); if(!live(t)) return;
     snd('push'); shake(9,360); puff(g._x,14); flashing(.35,260,'#ffe7a0'); squash(g);
-    const a1=spawn('wl_ghost',{x:-50,y:G+8,h:Math.round(H*.32),z:3,fly:1}), a2=spawn('wl_mimic',{x:-110,h:Math.round(H*.3),z:3});
+    const a1=spawn('wl_ghost',{x:-50,y:G+8,h:Math.round(H*.32),z:3,fly:1,face:1}), a2=spawn('wl_mimic',{x:-110,h:Math.round(H*.3),z:3,face:1});
     run(a1,Math.round(W*.5),700,6); run(a2,Math.round(W*.6),760);
     await wait(500*k); if(!live(t)) return;
     pose('wl_dragon_win'); heroJump(34,560); sparks(hero._x,H*.4,22,['#ffe27a','#fff6c0'],150);
@@ -310,11 +330,22 @@ const DLS=(()=>{
     root.insertAdjacentHTML('afterbegin',`<div class="dls-world"><div class="dls-strip" data-s="clouds"></div><div class="dls-strip" data-s="far"></div><div class="dls-strip" data-s="near"></div><div class="dls-strip" data-s="grass"></div><div class="dls-rays"><i style="left:${Math.round(W*.5-S/2)}px;top:${Math.round(H*.62-S/2)}px;width:${S}px;height:${S}px"></i></div><div class="dls-actors"></div></div><div class="dls-tint"></div><canvas class="dls-fx"></canvas><div class="dls-flash"></div><div class="dls-txt"></div>`);
     world=root.querySelector('.dls-world'); actors=root.querySelector('.dls-actors'); tn=root.querySelector('.dls-tint'); rays=root.querySelector('.dls-rays'); fl=root.querySelector('.dls-flash'); txt=root.querySelector('.dls-txt'); cv=root.querySelector('.dls-fx');
     cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); cx=cv.getContext('2d');
-    const def={clouds:[H*.5,cloudSvg,70000],far:[H*.66,farSvg,42000],near:[H*.42,nearSvg,16000],grass:[G+18,grassSvg,4200]}; strips=[];
+    const def={clouds:[H*.5,cloudSvg,150000],far:[H*.66,farSvg,95000],near:[H*.42,nearSvg,40000],grass:[G+18,grassSvg,9500]}; strips=[];
     world.querySelectorAll('.dls-strip').forEach(s=>{ const [hh,fn,dur]=def[s.dataset.s], h=Math.round(hh); s.style.width=2*W+'px'; s.style.height=h+'px'; s.innerHTML=fn(W,h)+fn(W,h);
       strips.push(s.animate([{transform:'translateX(0)'},{transform:`translateX(${-W}px)`}],{duration:dur,iterations:Infinity,easing:'linear'})); });
-    temp=[]; boss=egg=null; mkHero(); }
-  function begin(){ if(!ok||!root) return; tok++; clean(); tintTo('#000',0,200); raysTo(0,200); speed(2.4); parts.length=0; if(cx) cx.clearRect(0,0,W,H); txt.textContent=''; pose('wl_dragon_stand'); slide(hero,D,200); }
+    paint(); temp=[]; boss=egg=null; mkHero(); }
+  /* 絵の背景：assets/st_far.webp(つなぎ目なしの横長の風景)があればそれ、なければ wl_bg.webp を左右反転でつないで流す。
+     assets/st_near.webp(地面・草の帯、透明)があれば、いちばん手前の草の帯のかわりに使う */
+  function paint(){ const load=src=>new Promise(r=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=src; });
+    const lay=(im,h,top,bottom,pxs,before)=>{ const tw=Math.round(h*im.naturalWidth/im.naturalHeight), d=document.createElement('div'); d.className='dls-paint'; d.style.height=h+'px'; if(bottom!=null) d.style.bottom=bottom+'px'; else d.style.top=top+'px';
+      for(let i=0;i<4;i++){ const t=new Image(); t.src=im.src; t.alt=''; t.style.width=tw+'px'; t.style.height=h+'px'; if(i%2) t.className='fl'; d.appendChild(t); }
+      world.insertBefore(d,before); const a=d.animate([{transform:'translateX(0)'},{transform:`translateX(${-2*tw}px)`}],{duration:Math.round(2*tw/pxs*1000),iterations:Infinity,easing:'linear'}); strips.push(a); return d; };
+    load(A+'st_far.webp').then(im=>im?[im,1]:load(A+'wl_bg.webp').then(b=>b?[b,0]:null)).then(r=>{ if(!r||!world) return; const [im,own]=r, keep=s=>world.querySelector(`.dls-strip[data-s=${s}]`);
+      const h=Math.round(own?H*1.04:H*1.5); lay(im,h,own?0:-Math.round(H*.2),null,own?14:12,keep('grass'));
+      ['clouds','far','near'].forEach(s=>{ const e=keep(s); if(e){ const i=[...world.querySelectorAll('.dls-strip')].indexOf(e); e.remove(); } });
+      strips=strips.filter(a=>a.effect&&a.effect.target&&a.effect.target.isConnected); })
+    .then(()=>load(A+'st_near.webp')).then(im=>{ if(!im||!world) return; const g=world.querySelector('.dls-strip[data-s=grass]'); lay(im,Math.round(G*2.2),null,0,75,world.querySelector('.dls-rays')); if(g){ g.remove(); strips=strips.filter(a=>a.effect&&a.effect.target&&a.effect.target.isConnected); } }); }
+  function begin(){ if(!ok||!root) return; tok++; clean(); tintTo('#000',0,200); raysTo(0,200); speed(1.7); parts.length=0; if(cx) cx.clearRect(0,0,W,H); txt.textContent=''; pose('wl_dragon_stand'); slide(hero,D,200); }
   async function yokoku(tier,fs){ if(!ok||!root) return; const t=tok; await SC[tier](t,fs?.55:1); }
   function reach(){ if(!ok||!root) return; mark(hero,'！'); flashing(.25,300,'#ffe7a0'); ring(W*.5,H*.4,44,'#ffd84d'); }
   function abort(){ if(ok&&root) settle(tok); }
