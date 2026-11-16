@@ -24,7 +24,7 @@
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;height:100%;background:var(--stage);color:var(--ink);font-family:var(--f-body);font-weight:700;-webkit-text-size-adjust:100%}
-button,input,textarea{font:inherit;color:inherit}
+button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;touch-action:manipulation}
 button:disabled{cursor:default;opacity:.35}
 :focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
@@ -32,7 +32,7 @@ button:disabled{cursor:default;opacity:.35}
 .btn{border:2px solid var(--line);background:var(--panel2);border-radius:10px;padding:10px 18px;font-weight:900}
 .btn:hover:not(:disabled){border-color:var(--soft)}
 .btn.main{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}
-input[type=text],input[type=password],textarea{background:#0f1a44;border:2px solid var(--line);border-radius:10px;padding:10px 12px;font-size:1.1rem;width:100%}
+input[type=text],input[type=password],input[type=number],textarea,select{background:#0f1a44;border:2px solid var(--line);border-radius:10px;padding:10px 12px;font-size:1.1rem;width:100%}
 textarea{resize:vertical;line-height:1.7;font-weight:500}
 
 /* 入口・ログイン */
@@ -56,24 +56,26 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .dot.on{background:var(--ok)} .dot.off{background:var(--maru)}
 .count{color:var(--soft);white-space:nowrap}
 .spacer{flex:1}
-.seg{display:flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
-.seg button{border:0;background:transparent;padding:8px 16px;font-weight:900}
-.seg button.on{background:var(--ink);color:var(--stage)}
 .tbtn{border:2px solid var(--line);background:transparent;border-radius:10px;padding:8px 14px;font-weight:900}
+.mbadge{display:inline-block;border-radius:999px;padding:4px 14px;font-weight:900;font-size:1rem;white-space:nowrap;border:2px solid var(--line);color:var(--soft)}
+.mbadge.buzz{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}
+.mbadge.all{background:var(--batsu);border-color:var(--batsu);color:#fff}
 .banner{background:var(--maru);color:#fff;padding:8px 20px;font-weight:900}
 .banner.info{background:var(--panel2);color:var(--ink)}
-.hmain{flex:1;min-height:0;display:grid;grid-template-columns:1fr minmax(260px,22%);gap:16px;padding:16px 20px}
-.stage{min-height:0;display:flex;flex-direction:column;gap:14px;overflow:auto}
-.qhead{display:flex;align-items:baseline;gap:18px}
+.hmain{flex:1;min-height:0;display:grid;grid-template-columns:1fr minmax(240px,20%);gap:16px;padding:16px 20px}
+.stage{min-height:0;display:flex;flex-direction:column;overflow:auto}
+.hplay,.hfinal{display:flex;flex-direction:column;gap:14px}
+.qhead{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 .qno{font-family:var(--f-disp);font-weight:400;font-size:clamp(1.8rem,3vw,2.8rem)}
 .qno small{font-family:var(--f-body);font-size:.5em;color:var(--soft);margin-left:.3em}
+.qhead .mbadge{font-size:1.2rem;padding:4px 18px}
 .phase{color:var(--soft);font-size:1.1rem}
 .qtext{background:var(--panel);border-radius:16px;padding:22px 28px;font-size:clamp(1.8rem,3.4vw,3.2rem);line-height:1.5;font-weight:900;min-height:3.4em;display:flex;align-items:center}
 .qtext.idle{font-size:clamp(1.1rem,1.8vw,1.6rem);color:var(--soft);font-weight:700}
 .answer{display:flex;align-items:center;gap:18px;border:3px solid var(--maru);border-radius:14px;padding:10px 24px}
 .answer span{color:var(--maru);font-size:1.3rem;white-space:nowrap}
 .answer b{font-size:clamp(1.6rem,3vw,2.7rem);line-height:1.3}
-/* 解答者のランプ(この画面の主役) */
+/* 解答者のランプ */
 .lamp{border-radius:16px;padding:14px 26px;display:flex;align-items:center;gap:22px;min-height:96px;border:3px dashed var(--line);color:var(--soft);font-size:1.3rem}
 .lamp.on{background:var(--lamp);color:var(--lamp-ink);border:3px solid #fff3b0;box-shadow:0 0 0 6px rgba(255,210,31,.25),0 0 60px rgba(255,210,31,.55)}
 .lamp.on span{font-size:1.2rem}
@@ -93,7 +95,7 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .queue li.cur{outline:3px solid var(--lamp)} .queue li.cur .st{color:var(--lamp)}
 .queue li.x{opacity:.5} .queue li.x .st{color:var(--batsu)}
 .queue li.o .st{color:var(--maru)}
-.tally{font-size:1.3rem;color:var(--soft)} .tally b{color:var(--ink);font-size:1.6rem}
+.tally{font-size:1.3rem;color:var(--soft);margin:0} .tally b{color:var(--ink);font-size:1.6rem}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .card{position:relative;text-align:left;border:3px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:4px;min-height:84px}
 .card:disabled{opacity:1;cursor:default}
@@ -101,30 +103,80 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .card .tx{font-size:clamp(1.2rem,1.8vw,1.7rem);font-weight:900;word-break:break-all}
 .card .tx.hid{color:var(--soft);font-size:1rem}
 .card.maru{border-color:var(--maru)}
+.card.batsu{opacity:.55}
 .card i{position:absolute;right:10px;top:4px;font-style:normal;color:var(--maru);font-size:2.2rem;line-height:1}
 .hint{color:var(--soft);font-weight:500;margin:0}
+/* 参加者の一覧(得点は出さない) */
 .board{background:#0f1a44;border-radius:16px;padding:12px 14px;overflow:auto;min-height:0}
 .board h2{margin:0 0 8px;font-size:1rem;color:var(--soft)}
 .board ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
-.board li{display:grid;grid-template-columns:2em minmax(0,1fr) auto 1.8em;align-items:center;gap:8px;font-size:clamp(1rem,1.3vw,1.25rem);padding:4px 6px;border-radius:8px}
+.board li{display:grid;grid-template-columns:2.8em minmax(0,1fr) 1.4em 1.8em;align-items:center;gap:8px;font-size:clamp(1rem,1.3vw,1.2rem);padding:4px 6px;border-radius:8px}
 .board li.hot{background:var(--lamp);color:var(--lamp-ink)}
 .board li.off .nm{opacity:.45}
-.board .rk{color:var(--soft);font-size:.85em}
-.board li.hot .rk{color:inherit}
+.board .tb{font-size:.8em;color:var(--soft);border:1px solid var(--line);border-radius:6px;text-align:center;padding:0 2px}
+.board li.hot .tb{color:inherit;border-color:currentColor}
 .board .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.board .pt{font-family:var(--f-disp);font-weight:400}
+.board .ck{color:var(--ok);text-align:center}
 .kick{border:0;background:transparent;color:var(--soft);font-size:1rem;padding:2px;border-radius:6px;opacity:.6}
 .kick:hover{opacity:1;background:var(--panel2)}
 .ctrl{display:flex;gap:10px;padding:10px 20px 14px;flex-wrap:wrap;justify-content:center;background:#0f1a44}
+.ctrl:empty{display:none}
 .ctrl button{border:2px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 18px;font-weight:900;font-size:1.15rem;display:flex;align-items:center;gap:10px}
 .ctrl kbd{font-family:var(--f-body);font-size:.75rem;border:1px solid currentColor;border-radius:5px;padding:0 6px;opacity:.7}
 .ctrl .go{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}
 .ctrl .ok{background:var(--maru);border-color:var(--maru);color:#fff}
 .ctrl .ng{background:var(--batsu);border-color:var(--batsu);color:#fff}
+.ctrl .sm{font-size:.95rem;padding:8px 12px;background:transparent}
+.ctrl .sep{width:2px;background:var(--line);border-radius:2px}
+
+/* タイトル画面(先生・学生共通の飾り) */
+.tt-logo{font-family:var(--f-disp);font-weight:400;color:var(--lamp);line-height:1.05;text-align:center;
+  font-size:clamp(2.6rem,min(8vw,11vh),6.5rem);text-shadow:0 6px 0 #a5780a,0 12px 30px rgba(0,0,0,.35);letter-spacing:.02em}
+@media (prefers-reduced-motion:no-preference){ .tt-logo{animation:float 3s ease-in-out infinite} }
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.tt-sub{text-align:center;color:var(--soft);font-size:clamp(1rem,1.6vw,1.4rem);margin:0}
+.htitle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:min(22px,2vh);padding:6px}
+.tt-row{display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap}
+.tt-qr{background:#fff;padding:12px;border-radius:12px;line-height:0}
+.rules{list-style:none;margin:0;padding:0;display:grid;gap:8px;width:100%;max-width:900px}
+.rules li{background:var(--panel);border-radius:12px;padding:8px 16px;display:flex;gap:12px;align-items:baseline;font-size:clamp(1rem,1.5vw,1.3rem);line-height:1.5;font-weight:700;text-align:left}
+.rules li b{flex:none;font-family:var(--f-disp);font-weight:400;color:var(--lamp)}
+.rules li .mbadge{flex:none}
+
+/* 結果発表 */
+.fh{font-family:var(--f-disp);font-weight:400;font-size:clamp(2rem,4vw,3.4rem);margin:0;color:var(--lamp)}
+.fbtns{display:flex;gap:10px;flex-wrap:wrap}
+.fbtns .btn{font-size:1.2rem}
+.fbtns .btn.on{outline:3px solid #fff}
+.fbtns.sub .btn{font-size:1rem;background:transparent}
+.flabel{font-size:clamp(1.4rem,2.4vw,2.2rem);margin:0}
+.flabel b{color:var(--maru)}
+.fcards{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.fcard{background:var(--panel);border:3px solid var(--maru);border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;gap:6px}
+.fcard b{font-size:clamp(1.8rem,3vw,2.8rem);line-height:1.2;word-break:break-all}
+.fcard span{color:var(--soft);font-size:1.1rem;line-height:1.6}
+.fcard em{font-style:normal;align-self:flex-start;font-size:.9rem;color:var(--lamp);border:1px solid var(--lamp);border-radius:999px;padding:1px 10px}
+@media (prefers-reduced-motion:no-preference){ .fcard{animation:pop .4s ease-out both} }
+.draw{background:var(--panel);border-radius:16px;padding:18px 22px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chips span{background:var(--panel2);border-radius:999px;padding:4px 14px}
+.slot{font-size:clamp(2.4rem,5vw,4.4rem);font-weight:900;min-height:1.4em;line-height:1.3;padding:6px 30px;border-radius:14px;background:#0f1a44;min-width:60%}
+.slot.hit{background:var(--maru);color:#fff}
+.winlist{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:1.4rem}
+.winlist span{border:2px solid var(--maru);border-radius:10px;padding:2px 12px}
+
+/* 方式の発表(先生の画面) */
+.announce{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:70;pointer-events:none;background:rgba(5,10,30,.55)}
+.announce div{font-family:var(--f-disp);font-weight:400;font-size:clamp(4rem,12vw,10rem);padding:10px 60px;border-radius:30px;transform:rotate(-4deg)}
+.announce .buzz{background:var(--lamp);color:var(--lamp-ink)}
+.announce .all{background:var(--batsu);color:#fff}
+@media (prefers-reduced-motion:no-preference){ .announce div{animation:slam .45s cubic-bezier(.2,1.6,.4,1) both} }
+@keyframes slam{from{transform:scale(2.4) rotate(-4deg);opacity:0}to{transform:scale(1) rotate(-4deg);opacity:1}}
 
 .modal{position:fixed;inset:0;background:rgba(5,10,30,.7);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
-.mcard{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 28px;width:100%;max-width:760px;max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.mcard{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 28px;width:100%;max-width:820px;max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .mcard h2{margin:0;font-size:1.5rem}
+.mcard h3{margin:8px 0 0;font-size:1.1rem;color:var(--lamp)}
 .qrbox{display:flex;gap:28px;align-items:center;flex-wrap:wrap;justify-content:center}
 #qr{background:#fff;padding:14px;border-radius:12px;line-height:0}
 .qrcode{font-family:var(--f-disp);font-weight:400;font-size:clamp(3rem,8vw,5rem);letter-spacing:.1em;color:var(--lamp);line-height:1}
@@ -132,23 +184,29 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .note{color:var(--soft);font-weight:500;line-height:1.7;margin:0}
 .danger{border-color:var(--maru)!important;color:#ffb3b3}
-.rank{list-style:none;margin:0;padding:0}
-.rank li{display:grid;grid-template-columns:3em 1fr auto;gap:14px;align-items:baseline;padding:8px 6px;border-bottom:1px solid var(--line);font-size:1.6rem}
-.rank li:first-child{color:var(--lamp)}
-.rank b{font-family:var(--f-disp);font-weight:400}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--stage);padding:10px 20px;border-radius:999px;font-weight:900;z-index:60;max-width:90%}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 14px}
+.fgrid label{display:flex;flex-direction:column;gap:4px;font-size:.92rem;color:var(--soft)}
+.fgrid label select,.fgrid label input{color:var(--ink)}
+.tlist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.tlist li{display:flex;align-items:center;gap:8px;background:#0f1a44;border-radius:10px;padding:6px 10px}
+.tlist li span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlist select{width:auto;padding:4px 8px;font-size:1rem}
+.tcount{display:flex;gap:8px;flex-wrap:wrap}
+.tcount span{background:var(--panel2);border-radius:999px;padding:2px 12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--stage);padding:10px 20px;border-radius:999px;font-weight:900;z-index:80;max-width:90%}
 
 /* 学生の画面 */
 .stu{min-height:100%;display:flex;flex-direction:column}
 .s-top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0f1a44;flex-wrap:wrap}
 .s-top .me{font-size:1.3rem}
-.s-top .pts{font-family:var(--f-disp);font-weight:400;font-size:1.3rem;color:var(--lamp)}
+.s-top .tbadge{background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:2px 10px}
+.s-top .prog{color:var(--soft)}
 .s-top .sp{flex:1}
 .s-top button{border:2px solid var(--line);background:transparent;border-radius:8px;padding:6px 12px;font-size:.9rem}
 .s-off{background:var(--maru);color:#fff;padding:6px 16px;text-align:center}
 .s-q{padding:14px 18px 0}
-.s-q .no{color:var(--soft)}
-.s-q p{margin:4px 0 0;font-size:clamp(1.2rem,3.4vw,1.8rem);line-height:1.5}
+.s-q .no{color:var(--soft);margin-right:8px}
+.s-q p{margin:6px 0 0;font-size:clamp(1.2rem,3.4vw,1.8rem);line-height:1.5}
 .s-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
 .s-big{font-size:clamp(1.6rem,6vw,3rem);line-height:1.3;margin:0}
 .s-sub{color:var(--soft);font-size:1.1rem;margin:0;font-weight:500;line-height:1.7}
@@ -156,8 +214,20 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .buzzer:active{transform:translateY(10px);box-shadow:0 4px 0 #6d0905,0 8px 20px rgba(0,0,0,.4)}
 .s-body.turn{background:var(--lamp);color:var(--lamp-ink)}
 .s-body.turn .s-sub{color:var(--lamp-ink)}
+.s-body.hit{background:var(--maru);color:#fff}
+.s-body.hit .s-sub{color:#fff}
 .s-body.maru .mk{color:var(--maru)} .s-body.batsu .mk{color:var(--batsu)}
 .mk{font-size:clamp(5rem,22vw,10rem);line-height:1;font-family:var(--f-disp);font-weight:400}
+.s-body.title{justify-content:flex-start;padding-top:28px;gap:18px}
+.s-body.title .tt-logo{font-size:clamp(2.8rem,13vw,5.2rem)}
+.tcard{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 18px;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:560px}
+.tcard p{margin:0;color:var(--soft)}
+.tbig{font-family:var(--f-disp);font-weight:400;font-size:clamp(2.4rem,10vw,3.6rem);color:var(--lamp);line-height:1.1}
+.tpick{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tpick button{border:3px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 18px;font-size:1.3rem;font-weight:900;min-width:4.5em}
+.tpick button.on{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}
+.s-body .rules{max-width:560px}
+.s-body .rules li{font-size:1rem}
 .s-ansbox{width:100%;max-width:560px;display:flex;flex-direction:column;gap:10px}
 .s-ansbox input{font-size:1.4rem;text-align:center}
 .s-ansbox .btn{font-size:1.3rem;padding:14px}
@@ -212,26 +282,48 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
     <button class="roombtn" data-act="qr" title="QRコードを出す"><span id="hDot" class="dot"></span>ルーム <b id="hRoom"></b></button>
     <span id="hCount" class="count"></span>
     <span class="spacer"></span>
-    <div class="seg" id="hMode"><button data-act="mode" data-mode="buzz">早押し</button><button data-act="mode" data-mode="all">全員回答</button></div>
-    <button class="tbtn" data-act="rank">ランキング</button>
+    <span id="hModeBadge" class="mbadge" hidden></span>
+    <button class="tbtn" data-act="teams">チーム分け</button>
     <button class="tbtn" data-act="settings">設定</button>
   </header>
   <div id="hBanner" class="banner" hidden></div>
   <main class="hmain">
     <section class="stage">
-      <div class="qhead"><span id="hNo" class="qno"></span><span id="hPhase" class="phase"></span></div>
-      <div id="hQ" class="qtext"></div>
-      <div id="hA" class="answer" hidden></div>
-      <div id="hLamp" class="lamp" hidden></div>
-      <div id="hList"></div>
+      <!-- タイトル(ゲーム開始前) -->
+      <div id="hTitle" class="htitle" hidden>
+        <div class="tt-logo">早押しクイズ</div>
+        <p id="ttSub" class="tt-sub"></p>
+        <div class="tt-row">
+          <div id="ttQr" class="tt-qr"></div>
+          <div><p class="note">ルーム番号</p><div id="ttCode" class="qrcode"></div><p class="note">iPadのカメラでQRコードを読み取ってね</p></div>
+        </div>
+        <ul id="ttRules" class="rules"></ul>
+      </div>
+      <!-- 出題中 -->
+      <div id="hPlay" class="hplay" hidden>
+        <div class="qhead"><span id="hNo" class="qno"></span><span id="hQMode" class="mbadge" hidden></span><span id="hPhase" class="phase"></span></div>
+        <div id="hQ" class="qtext"></div>
+        <div id="hA" class="answer" hidden></div>
+        <div id="hLamp" class="lamp" hidden></div>
+        <div id="hList"></div>
+      </div>
+      <!-- 結果発表 -->
+      <div id="hFinal" class="hfinal" hidden>
+        <h2 class="fh">結果発表</h2>
+        <div class="fbtns"><button class="btn main" data-act="fin-p" id="finP">個人戦の結果</button><button class="btn main" data-act="fin-t" id="finT">グループ戦の結果</button></div>
+        <div id="fRes"></div>
+        <div class="fbtns sub"><button class="btn" data-act="more">問題を足して続ける(＋3問)</button><button class="btn" data-act="newgame">新しいゲームにする</button></div>
+      </div>
     </section>
-    <aside class="board"><h2>得点</h2><ol id="hScores"></ol></aside>
+    <aside class="board"><h2 id="hBoardH">参加者</h2><ol id="hPlayers"></ol></aside>
   </main>
   <footer id="hCtrl" class="ctrl"></footer>
 </section>
 
 <!-- 学生の画面(iPad) -->
 <section id="stu" class="stu" hidden></section>
+
+<div id="hAnnounce" class="announce" hidden></div>
 
 <div id="qrModal" class="modal" hidden>
   <div class="mcard">
@@ -245,21 +337,54 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 <div id="setModal" class="modal" hidden>
   <div class="mcard">
     <h2>設定</h2>
-    <p class="note">問題は1行に1問、「問題｜答え」の形で入れます。Excelで A列に問題、B列に答えを入れて、2列まとめてコピーして貼り付けてもかまいません。</p>
-    <textarea id="qIn" rows="12"></textarea>
+    <h3>出題</h3>
+    <div class="fgrid">
+      <label>出題方式<select id="sMode"><option value="random">早押しと全員回答をランダム</option><option value="buzz">早押しだけ</option><option value="all">全員回答だけ</option></select></label>
+      <label>問題数<input type="number" id="sN" min="1" max="500" step="1"></label>
+      <label>出題する順番<select id="sOrder"><option value="random">登録した問題からランダムに選ぶ</option><option value="seq">登録した順番</option></select></label>
+    </div>
+    <p class="note">問題数は次の「ゲーム開始」から使われます。ゲームの途中で増やすときは、下の「＋1問」「＋5問」ボタンを使います。登録してある問題より多くは出せません。</p>
+    <h3>得点(画面には出さず、裏で集計します)</h3>
+    <div class="fgrid">
+      <label>早押し:正解したとき(+)<input type="number" id="pBc" step="1"></label>
+      <label>早押し:まちがえたとき(−)<input type="number" id="pBw" min="0" step="1"></label>
+      <label>全員回答:正解したとき(+)<input type="number" id="pAc" step="1"></label>
+      <label>全員回答:まちがえたとき(−)<input type="number" id="pAw" min="0" step="1"></label>
+      <label>全員回答:回答しなかったとき(−)<input type="number" id="pAn" min="0" step="1"></label>
+    </div>
+    <p class="note">「−」の欄は、引く点数を入れます(0なら減点なし)。</p>
+    <h3>チーム(グループ戦)</h3>
+    <div class="fgrid">
+      <label>チームの数<input type="number" id="sTeamN" min="2" max="10" step="1"></label>
+      <label>チームの分け方<select id="sMethod"><option value="1">1. 先生が割り振る</option><option value="2">2. 学生が自分で選ぶ</option><option value="3">3. 自動でランダムに分ける</option></select></label>
+      <label>チームの得点<select id="sTeamScore"><option value="avg">メンバーの平均(人数の差が出ない)</option><option value="sum">メンバーの合計</option></select></label>
+    </div>
+    <p class="note">個人戦とグループ戦の得点は、いつも両方集計しています。結果発表の画面でどちらを出すか選べます。</p>
+    <h3>結果発表</h3>
+    <div class="fgrid">
+      <label>個人戦:下位を何人出すか<input type="number" id="sBotP" min="1" max="40" step="1"></label>
+      <label>グループ戦:下位を何チーム出すか<input type="number" id="sBotT" min="1" max="9" step="1"></label>
+      <label>発表するときの呼び名<input type="text" id="sLabel" maxlength="12"></label>
+    </div>
+    <p class="note">境目で同点になったときは、同点の人(チーム)の中からルーレットで抽選します。</p>
+    <h3>問題</h3>
+    <p class="note">1行に1問、「問題｜答え」の形で入れます。Excelで A列に問題、B列に答えを入れて、2列まとめてコピーして貼り付けてもかまいません。正解にしてよい答えが複数あるときは「;」で区切ります(例:B/S;貸借対照表)。全員回答は答えと自動で照らし合わせ、先生がカードをタップして直せます。</p>
+    <textarea id="qIn" rows="10"></textarea>
     <p id="qInfo" class="note"></p>
-    <div class="btns"><button data-act="close" class="btn">キャンセル</button><button id="qSave" class="btn main">問題を保存する</button></div>
+    <div class="btns"><button data-act="close" class="btn">キャンセル</button><button id="sSave" class="btn main">保存して閉じる</button></div>
     <hr style="border:0;border-top:1px solid var(--line);width:100%">
-    <p class="note">「得点をリセット」は参加者はそのままで得点だけを0にします。「参加者を全員削除」は、次のクラスで使う前に押してください。iPadは名前の入力画面に戻ります。</p>
-    <div class="btns"><button id="resetScore" class="btn danger">得点をリセット</button><button id="clearAll" class="btn danger">参加者を全員削除</button></div>
+    <p class="note">「新しいゲームにする」は参加者はそのままで、得点を0にしてタイトル画面に戻ります。「参加者を全員削除」は、次のクラスで使う前に押してください。iPadは名前の入力画面に戻ります。</p>
+    <div class="btns"><button id="resetGame" class="btn danger">新しいゲームにする</button><button id="clearAll" class="btn danger">参加者を全員削除</button></div>
   </div>
 </div>
 
-<div id="rankModal" class="modal" hidden>
+<div id="teamModal" class="modal" hidden>
   <div class="mcard">
-    <h2>ランキング</h2>
-    <ol id="rankList" class="rank"></ol>
-    <div class="btns"><button data-act="close" class="btn main">閉じる</button></div>
+    <h2>チーム分け</h2>
+    <p id="tmNote" class="note"></p>
+    <div id="tmCount" class="tcount"></div>
+    <ul id="tmList" class="tlist"></ul>
+    <div class="btns"><button id="tmShuffle" class="btn">ランダムに振り分け直す</button><button data-act="close" class="btn main">閉じる</button></div>
   </div>
 </div>
 
@@ -271,6 +396,9 @@ const HOST_PASSWORD="sensei";   // 先生の画面のパスワード(好きな�
 const NAME_MAX=8;               // ニックネームの最大文字数
 const NEAR_MS=50;               // この差(ミリ秒)以内なら「ほぼ同時」と表示
 const FB_VER="10.12.2";
+// 設定画面の初期値
+const DEFSET={mode:'random',n:10,order:'random',teamN:4,method:3,teamScore:'avg',botP:4,botT:1,label:'掃除当番',
+  pts:{bc:1,bw:0,ac:1,aw:0,an:0}};
 
 /* ============ 共通 ============ */
 const $=s=>document.querySelector(s);
@@ -280,10 +408,22 @@ const LOCAL=QS.has('local');
 const CODE_CH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const rid=n=>Array.from({length:n},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('');
 const normName=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,'');
+const tname=i=>(i>=0&&i<26?String.fromCharCode(65+i):String(i+1))+'班';
+const MODE_NAME={buzz:'早押し',all:'全員回答'};
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function show(id){ ['landing','login','host','stu'].forEach(k=>$('#'+k).hidden=k!==id); }
 let toastT=null;
 function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3200); }
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
+// ルール説明(先生のタイトル画面と学生のタイトル画面で共通)
+function rulesHtml(mode,label){
+  const L=[];
+  if(mode==='random') L.push(`<li><b>1</b><span>問題ごとに <span class="mbadge buzz">早押し</span> か <span class="mbadge all">全員回答</span> がランダムで決まります</span></li>`);
+  if(mode!=='all') L.push(`<li><span class="mbadge buzz">早押し</span><span>わかったら大きなボタンを押す。いちばん早く押した人が答えます</span></li>`);
+  if(mode!=='buzz') L.push(`<li><span class="mbadge all">全員回答</span><span>全員が答えを入れて送信。締め切りまでは送り直せます</span></li>`);
+  L.push(`<li><b>!</b><span>点数は最後までひみつ。最後に、下位の人(班)が「${esc(label)}」として発表されます</span></li>`);
+  return L.join('');
+}
 
 /* ============ 通信(Firebase と お試し用を同じ形にする) ============ */
 async function firebaseBackend(){
@@ -341,7 +481,10 @@ function tone(f,d,type='sine',vol=.2,when=0){
 const SND={
   buzz(){ tone(1175,.12,'square',.09); tone(1568,.4,'square',.09,.12); },
   ok(){ [0,.42].forEach(w=>{ tone(1319,.2,'sine',.3,w); tone(1047,.32,'sine',.3,w+.18); }); },
-  ng(){ tone(130,.8,'sawtooth',.16); tone(138,.8,'sawtooth',.12); }
+  ng(){ tone(130,.8,'sawtooth',.16); tone(138,.8,'sawtooth',.12); },
+  tick(){ tone(880,.04,'square',.05); },
+  call(){ [523,659,784].forEach((f,i)=>tone(f,.18,'triangle',.22,i*.09)); },
+  fan(){ [523,659,784,1047].forEach((f,i)=>tone(f,.35,'triangle',.22,i*.12)); }
 };
 
 /* ============ 先生の画面 ============ */
@@ -353,27 +496,47 @@ const SAMPLE=[
   {q:'手紙の頭語「拝啓」に対応する結語は?',a:'敬具'},
   {q:'日本の消費税の標準税率は何%?',a:'10%'}
 ];
-let H=null, QL=[], base='', unsubQ=[], lastPush='';
+let H=null, QL=[], base='', unsubQ=[], lastPush='', lastFRes='', qrRoom='';
 const hp={players:{},presence:{},buzz:{},answers:{},conn:false};
+/*
+  H(先生の端末に保存)のおもな中身
+  game   : 'title'(開始前) / 'play'(出題中) / 'final'(結果発表)
+  deck   : 今回出す問題(QLの番号)の並び  pos: いま何問目か(0から)
+  qmodes : 何問目が早押し/全員回答か。一度決まったら変えない
+  res    : 何問目で だれが 何点動いたか {pos:{pid:点}} → 得点はここから計算する
+  teams  : チーム(分け方1・3のとき) {pid:チーム番号}
+  fin    : 結果発表の状態
+*/
 function loadH(){ let h=null; try{ h=JSON.parse(localStorage.getItem(HKEY)); }catch(e){}
-  return Object.assign({room:null,mode:'buzz',qi:0,qn:0,phase:'idle',ans:null,wrong:[],right:null,showAns:false,scores:{},mark:{},kicked:{},epoch:1},h||{}); }
+  const o=Object.assign({room:null,mode:'',qn:0,phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{},kicked:{},epoch:1,
+    game:'title',deck:[],pos:0,qmodes:{},res:{},teams:{},fin:null},h||{});
+  o.set=Object.assign({},DEFSET,(h&&h.set)||{}); o.set.pts=Object.assign({},DEFSET.pts,(h&&h.set&&h.set.pts)||{});
+  if(o.fin) o.fin.run=false;     // 抽選の途中で閉じたときは、抽選をやり直せるようにする
+  return o; }
 function loadQ(){ try{ const q=JSON.parse(localStorage.getItem(QKEY)); if(Array.isArray(q)) return q; }catch(e){} return SAMPLE.slice(); }
 function banner(m,info){ const b=$('#hBanner'); b.textContent=m; b.className='banner'+(info?' info':''); b.hidden=!m; }
+const cq=()=>QL[H.deck[H.pos]];
+function resetQ(){ Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}}); }
+// いまの問題の方式(まだ決まっていなければ ''。ランダムのときは出題した瞬間に決まる)
+function syncMode(){ H.mode=H.qmodes[H.pos]||(H.set.mode==='random'?'':H.set.mode); }
 
 async function hostStart(){
   H=loadH(); QL=loadQ();
   if(!H.room) H.room=rid(5);
-  H.qi=Math.max(0,Math.min(H.qi,QL.length-1));
+  H.deck=(H.deck||[]).filter(i=>i<QL.length);
+  if(H.game!=='title'&&!H.deck.length) H.game='title';
+  if(H.game==='title') resetQ();
+  H.pos=Math.max(0,Math.min(H.pos,H.deck.length-1));
+  syncMode();
   show('host'); renderHost();
   try{ be=LOCAL?localBackend():await firebaseBackend(); }
   catch(e){ banner(e.message); return; }
-  if(LOCAL) banner('お試しモードです。このPCの中だけで動きます。QRコードの画面から、学生の画面を別のタブで開けます。',true);
+  if(LOCAL) banner('お試しモードです。このPCの中だけで動きます。ルーム番号のボタンから、学生の画面を別のタブで開けます。',true);
   base=`quiz/${H.room}`;
   be.connected(c=>{ hp.conn=c; renderHost(); });
-  be.on(base+'/players',v=>{ hp.players=v||{}; autoAssign(); refresh(); });
+  be.on(base+'/players',v=>{ hp.players=v||{}; if(ensureTeams()) save(); else refresh(); autoAssign(); renderTeamModal(); });
   be.on(base+'/presence',v=>{ hp.presence=v||{}; renderHost(); });
   subQ(); save();
-  if(!sessionStorage.getItem('quiz.qrShown')){ sessionStorage.setItem('quiz.qrShown','1'); openQR(); }
 }
 // いまの問題の「押した記録」と「回答」を見張る
 function subQ(){
@@ -392,83 +555,274 @@ function order(){
 }
 // 解答権がだれにもなければ、押した順で次の人に渡す
 function autoAssign(){
-  if(!H||H.mode!=='buzz'||H.phase!=='open'||H.ans) return;
+  if(!H||H.game!=='play'||H.mode!=='buzz'||H.phase!=='open'||H.ans) return;
   const f=order().find(o=>!H.wrong.includes(o.pid));
   if(f){ H.ans=f.pid; SND.buzz(); save(); }
 }
+
+/* --- チーム --- */
+function teamOf(p){
+  const n=H.set.teamN;
+  let t=H.set.method===2?(hp.players[p]&&hp.players[p].team):H.teams[p];
+  t=(t===undefined||t===null||t==='')?-1:+t;
+  return Number.isInteger(t)&&t>=0&&t<n?t:-1;
+}
+function teamCounts(){ const c=Array(H.set.teamN).fill(0); Object.keys(hp.players).forEach(p=>{ const t=teamOf(p); if(t>=0) c[t]++; }); return c; }
+function smallest(c){ const m=Math.min(...c), k=c.map((v,i)=>v===m?i:-1).filter(i=>i>=0); return k[Math.floor(Math.random()*k.length)]; }
+// まだチームのない人を、人数の少ないチームに入れる(分け方1・3)
+function fillTeams(){
+  if(H.set.method===2) return false;
+  const c=teamCounts(); let ch=false;
+  shuffle(Object.keys(hp.players)).forEach(p=>{ if(teamOf(p)<0){ const t=smallest(c); H.teams[p]=t; c[t]++; ch=true; } });
+  return ch;
+}
+// 分け方3はいつでも、分け方1はゲーム中だけ(途中から入った人)自動で入れる
+function ensureTeams(){ return (H.set.method===3||H.game==='play')&&fillTeams(); }
+function reshuffle(){
+  if(H.set.method===2) return;
+  H.teams={}; shuffle(Object.keys(hp.players)).forEach((p,i)=>H.teams[p]=i%H.set.teamN);
+  save(); renderTeamModal(); toast('チームをランダムに振り分けました');
+}
+
+/* --- 得点(内部集計。画面には出さない) --- */
+const scoreOf=p=>{ let s=0; for(const k in H.res) s+=+(H.res[k][p]||0); return s; };
+function addRes(p,d){ d=+d||0; if(!d) return; const r=H.res[H.pos]||(H.res[H.pos]={}); r[p]=(r[p]||0)+d; }
+function teamScores(){
+  const n=H.set.teamN, sum=Array(n).fill(0), cnt=Array(n).fill(0);
+  Object.keys(hp.players).forEach(p=>{ const t=teamOf(p); if(t>=0){ sum[t]+=scoreOf(p); cnt[t]++; } });
+  return sum.map((s,i)=>({id:i,n:cnt[i],s:cnt[i]?(H.set.teamScore==='sum'?s:s/cnt[i]):0})).filter(x=>x.n>0);
+}
+// 全員回答の得点を、いまの○の状態から付け直す
+function recomputeAll(){
+  const P=H.set.pts, r={};
+  Object.keys(hp.players).forEach(p=>{
+    if(H.kicked[p]) return;
+    const a=hp.answers[p], has=!!(a&&a.text);
+    const d=has?(H.mark[p]?+P.ac:-(+P.aw)):-(+P.an);
+    if(d) r[p]=d;
+  });
+  H.res[H.pos]=r;
+}
+const normAns=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\s。、.,・「」『』"']/g,'');
+function isRight(text,ans){ const ok=String(ans||'').split(/[;；]/).map(normAns).filter(Boolean); return ok.includes(normAns(text)); }
+// 下位の決め方:k番目と同点の人が多すぎるときは、その人たちの中から抽選
+function bottomPlan(items,k){
+  k=Math.max(0,Math.min(k,items.length));
+  if(!k) return {sure:[],cands:[],need:0};
+  const a=items.slice().sort((x,y)=>x.s-y.s), th=a[k-1].s, E=1e-9;
+  const below=a.filter(x=>x.s<th-E).map(x=>x.id), tie=a.filter(x=>Math.abs(x.s-th)<=E).map(x=>x.id);
+  const need=k-below.length;
+  if(need>=tie.length) return {sure:below.concat(tie),cands:[],need:0};
+  return {sure:below,cands:tie,need};
+}
+
 function pushState(){
   if(!be||!base) return;
-  const q=QL[H.qi]||{q:'',a:''};
-  const st={epoch:H.epoch,mode:H.mode,qn:H.qn,no:H.qi+1,total:QL.length,phase:H.phase,
-    q:H.phase==='idle'?'':q.q, a:H.showAns?(q.a||''):'', ans:H.ans||'', right:H.right||'', wrong:H.wrong,
-    order:order().map(o=>o.pid), scores:H.scores, mark:H.mark, kicked:H.kicked};
+  const q=cq()||{q:'',a:''}, teams={};
+  Object.keys(hp.players).forEach(p=>{ const t=teamOf(p); if(t>=0) teams[p]=t; });
+  const f=H.fin;
+  const st={epoch:H.epoch,game:H.game,qn:H.qn,no:H.pos+1,total:H.deck.length,plan:Math.min(+H.set.n||0,QL.length),
+    smode:H.set.mode, mode:H.phase==='idle'?(H.set.mode==='random'?'':H.set.mode):H.mode,
+    phase:H.phase, q:H.phase==='idle'?'':q.q, a:H.showAns?(q.a||''):'', rev:!!H.showAns,
+    ans:H.ans||'', right:H.right||'', wrong:H.wrong, order:order().map(o=>o.pid), mark:H.mark, kicked:H.kicked,
+    tn:H.set.teamN, tm:H.set.method, teams, lb:H.set.label||'掃除当番',
+    fin:f?{view:f.view,ids:f.pend?[]:f.ids,pend:!!f.pend}:null};
   const j=JSON.stringify(st); if(j===lastPush) return; lastPush=j;
   be.set(base+'/state',st).catch(()=>{ lastPush=''; banner('データベースに書き込めません。Firebaseのルールに「quiz」を追加して「公開」したか確認してください。'); });
 }
 const nm=p=>(hp.players[p]&&hp.players[p].name)||'(退室した人)';
 
 /* --- 先生の操作 --- */
-function openQ(){
+function startGame(){
+  if(!be) return;
   if(!QL.length) return toast('問題がありません。「設定」で問題を入れてください。');
+  const want=Math.max(1,+H.set.n||1), n=Math.min(want,QL.length), idx=QL.map((_,i)=>i);
+  H.deck=(H.set.order==='seq'?idx:shuffle(idx)).slice(0,n);
+  Object.assign(H,{game:'play',pos:0,qmodes:{},res:{},fin:null}); resetQ(); syncMode();
+  fillTeams(); save();
+  toast(n<want?`登録してある問題が${QL.length}問なので、${n}問で始めます`:`${n}問のゲームを始めます`);
+}
+// 問題を足す(まだ出していない問題から)
+function extend(k){
+  if(H.game==='title') return 0;
+  const used=new Set(H.deck), rest=QL.map((_,i)=>i).filter(i=>!used.has(i));
+  if(!rest.length){ toast('登録してある問題はすべて使いました。「設定」で問題を足してください。'); return 0; }
+  const add=(H.set.order==='seq'?rest:shuffle(rest)).slice(0,k);
+  H.deck=H.deck.concat(add);
+  toast(`${add.length}問追加しました(全${H.deck.length}問)`+(add.length<k?'。残りの問題はこれで全部です':''));
+  save(); return add.length;
+}
+function goFinal(){
+  if(H.game!=='play'||H.phase==='open') return;
+  const last=H.pos>=H.deck.length-1;
+  if(!confirm(last?'結果発表に進みますか?\n(続けたいときは「キャンセル」→「＋1問」「＋5問」で問題を足せます)':'まだ最後の問題ではありません。ここで終わって結果発表に進みますか?')) return;
+  H.game='final'; H.fin=null; resetQ(); save(); SND.fan();
+}
+function moreQ(){ const before=H.deck.length; if(extend(3)){ H.game='play'; H.pos=before; H.fin=null; resetQ(); syncMode(); save(); } }
+function newGame(){
+  if(!confirm('新しいゲームにしますか?\n得点はすべて0になり、タイトル画面に戻ります。参加者とチームはそのままです。')) return false;
+  Object.assign(H,{game:'title',deck:[],pos:0,qmodes:{},res:{},fin:null}); resetQ(); syncMode(); save(); return true;
+}
+let annT=null;
+function announce(m){
+  const a=$('#hAnnounce'); a.innerHTML=`<div class="${m}">${MODE_NAME[m]}!</div>`; a.hidden=false; SND.call();
+  clearTimeout(annT); annT=setTimeout(()=>a.hidden=true,1500);
+}
+function openQ(){
+  if(H.game!=='play'||!cq()) return;
   be.remove(`${base}/buzz`); be.remove(`${base}/answers`);
-  H.qn++; Object.assign(H,{phase:'open',ans:null,wrong:[],right:null,showAns:false,mark:{}});
+  // 方式は問題ごとに一度だけ決め、出し直しても変えない
+  if(!H.qmodes[H.pos]) H.qmodes[H.pos]=H.set.mode==='random'?(Math.random()<.5?'buzz':'all'):H.set.mode;
+  H.qn++; resetQ(); H.phase='open'; H.res[H.pos]={}; syncMode();
   subQ(); save();
+  if(H.set.mode==='random') announce(H.mode);
 }
 function correct(){
   if(H.mode!=='buzz'||H.phase!=='open'||!H.ans) return;
-  H.scores[H.ans]=(H.scores[H.ans]||0)+1; H.right=H.ans; H.phase='done'; H.showAns=true;
+  addRes(H.ans,+H.set.pts.bc); H.right=H.ans; H.phase='done'; H.showAns=true;
   SND.ok(); save();
 }
 function wrongA(){
   if(H.mode!=='buzz'||H.phase!=='open'||!H.ans) return;
-  H.wrong.push(H.ans); H.ans=null; SND.ng(); save();
+  addRes(H.ans,-(+H.set.pts.bw)); H.wrong.push(H.ans); H.ans=null; SND.ng(); save();
   setTimeout(autoAssign,700);          // ブザーのあと、次に押していた人へ
 }
-function closeAll(){ if(H.mode==='all'&&H.phase==='open'){ H.phase='closed'; save(); } }
+// 全員回答を締め切る:答えと自動で照らし合わせて○を付け、得点を付ける
+function closeAnswers(){
+  if(H.mode!=='all'||H.phase!=='open') return;
+  const q=cq(); H.mark={};
+  if(q&&q.a) Object.entries(hp.answers).forEach(([p,v])=>{ if(hp.players[p]&&v&&v.text&&isRight(v.text,q.a)) H.mark[p]=true; });
+  H.phase='closed'; recomputeAll(); save();
+}
 function reveal(){
-  if(H.phase==='idle') return;
+  if(H.game!=='play'||H.phase==='idle') return;
   H.showAns=!H.showAns;
-  if(H.showAns&&H.phase==='open') H.phase=H.mode==='buzz'?'done':'closed';
+  if(H.showAns&&H.phase==='open'){ if(H.mode==='all') return closeAnswers(); H.phase='done'; }
   save();
 }
 function move(d){
-  const n=H.qi+d; if(n<0||n>=QL.length) return;
-  H.qi=n; Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}}); save();
+  if(H.game!=='play') return;
+  const n=H.pos+d; if(n<0||n>=H.deck.length) return;
+  H.pos=n; resetQ(); syncMode(); save();
 }
 function enter(){
+  if(H.game==='title') return startGame();
+  if(H.game!=='play') return;
   if(H.phase==='idle') openQ();
-  else if(H.phase==='open'&&H.mode==='all') closeAll();
-  else if(H.phase==='done'||H.phase==='closed'){ if(H.qi<QL.length-1){ move(1); openQ(); } else toast('最後の問題です。'); }
+  else if(H.phase==='open'&&H.mode==='all') closeAnswers();
+  else if(H.phase==='done'||H.phase==='closed'){ if(H.pos<H.deck.length-1){ move(1); openQ(); } else goFinal(); }
 }
 function toggleMark(p){
   if(H.mode!=='all'||H.phase!=='closed') return;
-  if(H.mark[p]){ delete H.mark[p]; H.scores[p]=(H.scores[p]||0)-1; }
-  else { H.mark[p]=true; H.scores[p]=(H.scores[p]||0)+1; SND.ok(); }
-  save();
+  if(H.mark[p]) delete H.mark[p]; else { H.mark[p]=true; SND.ok(); }
+  recomputeAll(); save();
 }
-function setMode(m){ if(H.phase==='open'||H.mode===m) return; H.mode=m; Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}}); save(); }
 function kick(p){
   if(!confirm(`「${nm(p)}」を退室させますか?\nそのiPadは名前の入力画面に戻り、得点は消えます。`)) return;
   be.remove(`${base}/players/${p}`); be.remove(`${base}/presence/${p}`);
-  delete H.scores[p]; delete H.mark[p]; H.kicked[p]=true;
+  Object.keys(H.res).forEach(k=>delete H.res[k][p]); delete H.mark[p]; delete H.teams[p]; H.kicked[p]=true;
   if(H.ans===p) H.ans=null;
   save(); autoAssign();
+}
+
+/* --- 結果発表 --- */
+function revealFinal(view){
+  if(H.game!=='final'||(H.fin&&H.fin.run)) return;
+  const items=view==='p'?Object.keys(hp.players).filter(p=>!H.kicked[p]).map(p=>({id:p,s:scoreOf(p)})):teamScores();
+  if(!items.length) return toast(view==='p'?'参加者がいません。':'チームに入っている人がいません。');
+  const pl=bottomPlan(items,view==='p'?+H.set.botP:+H.set.botT);
+  H.fin={view,ids:pl.sure,drawn:[],pend:pl.need?{cands:pl.cands,need:pl.need}:null,run:false};
+  save(); if(!pl.need) SND.fan();
+}
+const finLabel=(view,id)=>view==='p'?nm(id):tname(+id);
+function runDraw(){
+  const f=H.fin; if(!f||!f.pend||f.run) return;
+  f.run=true; save();
+  const pool=f.pend.cands.slice(), wins=[];
+  const slot=()=>$('#fSlot'), wl=()=>$('#fWin');
+  const one=()=>new Promise(res=>{
+    const win=pool[Math.floor(Math.random()*pool.length)], total=24+Math.floor(Math.random()*8);
+    let i=0, delay=45, prev=null;
+    (function tick(){
+      let c=win;
+      if(i<total){ do{ c=pool[Math.floor(Math.random()*pool.length)]; }while(pool.length>1&&c===prev); }
+      prev=c;
+      const s=slot(); if(s){ s.textContent=finLabel(f.view,c); s.classList.toggle('hit',i>=total); }
+      if(i>=total){ SND.buzz(); return res(win); }
+      SND.tick(); i++; delay*=1.1; setTimeout(tick,delay);
+    })();
+  });
+  (async()=>{
+    for(let k=0;k<f.pend.need;k++){
+      const w=await one(); wins.push(w); pool.splice(pool.indexOf(w),1);
+      const l=wl(); if(l) l.innerHTML=wins.map(x=>`<span>${esc(finLabel(f.view,x))}</span>`).join('');
+      await new Promise(r=>setTimeout(r,1100));
+    }
+    f.ids=f.ids.concat(wins); f.drawn=wins; f.pend=null; f.run=false; save(); SND.fan();
+  })();
 }
 
 /* --- 先生の画面の描画 --- */
 function renderHost(){
   if(!H) return;
+  const S=H.set, g=H.game;
   $('#hRoom').textContent=H.room;
   $('#hDot').className='dot '+(be?(hp.conn?'on':'off'):'');
   const ids=Object.keys(hp.players), online=ids.filter(p=>hp.presence[p]).length;
   $('#hCount').textContent=`参加 ${ids.length}人`+(online<ids.length?`(接続中 ${online}人)`:'');
-  document.querySelectorAll('#hMode button').forEach(b=>{ b.classList.toggle('on',b.dataset.mode===H.mode); b.disabled=H.phase==='open'&&b.dataset.mode!==H.mode; });
-  const q=QL[H.qi];
-  $('#hNo').innerHTML=QL.length?`第${H.qi+1}問<small>/ ${QL.length}</small>`:'問題がありません';
+  $('#hTitle').hidden=g!=='title'; $('#hPlay').hidden=g!=='play'; $('#hFinal').hidden=g!=='final';
+  const mb=$('#hModeBadge');
+  mb.hidden=g!=='play';
+  if(g==='play'){ mb.className='mbadge'; mb.textContent=S.mode==='random'?'出題:ランダム':'出題:'+MODE_NAME[S.mode]+'だけ'; }
+
+  if(g==='title') renderTitle();
+  else if(g==='play') renderPlay(ids);
+  else renderFinal();
+
+  // 参加者(得点は出さない)
+  const ps=ids.map(p=>({p,t:teamOf(p),n:nm(p)})).sort((a,b)=>(a.t<0?99:a.t)-(b.t<0?99:b.t)||a.n.localeCompare(b.n,'ja'));
+  const showCk=g==='play'&&H.mode==='all'&&H.phase!=='idle';
+  $('#hBoardH').textContent=`参加者 ${ids.length}人`;
+  $('#hPlayers').innerHTML=ps.length?ps.map(x=>{
+    const ck=showCk&&hp.answers[x.p]&&hp.answers[x.p].text?'✓':'';
+    return `<li class="${hp.presence[x.p]?'':'off'} ${H.ans===x.p&&H.phase==='open'?'hot':''}"><span class="tb">${x.t>=0?tname(x.t):'－'}</span><span class="nm">${esc(x.n)}</span><span class="ck">${ck}</span><button class="kick" data-act="kick" data-pid="${x.p}" title="退室させる" aria-label="${esc(x.n)}を退室させる">×</button></li>`; }).join('')
+    :'<li style="display:block;color:var(--soft);font-weight:500">QRコードを読み取ると、ここに名前が並びます。</li>';
+
+  // 操作ボタン
+  const B=[];
+  if(g==='title') B.push(['start',`ゲーム開始(${Math.min(+S.n||0,QL.length)}問)`,'Enter','go',QL.length>0&&!!be]);
+  else if(g==='play'){
+    const last=H.pos>=H.deck.length-1, done=H.phase==='done'||H.phase==='closed';
+    B.push(['prev','前の問題','←','',H.pos>0]);
+    if(H.phase==='idle') B.push(['open','出題する','Enter','go',!!cq()]);
+    else if(H.phase==='open'&&H.mode==='all') B.push(['close','締め切って公開','Enter','go',true]);
+    else if(last&&done) B.push(['final','結果発表へ','Enter','go',true]);
+    else B.push(['next2','次の問題を出す','Enter','go',done]);
+    if(H.mode==='buzz'){ const can=H.phase==='open'&&!!H.ans; B.push(['ok','○ 正解','O','ok',can],['ng','× 不正解','X','ng',can]); }
+    B.push(['reveal',H.showAns?'答えを隠す':'答えを出す','A','',H.phase!=='idle']);
+    B.push(['next','次の問題','→','',!last]);
+    B.push(['|']);
+    B.push(['ext1','＋1問','','sm',true],['ext5','＋5問','','sm',true]);
+    if(!(last&&done)) B.push(['final','結果発表へ','','sm',H.phase!=='open']);
+  }
+  $('#hCtrl').innerHTML=B.map(([a,l,k,c,en])=>a==='|'?'<span class="sep"></span>':`<button data-act="${a}" class="${c}" ${en?'':'disabled'}>${l}${k?`<kbd>${k}</kbd>`:''}</button>`).join('');
+}
+function renderTitle(){
+  const S=H.set, n=Math.min(+S.n||0,QL.length);
+  const how={1:'先生が割り振る',2:'学生が自分で選ぶ',3:'自動でランダム'}[S.method];
+  $('#ttSub').textContent=`全${n}問 ／ ${S.mode==='random'?'早押し・全員回答ランダム':MODE_NAME[S.mode]+'だけ'} ／ ${S.teamN}チーム(${how})`;
+  $('#ttCode').textContent=H.room;
+  $('#ttRules').innerHTML=rulesHtml(S.mode,S.label||'掃除当番');
+  if(qrRoom!==H.room){ qrRoom=H.room; drawQR($('#ttQr'),Math.max(140,Math.min(220,Math.round(innerHeight*.22))),()=>{ qrRoom=''; }); }
+}
+function renderPlay(ids){
+  const q=cq();
+  $('#hNo').innerHTML=`第${H.pos+1}問<small>/ ${H.deck.length}</small>`;
+  const qm=$('#hQMode'); qm.hidden=!H.mode; if(H.mode){ qm.className='mbadge '+H.mode; qm.textContent=MODE_NAME[H.mode]; }
   $('#hPhase').textContent={idle:'出題前',open:H.mode==='buzz'?'早押し受付中':'回答受付中',done:'この問題は終わりました',closed:'締め切りました'}[H.phase];
   const qt=$('#hQ');
   qt.classList.toggle('idle',H.phase==='idle');
-  qt.innerHTML=H.phase==='idle'?(QL.length?'Enterキー(または「出題する」)で問題を出します':'「設定」で問題を入れてください'):esc(q.q);
+  qt.innerHTML=H.phase==='idle'?'Enterキー(または「出題する」)で問題を出します'+(!H.mode?'。早押しか全員回答かは、出題したときにランダムで決まります':''):esc(q?q.q:'');
   $('#hA').hidden=!H.showAns||!q;
   if(q) $('#hA').innerHTML=`<span>答え</span><b>${esc(q.a||'(答えが入っていません)')}</b>`;
   const lamp=$('#hLamp'), list=$('#hList');
@@ -486,46 +840,61 @@ function renderHost(){
     }).join('')}</ol>`:(H.phase==='open'?'<p class="hint">まだだれも押していません。</p>':'');
   } else {
     lamp.hidden=true;
-    const ans=Object.entries(hp.answers).filter(([p,v])=>hp.players[p]&&v&&v.text);
-    if(H.phase==='idle'){ list.innerHTML=''; }
-    else {
-      const open=H.phase==='open';
-      ans.sort((a,b)=>normName(a[1].text).localeCompare(normName(b[1].text),'ja')||a[1].t-b[1].t);   // 同じ答えが並ぶように
-      const cards=ans.map(([p,v])=>`<button class="card${H.mark[p]?' maru':''}" data-act="mark" data-pid="${p}" ${open?'disabled':''}>
-        <span class="nm">${esc(nm(p))}</span><span class="tx${open?' hid':''}">${open?'回答しました':esc(v.text)}</span>${H.mark[p]?'<i>○</i>':''}</button>`).join('');
-      list.innerHTML=`<p class="tally">回答 <b>${ans.length}</b> / ${ids.length}人${open?'':'  ─ 正解のカードをタップすると○(もう一度タップで取り消し)'}</p><div class="cards">${cards}</div>`;
-    }
+    if(H.phase==='idle'||!H.mode){ list.innerHTML=''; return; }
+    const ans=Object.entries(hp.answers).filter(([p,v])=>hp.players[p]&&v&&v.text), open=H.phase==='open';
+    ans.sort((a,b)=>normName(a[1].text).localeCompare(normName(b[1].text),'ja')||a[1].t-b[1].t);   // 同じ答えが並ぶように
+    const cards=ans.map(([p,v])=>`<button class="card${open?'':H.mark[p]?' maru':' batsu'}" data-act="mark" data-pid="${p}" ${open?'disabled':''}>
+      <span class="nm">${esc(nm(p))}</span><span class="tx${open?' hid':''}">${open?'回答しました':esc(v.text)}</span>${!open&&H.mark[p]?'<i>○</i>':''}</button>`).join('');
+    const nOk=Object.keys(H.mark).length;
+    list.innerHTML=`<p class="tally">回答 <b>${ans.length}</b> / ${ids.length}人${open?'':`  ─ ○ ${nOk}人(答えと自動で照らし合わせました。カードをタップすると○/×を直せます)`}</p><div class="cards">${cards}</div>`;
   }
-  // 得点
-  const ps=ids.map(p=>({p,s:H.scores[p]||0,n:nm(p)})).sort((a,b)=>b.s-a.s||a.n.localeCompare(b.n,'ja'));
-  let rk=0;
-  $('#hScores').innerHTML=ps.length?ps.map((x,k)=>{ if(k===0||x.s!==ps[k-1].s) rk=k+1;
-    return `<li class="${hp.presence[x.p]?'':'off'} ${H.ans===x.p&&H.phase==='open'?'hot':''}"><span class="rk">${rk}位</span><span class="nm">${esc(x.n)}</span><b class="pt">${x.s}</b><button class="kick" data-act="kick" data-pid="${x.p}" title="退室させる" aria-label="${esc(x.n)}を退室させる">×</button></li>`; }).join('')
-    :'<li style="display:block;color:var(--soft);font-weight:500">QRコードを読み取ると、ここに名前が並びます。</li>';
-  // 操作ボタン
-  const last=H.qi>=QL.length-1, B=[];
-  B.push(['prev','前の問題','←','',H.qi>0]);
-  if(H.phase==='idle') B.push(['open','出題する','Enter','go',QL.length>0]);
-  else if(H.phase==='open'&&H.mode==='all') B.push(['close','締め切って公開','Enter','go',true]);
-  else B.push(['next2','次の問題を出す','Enter','go',H.phase!=='open'&&!last]);
-  if(H.mode==='buzz'){ const can=H.phase==='open'&&!!H.ans; B.push(['ok','○ 正解','O','ok',can],['ng','× 不正解','X','ng',can]); }
-  B.push(['reveal',H.showAns?'答えを隠す':'答えを出す','A','',H.phase!=='idle']);
-  B.push(['next','次の問題','→','',!last]);
-  $('#hCtrl').innerHTML=B.map(([a,l,k,c,en])=>`<button data-act="${a}" class="${c}" ${en?'':'disabled'}>${l}<kbd>${k}</kbd></button>`).join('');
+}
+function renderFinal(){
+  const f=H.fin, S=H.set, lb=esc(S.label||'掃除当番');
+  $('#finP').classList.toggle('on',!!f&&f.view==='p'); $('#finT').classList.toggle('on',!!f&&f.view==='t');
+  $('#finP').disabled=$('#finT').disabled=!!(f&&f.run);
+  let h;
+  if(!f) h=`<p class="hint" style="font-size:1.3rem">発表したい結果のボタンを押してください。下位の${S.botP}人(グループ戦は${S.botT}チーム)が、点数なしで一度に表示されます。</p>`;
+  else if(f.pend){
+    const unit=f.view==='p'?'人':'チーム';
+    h=`${f.ids.length?`<p class="flabel">決定:${f.ids.map(x=>esc(finLabel(f.view,x))).join('、')}</p>`:''}
+      <div class="draw"><p class="flabel">同点が${f.pend.cands.length}${unit}います。この中から <b>${f.pend.need}${unit}</b> を抽選します</p>
+      <div class="chips">${f.pend.cands.map(x=>`<span>${esc(finLabel(f.view,x))}</span>`).join('')}</div>
+      <div id="fSlot" class="slot">？</div><div id="fWin" class="winlist"></div>
+      <button class="btn main" data-act="draw" style="font-size:1.3rem" ${f.run?'disabled':''}>ルーレットを回す</button></div>`;
+  } else {
+    const drawn=f.drawn||[];
+    const cards=f.ids.map((x,k)=>{
+      const tag=drawn.includes(x)?'<em>抽選で決定</em>':'';
+      if(f.view==='p') return `<div class="fcard" style="animation-delay:${k*.08}s">${tag}<b>${esc(nm(x))}</b><span>${teamOf(x)>=0?tname(teamOf(x)):''}</span></div>`;
+      const mem=Object.keys(hp.players).filter(p=>teamOf(p)===+x).map(nm);
+      return `<div class="fcard" style="animation-delay:${k*.08}s">${tag}<b>${tname(+x)}</b><span>${mem.map(esc).join('、')}</span></div>`;
+    }).join('');
+    h=`<p class="flabel">${f.view==='p'?'個人戦':'グループ戦'}の下位 ${f.ids.length}${f.view==='p'?'人':'チーム'} → <b>${lb}</b></p><div class="fcards">${cards}</div>`;
+  }
+  if(h!==lastFRes){ lastFRes=h; $('#fRes').innerHTML=h; }
 }
 
 /* --- モーダル --- */
+const qrUrl=()=>location.origin+location.pathname+'?room='+H.room+(LOCAL?'&local=1':'');
+function drawQR(box,size,onFail){
+  const draw=()=>{ box.innerHTML=''; box.style.display=''; new QRCode(box,{text:qrUrl(),width:size,height:size,correctLevel:QRCode.CorrectLevel.M}); };
+  if(window.QRCode) draw();
+  else loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js').then(draw).catch(()=>{ box.style.display='none'; if(onFail) onFail(); });
+}
 function openQR(){
-  const url=location.origin+location.pathname+'?room='+H.room+(LOCAL?'&local=1':'');
+  const url=qrUrl();
   $('#qrCode').textContent=H.room; $('#qrUrl').textContent=url; $('#qrTab').hidden=!LOCAL;
   $('#qrTab').onclick=()=>window.open(url,'_blank');
   $('#qrModal').hidden=false;
-  const box=$('#qr'); box.innerHTML='';
-  const draw=()=>{ box.innerHTML=''; new QRCode(box,{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M}); };
-  if(window.QRCode) draw();
-  else loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js').then(draw).catch(()=>{ box.style.display='none'; });
+  drawQR($('#qr'),300);
 }
 function openSettings(){
+  const S=H.set;
+  $('#sMode').value=S.mode; $('#sN').value=S.n; $('#sOrder').value=S.order;
+  $('#pBc').value=S.pts.bc; $('#pBw').value=S.pts.bw; $('#pAc').value=S.pts.ac; $('#pAw').value=S.pts.aw; $('#pAn').value=S.pts.an;
+  $('#sTeamN').value=S.teamN; $('#sMethod').value=String(S.method); $('#sTeamScore').value=S.teamScore;
+  $('#sBotP').value=S.botP; $('#sBotT').value=S.botT; $('#sLabel').value=S.label;
   $('#qIn').value=QL.map(x=>x.a?`${x.q}|${x.a}`:x.q).join('\n'); qInfo(); $('#setModal').hidden=false;
 }
 function parseQ(t){
@@ -538,48 +907,78 @@ function parseQ(t){
 }
 function qInfo(){ const L=parseQ($('#qIn').value), na=L.filter(x=>!x.a).length;
   $('#qInfo').textContent=`${L.length}問`+(na?`(そのうち ${na}問は答えが入っていません)`:''); }
-function openRank(){
-  const ps=Object.keys(hp.players).map(p=>({s:H.scores[p]||0,n:nm(p)})).sort((a,b)=>b.s-a.s);
-  let rk=0;
-  $('#rankList').innerHTML=ps.slice(0,10).map((x,k)=>{ if(k===0||x.s!==ps[k-1].s) rk=k+1; return `<li><b>${rk}位</b><span>${esc(x.n)}</span><b>${x.s}点</b></li>`; }).join('')||'<li>まだ参加者がいません</li>';
-  $('#rankModal').hidden=false;
+const numIn=(id,def,min,max)=>{ let v=Number($(id).value); if(!isFinite(v)||$(id).value==='') v=def; v=Math.round(v); if(min!=null) v=Math.max(min,v); if(max!=null) v=Math.min(max,v); return v; };
+function saveSettings(){
+  const nq=parseQ($('#qIn').value), qChanged=JSON.stringify(nq)!==JSON.stringify(QL);
+  if(qChanged&&H.game!=='title'&&!confirm('ゲームの途中で問題を変えると、得点を0にしてタイトル画面に戻ります。よろしいですか?')) return;
+  const S=H.set, D=DEFSET;
+  S.mode=$('#sMode').value; S.n=numIn('#sN',D.n,1,500); S.order=$('#sOrder').value;
+  S.pts={bc:numIn('#pBc',D.pts.bc),bw:numIn('#pBw',D.pts.bw,0),ac:numIn('#pAc',D.pts.ac),aw:numIn('#pAw',D.pts.aw,0),an:numIn('#pAn',D.pts.an,0)};
+  S.teamN=numIn('#sTeamN',D.teamN,2,10); S.method=+$('#sMethod').value; S.teamScore=$('#sTeamScore').value;
+  S.botP=numIn('#sBotP',D.botP,1,40); S.botT=numIn('#sBotT',D.botT,1,9); S.label=$('#sLabel').value.trim()||D.label;
+  if(qChanged){
+    QL=nq; try{ localStorage.setItem(QKEY,JSON.stringify(QL)); }catch(e){}
+    if(H.game!=='title'){ Object.assign(H,{game:'title',deck:[],pos:0,qmodes:{},res:{},fin:null}); resetQ(); }
+  }
+  syncMode(); ensureTeams();
+  $('#setModal').hidden=true; toast(qChanged?`保存しました(問題 ${QL.length}問)`:'保存しました'); save(); renderTeamModal();
 }
-const anyModal=()=>!$('#qrModal').hidden||!$('#setModal').hidden||!$('#rankModal').hidden;
+function openTeams(){ $('#teamModal').hidden=false; renderTeamModal(); }
+function renderTeamModal(){
+  if(!H||$('#teamModal').hidden) return;
+  const S=H.set, m=S.method, ids=Object.keys(hp.players);
+  $('#tmNote').textContent={
+    1:'分け方1:先生が割り振ります。チームの決まっていない人は、ゲーム開始のときに人数の少ないチームへ自動で入ります。',
+    2:'分け方2:学生がiPadのタイトル画面で自分のチームを選びます。ここでは確認だけできます。',
+    3:'分け方3:入ってきた順に、人数の少ないチームへ自動で入ります。「ランダムに振り分け直す」で全員をシャッフルできます。'}[m]+'(チーム数・分け方は「設定」で変えられます)';
+  const c=teamCounts(), none=ids.filter(p=>teamOf(p)<0).length;
+  $('#tmCount').innerHTML=c.map((v,i)=>`<span>${tname(i)} ${v}人</span>`).join('')+(none?`<span>未定 ${none}人</span>`:'');
+  const opt=p=>{ const t=teamOf(p); return `<option value="-1"${t<0?' selected':''}>未定</option>`+Array.from({length:S.teamN},(_,i)=>`<option value="${i}"${t===i?' selected':''}>${tname(i)}</option>`).join(''); };
+  $('#tmList').innerHTML=ids.length?ids.map(p=>({p,n:nm(p)})).sort((a,b)=>a.n.localeCompare(b.n,'ja')).map(x=>
+    `<li><span>${esc(x.n)}</span><select data-pid="${x.p}" ${m===2?'disabled':''}>${opt(x.p)}</select></li>`).join('')
+    :'<li><span>まだ参加者がいません</span></li>';
+  $('#tmShuffle').hidden=m===2;
+}
+const anyModal=()=>['#qrModal','#setModal','#teamModal'].some(s=>!$(s).hidden);
 
 $('#host').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b||!H) return;
   const a=b.dataset.act;
   if(b.tagName==='BUTTON') b.blur();   // Enterキーでボタンが二重に押されないように
-  if(a==='qr') openQR(); else if(a==='settings') openSettings(); else if(a==='rank') openRank();
-  else if(a==='mode') setMode(b.dataset.mode);
+  if(a==='qr') openQR(); else if(a==='settings') openSettings(); else if(a==='teams') openTeams();
   else if(!be) return;
-  else if(a==='open') openQ(); else if(a==='close') closeAll(); else if(a==='next2') enter();
+  else if(a==='start') startGame();
+  else if(a==='open') openQ(); else if(a==='close') closeAnswers(); else if(a==='next2') enter();
   else if(a==='ok') correct(); else if(a==='ng') wrongA(); else if(a==='reveal') reveal();
   else if(a==='prev') move(-1); else if(a==='next') move(1);
+  else if(a==='ext1') extend(1); else if(a==='ext5') extend(5);
+  else if(a==='final') goFinal();
+  else if(a==='fin-p') revealFinal('p'); else if(a==='fin-t') revealFinal('t'); else if(a==='draw') runDraw();
+  else if(a==='more') moreQ(); else if(a==='newgame') newGame();
   else if(a==='mark') toggleMark(b.dataset.pid); else if(a==='kick') kick(b.dataset.pid);
 });
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{
   if(e.target===m||e.target.closest('[data-act="close"]')) m.hidden=true;
 }));
 $('#qIn').addEventListener('input',qInfo);
-$('#qSave').onclick=()=>{
-  QL=parseQ($('#qIn').value);
-  try{ localStorage.setItem(QKEY,JSON.stringify(QL)); }catch(e){}
-  H.qi=Math.max(0,Math.min(H.qi,QL.length-1));
-  if(H.phase!=='idle') Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}});
-  $('#setModal').hidden=true; toast(`${QL.length}問を保存しました`); save();
-};
-$('#resetScore').onclick=()=>{ if(!confirm('全員の得点を0にしますか?')) return; H.scores={}; H.mark={}; save(); toast('得点をリセットしました'); };
+$('#sSave').onclick=saveSettings;
+$('#tmList').addEventListener('change',e=>{
+  const s=e.target.closest('select[data-pid]'); if(!s||!H||H.set.method===2) return;
+  const v=+s.value; if(v<0) delete H.teams[s.dataset.pid]; else H.teams[s.dataset.pid]=v;
+  save(); renderTeamModal();
+});
+$('#tmShuffle').onclick=()=>{ if(confirm('全員のチームをランダムに振り分け直しますか?')) reshuffle(); };
+$('#resetGame').onclick=()=>{ if(newGame()){ $('#setModal').hidden=true; toast('新しいゲームにしました'); } };
 $('#clearAll').onclick=()=>{
-  if(!be||!confirm('参加者を全員削除しますか?\n得点も消え、iPadは名前の入力画面に戻ります。')) return;
+  if(!be||!confirm('参加者を全員削除しますか?\n得点とチームも消え、iPadは名前の入力画面に戻ります。')) return;
   ['players','presence','buzz','answers'].forEach(k=>be.remove(`${base}/${k}`));
-  Object.assign(H,{scores:{},mark:{},kicked:{},epoch:H.epoch+1,phase:'idle',ans:null,wrong:[],right:null,showAns:false});
+  Object.assign(H,{mark:{},kicked:{},teams:{},epoch:H.epoch+1,game:'title',deck:[],pos:0,qmodes:{},res:{},fin:null}); resetQ(); syncMode();
   $('#setModal').hidden=true; save(); toast('参加者を全員削除しました');
 };
 addEventListener('keydown',e=>{
   if(!H||$('#host').hidden||!be) return;
   if(anyModal()){ if(e.key==='Escape') document.querySelectorAll('.modal').forEach(m=>m.hidden=true); return; }
-  const tg=e.target.tagName; if(tg==='INPUT'||tg==='TEXTAREA') return;
+  const tg=e.target.tagName; if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT') return;
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   const k=e.key.toLowerCase();
   const act={enter:enter,o:correct,x:wrongA,a:reveal,arrowleft:()=>move(-1),pageup:()=>move(-1),arrowright:()=>move(1),pagedown:()=>move(1)}[k];
@@ -627,7 +1026,10 @@ async function join(raw,auto){
   P.busy=true; P.ferr=''; renderStu();
   try{
     if(P.joined) await be.set(`${P.base}/players/${P.pid}/name`,name);
-    else await be.set(`${P.base}/players/${P.pid}`,{name,t:be.now()});
+    else{
+      const old=P.players[P.pid];   // 入り直したときは、選んでいたチームを引き継ぐ
+      await be.set(`${P.base}/players/${P.pid}`,Object.assign({name,t:be.now()},old&&old.team!=null?{team:old.team}:{}));
+    }
     SS.setItem(sk('name'),name); SS.setItem(sk('ep'),String(P.st?P.st.epoch:1));
     Object.assign(P,{name,joined:true,renaming:false,msg:'',draft:''});
     if(!P.pres) P.pres=be.presence(`${P.base}/presence/${P.pid}/${P.dev}`);
@@ -640,7 +1042,19 @@ function leave(msg,np){
   SS.removeItem(sk('name')); SS.removeItem(sk('ep'));
   if(np) P.pid=newPid();
 }
-function canBuzz(){ const st=P.st; return !!st&&P.joined&&st.mode==='buzz'&&st.phase==='open'&&!P.pressed[st.qn]&&!(st.order||[]).includes(P.pid); }
+function pickTeam(i){
+  const st=P.st; if(!st||st.tm!==2||!P.joined) return;
+  if((st.game||'play')!=='title'&&myTeam()>=0) return;   // ゲームが始まったらチームは変えられない
+  P.players[P.pid]=Object.assign({},P.players[P.pid],{team:i}); P.lastHtml=''; renderStu();
+  be.set(`${P.base}/players/${P.pid}/team`,i).catch(()=>toast('送信できませんでした。もう一度押してください。'));
+}
+function myTeam(){
+  const st=P.st; if(!st||!(st.tn>=2)) return -1;
+  let t=st.tm===2?(P.players[P.pid]&&P.players[P.pid].team):(st.teams||{})[P.pid];
+  t=(t===undefined||t===null)?-1:+t;
+  return Number.isInteger(t)&&t>=0&&t<st.tn?t:-1;
+}
+function canBuzz(){ const st=P.st; return !!st&&P.joined&&(st.game||'play')==='play'&&st.mode==='buzz'&&st.phase==='open'&&!P.pressed[st.qn]&&!(st.order||[]).includes(P.pid); }
 function buzz(){
   if(!canBuzz()) return;
   const qn=P.st.qn; P.pressed[qn]=true; renderStu();
@@ -682,18 +1096,22 @@ function joinHtml(){
     <p>名前は先生の画面(プロジェクター)に表示されます。本名や学籍番号は入れないでください。</p>
   </div></div>`;
 }
+const pickerHtml=(tn,tm)=>`<div class="tpick">${Array.from({length:tn},(_,i)=>`<button class="${tm===i?'on':''}" data-sact="team" data-t="${i}">${tname(i)}</button>`).join('')}</div>`;
 function mainHtml(){
-  const st=P.st, me=P.pid, sc=st.scores||{}, ids=Object.keys(P.players), my=sc[me]||0;
-  const rk=1+ids.filter(p=>(sc[p]||0)>my).length;
-  const top=`<header class="s-top"><b class="me">${esc(P.name)}</b><span class="pts">${my}点</span><span style="color:var(--soft)">${rk}位 / ${ids.length}人</span><span class="sp"></span><button data-sact="rename">名前を変える</button></header>`;
-  const q=st.phase!=='idle'&&st.q?`<div class="s-q"><span class="no">第${st.no}問</span><p>${esc(st.q)}</p></div>`:'';
+  const st=P.st, me=P.pid, game=st.game||'play', tn=st.tn||0, tm=myTeam();
+  const top=`<header class="s-top"><b class="me">${esc(P.name)}</b>${tn>=2&&tm>=0?`<span class="tbadge">${tname(tm)}</span>`:''}<span class="sp"></span>${game==='play'?`<span class="prog">第${st.no}問 / 全${st.total}問</span>`:''}<button data-sact="rename">名前を変える</button></header>`;
+  // ゲーム中にチームが決まっていない(分け方2で途中から入った)ときは、まずチームを選ぶ
+  if(game==='play'&&st.tm===2&&tn>=2&&tm<0) return top+`<div class="s-body"><p class="s-big">チームを選んでください</p>${pickerHtml(tn,tm)}</div>`;
+  if(game==='title') return top+titleHtml(tn,tm);
+  if(game==='final') return top+finalHtml(tm);
+  const q=st.phase!=='idle'&&st.q?`<div class="s-q"><span class="no">第${st.no}問</span>${st.mode?`<span class="mbadge ${st.mode}">${MODE_NAME[st.mode]}</span>`:''}<p>${esc(st.q)}</p></div>`:'';
   const ansBar=st.a?`<div class="s-answer"><span>答え</span><b>${esc(st.a)}</b></div>`:'';
   let cls='', body;
   const wrong=st.wrong||[], ord=st.order||[];
-  if(st.phase==='idle') body=`<p class="s-big">先生が問題を出すのを<br>待っています</p><p class="s-sub">${st.mode==='buzz'?'早押しモードです。問題が出たら、わかった瞬間にボタンを押そう。':'全員回答モードです。問題が出たら、答えを入れて送信しよう。'}</p>`;
+  if(st.phase==='idle') body=`<p class="s-big">先生が問題を出すのを<br>待っています</p><p class="s-sub">${st.mode==='buzz'?'次は早押しです。問題が出たら、わかった瞬間にボタンを押そう。':st.mode==='all'?'次は全員回答です。問題が出たら、答えを入れて送信しよう。':'早押しか全員回答かは、問題が出てからのお楽しみ!'}</p>`;
   else if(st.mode==='buzz'){
     const pos=ord.indexOf(me);
-    if(st.right===me){ cls='maru'; body=`<div class="mk">○</div><p class="s-big">正解! +1点</p>`; }
+    if(st.right===me){ cls='maru'; body=`<div class="mk">○</div><p class="s-big">正解!</p>`; }
     else if(st.ans===me){ cls='turn'; body=`<p class="s-big">あなたの番です!</p><p class="s-sub">大きな声で答えを言ってください</p>`; }
     else if(wrong.includes(me)){ cls='batsu'; body=`<div class="mk">×</div><p class="s-big">不正解</p><p class="s-sub">この問題ではもう押せません</p>`; }
     else if(st.phase!=='open'){ const r=st.right?P.players[st.right]:null; body=`<p class="s-big">${r?esc(r.name)+'さんが正解しました':'この問題は終わりました'}</p><p class="s-sub">次の問題を待っています</p>`; }
@@ -704,10 +1122,33 @@ function mainHtml(){
     if(st.phase==='open') body=`<div class="s-ansbox"><input type="text" id="stuIn" data-k="ans${st.qn}" maxlength="40" autocomplete="off" enterkeyhint="send" placeholder="答えを入れる" value="${esc(mine)}">
       <button class="btn main" data-sact="send">${mine?'送り直す':'送信する'}</button>
       <p class="s-sub">${mine?`送信済み:「${esc(mine)}」<br>締め切りまでは送り直せます`:'まだ送信していません'}</p></div>`;
-    else if(ok){ cls='maru'; body=`<div class="mk">○</div><p class="s-big">正解! +1点</p><p class="s-sub">あなたの答え:「${esc(mine)}」</p>`; }
-    else body=`<p class="s-big">締め切りました</p><p class="s-sub">${mine?`あなたの答え:「${esc(mine)}」`:'この問題は回答しませんでした'}</p>`;
+    else if(!st.rev) body=`<p class="s-big">締め切りました</p><p class="s-sub">${mine?`あなたの答え:「${esc(mine)}」<br>答え合わせを待っています`:'この問題は回答しませんでした'}</p>`;
+    else if(ok){ cls='maru'; body=`<div class="mk">○</div><p class="s-big">正解!</p><p class="s-sub">あなたの答え:「${esc(mine)}」</p>`; }
+    else if(mine){ cls='batsu'; body=`<div class="mk">×</div><p class="s-big">ざんねん</p><p class="s-sub">あなたの答え:「${esc(mine)}」</p>`; }
+    else body=`<p class="s-big">この問題は回答しませんでした</p>`;
   }
   return top+q+`<div class="s-body ${cls}">${body}</div>`+ansBar;
+}
+function titleHtml(tn,tm){
+  const st=P.st;
+  let team='';
+  if(tn>=2){
+    if(st.tm===2) team=`<div class="tcard"><p>${tm>=0?'あなたのチーム(始まるまでは変えられます)':'自分のチームを選んでください'}</p>${pickerHtml(tn,tm)}</div>`;
+    else team=tm>=0?`<div class="tcard"><p>あなたのチーム</p><b class="tbig">${tname(tm)}</b></div>`:`<div class="tcard"><p>チーム分けを待っています</p></div>`;
+  }
+  return `<div class="s-body title"><div class="tt-logo">早押しクイズ</div>
+    <p class="s-sub">${esc(P.name)} さん、ようこそ!</p>${team}
+    <ul class="rules">${rulesHtml(st.smode||'random',st.lb||'掃除当番')}</ul>
+    <p class="s-sub">先生がスタートするまで待っててね${st.plan?`(全${st.plan}問)`:''}</p></div>`;
+}
+function finalHtml(tm){
+  const st=P.st, f=st.fin, lb=esc(st.lb||'掃除当番');
+  if(!f) return `<div class="s-body"><p class="s-big">結果発表!</p><p class="s-sub">プロジェクターを見てね</p></div>`;
+  if(f.pend) return `<div class="s-body"><p class="s-big">同点のため<br>抽選中…</p><p class="s-sub">プロジェクターを見てね</p></div>`;
+  const ids=(f.ids||[]).map(String);
+  const hit=f.view==='p'?ids.includes(P.pid):(tm>=0&&ids.includes(String(tm)));
+  if(hit) return `<div class="s-body hit"><div class="mk">🧹</div><p class="s-big">${f.view==='t'?`${tname(tm)}は`:'あなたは'}<br>${lb}です!</p><p class="s-sub">${f.view==='p'?'個人戦':'グループ戦'}の結果</p></div>`;
+  return `<div class="s-body"><p class="s-big">${f.view==='p'?'個人戦':'グループ戦'}の結果発表</p><p class="s-sub">${lb}はプロジェクターに出ている${f.view==='p'?'人':'チーム'}です</p></div>`;
 }
 // 早押しは指が触れた瞬間に送る(click より速い)
 $('#stu').addEventListener('pointerdown',e=>{ if(e.target.closest('[data-sact="buzz"]')){ e.preventDefault(); buzz(); } });
@@ -718,6 +1159,7 @@ $('#stu').addEventListener('click',e=>{
   else if(a==='rename'){ P.renaming=true; P.ferr=''; P.draft=''; renderStu(); }
   else if(a==='cancel'){ P.renaming=false; P.ferr=''; P.draft=''; renderStu(); }
   else if(a==='send') sendAns();
+  else if(a==='team') pickTeam(+b.dataset.t);
 });
 $('#stu').addEventListener('keydown',e=>{
   if(e.key!=='Enter'||e.isComposing||e.target.id!=='stuIn') return;
