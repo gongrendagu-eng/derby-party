@@ -46,6 +46,7 @@ ul.pl{list-style:none;margin:8px 0 0;padding:0;max-height:300px;overflow:auto}
 ul.pl li{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--line);font-weight:800;font-size:14px}
 ul.pl li b{margin-left:auto;font-family:var(--f-num);font-weight:400}ul.pl li small{color:var(--soft);font-weight:500}
 .tag{font-size:11px;background:#1f6b3a;color:#fff;border-radius:6px;padding:1px 6px}.tag.b{background:#8a5a00}
+[data-snd].off{opacity:.5}.pbtn.snd{background:#16283a;border:1px solid #2a4560}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14213a;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;z-index:99;max-width:90vw}
 /* ---- iPad ---- */
 body.pad{background:var(--navy);color:#fff;--soft:#9fb2c6;--line:#23364a;overflow:hidden}
@@ -135,7 +136,7 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
    先生のPC:レースの計算・メダルの増減 / iPad:騎手は操作、ほかの人はBETして観戦 */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ
-const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=2;
+const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=3;
 const now=()=>Date.now();
 const LAP=1600, REAL=true, isPhone=()=>false;
 let G=null, csCache={};
@@ -154,6 +155,73 @@ const MOODS=[[80,'絶好調','#1f9d4a'],[60,'ごきげん','#5cb85c'],[40,'ふ�
 const moodOf=m=>MOODS.find(x=>m>=x[0])||MOODS[4];
 const TEMPER=t=>t>0.75?'気が荒い(掛かりやすい)':t>0.45?'ふつう':'おとなしい';
 const COND=m=>m>=68?'絶好調':m>=58?'好調':m>=50?'ふつう':'いまひとつ';
+
+/* ===== 音(効果音はファイルを使わず Web Audio で合成。BGMは jd-assets/ のmp3。ファイルがなければ効果音だけで動く) ===== */
+const SND=(()=>{
+  const LS='mg.jockey.snd', isPad=!!MG.qs.get('mg'), DIR='jd-assets/', VOL=0.34;
+  const FILES={paddock:'bgm_paddock.mp3',race:'bgm_race.mp3',final:'bgm_final.mp3',result:'bgm_result.mp3'}, FAN='jg_fanfare.mp3';
+  let cfg={}; try{ cfg=JSON.parse(localStorage.getItem(LS))||{}; }catch(e){}
+  // BGMは、先生のPCは最初からON、iPadは最初はOFF(全員のiPadから少しずつずれて鳴るのをさけるため)
+  const st={se:cfg.se!==0,bgm:cfg.bgm!=null?!!cfg.bgm:!isPad,key:null,tr:{},miss:{},lim:{}};
+  let ac=null, out=null, bg=null, nb=null;
+  const save=()=>{ try{ localStorage.setItem(LS,JSON.stringify({se:st.se?1:0,bgm:st.bgm?1:0})); }catch(e){} };
+  function unlock(){ try{
+    if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)();
+      const comp=ac.createDynamicsCompressor(); comp.connect(ac.destination);
+      out=ac.createGain(); out.gain.value=0.8; out.connect(comp); bg=ac.createGain(); bg.gain.value=1; bg.connect(comp);
+      const n=ac.sampleRate; nb=ac.createBuffer(1,n,n); const d=nb.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; }
+    if(ac.state!=='running') ac.resume(); apply(); }catch(e){} }
+  const ok=()=>ac&&st.se&&ac.state==='running';
+  function tone(f,d,type,vol,slide,delay){ if(!ok()) return; const t=ac.currentTime+(delay||0), o=ac.createOscillator(), g=ac.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(f,t); if(slide) o.frequency.exponentialRampToValueAtTime(slide,t+d);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||.1,t+0.008); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(g).connect(out); o.start(t); o.stop(t+d+0.02); }
+  function noise(d,vol,freq,q,type,delay,slide){ if(!ok()) return; const t=ac.currentTime+(delay||0), s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+    s.buffer=nb; s.loop=true; f.type=type||'bandpass'; f.frequency.setValueAtTime(freq||1000,t); if(slide) f.frequency.exponentialRampToValueAtTime(slide,t+d); f.Q.value=q||1;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||.1,t+0.006); g.gain.exponentialRampToValueAtTime(.0001,t+d); s.connect(f).connect(g).connect(out); s.start(t,Math.random()*0.5); s.stop(t+d+0.02); }
+  const lim=(k,ms,f)=>(...a)=>{ const t=performance.now(); if(t-(st.lim[k]||0)<ms) return; st.lim[k]=t; f(...a); };
+  const seq=(fs,step,d,type,vol)=>fs.forEach((f,i)=>tone(f,d,type,vol,0,i*step));
+  const SE={
+    tap:lim('tap',40,()=>tone(660,.05,'triangle',.07)),
+    lane:lim('lane',60,()=>{ noise(.12,.08,900,1.2,'bandpass',0,2400); }),
+    whip:lim('whip',50,()=>{ noise(.07,.3,3800,.8,'highpass'); tone(190,.06,'triangle',.1,90); }),
+    gate:lim('gate',800,()=>{ noise(.18,.3,500,.7,'lowpass'); tone(880,.5,'square',.06); tone(1320,.5,'square',.04,0,.01); tone(110,.25,'sawtooth',.12,50); }),
+    goodStart:()=>seq([784,1047,1568],.07,.16,'triangle',.1),
+    badStart:()=>tone(200,.3,'sawtooth',.07,110),
+    moodUp:lim('mu',300,()=>seq([659,880],.08,.14,'sine',.1)),
+    moodDown:lim('md',300,()=>{ tone(300,.22,'square',.05,170); tone(150,.22,'sawtooth',.05,90); }),
+    bump:lim('bump',300,()=>{ tone(120,.18,'sine',.25,45); noise(.1,.18,300,.8,'lowpass'); }),
+    telop:lim('tel',600,()=>{ noise(.45,.14,400,.9,'bandpass',0,5000); tone(98,.6,'sawtooth',.12,0,.4); tone(196,.6,'square',.05,0,.4); }),
+    cheer:lim('cheer',5000,()=>{ noise(6,.07,900,.5,'bandpass',0,1500); noise(6,.04,2400,.7,'bandpass',.3); }),
+    goal:lim('goal',2000,()=>{ seq([1047,1319,1568,2093],.11,.5,'triangle',.11); noise(2.5,.08,1200,.5,'bandpass',.1); }),
+    coin:lim('coin',50,()=>{ tone(1320,.07,'square',.04); tone(1976,.12,'square',.035,0,.05); }),
+    win:()=>{ seq([523,659,784,1047,1319],.1,.3,'triangle',.11); for(let i=0;i<6;i++){ tone(1568,.06,'square',.03,0,.55+i*.07); tone(2093,.08,'square',.025,0,.58+i*.07); } },
+    lose:()=>{ tone(330,.25,'triangle',.07,300); tone(262,.45,'triangle',.07,196,.22); },
+    pick:()=>{ seq([523,784,1047],.09,.2,'square',.05); },
+    fanfare:()=>{ const n=[[523,.16],[523,.08],[523,.08],[659,.16],[784,.16],[659,.16],[784,.5]]; let t=0; n.forEach(([f,d])=>{ tone(f,d*1.6,'sawtooth',.06,0,t); tone(f*1.5,d*1.6,'square',.025,0,t); tone(f/2,d*1.6,'triangle',.07,0,t); t+=d*1.25; }); }
+  };
+  /* ---- BGM ---- */
+  function track(k){ if(st.tr[k]||st.miss[k]) return st.tr[k];
+    try{ const el=new Audio(); el.preload='auto'; el.loop=true; el.src=DIR+FILES[k]; const g=ac.createGain(); g.gain.value=0; ac.createMediaElementSource(el).connect(g).connect(bg);
+      el.addEventListener('error',()=>{ st.miss[k]=1; delete st.tr[k]; });
+      return st.tr[k]={el,g,on:false}; }catch(e){ st.miss[k]=1; } }
+  function apply(){ if(!ac) return; const want=st.bgm&&FILES[st.key]?st.key:null, t=ac.currentTime;
+    if(want) track(want);
+    Object.keys(st.tr).forEach(k=>{ const tr=st.tr[k];
+      if(k===want){ if(!tr.on){ tr.on=true; clearTimeout(tr.off); try{ tr.el.currentTime=0; }catch(e){} tr.el.play().catch(()=>{}); }
+        tr.g.gain.cancelScheduledValues(t); tr.g.gain.setTargetAtTime(VOL,t,0.25); }
+      else if(tr.on){ tr.on=false; tr.g.gain.cancelScheduledValues(t); tr.g.gain.setTargetAtTime(0,t,0.3); tr.off=setTimeout(()=>{ if(!tr.on) try{ tr.el.pause(); }catch(e){} },1600); } }); }
+  function fan(){ if(!ac||!st.bgm||ac.state!=='running') return;
+    if(st.miss.fan){ if(st.se) SE.fanfare(); return; }
+    try{ const el=new Audio(DIR+FAN), g=ac.createGain(); g.gain.value=0.5; ac.createMediaElementSource(el).connect(g).connect(bg);
+      el.addEventListener('error',()=>{ if(!st.miss.fan){ st.miss.fan=1; if(st.se) SE.fanfare(); } }); el.play().catch(()=>{}); }catch(e){ st.miss.fan=1; } }
+  function scene(k){ if(k===st.key) return; st.key=k; if(k==='gate') fan(); apply(); }
+  const lbl=()=>({se:'効果音 '+(st.se?'ON':'OFF'),bgm:'♪BGM '+(st.bgm?'ON':'OFF')});
+  const paintBtns=()=>document.querySelectorAll('[data-snd]').forEach(b=>{ b.textContent=lbl()[b.dataset.snd]; b.classList.toggle('off',!st[b.dataset.snd]); });
+  document.addEventListener('pointerdown',unlock,true);
+  document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-snd]'); if(!b) return; const k=b.dataset.snd; st[k]=!st[k]; save(); unlock(); apply(); paintBtns(); if(k==='se'&&st.se) SE.tap(); });
+  return {se:SE,scene,unlock,paintBtns,btns:c=>`<button class="${c}" data-snd="se"></button><button class="${c}" data-snd="bgm"></button>`};
+})();
+const sfx=SND.se;
 
 /* レースの絵が使う状態(G1ロードの S と同じ名前) */
 
@@ -1098,13 +1166,13 @@ async function hostMain(){
     let seen=false;
     HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } }); }
   app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC${CLEAN&&SESS.cls?' ・ '+esc(SESS.cls):''}</small></div><span class="sp"></span>
-      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>${CLEAN?'<button class="btn pri" id="toRp">ルーレットパークへ進む</button>':'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
+      ${SND.btns('btn')}<span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>${CLEAN?'<button class="btn pri" id="toRp">ルーレットパークへ進む</button>':'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
     <div class="grid"><div class="scr"><canvas id="cv"></canvas><div class="ov" id="ov"></div></div>
       <div><div class="box" id="ctl"></div>
         <details class="box"><summary>設定</summary><div class="frm" id="cfg"></div><p class="note">次のレースから変わります。</p></details>
         <details class="box" open><summary>${CLEAN?'参加者':'遊んでいる人'}(<span id="nseat">0</span>人)</summary><ul class="pl" id="pl"></ul></details>
       </div></div></div>`;
-  cfgRender();
+  cfgRender(); SND.paintBtns();
   HOST.onAcc(()=>{ panelDirty=true; });
   HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
   HOST.be.on(JD+'/here',v=>{ HERE=new Set(Object.keys(v||{})); panelDirty=true; });
@@ -1199,11 +1267,11 @@ function closeBet(){
   paint($('#cv'),gateRun());   // コースの形を確定させる(コーナーの判定に使う)
   const D=M.D, sec=D===1200?55:D===2000?85:70;
   M.R=createRace({D,V0:D/(sec-2.5),horses:M.hs,corner:x=>{ try{ const l=segOf(toS(x)); return l==='c12'||l==='c34'; }catch(e){ return false; } }});
-  M.ph='gate'; M.gateAt=now()+3500+Math.random()*2000; M.dl=M.gateAt; say('各馬ゲートに入りました');
+  M.ph='gate'; M.gateAt=now()+5200+Math.random()*2000; M.dl=M.gateAt; say('各馬ゲートに入りました');
   members().forEach(writeMe); setPhase();
 }
 function openGate(){
-  M.ph='race'; M.R.start(); S.gate={open:true}; M.finT=0; M.sayT=now()+2500; say('スタートしました!');
+  M.ph='race'; M.R.start(); S.gate={open:true}; M.finT=0; M.sayT=now()+2500; say('スタートしました!'); sfx.gate();
   M.hs.forEach((h,i)=>{ if(!h.js||!isHere(M.jk[i])) M.R.input(i,{rt:0.12+Math.random()*0.5}); });
   setPhase();
 }
@@ -1214,7 +1282,7 @@ function applyInputs(){
     if(v.rt!=null&&h.rt==null) o.rt=+v.rt; R.input(+i,o); });
 }
 function say(t){ S.sayLog.push(t); if(S.sayLog.length>4) S.sayLog.shift(); }
-function telop(text,sub){ M.telSeq++; M.tel={s:M.telSeq,text,sub,until:now()+3000}; S.fx.telop={text,sub,t0:performance.now()}; }
+function telop(text,sub){ sfx.telop(); if(text.startsWith('最後')) sfx.cheer(); M.telSeq++; M.tel={s:M.telSeq,text,sub,until:now()+3000}; S.fx.telop={text,sub,t0:performance.now()}; }
 function commentary(){
   const R=M.R, t=now(), ord=R.order(), lead=ord[0], rem=Math.max(0,R.D-lead.x), nmH=h=>`${h.no}番 ${h.h.name}`;
   while(R.events.length) say(R.events.shift());
@@ -1231,6 +1299,7 @@ function commentary(){
 function tick(){
   if(!HOST) return;
   const t=now(), dt=Math.min(0.2,lastTick?(t-lastTick)/1000:0.05); lastTick=t;
+  SND.scene(M.ph==='gate'?'gate':M.ph==='race'?(S.cam?'final':'race'):M.ph==='result'?'result':M.ph==='stop'?null:'paddock');
   if(M.ph==='paddock'&&t>=M.dl) closeBet();
   else if(M.ph==='gate'&&t>=M.gateAt) openGate();
   else if(M.ph==='result'&&!M.busy&&t>=M.dl){ if(C.auto&&people().length) startPaddock(); else toWait(''); }
@@ -1241,7 +1310,7 @@ function tick(){
       R.step(dt/n);
     }
     if(M.ph==='race'){ commentary();
-      const first=R.H.find(h=>h.place===1); if(first&&!M.finT){ M.finT=t; say(`ゴール!1着は${first.no}番 ${first.h.name}${first.h.js?'、'+first.h.jn+'騎手':''}!`); }
+      const first=R.H.find(h=>h.place===1); if(first&&!M.finT){ M.finT=t; sfx.goal(); say(`ゴール!1着は${first.no}番 ${first.h.name}${first.h.js?'、'+first.h.jn+'騎手':''}!`); }
       if(R.done()||(M.finT&&t-M.finT>9000)) finish(); }
   }
   if(['gate','race'].includes(M.ph)||(M.ph==='result'&&t-M.finT<9000)){ if(t-lastF>=120){ lastF=t; HOST.be.set(JD+'/f',snap()).catch(()=>{}); } }
@@ -1300,7 +1369,7 @@ async function finish(){
     else if(bw){ const pay=Math.max(bw,Math.floor(bw*od)); add(s,pay-stake,`当たり! ${win.no}番 ${bw}枚 → ${pay}枚(${od.toFixed(1)}倍)${stake>bw?`、はずれ ${stake-bw}枚`:''}`); }
     else add(s,-stake,`はずれ… ${stake}枚`); });
   Object.keys(M.jk).forEach(i=>{ const s=M.jk[i], h=R.H[i], fee=refund?0:Math.floor((p.a[h.no]||0)*C.rake/100), bon=[C.b1,C.b2,C.b3][h.place-1]||0;
-    add(s,fee+bon,`騎手報酬:賭けられた ${p.a[h.no]||0}枚 の${C.rake}% = ${fee}枚${bon?`、${h.place}着ボーナス ${bon}枚`:''}`); M.rv[s]={...review(h),place:h.place,no:h.no}; });
+    add(s,fee+bon,(refund?'BETをもどしたので、賭けられた分の騎手報酬はありません':`騎手報酬:賭けられた ${p.a[h.no]||0}枚 の${C.rake}% = ${fee}枚`)+(bon?`、${h.place}着ボーナス ${bon}枚`:'')); M.rv[s]={...review(h),place:h.place,no:h.no}; });
   for(const [s,d] of Object.entries(ch)){ let ok=true; if(d) await addBal(s,d).catch(e=>{ console.warn(e); ok=false; }); M.res[s]=ok?{net:d,lines:lines[s]}:{net:0,lines:['精算できませんでした(もうゲームにいません)']}; }
   M.bets={}; M.busy=false; M.dl=now()+C.resSec*1000;
   members().forEach(writeMe); setPhase();
@@ -1346,8 +1415,9 @@ async function padMain(){
   PAD.be.on(J+'/st',v=>{ if(v&&v.hs&&!Array.isArray(v.hs)) v.hs=Object.values(v.hs); P.st=v; P.stAt=now(); if(v){ clock(v.t); onSt(); } padRender(); });
   PAD.be.on(J+'/me/'+vk,v=>{ P.me=v||{}; padRender(); });
   PAD.be.on(J+'/f',v=>{ if(!v||!v.h) return; clock(v.t); P.f=v;
-    if(v.tel&&v.tel[0]!==P.tel){ P.tel=v.tel[0]; S.fx.telop={text:v.tel[1],sub:v.tel[2],t0:performance.now()}; }
-    if(v.c&&!S.cam) S.cam={}; if(v.g&&!S.gate.open) S.gate={open:true};
+    if(v.tel&&v.tel[0]!==P.tel){ P.tel=v.tel[0]; S.fx.telop={text:v.tel[1],sub:v.tel[2],t0:performance.now()}; sfx.telop(); if(String(v.tel[1]).startsWith('最後')) sfx.cheer(); }
+    if(P.st&&v.r===P.st.r&&P.goalR!==v.r&&v.h.some(h=>h[6]===1)){ P.goalR=v.r; sfx.goal(); }
+    if(v.c&&!S.cam) S.cam={}; if(v.g&&!S.gate.open){ S.gate={open:true}; sfx.gate(); }
     S.sayLog=v.say||[]; });
   const loop=()=>{ requestAnimationFrame(loop); const cv=$('#cv'); if(!cv) return; padDyn(); paint(cv,padRun()); };
   requestAnimationFrame(loop);
@@ -1382,7 +1452,7 @@ function padMsg(t,m,btn){ P.key='msg:'+t; app.innerHTML=`<div class="pwrap"><div
 const noTag=no=>`<span class="no" style="background:${wk(no)[0]};color:${wk(no)[1]}">${no}</span>`;
 const jkTag=h=>h.js?`<span class="jk s">学生</span>${esc(h.jn)}`:`<span class="jk">CPU</span>`;
 function headHtml(tools){ const v=P.view;
-  return `<div class="phead"><b>${NAME}</b><span class="who">${esc(v.n)} さん</span><span class="sp"></span><span class="med">${CLEAN?'掃除決めのメダル':'メダル'} <b id="hMed"></b>枚</span>${tools&&!CLEAN?`<button class="pbtn sm" id="tAdd">追加</button><button class="pbtn sm" id="tBack">もどす</button><button class="pbtn sm gold" id="tQuit">やめる</button><a class="pbtn sm" href="${esc(PAD.indexUrl())}">トップ</a>`:''}</div>`; }
+  return `<div class="phead"><b>${NAME}</b><span class="who">${esc(v.n)} さん</span><span class="sp"></span>${SND.btns('pbtn sm snd')}<span class="med">${CLEAN?'掃除決めのメダル':'メダル'} <b id="hMed"></b>枚</span>${tools&&!CLEAN?`<button class="pbtn sm" id="tAdd">追加</button><button class="pbtn sm" id="tBack">もどす</button><button class="pbtn sm gold" id="tQuit">やめる</button><a class="pbtn sm" href="${esc(PAD.indexUrl())}">トップ</a>`:''}</div>`; }
 function bindHead(){
   const q=$('#tQuit'); if(!q) return;
   $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
@@ -1402,7 +1472,8 @@ function padRender(){
   const st=P.st||{ph:'wait'}, me=meNow(), role=myIdx(), ph=st.ph||'wait';
   const mode=ph==='wait'||!st.hs?'wait':ph==='paddock'?(role!=null?'padJ':'padB'):ph==='result'?'res':(role!=null?'raceJ':'raceS');
   const key=mode+':'+(st.r||0);
-  if(key!==P.key){ P.key=key; LKEY=''; buildMode(mode); }
+  if(key!==P.key){ P.key=key; LKEY=''; buildMode(mode); SND.paintBtns(); if(mode==='padJ') sfx.pick(); }
+  SND.scene(ph==='gate'?'gate':ph==='race'?(S.cam?'final':'race'):ph==='result'?'result':'paddock');
   updMode(mode);
 }
 function buildMode(mode){
@@ -1446,13 +1517,13 @@ function buildMode(mode){
         <div class="acts"><button data-a="hold" class="a hold"><b>控える</b><span>スタミナ温存</span></button><button data-a="none" class="a none"><b>馬なり</b><span>そのまま</span></button><button data-a="push" class="a push"><b>追う</b><span>加速</span></button></div>
         <button class="whip" id="whip"><b>ムチ</b><span>連打</span></button>
       </div></div>`;
-    document.querySelectorAll('.acts .a').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); P.inp.a=b.dataset.a; sendIn(); updMode('raceJ'); }));
-    $('#whip').addEventListener('pointerdown',e=>{ e.preventDefault(); if(P.st.ph!=='race') return; P.inp.w++; sendIn(); const w=$('#whip'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); });
-    const mv=d=>{ const f=myF(); let ln=P.inp.ln; if(ln==null) ln=f?Math.round(f[1]/100*SIM.LANES):Math.round(role/Math.max(1,hs.length-1)*SIM.LANES); P.inp.ln=Math.max(0,Math.min(SIM.LANES,ln+d)); sendIn(); };
+    document.querySelectorAll('.acts .a').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); P.inp.a=b.dataset.a; sfx.tap(); sendIn(); updMode('raceJ'); }));
+    $('#whip').addEventListener('pointerdown',e=>{ e.preventDefault(); if(P.st.ph!=='race') return; P.inp.w++; sfx.whip(); sendIn(); const w=$('#whip'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); });
+    const mv=d=>{ const f=myF(); let ln=P.inp.ln; if(ln==null) ln=f?Math.round(f[1]/100*SIM.LANES):Math.round(role/Math.max(1,hs.length-1)*SIM.LANES); P.inp.ln=Math.max(0,Math.min(SIM.LANES,ln+d)); sfx.lane(); sendIn(); };
     $('#bIn').addEventListener('pointerdown',e=>{ e.preventDefault(); mv(-1); }); $('#bOut').addEventListener('pointerdown',e=>{ e.preventDefault(); mv(1); });
     let sy=null; const sc=$('.jscr'); sc.addEventListener('pointerdown',e=>{ sy=e.clientY; }); sc.addEventListener('pointerup',e=>{ if(sy==null) return; const d=e.clientY-sy; sy=null; if(Math.abs(d)>40) mv(d<0?-1:1); });
     $('#startb').addEventListener('pointerdown',e=>{ e.preventDefault(); if(P.inp.rt!=null) return; const st=P.st; if(!st||!st.gateAt&&st.ph==='gate') return;
-      const g=P.gateLocal; if(g==null) return; P.inp.rt=+((now()-g)/1000).toFixed(3); if(P.inp.rt<0) P.inp.rt=-1; sendIn(true); });
+      const g=P.gateLocal; if(g==null) return; P.inp.rt=+((now()-g)/1000).toFixed(3); if(P.inp.rt<0) P.inp.rt=-1; (P.inp.rt>=0&&P.inp.rt<=0.3?sfx.goodStart:P.inp.rt<0||P.inp.rt>0.7?sfx.badStart:sfx.tap)(); sendIn(true); });
     S.panel=false; S.follow=role; S.glow=new Set([h.no]); return; }
   if(mode==='raceS'){
     app.innerHTML=`<div class="pfull race"><div class="sscr"><canvas id="cv"></canvas>
@@ -1478,7 +1549,7 @@ function updMode(mode,force){
         <div class="ln"><span>この馬に</span><b>${bets[h.no]||0}枚</b></div><div class="ln"><span>当たれば(いまの倍率)</span><b class="gold">${bets[h.no]&&odds(h.no)?yen(Math.max(bets[h.no],Math.floor(bets[h.no]*odds(h.no)))):'—'}枚</b></div>`
       :'<p class="note">左の出馬表から、1着になると思う馬をタップしてください。</p>';
     box.innerHTML+=`<div class="ln"><span>BET合計</span><b>${total}枚</b></div><div class="ln"><span>使えるメダル</span><b>${yen(availP())}枚</b></div>${total?'<button class="pbtn sm" id="unbet">BETを全部取り消す</button>':''}<p class="perr" id="bErr"></p>`;
-    box.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{ if(P.busy) return; P.busy=true; const r=await PAD.req('g:bet',{no:P.sel,amt:+b.dataset.q},GID); P.busy=false; if(!r.ok){ const e=$('#bErr'); if(e) e.textContent=r.msg; } });
+    box.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{ if(P.busy) return; P.busy=true; const r=await PAD.req('g:bet',{no:P.sel,amt:+b.dataset.q},GID); P.busy=false; if(r.ok) sfx.coin(); else { const e=$('#bErr'); if(e) e.textContent=r.msg; } });
     const u=$('#unbet'); if(u) u.onclick=async()=>{ const r=await PAD.req('g:unbet',{},GID); toast(r.msg); };
     return; }
   if(mode==='padJ'){ const h=hs[role]; if(!h) return;
@@ -1497,6 +1568,7 @@ function updMode(mode,force){
     const res=st.res, k=JSON.stringify([res&&res.ord,me.res,me.rv,st.busy]); if(k===P.resKey) return; P.resKey=k;
     if(!res){ $('#pres').innerHTML='<div class="pc cen"><h2>着順を確認しています…</h2></div>'; return; }
     const w=hs[res.ord[0]], rv=me.rv, r=me.res;
+    if(r&&P.resSnd!==st.r){ P.resSnd=st.r; setTimeout(r.net>0?sfx.win:r.net<0?sfx.lose:()=>{},600); }
     $('#pres').innerHTML=`<div class="win"><span class="p1">1着</span><div><b>${w.no}番 ${esc(w.name)}</b><small>騎手 ${w.js?esc(w.jn):'CPU'}${res.odds?` ・ 単勝 ${res.odds.toFixed(1)}倍`:''}</small></div></div>
       <div class="rgrid"><div class="pc"><b>着順</b>${res.ord.map((i,k2)=>{ const h=hs[i]; return `<div class="or ${i===role?'me':''}"><em>${k2+1}</em>${noTag(h.no)}<span class="nm">${esc(h.name)}</span><small>${(res.gap&&res.gap[k2])||''}</small><span class="jn">${h.js?esc(h.jn):'CPU'}</span></div>`; }).join('')}</div>
       <div><div class="pc"><b>あなたの結果</b>${r?`<div class="net ${r.net>0?'up':r.net<0?'dn':''}">${r.net>0?'+':''}${yen(r.net)}枚</div>${(r.lines||[]).map(l=>`<p class="note">${esc(l)}</p>`).join('')}`:(st.busy?'<p class="note">精算しています…</p>':'<p class="note">このレースはBETしていません。</p>')}</div>
@@ -1537,7 +1609,7 @@ function padDyn(){
   const F=[]; if(fl&1) F.push(['風よけ中:スタミナが減りにくい','g']); if(fl&2) F.push(['前が壁:追っても伸びない','w']); if(fl&4&&rem>500) F.push(['得意な位置','g']); else if(rem>500&&racing&&me[0]>st.D*1.5) F.push(['得意な位置じゃない','w']); if(fl&8) F.push(['掛かっている','w']); if(fl&16) F.push(['ばてた','w']);
   $('#flags').innerHTML=F.map(x=>`<span class="${x[1]}">${x[0]}</span>`).join('');
   // 機嫌のお知らせ
-  const n=f.n&&f.n[role]; if(n&&n[0]!==P.noteSeq){ P.noteSeq=n[0]; P.note={text:n[1],mood:n[2],until:t+2600}; }
+  const n=f.n&&f.n[role]; if(n&&n[0]!==P.noteSeq){ P.noteSeq=n[0]; P.note={text:n[1],mood:n[2],until:t+2600}; (String(n[1]).includes('ぶつ')?sfx.bump:n[2]>0?sfx.moodUp:sfx.moodDown)(); }
   const mn=$('#mnote'); if(P.note&&P.note.until>t){ mn.hidden=false; mn.className='mnote '+(P.note.mood>0?'up':'dn'); mn.textContent=(P.note.mood>0?'機嫌↑ ':'機嫌↓ ')+P.note.text; } else mn.hidden=true;
   // ヒント
   let hint=''; const x=me[0]/10, D=st.D;
