@@ -2049,6 +2049,45 @@ function rhForeWalk(p){ const ST=0.62;
 function rhHindWalk(p){ const ST=0.62;
   if(p<ST){ const s=p/ST, a1=rhLerp(0.08,-0.5,s), h=rhLerp(0.55,0.42,s); return [a1,a1+h,a1+h+0.25]; }
   const s=(p-ST)/(1-ST), a1=rhLerp(-0.5,0.08,rhE(s)), h=0.5+0.6*Math.sin(Math.PI*s); return [a1,a1+h,a1+h-0.3*Math.sin(Math.PI*s)]; }
+// ---- 常歩(なみあし)の足の運び ----
+// 実際の馬の歩き方:4拍子で、左後→左前→右後→右前の順に着地する。地面に着いている時間が約62%で、着いた足は地面に対して動かない。
+// 足先(ひづめ)の動く道すじを決めて、そこへ届くように関節の角度を逆算する(IK)。だから足が地面をすべらない。
+RH.WS=50;     // 1サイクル(4歩ぶん)で体が進む距離(馬の単位。パドックの歩く距離とそろえる)
+RH.WD=0.62;   // 地面に着いている割合
+function rhIK(ax,ay,tx,ty,L1,L2,bend){   // 付け根(ax,ay)から足首(tx,ty)まで。角度は真下が0で前向きが+。bend:+1=ひざが前(前脚) -1=飛節が後ろ(後脚)
+  let dx=tx-ax, dy=ty-ay, d=Math.hypot(dx,dy); const mx=L1+L2-0.05, mn=Math.abs(L1-L2)+1;
+  if(d>mx){ dx*=mx/d; dy*=mx/d; d=mx; } else if(d<mn){ const k=mn/(d||1); dx*=k; dy*=k; d=mn; }
+  const th=Math.atan2(dx,dy), B=Math.acos(Math.max(-1,Math.min(1,(L1*L1+d*d-L2*L2)/(2*L1*d))));
+  const a1=th+bend*B, kx=ax+Math.sin(a1)*L1, ky=ay+Math.cos(a1)*L1;
+  return [a1,Math.atan2(ax+dx-kx,ay+dy-ky)];
+}
+// q:その脚のサイクル(0=着地の瞬間)。(ax,ay)=付け根。返り値 [3つの角度, 付け根の前後のずれ]
+function rhWalkLeg(q,fore,ax,ay,L){
+  const S=RH.WS, D=RH.WD, half=S*D/2, xc=fore?1:2, H=fore?9:7, lean=fore?0.5:0.55;
+  const slide=3*Math.cos(RH.TAU*q), axx=ax+slide;      // 肩・腰の骨が前後にすべって、歩幅をかせぐ
+  let hx,lift,a3;
+  if(q<D){ hx=ax+xc+half-S*q; lift=0; a3=lean; }                    // 着地中:体が進んだぶん、足は後ろへさがる
+  else{ const t=(q-D)/(1-D), t2=t*t, t3=t2*t, m0=-S*(1-D), m1=-S*0.6*(1-D), xr=ax+xc-half, xf=ax+xc+half;
+    hx=(2*t3-3*t2+1)*xr+(t3-2*t2+t)*m0+(-2*t3+3*t2)*xf+(t3-t2)*m1;   // 蹴り上げの瞬間は地面に対して止まり、着地前は少し後ろへ引く
+    lift=H*Math.pow(Math.sin(Math.PI*Math.pow(t,0.85)),1.1); a3=lean-1.0*Math.sin(Math.PI*t); }    // 持ち上げると、ひづめは後ろへたたまれる
+  const fx=hx-Math.sin(a3)*L[2], fy=-lift-2.6-Math.cos(a3)*L[2];
+  const [a1,a2]=rhIK(axx,ay,fx,fy,L[0],L[1],fore?1:-1);
+  return [[a1,a2,a3],axx];
+}
+// ---- ギャロップ(走り)の足の運び ----
+// 実際の馬の走り方:4拍子で、後ろ脚(奥→手前)→前脚(奥→手前)の順に着地し、そのあと4本とも地面から離れる(空中)。
+// 足先の道すじを決めて関節を逆算するので、脚がきれいにたたまれ、地面についた足は地面で止まる。
+RH.GP={ hind:{D:0.28, xs:10, xe:-36, H:27, slide:12, lean:0.5, bend:-1, ez:0.55}, fore:{D:0.26, xs:33, xe:-12, H:31, slide:13, lean:0.45, bend:1, ez:2.4} };
+function rhGallopLeg(q,fore,ax,ay,L){
+  const g=fore?RH.GP.fore:RH.GP.hind, D=g.D, slide=g.slide*Math.cos(RH.TAU*q), axx=ax+slide;
+  let hx,lift,a3;
+  if(q<D){ const f=q/D; hx=ax+g.xs+(g.xe-g.xs)*f; lift=0; a3=g.lean+0.45*Math.sin(Math.PI*f); }       // 着地中:地面に足がつき、球節が沈む
+  else{ const t=(q-D)/(1-D), e=Math.pow(t,g.ez); hx=ax+g.xe+(g.xs-g.xe)*e;   // 前脚はたたんだまま体の下に置き、着地の直前に前へ振り出す。後ろ脚は早めに前へ運ぶ
+    lift=g.H*Math.pow(Math.sin(Math.PI*Math.pow(t,0.75)),1.25); a3=g.lean-1.05*Math.sin(Math.PI*Math.min(1,t*1.1)); }   // 空中:ひざ(飛節)を高くたたんで、前へ運ぶ
+  const fx=hx-Math.sin(a3)*L[2], fy=-lift-2.6-Math.cos(a3)*L[2];
+  const [a1,a2]=rhIK(axx,ay,fx,fy,L[0],L[1],g.bend);
+  return [[a1,a2,a3],axx];
+}
 function rhHind(p){
   const ST=0.32;
   if(p<ST){ const s=p/ST, a1=rhLerp(0.18,-0.95,s), h=rhLerp(0.62,0.42,s); return [a1,a1+h,a1+h+0.3+0.35*Math.sin(Math.PI*s)]; }
@@ -2086,20 +2125,21 @@ function drawRealHorse(c,x,y,k,ph,o){
   const p=(((ph/RH.TAU)%1)+1)%1, dir=o.dir||1, push=o.push||0;
   c.save(); c.translate(x,y); c.scale(k*dir,k); c.lineJoin='round'; c.lineCap='round';
   // 体の上下動と前後の傾き(四肢が地面を離れる瞬間に浮く)
-  const walk=!!o.walk, bob=walk?0.5*Math.sin(2*RH.TAU*p):-1.5*Math.sin(RH.TAU*(p-0.62))-0.4, pitch=walk?0.01*Math.sin(RH.TAU*p):0.03*Math.sin(RH.TAU*(p-0.2));
+  const walk=!!o.walk, bob=walk?-0.7*Math.cos(2*RH.TAU*(p-0.43)):3.0*Math.cos(RH.TAU*(p-0.40)), pitch=walk?0.012*Math.sin(RH.TAU*(p-0.1)):-0.055*Math.cos(RH.TAU*(p-0.12));
   const FF=walk?rhForeWalk:rhFore, HH=walk?rhHindWalk:rhHind;
   const coat=o.coat, dark=rhShade(coat,-0.42), nearCol=rhShade(coat,-0.3), farCol=rhShade(coat,-0.5), low=o.low||coat, lowFar=rhShade(low,-0.3);
   const socks=o.socks||[];
   const sockC=i=>socks[i]?(i%2===0?'#d9d4c8':'#f2eee4'):null;
-  const ForeL=[16,15,6], ForeW=[9.5,5,3.8], HindL=[18,17,6], HindW=[12.5,5.2,4];
+  const ForeL=walk?[17,17.5,6]:[19,18.5,6.5], ForeW=[9.5,5,3.8], HindL=walk?[19,19,6]:[21,20,6.5], HindW=[12.5,5.2,4];   // 常歩は地面まで届くように、少しだけ脚を長く
   // 体の点を、傾きと上下動を入れた座標に直す
   const cx=0, cy=-46, cs=Math.cos(pitch), sn=Math.sin(pitch);
   const T=(px,py)=>{ const dx=px-cx, dy=py-cy; return [cx+dx*cs-dy*sn, cy+dx*sn+dy*cs+bob]; };
   // ---- 奥の脚 ----
-  const fa=T(21,-41), ha=T(-28,-44);
-  const pf=walk?(p+0.25)%1:(p+0.40)%1, pfn=walk?(p+0.75)%1:(p+0.52)%1, ph0=p, phn=walk?(p+0.5)%1:(p+0.10)%1;   // 常歩は4拍子(後→前→後→前)
-  rhLeg(c,fa[0],fa[1],FF(pf),ForeL,ForeW,farCol,lowFar,sockC(0)&&rhShade(sockC(0),-0.2));
-  rhLeg(c,ha[0],ha[1],HH(ph0),HindL,HindW,farCol,lowFar,sockC(2)&&rhShade(sockC(2),-0.2));
+  const wy=walk?1:0, fa=T(21,-41+wy), ha=T(-28,-44+wy);
+  const pf=walk?(p+0.25)%1:(p+0.32)%1, pfn=walk?(p+0.75)%1:(p+0.44)%1, ph0=p, phn=walk?(p+0.5)%1:(p+0.12)%1;   // 常歩は4拍子(後→前→後→前)
+  { const LG=walk?rhWalkLeg:rhGallopLeg, wf=LG(pf,true,fa[0],fa[1],ForeL), wh=LG(ph0,false,ha[0],ha[1],HindL);
+    rhLeg(c,wf[1],fa[1],wf[0],ForeL,ForeW,farCol,lowFar,sockC(0)&&rhShade(sockC(0),-0.2));
+    rhLeg(c,wh[1],ha[1],wh[0],HindL,HindW,farCol,lowFar,sockC(2)&&rhShade(sockC(2),-0.2)); }
   // ---- しっぽ ----
   const tw=Math.sin(RH.TAU*p)*3;
   c.save(); c.translate(0,bob);
@@ -2124,7 +2164,7 @@ function drawRealHorse(c,x,y,k,ph,o){
     c.bezierCurveTo(-45,-53,-44,-44,-39,-39); c.bezierCurveTo(-34,-35,-28,-36,-22,-37);
     c.bezierCurveTo(-10,-34,6,-33,16,-35); c.bezierCurveTo(24,-36,31,-40,33,-47); c.closePath(); };
   // 首の振り(前脚が着くときに少し下がる)
-  const na=walk?-0.2+0.035*Math.sin(2*RH.TAU*(p-0.1)):0.06*Math.sin(RH.TAU*(p-0.45));
+  const na=walk?-0.2+0.045*Math.sin(RH.TAU*(p-0.35)):0.06*Math.sin(RH.TAU*(p-0.45));
   const neck=()=>{ c.save(); c.translate(26,-54); c.rotate(na); c.translate(-26,54);
     c.beginPath(); c.moveTo(10,-60); c.bezierCurveTo(23,-66,35,-73,46,-77); c.lineTo(52,-69); c.bezierCurveTo(45,-62,38,-52,32,-43); c.lineTo(20,-46); c.closePath(); c.restore(); };
   const head=()=>{ c.save(); c.translate(26,-54); c.rotate(na); c.translate(-26,54);
@@ -2182,9 +2222,10 @@ function drawRealHorse(c,x,y,k,ph,o){
   c.fillStyle='#2a1d14'; c.beginPath(); c.ellipse(1,-61.5,11,2.6,-0.05,0,RH.TAU); c.fill();   // 鞍
   c.restore();
   // ---- 手前の脚 ----
-  const fb=T(24,-41), hb=T(-25,-43);
-  rhLeg(c,hb[0],hb[1],HH(phn),HindL,HindW,nearCol,low,sockC(3));
-  rhLeg(c,fb[0],fb[1],FF(pfn),ForeL,ForeW,nearCol,low,sockC(1));
+  const fb=T(24,-41+wy), hb=T(-25,-43+wy);
+  { const LG=walk?rhWalkLeg:rhGallopLeg, wh=LG(phn,false,hb[0],hb[1],HindL), wf=LG(pfn,true,fb[0],fb[1],ForeL);
+    rhLeg(c,wh[1],hb[1],wh[0],HindL,HindW,nearCol,low,sockC(3));
+    rhLeg(c,wf[1],fb[1],wf[0],ForeL,ForeW,nearCol,low,sockC(1)); }
   if(o.noRider){ c.restore(); return; }
   // ---- 騎手(モンキー乗り) ----
   c.save(); c.translate(0,bob); c.translate(cx,cy); c.rotate(pitch); c.translate(-cx,-cy);
@@ -3215,7 +3256,7 @@ function runRace(){
 // 通信先は2種類:Firebase(本番)と local(同じPCの別タブでのお試し)
 // どちらも set / remove / on / presence / connected の同じ形で使う
 const FB_VER='12.19.0';
-const APP_VER=50;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
+const APP_VER=53;   // 先生のPCとiPadで同じ版かどうかの確認用(更新するたびに1つ上げる)
 const fbReady=()=>{const c=window.FIREBASE_CONFIG;return !!(c&&c.apiKey&&c.databaseURL);};
 const clone=v=>v==null?null:JSON.parse(JSON.stringify(v));
 function loadScript(src){return new Promise((ok,ng)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ng(new Error('読み込み失敗 '+src));document.head.appendChild(s);});}
@@ -5793,7 +5834,7 @@ function pdkFrame(now){
   const u=Math.min(H2*0.37,W2*0.24), kR=u/100*1.25, s=REAL?Math.min(4,Math.max(1,Math.round(kR*dpr*4)/4)):Math.min(3.5,Math.max(1,Math.round(u*dpr/100*4)/4));
   if(idx!==PDK.feat){ PDK.feat=idx; pdkWarm(idx,s); pdkInfo(); }
   if(REAL){   // リアル調:厩務員さんに引かれて常歩で歩く(脚の運びは進んだ距離に合わせる)
-    const gy=H2*0.78, h=S.horses[idx], x=W2*(1.18-1.36*k), walked=W2*1.36*k, fi=Math.floor(((walked/(72*kR))%1)*PDK_NR)%PDK_NR;
+    const gy=H2*0.78, h=S.horses[idx], x=W2*(1.18-1.36*k), walked=W2*1.36*k, fi=Math.floor(((walked/(RH.WS*kR))%1)*PDK_NR)%PDK_NR;
     c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x,gy,u*1.05,u*0.09,0,0,7); c.fill();
     const e=PDK.cache.get(h.no+'|'+fi+'|'+s)||pdkFrameImg(h,fi,s);
     c.drawImage(e.cv,x-e.ax*kR,gy-e.ay*kR,e.cv.width/s*kR,e.cv.height/s*kR);
@@ -6213,6 +6254,38 @@ async function mgPadAct(k){
   if(P.modal==='mg') mgModal();
 }
 
+
+/* ---------- 重さの測定(?perf=1 をURLに付けたときだけ動く。ふだんは何もしない) ----------
+   レース中だけ、画面の隅に「fps・1コマの時間・絵を描く時間」を出す。iPadで開いて、数字を控える */
+(function(){
+  if(!new URLSearchParams(location.search).get('perf')) return;
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;left:6px;top:6px;z-index:99999;background:rgba(0,0,0,.78);color:#8f8;font:12px/1.35 ui-monospace,Menlo,monospace;padding:6px 9px;border-radius:6px;pointer-events:none;white-space:pre';
+  document.body.appendChild(el);
+  const FT=[], DT=[]; let last=performance.now(), inRace=false, since=performance.now(), worst=0;
+  const _dr=drawRace;
+  drawRace=function(run){ const t=performance.now(); try{ return _dr.apply(this,arguments); } finally{ if(inRace) DT.push(performance.now()-t); } };
+  const stat=a=>{ if(!a.length) return null; const b=a.slice().sort((x,y)=>x-y); return {avg:b.reduce((x,y)=>x+y,0)/b.length, p95:b[Math.floor(b.length*0.95)], max:b[b.length-1]}; };
+  const loop=now=>{
+    const racing=(S&&S.phase==='race')||(typeof PR!=='undefined'&&PR.on);
+    if(racing!==inRace){ inRace=racing; FT.length=0; DT.length=0; worst=0; since=now; }
+    if(racing&&!document.hidden){ const d=now-last; if(d<500){ FT.push(d); if(FT.length>300) FT.shift(); if(DT.length>300) DT.shift(); } }
+    last=now; requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+  setInterval(()=>{
+    const f=stat(FT), d=stat(DT), c=document.querySelector('#prCv')||document.querySelector('#cv');
+    if(f) worst=Math.max(worst,f.p95);
+    el.textContent=
+      `版${APP_VER}  ${inRace?'レース中':'(レース中だけ測ります)'}\n`+
+      (f?`fps ${(1000/f.avg).toFixed(0)}  1コマ平均 ${f.avg.toFixed(1)}ms\n遅いほう95% ${f.p95.toFixed(1)}ms  最悪 ${f.max.toFixed(0)}ms\n`:'')+
+      (d?`絵を描く時間 平均 ${d.avg.toFixed(1)}ms / 最大 ${d.max.toFixed(1)}ms\n`:'')+
+      `画面 ${innerWidth}x${innerHeight}  dpr ${(window.devicePixelRatio||1).toFixed(1)}\n`+
+      (c?`キャンバス ${c.width}x${c.height}\n`:'')+
+      `リアル調 ${REAL?'ON':'OFF'}  ${inRace?Math.round((performance.now()-since)/1000)+'秒':''}`;
+    el.style.color=f&&f.avg>33?'#f88':f&&f.avg>20?'#fd6':'#8f8';
+  },500);
+})();
 
 $('#verNo').textContent=APP_VER;
 try{ if(localStorage.getItem('g1.bgm')==='0'){ bgmOn=false; $('#bgmBtn').textContent='🎵 BGM OFF'; } }catch(e){}
