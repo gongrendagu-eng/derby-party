@@ -400,6 +400,7 @@ const GAME_LIST=[{id:'g1road',n:'G1ロード',art:'horse',f:'g1road.html',d:'競
   {id:'airhockey',n:'エアホッケー',art:'hockey',f:'airhockey.html',d:'1対1の対戦。観戦者はBETとおじゃまアイテム'},
   {id:'soccerboard',n:'サッカーボード',art:'foos',f:'soccerboard.html',d:'テーブルサッカー。1対1・2対2で、出場者は自分のiPadで操作'},
   {id:'baseball',n:'野球盤',art:'baseball',f:'baseball.html',d:'投手2人の対戦。打者は観戦者からランダム'},
+  {id:'jockey',n:'ジョッキーダービー',art:'horse',f:'jockey.html',d:'学生が騎手になる競馬。ほかの人は1着を当てる'},
   {id:'cointoss',n:'コイントス(テスト機)',art:'coin',f:'cointoss.html',d:'しくみの確認用'}];
 const launching={};
 function launchGame(x){
@@ -477,8 +478,9 @@ function renderAdd(b){
 }
 /* ---- 掃除決め(デザイン⑥開始・⑦結果) ---- */
 const CL_ST={ready:'準備OK',playing:'進行中',done:'結果が出ました',banking:'貯金に入れています',banked:'貯金に入れました',cancel:'中止'};
-// エアホッケーから始める掃除決めは、エアホッケーが終わるまでエアホッケーを開く
-const clStage=c=>c.pre==='airhockey'&&!(c.ah&&c.ah.done)?{f:'airhockey.html',n:'エアホッケー'}:{f:'roulettepark.html',n:c.gn||'ルーレットパーク'};
+// エアホッケー・ジョッキーダービーから始める掃除決めは、それが終わるまでそのゲームを開く(終わりの印はどちらも c.ah.done)
+const CL_PRE={airhockey:{f:'airhockey.html',n:'エアホッケー'},jockey:{f:'jockey.html',n:'ジョッキーダービー'}};
+const clStage=c=>CL_PRE[c.pre]&&!(c.ah&&c.ah.done)?CL_PRE[c.pre]:{f:'roulettepark.html',n:c.gn||'ルーレットパーク'};
 const cleanGameUrl=c=>{ const u=new URL(clStage(c).f,location.href); u.searchParams.set('clean',c.id); if(MG.LOCAL) u.searchParams.set('local','1'); return u.href; };
 const clActive=()=>Object.values(HOST.clean.all()).filter(c=>['ready','playing','done','banking'].includes(c.st)).sort((a,b)=>b.at-a.at);
 // 小テストの点数:1行に「学籍番号(または名前) 点数」
@@ -507,7 +509,7 @@ function renderClean(b){
   const chosen=people.filter(p=>C.sel[p.sid]&&!busy(p.sid)).map(p=>p.sid);
   const {m,sc}=clMedals(chosen), noScore=chosen.filter(s=>m[s]==null), low=chosen.filter(s=>m[s]!=null&&m[s]<10), seated=chosen.filter(s=>acc[s].seat);
   const ses=act.map(c=>{ const n=Object.keys(c.m||{}).length;
-    return `<div class="ses"><b>${c.pre==='airhockey'?'エアホッケー → ':''}${esc(c.gn)}</b><span>${esc(c.cls||'')} ・ ${n}人 ・ ${c.games}ゲーム ・ 掃除 ${c.clean}人${c.room?` ・ ルーム ${esc(c.room)}`:''}</span>
+    return `<div class="ses"><b>${CL_PRE[c.pre]?CL_PRE[c.pre].n+' → ':''}${esc(c.gn)}</b><span>${esc(c.cls||'')} ・ ${n}人 ・ ${c.games}ゲーム ・ 掃除 ${c.clean}人${c.room?` ・ ルーム ${esc(c.room)}`:''}</span>
       <span class="st ${c.st==='done'?'done':c.st==='ready'?'ready':''}">${CL_ST[c.st]||c.st}</span><span class="sp"></span>
       ${c.st==='ready'||c.st==='playing'?`<a class="btn pri" href="${esc(cleanGameUrl(c))}" target="_blank" rel="noopener">${esc(clStage(c).n)}を開く</a>`:''}
       ${c.res?`<button class="btn gold" data-cv="${esc(c.id)}">結果と貯金</button>`:''}
@@ -520,8 +522,8 @@ function renderClean(b){
       <div class="cl-grid" id="clGrid">${people.map(p=>{ const bz=busy(p.sid), sel=C.sel[p.sid]&&!bz;
         return `<label class="cl-p ${sel?'on':''} ${bz?'dis':''}"><input type="checkbox" data-sid="${esc(p.sid)}" ${sel?'checked':''} ${bz?'disabled':''}><span class="nm">${esc(p.n)}</span>${bz?'<small>掃除決め中</small>':p.seat?'<small>遊び中</small>':''}<span class="od ${on.has(p.sid)?'y':''}">●</span></label>`; }).join('')||'<p class="note">このクラスには誰もいません</p>'}</div></section>
     <section class="box cl-side"><b>3 設定</b>
-      <label class="fld">ゲーム<select id="clGame"><option value=""${C.pre?'':' selected'}>ルーレットパークだけ</option><option value="airhockey"${C.pre==='airhockey'?' selected':''}>エアホッケー → ルーレットパーク</option></select></label>
-      ${C.pre==='airhockey'?'<p class="note">エアホッケーでメダルを増やしてから、先生が「ルーレットパークへ進む」を押すと、そのときの枚数でルーレットパークが始まります。</p>':''}
+      <label class="fld">ゲーム<select id="clGame"><option value=""${C.pre?'':' selected'}>ルーレットパークだけ</option><option value="airhockey"${C.pre==='airhockey'?' selected':''}>エアホッケー → ルーレットパーク</option><option value="jockey"${C.pre==='jockey'?' selected':''}>ジョッキーダービー → ルーレットパーク</option></select></label>
+      ${CL_PRE[C.pre]?'<p class="note">'+CL_PRE[C.pre].n+'でメダルを増やしてから、先生が「ルーレットパークへ進む」を押すと、そのときの枚数でルーレットパークが始まります。</p>':''}
       <div class="fld">配るメダル<div class="seg"><button id="clSame" aria-pressed="${C.med==='same'}">全員同じ枚数</button><button id="clScore" aria-pressed="${C.med==='score'}">小テストの点数</button></div></div>
       ${C.med==='same'?`<label class="fld">1人あたりの枚数<input id="clN" type="number" min="10" step="10" value="${esc(C.n)}"></label>`
         :`<label class="fld">点数を貼り付け(1行に「学籍番号 点数」か「名前 点数」)<textarea id="clPaste" rows="4" placeholder="2401001	85&#10;2401002	72">${esc(C.paste)}</textarea></label>
@@ -550,11 +552,11 @@ function renderClean(b){
     if(clean>=chosen.length) return toast('掃除の人数は、参加者より少なくしてください');
     if(C.med==='same'&&!(+C.n>=10)) return toast('配るメダルは10枚以上にしてください');
     const mm={}; chosen.forEach(s=>mm[s]=Math.max(10,m[s]==null?10:m[s]));
-    confirmModal(`${chosen.length}人で掃除決めをはじめますか?`,`${esc(C.cls)} ・ ${C.pre==='airhockey'?'エアホッケー → ':''}ルーレットパーク ${games}ゲーム ・ 掃除 ${clean}人${seated.length?`<br>遊んでいる ${seated.length}人 は精算して貯金にもどします。`:''}<br>このあと、先生のPCで${C.pre==='airhockey'?'エアホッケー':'ルーレットパーク'}を開きます。`,'はじめる',async()=>{
-      const pre=C.pre==='airhockey'?'airhockey':'';
+    confirmModal(`${chosen.length}人で掃除決めをはじめますか?`,`${esc(C.cls)} ・ ${CL_PRE[C.pre]?CL_PRE[C.pre].n+' → ':''}ルーレットパーク ${games}ゲーム ・ 掃除 ${clean}人${seated.length?`<br>遊んでいる ${seated.length}人 は精算して貯金にもどします。`:''}<br>このあと、先生のPCで${CL_PRE[C.pre]?CL_PRE[C.pre].n:'ルーレットパーク'}を開きます。`,'はじめる',async()=>{
+      const pre=CL_PRE[C.pre]?C.pre:'';
       const c=await HOST.clean.create({g:'roulettepark',gn:'ルーレットパーク',cls:C.cls,m:mm,games,clean});
       if(pre){ await HOST.clean.update(c.id,{pre}); c.pre=pre; }
-      window.open(cleanGameUrl(c),'_blank'); toast(`${pre?'エアホッケー':'ルーレットパーク'}を開きました`); });
+      window.open(cleanGameUrl(c),'_blank'); toast(`${pre?CL_PRE[pre].n:'ルーレットパーク'}を開きました`); });
   };
 }
 function renderCleanHist(){
