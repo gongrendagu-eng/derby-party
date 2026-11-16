@@ -113,6 +113,7 @@ html.padmode .cv.ctl,html.padmode .cv.ctl canvas{touch-action:none}
    モード:フリーモード(貯金のメダルを持ち込む)/掃除モード(?clean=ID。掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ) */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const CLEAN=MG.qs.get('clean')||'';
+let CI=null;   // 掃除決めのゲームの順番(MG.cleanInfo)
 const GID=CLEAN?'ahclean':'airhockey', NAME=CLEAN?'エアホッケー(掃除決め)':'エアホッケー';
 let toastT=null; function toast(m){ if(!m) return; const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
 const now=()=>Date.now();
@@ -279,7 +280,8 @@ async function hostMain(){
       SESS=(await MG.cleanList())[CLEAN];
       if(!SESS) return fail('その掃除決めが見つかりません','管理画面の「掃除決め」で確認してください。');
       if(!['ready','playing'].includes(SESS.st)) return fail('この掃除決めはもう終わっています','管理画面で新しく始めてください。');
-      if(SESS.ah&&SESS.ah.done) return fail('エアホッケーはもう終わっています',`ルーレットパークに進んでいます。<a href="${esc(rpUrl())}">ルーレットパークを開く</a>`);
+      CI=MG.cleanInfo(SESS,'airhockey');
+      if(!CI.mine) return fail(`いまは${esc(CI.cur)}の番です`,`この掃除決めは、エアホッケーではなく${esc(CI.cur)}に進んでいます。<a href="${esc(CI.curUrl)}">${esc(CI.cur)}を開く</a>`);
       CB={}; Object.keys(SESS.m||{}).forEach(s=>CB[s]=Math.max(0,Math.floor(+((SESS.ah&&SESS.ah.b&&SESS.ah.b[s]!=null)?SESS.ah.b[s]:SESS.m[s])||0)));
     }
     HOST=await MG.startHost({gid:GID,name:NAME,art:'hockey',anyone:!!CLEAN,
@@ -299,7 +301,7 @@ async function hostMain(){
     HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } }); }
   app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC${CLEAN&&SESS.cls?' ・ '+esc(SESS.cls):''}</small></div><span class="sp"></span>
       <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>
-      ${CLEAN?'<button class="btn pri" id="toRp">ルーレットパークへ進む</button>':'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
+      ${CLEAN?`<button class="btn pri" id="toRp">${CI.last?'結果を出す(掃除当番を決める)':esc(CI.next)+'へ進む'}</button>`:'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
     <div class="grid"><div class="rink"><canvas id="cv"></canvas></div>
       <div><div class="box" id="ctl"></div>
         <div class="box"><h2>設定</h2><div class="frm" id="cfg"></div><p class="note">試合中は変えられません。</p></div>
@@ -329,18 +331,12 @@ function rpUrl(){ const u=new URL('roulettepark.html',location.href); u.searchPa
 async function toRoulette(){
   if(['entry','bet','ready','play'].includes(M.ph)) return toast('試合が終わってから進んでください');
   if(M.busy) return toast('精算が終わるまで待ってください');
-  const ids=people(), zero=ids.filter(s=>(CB[s]||0)<10).length;
-  if(!confirm(`ルーレットパークへ進みますか?\n${ids.length}人 のいまのメダルを、そのままルーレットパークに引き継ぎます。${zero?`\n(10枚未満の ${zero}人 は、ルーレットパークでは10枚から始まります)`:''}\nエアホッケーにはもどれません。`)) return;
-  const win=window.open('about:blank','_blank');
-  M.ph='stop'; $('#toRp').disabled=true;
-  const m={}; ids.forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
-  try{ await HOST.clean.update(CLEAN,{m,m0:SESS.m0||SESS.m,ah:{b:m,done:1,t:now()}}); }
-  catch(e){ M.ph='lobby'; $('#toRp').disabled=false; if(win) win.close(); return toast('保存できませんでした:'+e.message); }
-  const url=rpUrl(); if(win) win.location.href=url;
+  const m={}; people().forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
+  let r; try{ r=await MG.cleanGo(HOST,SESS,'airhockey',m,{before(){ M.ph='stop'; $('#toRp').disabled=true; clearTimeout(cbT); }}); }
+  catch(e){ M.ph='lobby'; $('#toRp').disabled=false; return toast('保存できませんでした:'+e.message); }
+  if(!r) return;
   await HOST.stop().catch(()=>{}); await HOST.be.remove(AH).catch(()=>{}); HOST=null;
-  app.innerHTML=`<div class="wrap"><div class="box"><h2>ルーレットパークに引き継ぎました</h2>
-    <p class="note">${ids.length}人 のメダルを引き継ぎました。ルーレットパークのタブで「はじめる」を押してください。このタブは閉じてかまいません。</p>
-    <p><a class="btn pri" href="${esc(url)}" target="_blank" rel="noopener">ルーレットパークを開く(開いていないとき)</a></p></div></div>`;
+  app.innerHTML=r.html;
 }
 
 /* ---------- 設定 ---------- */
@@ -381,7 +377,7 @@ function ctlRender(){
     h=`<h2>つぎの試合(${F.n})</h2><p class="note">出場できる人:<b>${n}人</b>(エアホッケーの画面を開いていて、参戦料 ${C.fee}枚 を持っている人)。${F.n}は${F.need}人必要です。</p>
       ${M.msg?`<p class="note" style="color:var(--warn);font-weight:800">${esc(M.msg)}</p>`:''}
       <button class="btn pri big" id="go" ${n<F.need&&C.mode==='rand'?'disabled':''}>${C.mode==='vol'?'立候補を受け付ける':'ランダムで出場者を決める'}</button>
-      ${CLEAN?'<p class="note">時間になったら、右上の「ルーレットパークへ進む」を押します。</p>':''}`;
+      ${CLEAN?`<p class="note">時間になったら、右上の「${CI.last?'結果を出す':esc(CI.next)+'へ進む'}」を押します。</p>`:''}`;
   }else if(M.ph==='entry'){
     h=`<h2>立候補を受付中 <span style="color:var(--blue)">あと${left}秒</span></h2>
       <p class="note">${FM[M.fm].n}・立候補:<b>${M.ent.size}人</b>。締め切ったら、この中から${FM[M.fm].need}人を抽選します。</p>
@@ -761,11 +757,11 @@ function padRender(){
   const v=G.view; if(v===undefined) return;
   if(CLEAN){
     if(v.cl!==CLEAN) return padMsg('この掃除決めには参加していません','先生に確認してください。');
-    if(!G.live){ // エアホッケーが終わった:ルーレットパークへ
+    if(!G.live){ // エアホッケーが終わった:つぎのゲームへ
       const id=Object.keys(G.games).find(k=>G.games[k].clean===CLEAN);
       if(id){ const u=new URL(G.games[id].url); u.searchParams.set('mg',PAD.pub); if(MG.LOCAL) u.searchParams.set('local','1');
         return padMsg(`${esc(G.games[id].n)}が始まりました`,'エアホッケーのメダルを、そのまま引き継いでいます。',`<a class="pbtn go" href="${esc(u.href)}">${esc(G.games[id].n)}へ</a>`); }
-      return padMsg('エアホッケーは終わりました','先生がつぎのゲーム(ルーレットパーク)を開くまで待ってね。');
+      return padMsg('エアホッケーは終わりました','先生がつぎのゲームを開くか、結果を発表するまで待ってね。');
     }
   }else{
     if(seatA()===null) return padMsg(`${NAME}にはまだ入っていません`,'メダルゲームのトップで、持ち込む枚数を選んでから入ってください。','');
@@ -795,7 +791,7 @@ function padRender(){
   }
   const me=meNow(), st=G.st||{};
   $('#num').innerHTML=`${yen(myBal())}<small>枚</small>`;
-  $('#bank').textContent=CLEAN?(me.rsv?`賭けている ${yen(me.rsv)}枚`:'この日だけのメダル(あとでルーレットパークへ)'):`貯金 ${yen(v.b)}枚${me.rsv?` ・ 賭けている ${yen(me.rsv)}枚`:''}`;
+  $('#bank').textContent=CLEAN?(me.rsv?`賭けている ${yen(me.rsv)}枚`:'この日だけのメダル'):`貯金 ${yen(v.b)}枚${me.rsv?` ・ 賭けている ${yen(me.rsv)}枚`:''}`;
   $('#cvw').classList.toggle('ctl',!!me.role&&['bet','ready','play'].includes(st.ph));
   actRender();
 }

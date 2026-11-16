@@ -385,5 +385,63 @@ async function startPad(){
 // 掃除決めの一覧(ゲームの設定画面用。ホストを立てずに読む)
 async function cleanList(){ const be=await connect(), k=keys.get(); if(!k) throw new Error('NOKEY'); return (await be.get('mg/s_'+k.secret+'/clean'))||{}; }
 
-window.MG={VER,get LOCAL(){return LOCAL},setLocal(v){ if(!!v!==LOCAL){ LOCAL=!!v; bePromise=null; } },connect,cleanList,keys,startHost,startPad,normSid,yen,esc,rid,indexUrl,qs};
+// ---- 掃除決めのゲームの順番 ----
+// c.seq=[ゲームID…](最後のゲームで掃除当番が決まる)、c.si=いま何番目か。
+// 古い形(c.pre=エアホッケーなど → ルーレットパーク、終わりの印は c.ah.done)も読める。
+const CLEAN_GAMES={roulettepark:{f:'roulettepark.html',n:'ルーレットパーク'},airhockey:{f:'airhockey.html',n:'エアホッケー'},jockey:{f:'jockey.html',n:'ジョッキーダービー'},
+  baseball:{f:'baseball.html',n:'野球盤'},soccerboard:{f:'soccerboard.html',n:'サッカーボード'}};
+function cleanSeq(c){ if(c&&Array.isArray(c.seq)&&c.seq.length) return c.seq.filter(g=>CLEAN_GAMES[g]); return c&&CLEAN_GAMES[c.pre]?[c.pre,'roulettepark']:['roulettepark']; }
+function cleanStage(c){ const q=cleanSeq(c); if(c&&Array.isArray(c.seq)) return Math.max(0,Math.min(q.length-1,c.si||0)); return c&&CLEAN_GAMES[c.pre]&&!(c.ah&&c.ah.done)?0:q.length-1; }
+function cleanUrl(c,i){ const q=cleanSeq(c); if(i==null) i=cleanStage(c); const u=new URL(CLEAN_GAMES[q[i]].f,CORE_SRC); u.searchParams.set('clean',c.id); if(LOCAL) u.searchParams.set('local','1'); return u.href; }
+const cleanLabel=c=>cleanSeq(c).map(g=>CLEAN_GAMES[g].n).join(' → ');
+// ゲームから見た、いまの番の情報
+function cleanInfo(c,gid){ const q=cleanSeq(c), i=cleanStage(c), last=i===q.length-1;
+  return {seq:q,i,mine:q[i]===gid,last,cur:CLEAN_GAMES[q[i]].n,next:last?'':CLEAN_GAMES[q[i+1]].n,curUrl:cleanUrl(c,i)}; }
+// 途中のゲームが終わって次へ進む(m:いまのメダル)。次のゲームのURLを返す
+async function cleanNext(H,c,m){
+  const q=cleanSeq(c), i=cleanStage(c);
+  if(Array.isArray(c.seq)) await H.clean.update(c.id,{m,m0:c.m0||c.m,ah:null,si:i+1});
+  else await H.clean.update(c.id,{m,m0:c.m0||c.m,ah:{b:m,done:1,t:now()}});
+  return cleanUrl(c,Math.min(q.length-1,i+1));
+}
+// 最後のゲーム(ルーレットパーク以外)で結果を出す:メダルが少ない人から掃除当番(同じ枚数はくじ)
+async function cleanFinish(H,c,m){
+  const ids=Object.keys(m), n=Math.max(1,Math.min(ids.length-1,c.clean||1));
+  const cl=ids.map(s=>[s,m[s],Math.random()]).sort((a,b)=>a[1]-b[1]||a[2]-b[2]).slice(0,n).map(x=>x[0]);
+  await H.clean.update(c.id,{m0:c.m0||c.m});
+  await H.clean.setResult(c.id,{f:m,cl});
+  return cl;
+}
+
+// 掃除決めの途中/最後のゲームの「〇〇へ進む」「結果を出す」ボタンの共通処理。m:いまのメダル。やめたら null
+// opt.extra:確認に足す文、opt.before():保存の直前に呼ぶ(ゲームを止める)。返り値の html をゲームの画面に出す
+async function cleanGo(H,c,gid,m,opt){
+  opt=opt||{}; const ci=cleanInfo(c,gid), ids=Object.keys(m), acc=H.acc();
+  if(ci.last){
+    const n=Math.max(1,Math.min(ids.length-1,c.clean||1));
+    if(!confirm(`結果を出しますか?\n${ids.length}人 のいまのメダルで、少ない ${n}人 が掃除当番になります(同じ枚数はくじ)。${opt.extra||''}\n${ci.cur}にはもどれません。`)) return null;
+    if(opt.before) opt.before();
+    const cl=await cleanFinish(H,c,m);
+    return {last:true,cl,html:cleanResultHtml(acc,m,cl,ci.cur)};
+  }
+  const zero=ids.filter(s=>(m[s]||0)<10).length, toRp=ci.seq[ci.i+1]==='roulettepark';
+  if(!confirm(`${ci.next}へ進みますか?\n${ids.length}人 のいまのメダルを、そのまま${ci.next}に引き継ぎます。${opt.extra||''}${toRp&&zero?`\n(10枚未満の ${zero}人 は、ルーレットパークでは10枚から始まります)`:''}\n${ci.cur}にはもどれません。`)) return null;
+  const win=window.open('about:blank','_blank'); if(opt.before) opt.before();
+  let url; try{ url=await cleanNext(H,c,m); }catch(e){ if(win) win.close(); throw e; }
+  if(win) win.location.href=url;
+  return {last:false,url,html:`<div class="wrap"><div class="box"><h2>${esc(ci.next)}に引き継ぎました</h2>
+    <p class="note">${ids.length}人 のメダルを引き継ぎました。${esc(ci.next)}のタブで始めてください。このタブは閉じてかまいません。</p>
+    <p><a class="btn pri" href="${esc(url)}" target="_blank" rel="noopener">${esc(ci.next)}を開く(開いていないとき)</a></p></div></div>`};
+}
+function cleanResultHtml(acc,m,cl,gname){
+  const nm=s=>esc(acc[s]?acc[s].n:s), all=Object.keys(m).sort((a,b)=>m[a]-m[b]);
+  return `<div class="wrap"><div class="box"><h2>掃除決めの結果(${esc(gname)})</h2>
+    <div style="font-size:24px;font-weight:800;margin:12px 0">今日の掃除当番:${cl.map(s=>`<span style="color:#c8102e;margin-right:16px">${nm(s)}</span>`).join('')}</div>
+    <ol style="columns:3;font-size:16px;line-height:1.9;margin:0 0 12px">${all.map(s=>`<li${cl.includes(s)?' style="color:#c8102e;font-weight:800"':''}>${nm(s)} ${yen(m[s])}枚</li>`).join('')}</ol>
+    <p class="note">残ったメダルは、管理画面の「掃除決め」→「結果と貯金」から、全員の貯金に入れてください。このタブは閉じてかまいません。</p>
+    <p><a class="btn pri" href="${esc(indexUrl())}" target="_blank" rel="noopener">管理画面を開く</a></p></div></div>`;
+}
+
+window.MG={VER,get LOCAL(){return LOCAL},setLocal(v){ if(!!v!==LOCAL){ LOCAL=!!v; bePromise=null; } },connect,cleanList,keys,startHost,startPad,normSid,yen,esc,rid,indexUrl,qs,
+  CLEAN_GAMES,cleanSeq,cleanStage,cleanUrl,cleanLabel,cleanInfo,cleanNext,cleanFinish,cleanGo,cleanResultHtml};
 })();
