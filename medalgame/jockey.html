@@ -92,13 +92,16 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
 .startb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(70%,460px);height:44%;border:6px solid #fff;border-radius:24px;background:rgba(20,30,50,.88);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .startb b{font-size:clamp(22px,3.4vw,34px);font-weight:900}.startb span{font-size:14px;color:var(--soft)}.startb.go{background:#c8102e;border-color:var(--gold)}
 .jpan{flex:0 0 auto;display:grid;grid-template-columns:170px minmax(0,1fr) minmax(0,1.5fr) 150px;gap:10px;padding:10px;height:min(38vh,300px)}
-.lanes,.gauges{background:var(--navy2);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:0}
+.lanes,.gauges{background:var(--navy2);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:0}.gauges{gap:5px;justify-content:center}
 .lanes small,.lcol small{font-size:10px;color:var(--soft)}
 .lr{display:flex;gap:10px;flex:1;min-height:0}.lb{display:flex;flex-direction:column;gap:8px;flex:1}.lb button{flex:1;border:0;border-radius:12px;background:#2a4560;color:#fff;font-weight:900;font-size:18px}.lb button:active{background:#3b6187}
 .lcol{display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:center}.lcol i{width:22px;flex:1;max-height:22px;border-radius:4px;background:#2a4560}.lcol i.c{background:#7f93a8}.lcol i.t{background:var(--gold)}
 .gg{display:grid;grid-template-columns:58px 1fr 84px;gap:8px;align-items:center;font-size:13px;font-weight:700}.gg i{height:16px;border-radius:8px;background:#0a1622;overflow:hidden}.gg i b{display:block;height:100%;border-radius:8px;transition:width .2s}.gg em{font-style:normal;font-size:12px;text-align:right;white-space:nowrap}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}.flags span{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px}.flags .g{background:#127a8a}.flags .w{background:#5a2a20;color:#f7c9a8}
-.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.actw{display:flex;flex-direction:column;gap:6px;min-height:0}.acts{flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;min-height:0}
+.lvbar{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}.lvbar small{font-size:11px;color:var(--soft);font-weight:700}
+.lvbar i{position:relative;height:14px;border-radius:7px;background:#0a1622;overflow:hidden}.lvbar i b{position:absolute;top:0;height:100%}.lvbar i u{position:absolute;left:50%;top:0;width:2px;height:100%;background:#fff;opacity:.7}
+.acts .a.hit{animation:hit .12s}.gg i{position:relative}.gg i u{position:absolute;top:0;width:3px;height:100%;background:#ffc83d}
 .acts .a,.whip{border:4px solid transparent;border-radius:18px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .acts .a b,.whip b{font-size:clamp(18px,2.6vw,26px);font-weight:900}.acts .a span,.whip span{font-size:12px;opacity:.85}
 .a.hold{background:#2f5fbf}.a.none{background:#4a5a6c}.a.push{background:#1f8a4c}.acts .a{opacity:.55}.acts .a.on{opacity:1;border-color:#fff;box-shadow:0 0 0 3px var(--gold)}
@@ -136,7 +139,7 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
    先生のPC:レースの計算・メダルの増減 / iPad:騎手は操作、ほかの人はBETして観戦 */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ
-const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=4;
+const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=5;
 const now=()=>Date.now();
 const LAP=1600, REAL=true, isPhone=()=>false;
 let G=null, csCache={};
@@ -895,6 +898,8 @@ const SIM={
   ACC:3.2, DEC:4.5, LANE_V:0.4, LANES:6,
   ACT:{hold:0.94,none:0.975,push:1.0},
   DRAIN:{hold:0.32,none:0.72,push:1.22},
+  TAP:0.22, TAP_ON:0.15,   // 追う・控えるは連打:1回で強さ+0.22。強いほど早く弱まる(1秒に1回で約0.25、2回で0.6、3回で最大)
+  decay:(lv,dt)=>{ const m=Math.abs(lv); return lv-Math.sign(lv)*Math.min(m,(m*0.6+0.08)*dt); },
   WHIP_SPD:0.011, WHIP_DRAIN:0.42, WHIP_T:0.7,
   CORNER:0.03, FINAL:500
 };
@@ -906,7 +911,7 @@ function createRace(spec){
     i,no:h.no,h,style:h.style,
     x:0,v:0,l:(i/(Math.max(1,N-1))),lt:Math.round(i/(Math.max(1,N-1))*SIM.LANES)/SIM.LANES,
     st:100,k:0,m:h.mood0,
-    a:'none',w:0,wq:[],ln:null,rt:null,go:null,
+    a:'none',lv:0,auto:null,dir:'',w:0,wq:[],ln:null,rt:null,go:null,
     fin:null,place:0,
     flags:{},ev:[],evT:0,last:{},
     // 振り返り用
@@ -919,7 +924,9 @@ function createRace(spec){
 
   // 騎手の操作を受け取る
   R.input=(i,inp)=>{ const h=H[i]; if(!h||h.fin!=null) return;
-    if(inp.a&&inp.a!==h.a&&['hold','push','none'].includes(inp.a)){ h.a=inp.a; h.chg.push(R.t); }
+    if(inp.a&&['hold','push','none'].includes(inp.a)) h.auto=inp.a;   // CPU騎手は強さを直接決める
+    if(inp.pt>0||inp.ht>0){ h.auto=null; const n=Math.min(6,inp.pt||0), m=Math.min(6,inp.ht||0);
+      if(n){ if(h.lv<0) h.lv=0; h.lv=Math.min(1,h.lv+SIM.TAP*n); } if(m){ if(h.lv>0) h.lv=0; h.lv=Math.max(-1,h.lv-SIM.TAP*m); } }
     if(inp.w!=null&&inp.w>h.w){ const n=Math.min(6,inp.w-h.w); for(let k=0;k<n;k++) h.wq.push(R.t); h.w=inp.w; h.rv.whips+=n; whipTaps(h,n); }
     if(inp.ln!=null){ const ln=clamp(Math.round(inp.ln),0,SIM.LANES); if(ln/SIM.LANES!==h.lt){ h.lt=ln/SIM.LANES; h.laneMove=true; } }
     if(inp.rt!=null&&h.rt==null&&!R.started) h.rt=inp.rt;
@@ -970,8 +977,12 @@ function createRace(spec){
         if(dx>0.6&&dx<5&&dl<0.18) draft=true;
         if(dx>0&&dx<2.6&&dl<0.13&&(!block||dx<block.dx)) block={o,dx}; }
       const wr=whipRate(h);
+      // 追う(+)・控える(−)の強さ。連打をやめると馬なりにもどる
+      if(h.auto!=null) h.lv=h.auto==='push'?1:h.auto==='hold'?-1:0; else h.lv=SIM.decay(h.lv,dt);
+      { const a=h.lv>SIM.TAP_ON?'push':h.lv<-SIM.TAP_ON?'hold':'none'; if(a!=='none'&&a!==h.dir){ if(h.dir) h.chg.push(R.t); h.dir=a; } h.a=a; }
+      const pw=Math.abs(h.lv), mix=(T)=>h.lv>=0?T.none+(T.push-T.none)*pw:T.none+(T.hold-T.none)*pw;
       // ---- 速さの目標 ----
-      let act=SIM.ACT[h.a]||SIM.ACT.none;
+      let act=mix(SIM.ACT);
       if(wr>0) act=Math.max(act,1.0)+SIM.WHIP_SPD*wr;
       if(ph==='final'&&(h.a==='push'||wr>0)){
         act+=0.0035*(h.h.kick-7);
@@ -995,7 +1006,7 @@ function createRace(spec){
       }
       h.bumpCD-=dt;
       // ---- スタミナ ----
-      let dr=SIM.DRAIN[h.a]||SIM.DRAIN.none; if(wr>0) dr=Math.max(dr,SIM.DRAIN.push)+SIM.WHIP_DRAIN*wr;
+      let dr=mix(SIM.DRAIN); if(wr>0) dr=Math.max(dr,SIM.DRAIN.push)+SIM.WHIP_DRAIN*wr;
       dr*=1-0.045*(h.h.sta-7);
       dr*=1.25-0.4*h.m/100;
       if(draft&&!block) dr*=0.7;
@@ -1005,7 +1016,7 @@ function createRace(spec){
       h.st=Math.max(0,h.st-dr*dt);
       // ---- 掛かり ----
       if(ph==='final') h.k=Math.max(0,h.k-25*dt);
-      else { let g=0; if(h.a==='hold') g=-10; else if(h.a==='push') g=h.h.temper*6; else g=h.h.temper*3; if(draft) g-=2.5; if(g>0) g*=1.5-h.m/100; h.k=clamp(h.k+g*dt,0,100); }
+      else { let g=0; if(h.lv<0) g=-10*pw+h.h.temper*3*(1-pw); else g=h.h.temper*(3+3*pw); if(draft) g-=2.5; if(g>0) g*=1.5-h.m/100; h.k=clamp(h.k+g*dt,0,100); }
       // ---- 機嫌 ----
       let md=0;
       if(ph!=='final'&&h.x>D*0.15){ if(inZone) md+=0.45; else md-=0.12+zd*1.0; }
@@ -1016,7 +1027,7 @@ function createRace(spec){
       if(ph==='mid'&&h.a==='push'&&f<=sty.z[1]+0.001&&lead.x-h.x<12){ md-=0.8; note(h,'まだ追う場面じゃないと怒っている','down'); }
       if(ph==='final'&&h.a==='hold'){ md-=1.0; note(h,'もう行きたいのに止められている','down'); }
       h.chg=h.chg.filter(t=>R.t-t<3);
-      if(h.chg.length>4&&h.toggleCD<=0){ addMood(h,-4); h.toggleCD=3; note(h,'手綱がバラバラで息が合わない','down'); }
+      if(h.chg.length>3&&h.toggleCD<=0){ addMood(h,-4); h.toggleCD=3; note(h,'手綱がバラバラで息が合わない','down'); }
       h.toggleCD-=dt;
       if(good(h,ph)){ h.steady+=dt; if(h.steady>3){ md+=0.5; if(h.steady>3&&h.steady<3+dt*1.5) note(h,'息が合っている','up'); } } else h.steady=0;
       if(inZone&&ph!=='final'&&f>=0) { if(!h.flags.zone) note(h,'得意な位置に入った','up'); }
@@ -1120,7 +1131,7 @@ let HOST=null, JD='', HERE=new Set(), IN={}, SESS=null, CB={}, cbT=null;
 const CFG_LS='mg.jockey.cfg';
 const C=Object.assign({betSec:60,resSec:25,jmax:8,nh:10,dist:1600,b1:30,b2:15,b3:5,rake:10,auto:1},(()=>{ try{ return JSON.parse(localStorage.getItem(CFG_LS))||{}; }catch(e){ return {}; } })());
 const saveCfg=()=>{ try{ localStorage.setItem(CFG_LS,JSON.stringify(C)); }catch(e){} };
-const M={ph:'wait',rid:0,dl:0,hs:[],jk:{},bets:{},res:{},rv:{},lastJ:new Set(),R:null,mem:[],msg:'',busy:false,gateAt:0,ord:null,finT:0,inW:{},sayT:0,telSeq:0,tel:null,said:{},resOrd:null,ck:'kyoshitsu',rh:false,D:1600};
+const M={ph:'wait',rid:0,dl:0,hs:[],jk:{},bets:{},res:{},rv:{},lastJ:new Set(),R:null,mem:[],msg:'',busy:false,gateAt:0,ord:null,finT:0,inW:{},inT:{},sayT:0,telSeq:0,tel:null,said:{},resOrd:null,ck:'kyoshitsu',rh:false,D:1600};
 let stDirty=true, panelDirty=true, lastSt=0, lastF=0, lastTick=0;
 const NAMES=['ミライボシ','サクラテンペスト','クロガネオー','ハヤテノミコ','キンイロダンス','モリノカゼ','ヒノデラッシュ','ユメミルスター','イナズマボルト','ソラノカナタ','アサヤケロード','ツキノシズク','カゼノタクト','ホシゾラマーチ','ヒカリノツバサ','ダイチノウタ','ナミノリキング','ユキノハナビ','アカネフラッシュ','ミドリノキセキ','シロガネリボン','トキノカケラ','ハルカゼワルツ','コハクノユメ','ライメイダッシュ','アオゾラキック','ヨアケノホシ','マツリバヤシ','コガネスプリント','シンゲツクイーン'];
 const acc=()=>HOST.acc();
@@ -1255,7 +1266,7 @@ function startPaddock(){
   const nh=Math.max(4,Math.min(10,C.nh)), nJ=Math.min(C.jmax,nh,c.length<=1?1:Math.max(1,Math.floor(c.length/2)));
   const fresh=shuffle(c.filter(s=>!M.lastJ.has(s))), old=shuffle(c.filter(s=>M.lastJ.has(s))), js=fresh.concat(old).slice(0,nJ);
   const slots=shuffle([...Array(nh).keys()]).slice(0,nJ); M.jk={}; js.forEach((s,k)=>M.jk[slots[k]]=s); M.lastJ=new Set(js);
-  M.rid++; M.hs=makeHorses(nh,M.jk); M.bets={}; M.res={}; M.rv={}; M.R=null; M.mem=M.hs.map(()=>({})); M.inW={}; M.resOrd=null; M.said={}; M.tel=null; M.msg='';
+  M.rid++; M.hs=makeHorses(nh,M.jk); M.bets={}; M.res={}; M.rv={}; M.R=null; M.mem=M.hs.map(()=>({})); M.inW={}; M.inT={}; M.resOrd=null; M.said={}; M.tel=null; M.msg='';
   const keys=Object.keys(COURSES); M.ck=keys[Math.random()*keys.length|0]; const dir=COURSES[M.ck].dir; M.rh=dir==='right'||(dir==='mix'&&Math.random()<0.5); M.D=C.dist;
   setRaceScene(M.rid,M.hs,M.ck,M.rh,M.D); S.panel=true; S.follow=null;
   HOST.be.remove(JD+'/in').catch(()=>{}); IN={};
@@ -1278,7 +1289,8 @@ function openGate(){
 function applyInputs(){
   const R=M.R; if(!R||!['gate','race'].includes(M.ph)) return;
   Object.keys(M.jk).forEach(i=>{ const sid=M.jk[i], vk=vkOf(sid), v=vk&&IN[vk]; if(!v||v.r!==M.rid) return;
-    const h=R.H[i], o={a:v.a,ln:v.ln}; const lw=M.inW[i]||0; if(v.w>lw){ o.w=h.w+Math.min(6,v.w-lw); M.inW[i]=v.w; }
+    const h=R.H[i], o={ln:v.ln}; const lw=M.inW[i]||0; if(v.w>lw){ o.w=h.w+Math.min(6,v.w-lw); M.inW[i]=v.w; }
+    const T=M.inT[i]||(M.inT[i]=[0,0]); if(v.pt>T[0]){ o.pt=v.pt-T[0]; T[0]=v.pt; } if(v.ht>T[1]){ o.ht=v.ht-T[1]; T[1]=v.ht; }
     if(v.rt!=null&&h.rt==null) o.rt=+v.rt; R.input(+i,o); });
 }
 function say(t){ S.sayLog.push(t); if(S.sayLog.length>4) S.sayLog.shift(); }
@@ -1323,7 +1335,7 @@ function snap(){
   const R=M.R, t=now(), n={};
   R.H.forEach((h,i)=>{ const e=h.ev[h.ev.length-1]; if(h.h.js&&e&&R.t-e.t<3.5) n[i]=[Math.round(e.t*10),e.text,e.mood]; });
   const f={t,r:M.rid,g:R.started?1:0,c:S.cam?1:0,
-    h:R.H.map(h=>[Math.round(h.x*10),Math.round(h.l*100),Math.round(h.st),Math.round(h.k),Math.round(h.m),(h.flags.draft?1:0)|(h.flags.block?2:0)|(h.flags.zone?4:0)|(h.flags.kak?8:0)|(h.flags.bate?16:0)|((h.flags.spurt||h.flags.whip)&&h.fin==null?32:0)|(h.fin!=null?64:0),h.place||0,Math.round(h.v*10)]),
+    h:R.H.map(h=>[Math.round(h.x*10),Math.round(h.l*100),Math.round(h.st),Math.round(h.k),Math.round(h.m),(h.flags.draft?1:0)|(h.flags.block?2:0)|(h.flags.zone?4:0)|(h.flags.kak?8:0)|(h.flags.bate?16:0)|((h.flags.spurt||h.flags.whip)&&h.fin==null?32:0)|(h.fin!=null?64:0),h.place||0,Math.round(h.v*10),Math.round(h.lv*10)]),
     say:S.sayLog.slice(-4)};
   if(Object.keys(n).length) f.n=n;
   if(M.tel&&M.tel.until>t) f.tel=[M.tel.s,M.tel.text,M.tel.sub];
@@ -1401,7 +1413,7 @@ async function padReq(sid,r){
    ========================================================================= */
 let PAD=null;
 const P={view:undefined,live:true,st:null,stAt:0,me:{},f:null,off:null,key:'',cam:'lead',sel:null,busy:false,here:null,
-  inp:{a:'none',w:0,ln:null,rt:null},sentJ:'',sentAt:0,tapAt:null,note:null,noteSeq:0,tel:0,lnInit:-1};
+  inp:{pt:0,ht:0,w:0,ln:null,rt:null},lv:0,lvT:0,sentJ:'',sentAt:0,tapAt:null,note:null,noteSeq:0,tel:0,lnInit:-1};
 async function padMain(){
   document.body.className='pad'; document.documentElement.classList.add('padmode');
   document.querySelector('meta[name=viewport]').content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
@@ -1434,7 +1446,7 @@ const leftP=()=>P.st?Math.max(0,Math.ceil(P.st.left-(now()-P.stAt)/1000)):0;
 const availP=()=>Math.max(0,myBal()-(meNow().rsv||0));
 function onSt(){
   const st=P.st; if(!st||!st.hs) return;
-  if(S.race!==st.r||S.horses.length!==st.hs.length){ setRaceScene(st.r,st.hs,st.ck,st.rh,st.D); P.f=null; P.inp={a:'none',w:0,ln:null,rt:null}; P.tapAt=null; P.note=null; P.sel=null; P.cam='lead'; P.sentJ=''; P.gateLocal=null; P.camKey=''; }
+  if(S.race!==st.r||S.horses.length!==st.hs.length){ setRaceScene(st.r,st.hs,st.ck,st.rh,st.D); P.f=null; P.inp={pt:0,ht:0,w:0,ln:null,rt:null}; P.lv=0; P.tapAt=null; P.note=null; P.sel=null; P.cam='lead'; P.sentJ=''; P.gateLocal=null; P.camKey=''; }
 }
 function padRun(){
   const f=P.f, st=P.st; if(!f||!st||f.r!==st.r||f.h.length!==S.horses.length) return gateRun();
@@ -1442,11 +1454,14 @@ function padRun(){
 }
 const myIdx=()=>{ const r=meNow().role; return r==null?null:r; };
 const myF=()=>{ const i=myIdx(), f=P.f; return i!=null&&f&&P.st&&f.r===P.st.r&&f.h[i]?f.h[i]:null; };
+function lvDecay(){ const t=now(), dt=Math.min(1,(t-(P.lvT||t))/1000); P.lvT=t; for(let k=0;k<10;k++) P.lv=SIM.decay(P.lv,dt/10); }
+function lvPaint(){ const b=$('#lvB'); if(!b) return; const w=Math.abs(P.lv)*50; b.style.width=w+'%'; b.style.left=(P.lv>=0?50:50-w)+'%'; b.style.background=P.lv>=0?'#1f8a4c':'#2f5fbf';
+  document.querySelectorAll('.acts .a').forEach(x=>x.classList.toggle('on',x.dataset.a==='push'?P.lv>SIM.TAP_ON:P.lv<-SIM.TAP_ON)); }
 function sendIn(force){
   const i=myIdx(), st=P.st; if(i==null||!st||!['gate','race'].includes(st.ph)) return;
   const j=JSON.stringify(P.inp); if(j===P.sentJ&&!force) return;
   const t=now(); if(t-P.sentAt<70){ clearTimeout(P.sendT); P.sendT=setTimeout(sendIn,75-(t-P.sentAt)); return; }
-  P.sentJ=j; P.sentAt=t; PAD.be.set(P.J+'/in/'+PAD.vk(),{r:st.r,a:P.inp.a,w:P.inp.w,ln:P.inp.ln,rt:P.inp.rt,t}).catch(()=>{});
+  P.sentJ=j; P.sentAt=t; PAD.be.set(P.J+'/in/'+PAD.vk(),{r:st.r,pt:P.inp.pt,ht:P.inp.ht,w:P.inp.w,ln:P.inp.ln,rt:P.inp.rt,t}).catch(()=>{});
 }
 function padMsg(t,m,btn){ P.key='msg:'+t; app.innerHTML=`<div class="pwrap"><div class="pc"><h2>${t}</h2><p class="note">${m}</p><div class="mrow" style="justify-content:flex-start">${btn||''}<a class="pbtn" href="${esc(PAD.indexUrl())}">トップへ</a></div></div></div>`; }
 const noTag=no=>`<span class="no" style="background:${wk(no)[0]};color:${wk(no)[1]}">${no}</span>`;
@@ -1487,9 +1502,9 @@ function buildMode(mode){
     bindHead(); P.betKey=''; return; }
   if(mode==='padJ'){
     const h=hs[role], sty=STY[h.style];
-    const plan={nige:[['スタート','ゲートが開いた瞬間にタップ。出遅れると苦しい'],['序盤','「追う」で先頭へ。先頭に立ったら「馬なり」'],['中盤','内ラチ沿いで、掛かったら「控える」'],['直線','残り500mから「追う」、ムチで粘る']],
-      senko:[['スタート','しっかり出て前の位置へ'],['序盤','「追う」か「馬なり」で2〜4番手'],['中盤','前の馬の後ろで風よけ。内に閉じこめられないように'],['直線','残り500mから「追う」、前が開いたらムチ']],
-      sashi:[['スタート','ふつうに出ればOK。あわてない'],['序盤〜中盤','「控える」「馬なり」で中団のうしろ。風よけを探す'],['4コーナー','外へ出して前を開ける'],['直線','残り500mから「追う」、ムチ連打で差す']],
+    const plan={nige:[['スタート','ゲートが開いた瞬間にタップ。出遅れると苦しい'],['序盤','「追う」を連打して先頭へ。先頭に立ったら手をはなす(馬なり)'],['中盤','内ラチ沿いで、掛かったら「控える」'],['直線','残り500mから「追う」、ムチで粘る']],
+      senko:[['スタート','しっかり出て前の位置へ'],['序盤','「追う」を軽く連打して2〜4番手'],['中盤','前の馬の後ろで風よけ。内に閉じこめられないように'],['直線','残り500mから「追う」、前が開いたらムチ']],
+      sashi:[['スタート','ふつうに出ればOK。あわてない'],['序盤〜中盤','「控える」を連打するか、手をはなして中団のうしろ。風よけを探す'],['4コーナー','外へ出して前を開ける'],['直線','残り500mから「追う」、ムチ連打で差す']],
       oikomi:[['スタート','ゆっくりでOK'],['序盤〜中盤','「控える」で最後方。スタミナをためる'],['4コーナー','早めに外へ。前が壁だと届かない'],['直線','残り500mから「追う」とムチで一気に']]}[h.style];
     app.innerHTML=`<div class="pfull">${headHtml(false)}<div class="pbar"><b>パドック</b><span id="rInfo"></span><span class="sp"></span><span>スタートまで <b class="cd" id="cd"></b></span></div>
       <div class="pjp"><div class="pc"><div class="you">あなたは ${h.no}番 の騎手です</div><div class="hn">${noTag(h.no)}<span>${esc(h.name)}</span></div>
@@ -1498,6 +1513,7 @@ function buildMode(mode){
           <p class="note">能力の合計はどの馬もほぼ同じです。馬の個性に合わせて乗れば、どの馬でも勝てます。</p>
           <div class="pop"><div><small>いまの人気</small><b id="pRank"></b><span id="pOdds"></span></div><div><small>あなたの馬に賭けられたメダル</small><b id="pPool"></b><span id="pFee"></span></div></div></div>
         <div class="pc"><b>${sty.n}のおすすめの乗り方</b><div class="plan">${plan.map(([a,b])=>`<div><em>${a}</em><span>${b}</span></div>`).join('')}</div>
+          <b>操作</b><p class="note">「追う」「控える」は連打です。速く連打するほど強く効き、手をはなすと馬なり(そのままの速さ)にもどります。ムチも連打で、直線(残り500m)から使います。スピードのゲージの黄色い線は、いちばん速い馬の速さです。</p>
           <b>馬の機嫌</b><p class="note">機嫌がいいとスタミナが減りにくく、悪いと早くばてます。<br>よくなる:得意な位置を走る・場面に合った指示を続ける(息が合う)・風よけ<br>悪くなる:早い時期のムチ・ムチの叩きすぎ・指示をころころ変える・ほかの馬にぶつかる・前が壁なのに追う・掛かる</p></div></div></div>`;
     return; }
   if(mode==='raceJ'){
@@ -1510,14 +1526,17 @@ function buildMode(mode){
       <div class="jpan">
         <div class="lanes"><small>コース取り</small><div class="lr"><div class="lb"><button id="bIn">内へ</button><button id="bOut">外へ</button></div><div class="lcol" id="lcol"></div></div></div>
         <div class="gauges">
+          <div class="gg"><span>スピード</span><i><b id="gV" style="background:#4aa8ff"></b><u id="gVp"></u></i><em id="vV"></em></div>
           <div class="gg"><span>スタミナ</span><i><b id="gSt" style="background:#5cc46e"></b></i><em id="vSt"></em></div>
           <div class="gg"><span>掛かり</span><i><b id="gK" style="background:#f0a23b"></b></i><em id="vK"></em></div>
           <div class="gg"><span>機嫌</span><i><b id="gM"></b></i><em id="vM"></em></div>
           <div class="flags" id="flags"></div></div>
-        <div class="acts"><button data-a="hold" class="a hold"><b>控える</b><span>スタミナ温存</span></button><button data-a="none" class="a none"><b>馬なり</b><span>そのまま</span></button><button data-a="push" class="a push"><b>追う</b><span>加速</span></button></div>
+        <div class="actw"><div class="lvbar"><small>控える</small><i><b id="lvB"></b><u></u></i><small>追う</small></div>
+          <div class="acts"><button data-a="hold" class="a hold"><b>控える</b><span>連打</span></button><button data-a="push" class="a push"><b>追う</b><span>連打</span></button></div></div>
         <button class="whip" id="whip"><b>ムチ</b><span>連打</span></button>
       </div></div>`;
-    document.querySelectorAll('.acts .a').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); P.inp.a=b.dataset.a; sfx.tap(); sendIn(); updMode('raceJ'); }));
+    document.querySelectorAll('.acts .a').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); if(P.st.ph!=='race') return; lvDecay(); if(b.dataset.a==='push'){ P.inp.pt++; if(P.lv<0) P.lv=0; P.lv=Math.min(1,P.lv+SIM.TAP); } else { P.inp.ht++; if(P.lv>0) P.lv=0; P.lv=Math.max(-1,P.lv-SIM.TAP); }
+      sfx.tap(); sendIn(); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); lvPaint(); }));
     $('#whip').addEventListener('pointerdown',e=>{ e.preventDefault(); if(P.st.ph!=='race') return; P.inp.w++; sfx.whip(); sendIn(); const w=$('#whip'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); });
     const mv=d=>{ const f=myF(); let ln=P.inp.ln; if(ln==null) ln=f?Math.round(f[1]/100*SIM.LANES):Math.round(role/Math.max(1,hs.length-1)*SIM.LANES); P.inp.ln=Math.max(0,Math.min(SIM.LANES,ln+d)); sfx.lane(); sendIn(); };
     $('#bIn').addEventListener('pointerdown',e=>{ e.preventDefault(); mv(-1); }); $('#bOut').addEventListener('pointerdown',e=>{ e.preventDefault(); mv(1); });
@@ -1563,7 +1582,7 @@ function updMode(mode,force){
       $('#myb').innerHTML=mine.length?'あなたの馬券 '+mine.map(no=>`${noTag(no)} ${bets[no]}枚`).join(' '):'このレースはBETしていません'; }
     return; }
   if(mode==='raceJ'){
-    document.querySelectorAll('.acts .a').forEach(b=>b.classList.toggle('on',b.dataset.a===P.inp.a)); return; }
+    return; }
   if(mode==='res'){
     const res=st.res, k=JSON.stringify([res&&res.ord,me.res,me.rv,st.busy]); if(k===P.resKey) return; P.resKey=k;
     if(!res){ $('#pres').innerHTML='<div class="pc cen"><h2>着順を確認しています…</h2></div>'; return; }
@@ -1590,6 +1609,7 @@ function padDyn(){
     const el=$('#ordl'); if(el) el.innerHTML='<div class="oh"><span>いまの順位</span><span>騎手</span></div>'+ord.map((i,k)=>{ const h=hs[i]; return `<div class="o ${S.glow&&S.glow.has(h.no)?'me':''}"><em>${k+1}</em>${noTag(h.no)}<span class="nm">${esc(h.name)}</span><span class="jn ${h.js?'s':''}">${h.js?esc(h.jn):'CPU'}</span></div>`; }).join('');
     return; }
   const h=hs[role]; if(!h) return; const sty=STY[h.style], me=ok?f.h[role]:null;
+  lvDecay(); lvPaint();
   const sb=$('#startb'), gateT=P.gateLocal, open=gateT!=null&&t>=gateT, racing=st.ph==='race'||(ok&&f.g);
   if(sb){ const show=(st.ph==='gate'||(st.ph==='race'&&P.inp.rt==null&&t-(gateT||t)<1600));
     sb.hidden=!show||P.inp.rt!=null&&open&&t-gateT>900;
@@ -1603,6 +1623,8 @@ function padDyn(){
   $('#lcol').innerHTML='<small>内</small>'+Array.from({length:SIM.LANES+1},(_,k)=>`<i class="${k===ln?'t':''} ${Math.abs(k-cur)<0.5?'c':''}"></i>`).join('')+'<small>外</small>';
   if(!me) return;
   const stv=me[2], kv=me[3], mv=me[4], fl=me[5], md=moodOf(mv);
+  { const sec=st.D===1200?55:st.D===2000?85:70, V0=st.D/(sec-2.5), v=(me[7]||0)/10, pc=Math.max(0,Math.min(100,(v/V0-0.85)/0.23*100)), lead=Math.max(...f.h.map(x=>x[7]||0))/10;
+    $('#gV').style.width=pc+'%'; $('#gVp').style.left=Math.max(0,Math.min(100,(lead/V0-0.85)/0.23*100))+'%'; $('#vV').textContent=Math.round(v*3.6*0.75)+'km/h'; }
   $('#gSt').style.width=stv+'%'; $('#gSt').style.background=stv<20?'#e0523c':'#5cc46e'; $('#vSt').textContent=stv+'%';
   $('#gK').style.width=kv+'%'; $('#vK').textContent=kv>50?'掛かっている':kv+'%';
   $('#gM').style.width=mv+'%'; $('#gM').style.background=md[2]; $('#vM').textContent=md[1];
@@ -1622,7 +1644,7 @@ function padDyn(){
   else if(fl&2) hint='前が壁。横へ出るか、そのまま風よけに';
   else if(!(fl&4)) hint=rank-1<z0?`前に行きすぎ。「控える」で${sty.n}の位置へ`:`後ろすぎ。少し「追う」で${sty.n}の位置へ`;
   else if(fl&1) hint='いい風よけ。このままスタミナを温存';
-  else hint='いい位置。「馬なり」でスタミナを温存しよう';
+  else hint='いい位置。手をはなして(馬なり)スタミナを温存しよう';
   $('#hint').textContent=hint;
 }
 function amtModal(kind){
