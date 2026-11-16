@@ -217,7 +217,7 @@ const DLS=(()=>{
   function actor(key,o){ const w=document.createElement('div'); w.className='dls-a'+(o.fly?' fly':''); const bd=document.createElement('div'); bd.className='bd';
     const im=new Image(); im.src=A+key+'.webp'; im.alt=''; im.draggable=false; im.style.height=o.h+'px'; bd.appendChild(im); w.appendChild(bd);
     w.style.zIndex=o.z||2; w._x=o.x; w._y=o.y==null?G-4:o.y; w._h=o.h; w._face=o.face||1; w._always=!!o.always; w.style.transform=tf(w._x,w._y); actors.appendChild(w);
-    walkSheet(key).then(sp=>{ if(!sp||!w.isConnected) return; const box=document.createElement('div'); box.className='spr'; box.style.width=box.style.height=Math.round(o.h*1.05)+'px'; if(w._face<0) box.style.transform='scaleX(-1)';
+    walkSheet(key).then(sp=>{ if(!sp||!w.isConnected) return; const box=document.createElement('div'); box.className='spr'; box.style.width=box.style.height=Math.round(o.h*1.2)+'px'; if(w._face<0) box.style.transform='scaleX(-1)';
       const si=new Image(); si.src=sp.src; si.alt=''; si.draggable=false; box.appendChild(si); bd.appendChild(box); w.classList.add('has-spr');
       w._sa=si.animate([{transform:'translateX(0)'},{transform:'translateX(-100%)'}],{duration:Math.round((o.fly?70:95)*sp.n),iterations:Infinity,easing:`steps(${sp.n})`});
       if(!w._always) frames(w,false);
