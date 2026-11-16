@@ -138,7 +138,8 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
    学生が騎手になって馬を操る、1着当て(単勝)の競馬。レースの絵はG1ロード(版50)のリアル調をそのまま使う
    先生のPC:レースの計算・メダルの増減 / iPad:騎手は操作、ほかの人はBETして観戦 */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
-const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ
+const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、次のゲームへ引き継ぐ(最後のゲームなら掃除当番を決める)
+let CI=null;   // 掃除決めのゲームの順番(MG.cleanInfo)
 const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=6;
 const now=()=>Date.now();
 const LAP=1600, REAL=true, isPhone=()=>false;
@@ -1159,7 +1160,8 @@ async function hostMain(){
       SESS=(await MG.cleanList())[CLEAN];
       if(!SESS) return fail('その掃除決めが見つかりません','管理画面の「掃除決め」で確認してください。');
       if(!['ready','playing'].includes(SESS.st)) return fail('この掃除決めはもう終わっています','管理画面で新しく始めてください。');
-      if(SESS.ah&&SESS.ah.done) return fail('ジョッキーダービーはもう終わっています',`ルーレットパークに進んでいます。<a href="${esc(rpUrl())}">ルーレットパークを開く</a>`);
+      CI=MG.cleanInfo(SESS,'jockey');
+      if(!CI.mine) return fail(`いまは${esc(CI.cur)}の番です`,`この掃除決めは、ジョッキーダービーではなく${esc(CI.cur)}に進んでいます。<a href="${esc(CI.curUrl)}">${esc(CI.cur)}を開く</a>`);
       CB={}; Object.keys(SESS.m||{}).forEach(s=>CB[s]=Math.max(0,Math.floor(+((SESS.ah&&SESS.ah.b&&SESS.ah.b[s]!=null)?SESS.ah.b[s]:SESS.m[s])||0)));
     }
     HOST=await MG.startHost({gid:GID,name:NAME,art:'horse',anyone:!!CLEAN,
@@ -1177,7 +1179,7 @@ async function hostMain(){
     let seen=false;
     HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } }); }
   app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC${CLEAN&&SESS.cls?' ・ '+esc(SESS.cls):''}</small></div><span class="sp"></span>
-      ${SND.btns('btn')}<span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>${CLEAN?'<button class="btn pri" id="toRp">ルーレットパークへ進む</button>':'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
+      ${SND.btns('btn')}<span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>${CLEAN?`<button class="btn pri" id="toRp">${CI.last?'結果を出す(掃除当番を決める)':esc(CI.next)+'へ進む'}</button>`:'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
     <div class="grid"><div class="scr"><canvas id="cv"></canvas><div class="ov" id="ov"></div></div>
       <div><div class="box" id="ctl"></div>
         <details class="box"><summary>設定</summary><div class="frm" id="cfg"></div><p class="note">次のレースから変わります。</p></details>
@@ -1205,18 +1207,13 @@ function rpUrl(){ const u=new URL('roulettepark.html',location.href); u.searchPa
 async function toRoulette(){
   if(['gate','race'].includes(M.ph)) return toast('レースが終わってから進んでください');
   if(M.busy) return toast('精算が終わるまで待ってください');
-  const ids=Object.keys(CB), zero=ids.filter(s=>(CB[s]||0)<10).length;
-  if(!confirm(`ルーレットパークへ進みますか?\n${ids.length}人 のいまのメダルを、そのままルーレットパークに引き継ぎます。${M.ph==='paddock'?'\n(受付中のBETは取り消します)':''}${zero?`\n(10枚未満の ${zero}人 は、ルーレットパークでは10枚から始まります)`:''}\nジョッキーダービーにはもどれません。`)) return;
-  const win=window.open('about:blank','_blank'), ph0=M.ph;
-  M.ph='stop'; M.bets={}; $('#toRp').disabled=true; clearTimeout(cbT);
-  const m={}; ids.forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
-  try{ await HOST.clean.update(CLEAN,{m,m0:SESS.m0||SESS.m,ah:{b:m,done:1,t:now()}}); }
-  catch(e){ M.ph=ph0==='paddock'?'wait':ph0; $('#toRp').disabled=false; if(win) win.close(); return toast('保存できませんでした:'+e.message); }
-  const url=rpUrl(); if(win) win.location.href=url;
+  const ids=Object.keys(CB), m={}; ids.forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
+  const ph0=M.ph;
+  let r; try{ r=await MG.cleanGo(HOST,SESS,'jockey',m,{extra:M.ph==='paddock'?'\n(受付中のBETは取り消します)':'',before(){ M.ph='stop'; M.bets={}; $('#toRp').disabled=true; clearTimeout(cbT); }}); }
+  catch(e){ M.ph=ph0==='paddock'?'wait':ph0; $('#toRp').disabled=false; return toast('保存できませんでした:'+e.message); }
+  if(!r) return;
   await HOST.stop().catch(()=>{}); await HOST.be.remove(JD).catch(()=>{}); HOST=null;
-  app.innerHTML=`<div class="wrap"><div class="box"><h2>ルーレットパークに引き継ぎました</h2>
-    <p class="note">${ids.length}人 のメダルを引き継ぎました。ルーレットパークのタブで「はじめる」を押してください。このタブは閉じてかまいません。</p>
-    <p><a class="btn pri" href="${esc(url)}" target="_blank" rel="noopener">ルーレットパークを開く(開いていないとき)</a></p></div></div>`;
+  app.innerHTML=r.html;
 }
 function demoScene(){ M.hs=makeHorses(C.nh,{}); M.ck='kyoshitsu'; M.rh=false; M.D=C.dist; setRaceScene(0,M.hs,M.ck,M.rh,M.D); S.panel=true; S.follow=null; }
 function cfgRender(){
@@ -1234,7 +1231,7 @@ function ctlRender(){
   const PH={wait:'待機中',paddock:`パドック・BET受付(あと${left}秒)`,gate:'まもなくスタート',race:'レース中',result:`結果(あと${left}秒)`}[M.ph]||'';
   let h=`<h2>${PH}</h2>`;
   if(M.ph==='wait') h+=`<p class="note">${esc(M.msg||'iPadでジョッキーダービーを開いている人から、騎手をランダムに選びます。')}</p><p class="note">いま画面を開いている人:<b>${n}人</b></p>
-    <div class="row"><button class="btn pri" id="go" ${n<1?'disabled':''}>レースを始める</button></div>${CLEAN?'<p class="note">時間になったら、右上の「ルーレットパークへ進む」を押します(レース中は押せません)。</p>':''}`;
+    <div class="row"><button class="btn pri" id="go" ${n<1?'disabled':''}>レースを始める</button></div>${CLEAN?'<p class="note">時間になったら、右上の「'+(CI.last?'結果を出す':esc(CI.next)+'へ進む')+'」を押します(レース中は押せません)。</p>':''}`;
   else {
     h+=`<table class="tb"><tr><th>番</th><th>馬</th><th>騎手</th><th>脚質</th><th>BET</th><th>倍率</th></tr>${M.hs.map((x,i)=>{ const o=oddsOf(p,x.no); return `<tr><td><span class="no" style="background:${wk(x.no)[0]};color:${wk(x.no)[1]}">${x.no}</span></td><td>${esc(x.name)}</td><td>${x.js?esc(x.jn):'<small>CPU</small>'}${x.js&&!isHere(M.jk[i])?' <small class="warn">(離席)</small>':''}</td><td>${STY[x.style].n}</td><td>${yen(p.a[x.no])}</td><td>${o?o.toFixed(1):'—'}</td></tr>`; }).join('')}</table>
       <p class="note">BET合計 ${yen(p.tot)}枚</p><div class="row">${M.ph==='paddock'?'<button class="btn pri" id="skip">BETをしめきる</button>':''}${M.ph==='result'?'<button class="btn pri" id="next">次のレースへ</button><button class="btn" id="pause">待機にもどる</button>':''}</div>`;
@@ -1480,7 +1477,7 @@ function padRender(){
     if(!P.live){ const G2=P.games||{}, id=Object.keys(G2).find(k=>G2[k].clean===CLEAN);
       if(id){ const u=new URL(G2[id].url); u.searchParams.set('mg',PAD.pub); if(MG.LOCAL) u.searchParams.set('local','1');
         return padMsg(`${esc(G2[id].n)}が始まりました`,'ジョッキーダービーのメダルを、そのまま引き継いでいます。',`<a class="pbtn go" href="${esc(u.href)}">${esc(G2[id].n)}へ</a>`); }
-      return padMsg('ジョッキーダービーは終わりました','先生がつぎのゲーム(ルーレットパーク)を開くまで待ってね。'); }
+      return padMsg('ジョッキーダービーは終わりました','先生がつぎのゲームを開くか、結果を発表するまで待ってね。'); }
   }
   else if(seatA()===null) return padMsg(`${NAME}にはまだ入っていません`,'メダルゲームのトップで、持ち込む枚数を選んでから入ってください。');
   else if(!P.live) return padMsg(`${NAME}は止まりました`,'先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。');

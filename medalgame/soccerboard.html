@@ -108,7 +108,10 @@ body.playing{overflow:hidden}
    形式:1対1(1人で4本のロッド)・2対2(守備=GKとDF/攻撃=MFとFW に分かれる)
    試合の流れ・BET・参戦料・おじゃまアイテム・メダルの扱いはエアホッケーと同じ */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
-const GID='soccerboard', NAME='サッカーボード';
+// 掃除モード(?clean=ID):掃除決めのメダルで遊び、次のゲームへ引き継ぐ(最後のゲームなら掃除当番を決める)
+const CLEAN=MG.qs.get('clean')||'';
+const GID=CLEAN?'sbclean':'soccerboard', NAME=CLEAN?'サッカーボード(掃除決め)':'サッカーボード';
+let CI=null, SESS=null, CB={};   // 掃除モード:ゲームの順番、掃除決めのデータ、その日だけのメダル
 let toastT=null; function toast(m){ if(!m) return; const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
 const now=()=>Date.now();
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -257,9 +260,9 @@ let HERE=new Set(), stDirty=true, panelDirty=true, lastSt=0, lastF=0, lastTick=0
 const curSlots=()=>slotsOf(M.fm);
 const slotOf=sid=>Object.keys(M.pl).find(k=>M.pl[k]===sid)||'';
 const reserved=sid=>(M.fee[sid]||0)+((M.bets[sid]&&M.bets[sid].a)||0);
-const bal=sid=>{const a=HOST.acc()[sid];return a&&a.seat&&a.seat.g===GID?a.seat.a||0:0};
+const bal=sid=>{ if(CLEAN) return CB[sid]||0; const a=HOST.acc()[sid];return a&&a.seat&&a.seat.g===GID?a.seat.a||0:0};
 const avail=sid=>bal(sid)-reserved(sid);
-const people=()=>HOST.seated();
+const people=()=>CLEAN?Object.keys(SESS.m||{}).sort((a,b)=>a.localeCompare(b,'ja',{numeric:true})):HOST.seated();
 const nm=sid=>{const a=HOST.acc()[sid];return a?a.n:''};
 const isHere=sid=>{const a=HOST.acc()[sid];return !!(a&&a.vk&&HERE.has(a.vk))};
 const eligible=sid=>isHere(sid)&&avail(sid)>=C.fee;
@@ -268,6 +271,14 @@ const fx=k=>(S.fx[k]||0)>now();
 const goalH=t=>fx('g'+t)?GH_BIG:GH;
 const teamNames=()=>{ const o={}; FM[M.fm].teams.forEach(t=>{ o[t]=curSlots().filter(s=>s.t===t).map(s=>nm(M.pl[s.id])).filter(Boolean).join('・')||TEAM[t]; }); return o; };
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+// メダルの増減(フリー:口座の持ち込み/掃除:その日だけのメダル)
+let cbT=null;
+async function addBal(sid,d){
+  if(!d) return;
+  if(CLEAN){ CB[sid]=Math.max(0,(CB[sid]||0)+d); clearTimeout(cbT); cbT=setTimeout(saveCB,300); return; }
+  await HOST.change(sid,d);
+}
+function saveCB(){ if(HOST&&CLEAN) HOST.clean.update(CLEAN,{ah:{b:CB,t:now()}}).catch(e=>console.warn(e)); }
 
 if(MG.qs.get('mg')) padMain(); else hostMain();
 
@@ -277,23 +288,35 @@ async function hostMain(){
   if(!MG.keys.get()) return fail('まだ準備ができていません',`先に、このPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。`);
   app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
   try{
-    HOST=await MG.startHost({gid:GID,name:NAME,art:'foos',url:location.origin+location.pathname,
-      hooks:{
+    if(CLEAN){
+      SESS=(await MG.cleanList())[CLEAN];
+      if(!SESS) return fail('その掃除決めが見つかりません','管理画面の「掃除決め」で確認してください。');
+      if(!['ready','playing'].includes(SESS.st)) return fail('この掃除決めはもう終わっています','管理画面で新しく始めてください。');
+      CI=MG.cleanInfo(SESS,'soccerboard');
+      if(!CI.mine) return fail(`いまは${esc(CI.cur)}の番です`,`この掃除決めは、サッカーボードではなく${esc(CI.cur)}に進んでいます。<a href="${esc(CI.curUrl)}">${esc(CI.cur)}を開く</a>`);
+      CB={}; Object.keys(SESS.m||{}).forEach(s=>CB[s]=Math.max(0,Math.floor(+((SESS.ah&&SESS.ah.b&&SESS.ah.b[s]!=null)?SESS.ah.b[s]:SESS.m[s])||0)));
+    }
+    HOST=await MG.startHost({gid:GID,name:NAME,art:'foos',anyone:!!CLEAN,
+      url:location.origin+location.pathname+(CLEAN?'?clean='+encodeURIComponent(CLEAN):''),info:CLEAN?{clean:CLEAN}:{},
+      hooks:CLEAN?{onReq:async(sid,r)=>padReq(sid,r)}:{
         reserved:sid=>reserved(sid),
         beforeQuit:sid=>{ if(M.ent.has(sid)){ M.ent.delete(sid); writeMe(sid); stDirty=panelDirty=true; } return reserved(sid)>0?'later':true; },
         onLeave(sid){ onLeave(sid); },
         async onReq(sid,r){ return padReq(sid,r); }
       }});
   }catch(e){ return fail('つながりませんでした',esc(e.message)); }
-  SB=HOST.P+'/sb';
+  SB=HOST.P+'/sb'+(CLEAN?'c':'');
   await HOST.be.remove(SB).catch(()=>{});
-  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC</small></div><span class="sp"></span>
+  if(CLEAN){ HOST.clean.update(CLEAN,{st:'playing',ah:{b:CB,t:now()}}).catch(()=>{});
+    let seen=false;   // 読み込み前の空のデータで止まらないように、一度見えてから判断する
+    HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } }); }
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC${CLEAN&&SESS.cls?' ・ '+esc(SESS.cls):''}</small></div><span class="sp"></span>
       <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>
-      <button class="btn danger" id="stop">停止する(全員を精算)</button></div>
+      ${CLEAN?`<button class="btn pri" id="toNext">${CI.last?'結果を出す(掃除当番を決める)':esc(CI.next)+'へ進む'}</button>`:'<button class="btn danger" id="stop">停止する(全員を精算)</button>'}</div>
     <div class="grid"><div class="rink"><canvas id="cv"></canvas></div>
       <div><div class="box" id="ctl"></div>
         <div class="box"><h2>設定</h2><div class="frm" id="cfg"></div><p class="note">試合中は変えられません。</p></div>
-        <details class="box"><summary style="font-weight:800">遊んでいる人(<span id="nseat">0</span>人)</summary><ul class="pl" id="pl"></ul></details>
+        <details class="box" ${CLEAN?'open':''}><summary style="font-weight:800">${CLEAN?'参加者':'遊んでいる人'}(<span id="nseat">0</span>人)</summary><ul class="pl" id="pl"></ul></details>
       </div></div></div>`;
   CTX=setupCanvas($('#cv'));
   cfgRender();
@@ -301,16 +324,28 @@ async function hostMain(){
   HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
   HOST.be.on(SB+'/here',v=>{ HERE=new Set(Object.keys(v||{})); panelDirty=true; });
   HOST.be.on(SB+'/in',onInput);
-  $('#stop').onclick=async()=>{ const n=HOST.seated().length;
+  if(CLEAN) $('#toNext').onclick=toNext;
+  else $('#stop').onclick=async()=>{ const n=HOST.seated().length;
     if(!confirm(`停止しますか?\n遊んでいる ${n}人 のメダルを、全員貯金にもどします。${['bet','ready','play'].includes(M.ph)?'\n(いまの試合は中止になり、BETと参戦料は払われません)':''}`)) return;
     $('#stop').disabled=true; M.ph='stop'; M.fee={}; M.bets={};
     await HOST.stop(); await HOST.be.remove(SB).catch(()=>{}); HOST=null;
     fail('停止しました',`${n}人を精算しました。このタブは閉じてかまいません。`); };
-  addEventListener('beforeunload',e=>{ if(HOST&&HOST.seated().length){ e.preventDefault(); e.returnValue=''; } });
+  addEventListener('beforeunload',e=>{ if(HOST&&(CLEAN||HOST.seated().length)){ e.preventDefault(); e.returnValue=''; } });
   document.addEventListener('pointerdown',()=>sfx.unlock(),{once:true});
   M.fm=C.fm; resetField(); people().forEach(writeMe); stDirty=true;
   try{ const w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),16)'],{type:'text/javascript'}))); w.onmessage=tick; }catch(e){ setInterval(tick,16); }
   const draw=()=>{ if(HOST&&CTX) drawScene(CTX,snap(),hostOverlay()); requestAnimationFrame(draw); }; requestAnimationFrame(draw);
+}
+/* ---------- 掃除モード:つぎのゲームへ進む/結果を出す ---------- */
+async function toNext(){
+  if(['entry','bet','ready','play'].includes(M.ph)) return toast('試合が終わってから進んでください');
+  if(M.busy) return toast('精算が終わるまで待ってください');
+  const m={}; people().forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
+  let r; try{ r=await MG.cleanGo(HOST,SESS,'soccerboard',m,{before(){ M.ph='stop'; $('#toNext').disabled=true; clearTimeout(cbT); }}); }
+  catch(e){ M.ph='lobby'; $('#toNext').disabled=false; return toast('保存できませんでした:'+e.message); }
+  if(!r) return;
+  await HOST.stop().catch(()=>{}); await HOST.be.remove(SB).catch(()=>{}); HOST=null;
+  app.innerHTML=r.html;
 }
 // 出場者の操作:{o:"ロッド:ずれ,…", k:"番号:ロッド:向き:強さ|…"}
 function onInput(v){
@@ -360,6 +395,7 @@ function ctlRender(){
     const n=candidates().length;
     h=`<h2>つぎの試合(${F.n})</h2><p class="note">出場できる人:<b>${n}人</b>(サッカーボードの画面を開いていて、参戦料 ${C.fee}枚 を持っている人)。${F.n}は${F.need}人必要です。</p>
       ${M.msg?`<p class="note" style="color:var(--warn);font-weight:800">${esc(M.msg)}</p>`:''}
+      ${CLEAN?`<p class="note">掃除決め:時間になったら、右上の「${CI.last?'結果を出す':esc(CI.next)+'へ進む'}」を押します。</p>`:''}
       <button class="btn pri big" id="go" ${n<F.need&&C.mode==='rand'?'disabled':''}>${C.mode==='vol'?'立候補を受け付ける':'ランダムで出場者を決める'}</button>`;
   }else if(M.ph==='entry'){
     h=`<h2>立候補を受付中 <span style="color:var(--blue)">あと${left}秒</span></h2>
@@ -440,12 +476,12 @@ async function finish(win){
     else if(bt.s===win){ const pay=Math.floor(bt.a*pool.tot/pool.a[win]); add(s,pay-bt.a,`当たり! ${bt.a}枚 → ${pay}枚`); }
     else add(s,-bt.a,`はずれ… ${bt.a}枚`);
   });
-  for(const [s,d] of Object.entries(ch)){ if(d) await HOST.change(s,d).catch(e=>{ console.warn(e); M.res[s]={net:0,t:'精算できませんでした(もうゲームにいません)'}; }); }
+  for(const [s,d] of Object.entries(ch)){ if(d) await addBal(s,d).catch(e=>{ console.warn(e); M.res[s]={net:0,t:'精算できませんでした(もうゲームにいません)'}; }); }
   M.fee={}; M.bets={}; M.busy=false; M.dl=now()+12000;
   people().forEach(writeMe); setPhase(); afterResult();
 }
-async function afterResult(){ // 「勝負が終わってからやめる」にした人を精算
-  const acc=HOST.acc();
+async function afterResult(){ // 「勝負が終わってからやめる」にした人を精算(フリーモード)
+  if(CLEAN) return; const acc=HOST.acc();
   for(const s of HOST.seated()){ if(acc[s].seat&&acc[s].seat.leave) await HOST.settle(s).catch(()=>{}); }
 }
 function onLeave(sid){
@@ -461,6 +497,7 @@ function odds(p,t){ return p.a[t]?'×'+(p.tot/p.a[t]).toFixed(2):'—'; }
 /* ---------- iPadからの申請 ---------- */
 async function padReq(sid,r){
   const t=r.type, k=slotOf(sid);
+  if(CLEAN&&!(SESS.m&&SESS.m[sid]!=null)) return {ok:false,msg:'この掃除決めには参加していません'};
   if(t==='g:hello'){ writeMe(sid); return {ok:true}; }
   if(t==='g:entry'){
     if(M.ph!=='entry') return {ok:false,msg:'いまは立候補の時間ではありません'};
@@ -487,7 +524,7 @@ async function padReq(sid,r){
     if(M.cool>now()) return {ok:false,msg:'ほかの人が使ったばかりです。少し待ってね'};
     if(fx(r.k)) return {ok:false,msg:'いま効いているところです'};
     if(avail(sid)<C.cost) return {ok:false,msg:`メダルが足りません(${C.cost}枚 必要)`};
-    await HOST.change(sid,-C.cost);
+    await addBal(sid,-C.cost);
     M.used[sid]=u+1; M.cool=now()+1500; S.fx[r.k]=now()+it.sec*1000;
     if(r.k==='sp'){ S.b.vx*=1.5; S.b.vy*=1.5; }
     if(r.k==='wl') pushOutOfStones();
@@ -500,7 +537,7 @@ function notice(text){ M.evSeq++; M.ev={s:M.evSeq,t:text,until:now()+2500}; }
 // 本人だけが見る情報(役割・BET・結果)
 function writeMe(sid){
   if(!HOST) return; const a=HOST.acc()[sid]; if(!a||!a.vk) return;
-  HOST.be.set(SB+'/me/'+a.vk,{mid:M.mid,role:slotOf(sid),ent:M.ent.has(sid),bet:M.bets[sid]||null,used:M.used[sid]||0,rsv:reserved(sid),res:M.res[sid]||null,t:now()}).catch(()=>{});
+  HOST.be.set(SB+'/me/'+a.vk,{mid:M.mid,role:slotOf(sid),ent:M.ent.has(sid),bet:M.bets[sid]||null,used:M.used[sid]||0,rsv:reserved(sid),res:M.res[sid]||null,b:CLEAN?(CB[sid]||0):null,t:now()}).catch(()=>{});
 }
 
 /* ---------- 物理 ---------- */
@@ -680,7 +717,7 @@ async function padMain(){
   app.innerHTML='<div class="pwrap"><div class="pc">接続しています…</div></div>';
   try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pwrap"><div class="pc">つながりません:${esc(e.message)}</div></div>`; return; }
   if(!PAD.vk()){ location.href=PAD.indexUrl(); return; }
-  const SBp=PAD.P+'/sb', vk=PAD.vk();
+  const SBp=PAD.P+'/sb'+(CLEAN?'c':''), vk=PAD.vk();
   G.SBp=SBp; G.kseq=now();   // 読み込み直しても番号が前より大きくなるように
   PAD.onView(v=>{ if(!v){ location.href=PAD.indexUrl(); return; } G.view=v; herePresence(); padRender(); });
   PAD.onGames(g=>{ G.games=g||{}; G.live=!!G.games[GID]; herePresence(); padRender(); });
@@ -708,12 +745,12 @@ async function padMain(){
 }
 const isPlaying=()=>!!meNow().role&&['bet','ready','play'].includes(G.st&&G.st.ph);
 function herePresence(){ // サッカーボードの画面を開いている印(ランダムの出場者はこの人たちから選ぶ)
-  const on=seatA()!==null&&G.live;
+  const on=(CLEAN?!!(G.view&&G.view.cl===CLEAN):seatA()!==null)&&G.live;
   if(on&&!G.here){ G.here=PAD.be.presence(G.SBp+'/here/'+PAD.vk(),{t:now()}); PAD.req('g:hello',{},GID); }
   else if(!on&&G.here){ G.here(); G.here=null; }
 }
 const seatA=()=>{const s=G.view&&G.view.seat;return s&&s.g===GID?s.a||0:null};
-const myBal=()=>seatA()||0;
+const myBal=()=>CLEAN?((G.me&&G.me.b)||0):(seatA()||0);
 const meNow=()=>G.me&&G.st&&G.me.mid===G.st.mid?G.me:{};
 const availP=()=>Math.max(0,myBal()-(meNow().rsv||0));
 const leftP=()=>G.st?Math.max(0,Math.ceil(G.st.left-(now()-G.stAt)/1000)):0;
@@ -768,26 +805,34 @@ function padTick(){ const k=JSON.stringify([G.st&&G.st.ph,leftP(),meNow().role])
 function padMsg(t,m,btn){ PCTX=null; document.body.classList.remove('playing'); app.innerHTML=`<div class="pwrap"><div class="pc"><h2>${t}</h2><p class="note">${m}</p><div class="mrow" style="justify-content:flex-start">${btn||''}<a class="pbtn" href="${esc(PAD.indexUrl())}">トップへ</a></div></div></div>`; }
 function padRender(){
   const v=G.view; if(v===undefined) return;
-  if(seatA()===null) return padMsg(`${NAME}にはまだ入っていません`,'メダルゲームのトップで、持ち込む枚数を選んでから入ってください。','');
-  if(!G.live) return padMsg(`${NAME}は止まりました`,'先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。');
+  if(CLEAN){
+    if(v.cl!==CLEAN) return padMsg('この掃除決めには参加していません','先生に確認してください。');
+    if(!G.live){ // サッカーボードが終わった:つぎのゲームへ
+      const id=Object.keys(G.games).find(k=>G.games[k].clean===CLEAN);
+      if(id){ const u=new URL(G.games[id].url); u.searchParams.set('mg',PAD.pub); if(MG.LOCAL) u.searchParams.set('local','1');
+        return padMsg(`${esc(G.games[id].n)}が始まりました`,'サッカーボードのメダルを、そのまま引き継いでいます。',`<a class="pbtn go" href="${esc(u.href)}">${esc(G.games[id].n)}へ</a>`); }
+      return padMsg('サッカーボードは終わりました','先生がつぎのゲームを開くか、結果を発表するまで待ってね。');
+    }
+  }else if(seatA()===null) return padMsg(`${NAME}にはまだ入っていません`,'メダルゲームのトップで、持ち込む枚数を選んでから入ってください。','');
+  if(!CLEAN&&!G.live) return padMsg(`${NAME}は止まりました`,'先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。');
   const top=PAD.indexUrl();
   if(!$('#pcv')){
     app.innerHTML=`<div class="pwrap">
       <div class="pc inbar"><div><div class="lbl">${esc(v.n)} さん ・ ${NAME}のメダル</div><div class="num" id="num"></div><div class="lbl" id="bank"></div></div>
-        <div class="tools"><button class="pbtn" id="tAdd">貯金から追加</button><button class="pbtn" id="tBack">一部もどす</button><button class="pbtn gold" id="tQuit">やめる</button></div></div>
+        ${CLEAN?'':'<div class="tools"><button class="pbtn" id="tAdd">貯金から追加</button><button class="pbtn" id="tBack">一部もどす</button><button class="pbtn gold" id="tQuit">やめる</button></div>'}</div>
       <div class="pc"><div class="cv" id="cvw"><canvas id="pcv"></canvas></div></div>
       <div class="pc" id="act"></div>
-      <div class="center" style="margin-top:12px"><a href="${esc(top)}" class="pbtn" style="font-size:14px">トップへ(メダルは預けたまま)</a></div>
+      <div class="center" style="margin-top:12px"><a href="${esc(top)}" class="pbtn" style="font-size:14px">トップへ${CLEAN?'':'(メダルは預けたまま)'}</a></div>
       <div id="mod"></div></div>`;
     PCTX=setupCanvas($('#pcv'),PAD_DPR); PCACHE={l:layer(PAD_DPR),k:''};
     bindControls($('#pcv'));
-    $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
+    if(!CLEAN){ $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
     $('#tQuit').onclick=async()=>{ if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。${meNow().rsv?'\n(試合が終わってから、自動で貯金にもどします)':''}`)) return;
-      const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok&&!(r.d&&r.d.later)) setTimeout(()=>location.href=top,700); };
+      const r=await PAD.req('quit',{},GID); toast(r.msg); if(r.ok&&!(r.d&&r.d.later)) setTimeout(()=>location.href=top,700); }; }
   }
   const me=meNow();
   $('#num').innerHTML=`${yen(myBal())}<small>枚</small>`;
-  $('#bank').textContent=`貯金 ${yen(v.b)}枚${me.rsv?` ・ 賭けている ${yen(me.rsv)}枚`:''}`;
+  $('#bank').textContent=CLEAN?(me.rsv?`賭けている ${yen(me.rsv)}枚`:'この日だけのメダル'):`貯金 ${yen(v.b)}枚${me.rsv?` ・ 賭けている ${yen(me.rsv)}枚`:''}`;
   const full=isPlaying(); $('#cvw').classList.toggle('full',full); document.body.classList.toggle('playing',full);
   if(!full&&G.ptr.size) G.ptr.clear();
   actRender();
