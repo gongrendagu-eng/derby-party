@@ -176,6 +176,8 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .modal{position:fixed;inset:0;background:rgba(5,10,30,.7);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
 .mcard{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 28px;width:100%;max-width:820px;max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .mcard h2{margin:0;font-size:1.5rem}
+.mcard.wide{max-width:1400px;width:96vw;max-height:96vh}
+#qIn{min-height:60vh;font-size:1.15rem;line-height:1.8;white-space:pre;overflow-x:auto;tab-size:4}
 .mcard h3{margin:8px 0 0;font-size:1.1rem;color:var(--lamp)}
 .qrbox{display:flex;gap:28px;align-items:center;flex-wrap:wrap;justify-content:center}
 #qr{background:#fff;padding:14px;border-radius:12px;line-height:0}
@@ -335,10 +337,11 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 </div>
 
 <div id="setModal" class="modal" hidden>
-  <div class="mcard">
+  <div class="mcard wide">
     <h2>設定</h2>
     <h3>出題</h3>
     <div class="fgrid">
+      <label>一度出した問題<select id="sAutoDel"><option value="1">次のゲーム開始のときに自動で消す</option><option value="0">消さずに残す</option></select></label>
       <label>出題方式<select id="sMode"><option value="random">早押しと全員回答をランダム</option><option value="buzz">早押しだけ</option><option value="all">全員回答だけ</option></select></label>
       <label>問題数<input type="number" id="sN" min="1" max="500" step="1"></label>
       <label>出題する順番<select id="sOrder"><option value="random">登録した問題からランダムに選ぶ</option><option value="seq">登録した順番</option></select></label>
@@ -369,11 +372,12 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
     <p class="note">境目で同点になったときは、同点の人(チーム)の中からルーレットで抽選します。</p>
     <h3>問題</h3>
     <p class="note">1行に1問、「問題｜答え」の形で入れます。Excelで A列に問題、B列に答えを入れて、2列まとめてコピーして貼り付けてもかまいません。正解にしてよい答えが複数あるときは「;」で区切ります(例:B/S;貸借対照表)。全員回答は答えと自動で照らし合わせ、先生がカードをタップして直せます。</p>
-    <textarea id="qIn" rows="10"></textarea>
+    <div class="btns" style="justify-content:flex-start"><button id="qPreset" class="btn">おすすめ問題(51問)を下に追加</button><button id="qRestore" class="btn">消した問題を元に戻す</button></div>
+    <textarea id="qIn" rows="20" spellcheck="false"></textarea>
     <p id="qInfo" class="note"></p>
     <div class="btns"><button data-act="close" class="btn">キャンセル</button><button id="sSave" class="btn main">保存して閉じる</button></div>
     <hr style="border:0;border-top:1px solid var(--line);width:100%">
-    <p class="note">「新しいゲームにする」は参加者はそのままで、得点を0にしてタイトル画面に戻ります。「参加者を全員削除」は、次のクラスで使う前に押してください。iPadは名前の入力画面に戻ります。</p>
+    <p class="note">出した問題は、次のゲームを始めるときに問題リストから消えます(「消した問題を元に戻す」で戻せます)。「新しいゲームにする」は参加者はそのままで、得点を0にしてタイトル画面に戻ります。「参加者を全員削除」は、次のクラスで使う前に押してください。iPadは名前の入力画面に戻ります。</p>
     <div class="btns"><button id="resetGame" class="btn danger">新しいゲームにする</button><button id="clearAll" class="btn danger">参加者を全員削除</button></div>
   </div>
 </div>
@@ -397,7 +401,58 @@ const NAME_MAX=8;               // ニックネームの最大文字数
 const NEAR_MS=50;               // この差(ミリ秒)以内なら「ほぼ同時」と表示
 const FB_VER="10.12.2";
 // 設定画面の初期値
-const DEFSET={mode:'random',n:10,order:'random',teamN:4,method:3,teamScore:'avg',botP:4,botT:1,label:'掃除当番',
+const PRESET=`2024年に発行された新しい一万円札の肖像の人物は?|渋沢栄一
+2024年に発行された新しい千円札の肖像の人物は?|北里柴三郎
+2025年の大阪・関西万博の公式キャラクターの名前は?|ミャクミャク
+日本で初めて女性の内閣総理大臣になった人はだれ?|高市早苗;高市
+2022年4月から、日本の成人年齢は何歳になった?|18歳;18
+2026年の冬季オリンピックは、イタリアのコルティナ・ダンペッツォとどこの都市で開かれた?|ミラノ
+2026年のサッカーワールドカップを共同開催する3か国は、アメリカ・カナダとどこ?|メキシコ
+2024年に始まった、投資の利益に税金がかからない新しい制度の通称は?|新NISA;NISA;ニーサ;新ニーサ
+2024年にメジャーリーグ史上初の「50本塁打・50盗塁」を達成した日本人選手は?|大谷翔平;大谷
+貸借対照表のことを英語の略で何という?|B/S;BS
+損益計算書のことを英語の略で何という?|P/L;PL
+簿記で、借方は左と右のどちら?|左
+商品を売って、代金はあとで受け取ることにした。このときの勘定科目は?|売掛金
+商品を買って、代金はあとで支払うことにした。このときの勘定科目は?|買掛金
+日本の消費税の標準税率は何%?|10%;10;10パーセント
+食料品などにかかる消費税の軽減税率は何%?|8%;8;8パーセント
+手紙の頭語「拝啓」に対応する結語は?|敬具
+会社の「最高経営責任者」をアルファベット3文字で何という?|CEO
+仕事の基本「報告・連絡・相談」をまとめて何という?|報連相;ほうれんそう
+地球上でいちばん大きい動物は?|シロナガスクジラ
+陸上でいちばん速く走る動物は?|チーター
+ジャイアントパンダが主に食べている植物は?|笹;竹;ササ;タケ
+カンガルーやコアラのように、お腹の袋で子どもを育てる動物の仲間を何類という?|有袋類
+マレー語で「森の人」という意味の名前をもつ類人猿は?|オランウータン
+ペンギンは鳥類と哺乳類のどちら?|鳥類;鳥
+キリンの首の骨の数は何個?(人間と同じです)|7個;7;7本;7つ
+ピザの「マルゲリータ」が生まれた国は?|イタリア
+寿司ネタの「ハマチ」が大きく育つと何という魚になる?|ブリ;鰤
+梅干しの産地として有名な、近畿地方の県は?|和歌山県;和歌山
+名古屋名物「ひつまぶし」に使われる魚は?|うなぎ;鰻
+タピオカの原料になるイモの名前は?|キャッサバ
+インド料理で、カレーと一緒に食べることが多い平たいパンは?|ナン
+卵・牛乳・砂糖で作り、カラメルソースをかけて食べる冷たいデザートは?|プリン
+ドラえもんの大好物のお菓子は?|どら焼き;どらやき
+「名探偵コナン」の江戸川コナンの本当の名前は?|工藤新一
+「ONE PIECE」の主人公、麦わらのルフィのフルネームは?|モンキー・D・ルフィ;モンキーDルフィ;ルフィ
+「となりのトトロ」に出てくる、ネコの形をした乗り物の名前は?|ネコバス
+「鬼滅の刃」の主人公の名前は?|竈門炭治郎;炭治郎;かまどたんじろう
+任天堂のゲームに出てくる、赤い帽子をかぶったヒゲの配管工の名前は?|マリオ
+ポケモンのピカチュウは何タイプ?|でんき;電気;でんきタイプ
+「アナと雪の女王」で、エルサの妹の名前は?|アナ
+【なぞなぞ】パンはパンでも、食べられないパンは?|フライパン
+【なぞなぞ】上は大水、下は大火事。これなーんだ?|お風呂;風呂
+【なぞなぞ】朝は4本足、昼は2本足、夜は3本足。これなーんだ?|人間;人;ひと
+【なぞなぞ】逆立ちすると軽くなる動物は?|イルカ
+【なぞなぞ】食べるとほっとするケーキは?|ホットケーキ
+【なぞなぞ】お父さんが嫌いな果物は?|パパイヤ;パパイア
+【なぞなぞ】取っても取っても減らないものは?|年;歳;とし
+【なぞなぞ】冷蔵庫の中にいる動物は?|ゾウ;象
+【なぞなぞ】いつも目の前にあるのに、決して見えないものは?|未来
+【なぞなぞ】割れると喜ばれる玉は?|くす玉;薬玉`;
+const DEFSET={autoDel:true,mode:'random',n:10,order:'random',teamN:4,method:3,teamScore:'avg',botP:4,botT:1,label:'掃除当番',
   pts:{bc:1,bw:0,ac:1,aw:0,an:0}};
 
 /* ============ 共通 ============ */
@@ -489,13 +544,6 @@ const SND={
 
 /* ============ 先生の画面 ============ */
 const HKEY='quiz.host'+(LOCAL?'.local':''), QKEY='quiz.questions';
-const SAMPLE=[
-  {q:'貸借対照表のことを英語の略で何という?',a:'B/S'},
-  {q:'簿記で、借方は左と右のどちら?',a:'左'},
-  {q:'商品を売って、代金をあとで受け取る約束をした。このときの勘定科目は?',a:'売掛金'},
-  {q:'手紙の頭語「拝啓」に対応する結語は?',a:'敬具'},
-  {q:'日本の消費税の標準税率は何%?',a:'10%'}
-];
 let H=null, QL=[], base='', unsubQ=[], lastPush='', lastFRes='', qrRoom='';
 const hp={players:{},presence:{},buzz:{},answers:{},conn:false};
 /*
@@ -513,9 +561,21 @@ function loadH(){ let h=null; try{ h=JSON.parse(localStorage.getItem(HKEY)); }ca
   o.set=Object.assign({},DEFSET,(h&&h.set)||{}); o.set.pts=Object.assign({},DEFSET.pts,(h&&h.set&&h.set.pts)||{});
   if(o.fin) o.fin.run=false;     // 抽選の途中で閉じたときは、抽選をやり直せるようにする
   return o; }
-function loadQ(){ try{ const q=JSON.parse(localStorage.getItem(QKEY)); if(Array.isArray(q)) return q; }catch(e){} return SAMPLE.slice(); }
+function loadQ(){ try{ const q=JSON.parse(localStorage.getItem(QKEY)); if(Array.isArray(q)) return q; }catch(e){} return parseQ(PRESET); }
 function banner(m,info){ const b=$('#hBanner'); b.textContent=m; b.className='banner'+(info?' info':''); b.hidden=!m; }
 const cq=()=>QL[H.deck[H.pos]];
+// 一度出した問題の記録(問題文で覚える)と、消した問題の控え
+const UKEY='quiz.used', ARCH='quiz.removed';
+function loadArr(k){ try{ const a=JSON.parse(localStorage.getItem(k)); if(Array.isArray(a)) return a; }catch(e){} return []; }
+function markUsed(q){ if(!q) return; const u=loadArr(UKEY); if(!u.includes(q.q)){ u.push(q.q); try{ localStorage.setItem(UKEY,JSON.stringify(u)); }catch(e){} } }
+function purgeUsed(){
+  const u=new Set(loadArr(UKEY)); if(!u.size) return 0;
+  const gone=QL.filter(x=>u.has(x.q)); if(!gone.length){ try{ localStorage.removeItem(UKEY); }catch(e){} return 0; }
+  QL=QL.filter(x=>!u.has(x.q));
+  const ar=loadArr(ARCH), seen=new Set(ar.map(x=>x.q)); gone.forEach(x=>{ if(!seen.has(x.q)) ar.push(x); });
+  try{ localStorage.setItem(QKEY,JSON.stringify(QL)); localStorage.setItem(ARCH,JSON.stringify(ar)); localStorage.removeItem(UKEY); }catch(e){}
+  return gone.length;
+}
 function resetQ(){ Object.assign(H,{phase:'idle',ans:null,wrong:[],right:null,showAns:false,mark:{}}); }
 // いまの問題の方式(まだ決まっていなければ ''。ランダムのときは出題した瞬間に決まる)
 function syncMode(){ H.mode=H.qmodes[H.pos]||(H.set.mode==='random'?'':H.set.mode); }
@@ -603,7 +663,7 @@ function recomputeAll(){
   });
   H.res[H.pos]=r;
 }
-const normAns=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\s。、.,・「」『』"']/g,'');
+const normAns=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\s。、.,・「」『』"'ー\-]/g,'').replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
 function isRight(text,ans){ const ok=String(ans||'').split(/[;；]/).map(normAns).filter(Boolean); return ok.includes(normAns(text)); }
 // 下位の決め方:k番目と同点の人が多すぎるときは、その人たちの中から抽選
 function bottomPlan(items,k){
@@ -635,12 +695,13 @@ const nm=p=>(hp.players[p]&&hp.players[p].name)||'(退室した人)';
 /* --- 先生の操作 --- */
 function startGame(){
   if(!be) return;
-  if(!QL.length) return toast('問題がありません。「設定」で問題を入れてください。');
+  const gone=H.set.autoDel?purgeUsed():0;
+  if(!QL.length) return toast(gone?'問題をすべて出し終わりました。「設定」で問題を足してください。':'問題がありません。「設定」で問題を入れてください。');
   const want=Math.max(1,+H.set.n||1), n=Math.min(want,QL.length), idx=QL.map((_,i)=>i);
   H.deck=(H.set.order==='seq'?idx:shuffle(idx)).slice(0,n);
   Object.assign(H,{game:'play',pos:0,qmodes:{},res:{},fin:null}); resetQ(); syncMode();
   fillTeams(); save();
-  toast(n<want?`登録してある問題が${QL.length}問なので、${n}問で始めます`:`${n}問のゲームを始めます`);
+  toast((gone?`前に出した${gone}問を消しました。`:'')+(n<want?`残りの問題が${QL.length}問なので、${n}問で始めます`:`${n}問のゲームを始めます`));
 }
 // 問題を足す(まだ出していない問題から)
 function extend(k){
@@ -674,6 +735,7 @@ function openQ(){
   // 方式は問題ごとに一度だけ決め、出し直しても変えない
   if(!H.qmodes[H.pos]) H.qmodes[H.pos]=H.set.mode==='random'?(Math.random()<.5?'buzz':'all'):H.set.mode;
   H.qn++; resetQ(); H.phase='open'; H.res[H.pos]={}; syncMode();
+  markUsed(cq());
   subQ(); save();
   if(H.set.mode==='random') announce(H.mode);
 }
@@ -891,7 +953,7 @@ function openQR(){
 }
 function openSettings(){
   const S=H.set;
-  $('#sMode').value=S.mode; $('#sN').value=S.n; $('#sOrder').value=S.order;
+  $('#sAutoDel').value=S.autoDel?'1':'0'; $('#sMode').value=S.mode; $('#sN').value=S.n; $('#sOrder').value=S.order;
   $('#pBc').value=S.pts.bc; $('#pBw').value=S.pts.bw; $('#pAc').value=S.pts.ac; $('#pAw').value=S.pts.aw; $('#pAn').value=S.pts.an;
   $('#sTeamN').value=S.teamN; $('#sMethod').value=String(S.method); $('#sTeamScore').value=S.teamScore;
   $('#sBotP').value=S.botP; $('#sBotT').value=S.botT; $('#sLabel').value=S.label;
@@ -912,7 +974,7 @@ function saveSettings(){
   const nq=parseQ($('#qIn').value), qChanged=JSON.stringify(nq)!==JSON.stringify(QL);
   if(qChanged&&H.game!=='title'&&!confirm('ゲームの途中で問題を変えると、得点を0にしてタイトル画面に戻ります。よろしいですか?')) return;
   const S=H.set, D=DEFSET;
-  S.mode=$('#sMode').value; S.n=numIn('#sN',D.n,1,500); S.order=$('#sOrder').value;
+  S.autoDel=$('#sAutoDel').value==='1'; S.mode=$('#sMode').value; S.n=numIn('#sN',D.n,1,500); S.order=$('#sOrder').value;
   S.pts={bc:numIn('#pBc',D.pts.bc),bw:numIn('#pBw',D.pts.bw,0),ac:numIn('#pAc',D.pts.ac),aw:numIn('#pAw',D.pts.aw,0),an:numIn('#pAn',D.pts.an,0)};
   S.teamN=numIn('#sTeamN',D.teamN,2,10); S.method=+$('#sMethod').value; S.teamScore=$('#sTeamScore').value;
   S.botP=numIn('#sBotP',D.botP,1,40); S.botT=numIn('#sBotT',D.botT,1,9); S.label=$('#sLabel').value.trim()||D.label;
@@ -961,6 +1023,16 @@ document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{
   if(e.target===m||e.target.closest('[data-act="close"]')) m.hidden=true;
 }));
 $('#qIn').addEventListener('input',qInfo);
+$('#qPreset').onclick=()=>{ const t=$('#qIn'), have=new Set(parseQ(t.value).map(x=>x.q));
+  const add=parseQ(PRESET).filter(x=>!have.has(x.q)).map(x=>`${x.q}|${x.a}`);
+  if(!add.length) return toast('おすすめ問題はすでに全部入っています');
+  t.value=(t.value.trim()?t.value.replace(/\s+$/,'')+'\n':'')+add.join('\n'); qInfo(); t.scrollTop=t.scrollHeight;
+  toast(`${add.length}問を追加しました(「保存して閉じる」で確定)`); };
+$('#qRestore').onclick=()=>{ const ar=loadArr(ARCH); if(!ar.length) return toast('消した問題はありません');
+  const t=$('#qIn'), have=new Set(parseQ(t.value).map(x=>x.q)), add=ar.filter(x=>!have.has(x.q)).map(x=>x.a?`${x.q}|${x.a}`:x.q);
+  t.value=(t.value.trim()?t.value.replace(/\s+$/,'')+'\n':'')+add.join('\n'); qInfo();
+  try{ localStorage.removeItem(ARCH); localStorage.removeItem(UKEY); }catch(e){}
+  toast(`${add.length}問を戻しました(「保存して閉じる」で確定)`); };
 $('#sSave').onclick=saveSettings;
 $('#tmList').addEventListener('change',e=>{
   const s=e.target.closest('select[data-pid]'); if(!s||!H||H.set.method===2) return;
