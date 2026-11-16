@@ -331,68 +331,100 @@ function drawField(c){
     c.fillStyle=PK[k].c; rr(c,22,y-7,22,14,4); c.fill(); c.fillStyle='#fff'; c.font=FONT(800,13); c.fillText(t,52,y); });
   c.fillStyle='#ffd84a'; c.font=FONT(800,12); c.fillText('フェンスに強く当たってもHR',22,150);
 }
-// バットの角度。sw=0 構え、0.22 でホームの真上(当たる瞬間)、1 で振り抜き
-function batAngle(sw){
-  const A0=0.62*Math.PI, A1=-0.95*Math.PI;
-  if(!sw||sw<=0) return A0;
-  if(sw<0.22) return A0*(1-sw/0.22);
-  return A1*Math.min(1,(sw-0.22)/0.78);
+// ===== 選手の絵(bb-assets/。読み込めないときは図形で描く) =====
+// tp_:真上から(グラウンド用、下向きに描いてある)、fp_:投手の正面(1構え 2足を上げる 3投げる 4投げ終わり)、bk_:打者の後ろ姿(1構え 2テイクバック 3ミート 4振り抜き)、bc_:捕手の後ろ姿、bu:審判の後ろ姿
+const IMG={};
+(function loadImgs(){
+  const ns=['bu','tu'];
+  ['b','r'].forEach(t=>{ ['p1','p2','bat','c','f','run'].forEach(n=>ns.push(`tp_${t}_${n}`)); [1,2,3,4].forEach(i=>{ ns.push(`fp_${t}_${i}`); ns.push(`bk_${t}_${i}`); }); ns.push('bc_'+t); });
+  ns.forEach(n=>{ const im=new Image(); im.src='bb-assets/'+n+'.webp'; IMG[n]=im; });
+})();
+const imOk=n=>{ const im=IMG[n]; return !!(im&&im.complete&&im.naturalWidth); };
+// 真上から見た選手(dir:向き、0=上)
+function topSpr(c,n,x,y,h,dir){
+  if(!imOk(n)) return false; const im=IMG[n], w=h*im.naturalWidth/im.naturalHeight;
+  c.save(); c.translate(x,y);
+  c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(3,4,h*.36,h*.3,0,0,7); c.fill();
+  c.rotate((dir||0)-Math.PI); c.drawImage(im,-w/2,-h/2,w,h); c.restore(); return true;
 }
-function drawBatAt(c,px,py,th,len,wd){
-  c.save(); c.translate(px,py); c.rotate(th);
-  c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.moveTo(4,4+wd*.25); c.lineTo(len+4,4+wd*.5); c.lineTo(len+4,4-wd*.5); c.lineTo(4,4-wd*.25); c.closePath(); c.fill();
-  const g=c.createLinearGradient(0,-wd/2,0,wd/2); g.addColorStop(0,'#f6d7a0'); g.addColorStop(.5,'#d9a45b'); g.addColorStop(1,'#a8692e');
-  c.fillStyle=g; c.beginPath(); c.moveTo(0,-wd*.22); c.lineTo(len*.55,-wd*.28); c.quadraticCurveTo(len*.8,-wd*.5,len,-wd*.48); c.arc(len,0,wd*.48,-Math.PI/2,Math.PI/2);
-  c.quadraticCurveTo(len*.8,wd*.5,len*.55,wd*.28); c.lineTo(0,wd*.22); c.closePath(); c.fill();
-  c.fillStyle='#222'; c.fillRect(-wd*.1,-wd*.3,wd*.9,wd*.6);   // グリップ
-  c.restore();
+// 立っている選手(足もと fy を下にそろえる)
+function standSpr(c,n,cx,fy,h,shadow){
+  if(!imOk(n)) return false; const im=IMG[n], w=h*im.naturalWidth/im.naturalHeight;
+  if(shadow!==false){ c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(cx,fy-h*.02,w*.42,h*.07,0,0,7); c.fill(); }
+  c.drawImage(im,cx-w/2,fy-h,w,h); return true;
 }
-// 打席の拡大図(上から見た図。投手が上、ホームが下)
+// 打席の拡大図(ファミスタ風:捕手の後ろから投手を見る)
+const LANE_BG={};
+function laneBg(w,h){
+  const k=w+'x'+h; if(LANE_BG[k]) return LANE_BG[k];
+  const dpr=Math.min(2,window.devicePixelRatio||1), L=layer(w,h,dpr), c=L.ctx, cx=w/2, rnd=prng(11), hz=h*0.2;
+  // 観客席
+  const st=c.createLinearGradient(0,0,0,hz); st.addColorStop(0,'#0e1a2e'); st.addColorStop(1,'#26385a'); c.fillStyle=st; c.fillRect(0,0,w,hz);
+  const crowd=['#ffd166','#ef476f','#06d6a0','#118ab2','#ffffff','#f78c6b','#9b5de5','#2f7bff','#ff4d6d'];
+  for(let i=0;i<w*hz/26;i++){ c.globalAlpha=.4+rnd()*.5; c.fillStyle=crowd[(rnd()*crowd.length)|0]; c.beginPath(); c.arc(rnd()*w,rnd()*(hz-6),1+rnd()*1.6*(w/300),0,7); c.fill(); }
+  c.globalAlpha=1; c.fillStyle='#183153'; c.fillRect(0,hz-6,w,8); c.fillStyle='#ffd84a'; c.fillRect(0,hz-7,w,2);
+  // 芝(奥ほど細い縞)
+  c.fillStyle='#4fae6d'; c.fillRect(0,hz,w,h-hz);
+  let yy=hz, bw=h*0.025, i=0; while(yy<h){ if(i%2){ c.fillStyle='rgba(255,255,255,.07)'; c.fillRect(0,yy,w,bw); } yy+=bw; bw*=1.18; i++; }
+  // 内野の土
+  const dg=c.createLinearGradient(0,h*0.3,0,h); dg.addColorStop(0,'#c98b55'); dg.addColorStop(1,'#e0aa72');
+  c.fillStyle=dg; c.beginPath(); c.ellipse(cx,h*1.02,w*0.78,h*0.7,0,Math.PI,0); c.fill();
+  c.fillStyle='#4fae6d'; c.beginPath(); c.moveTo(cx,h*0.42); c.lineTo(cx+w*0.42,h*0.62); c.lineTo(cx,h*0.74); c.lineTo(cx-w*0.42,h*0.62); c.closePath(); c.fill();   // 内野の芝(ひし形)
+  c.fillStyle=dg; c.beginPath(); c.ellipse(cx,h*0.88,w*0.26,h*0.13,0,0,7); c.fill();   // ホームのまわり
+  // ファウルライン
+  c.strokeStyle='rgba(255,255,255,.9)'; c.lineWidth=Math.max(2,w/150);
+  c.beginPath(); c.moveTo(cx-w*0.06,h*0.86); c.lineTo(-w*0.1,h*0.42); c.moveTo(cx+w*0.06,h*0.86); c.lineTo(w*1.1,h*0.42); c.stroke();
+  // マウンド
+  c.fillStyle='#d9a066'; c.beginPath(); c.ellipse(cx,h*0.37,w*0.13,h*0.04,0,0,7); c.fill();
+  c.fillStyle='#fff'; c.fillRect(cx-w*0.03,h*0.365,w*0.06,h*0.008);
+  // バッターボックスとホーム
+  c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=Math.max(1.5,w/220);
+  const box=(x0,x1,x2,x3)=>{ c.beginPath(); c.moveTo(cx+x0*w,h*0.79); c.lineTo(cx+x1*w,h*0.79); c.lineTo(cx+x2*w,h*0.97); c.lineTo(cx+x3*w,h*0.97); c.closePath(); c.stroke(); };
+  box(-0.2,-0.08,-0.1,-0.27); box(0.08,0.2,0.27,0.1);
+  c.fillStyle='rgba(0,0,0,.18)'; c.beginPath(); c.moveTo(cx-w*0.065,h*0.845); c.lineTo(cx+w*0.065,h*0.845); c.lineTo(cx+w*0.07,h*0.875); c.lineTo(cx,h*0.9); c.lineTo(cx-w*0.07,h*0.875); c.closePath(); c.fill();
+  c.fillStyle='#fff'; c.beginPath(); c.moveTo(cx-w*0.06,h*0.835); c.lineTo(cx+w*0.06,h*0.835); c.lineTo(cx+w*0.066,h*0.865); c.lineTo(cx,h*0.885); c.lineTo(cx-w*0.066,h*0.865); c.closePath(); c.fill();
+  return LANE_BG[k]=L;
+}
+// 投手と打者のコマを決める
+function pitcherFrame(L){ if(L.u==null) return 1; if(L.wind>0){ const p=1-L.wind; return p<0.25?1:p<0.8?2:3; } return L.u<0.3?3:4; }
+function batterFrame(L){ if(L.sw>0) return L.sw<0.35?3:4; if(L.u!=null&&L.u>0.7&&L.u<1.25) return 2; return 1; }
 function drawLane(c,x,y,w,h,L){
   c.save(); rr(c,x,y,w,h,14); c.clip();
-  const cx=x+w/2, top=y+h*0.16, py=y+h*0.78, S=w/220;
-  // 芝と土
-  c.fillStyle='#4fae6d'; c.fillRect(x,y,w,h);
-  for(let i=-6;i<8;i++){ c.fillStyle=i%2?'rgba(255,255,255,.06)':'rgba(0,40,10,.05)'; c.fillRect(x,y+i*22*S,w,11*S); }
-  const dg=c.createLinearGradient(0,top,0,py); dg.addColorStop(0,'#c98b55'); dg.addColorStop(1,'#dda46c');
-  c.fillStyle=dg; c.beginPath(); c.moveTo(cx-14*S,top); c.lineTo(cx+14*S,top); c.lineTo(cx+46*S,py-30*S); c.lineTo(cx-46*S,py-30*S); c.closePath(); c.fill();
-  c.beginPath(); c.ellipse(cx,py+2*S,72*S,48*S,0,0,7); c.fill();
-  c.fillStyle='#d9a066'; c.beginPath(); c.ellipse(cx,top,30*S,12*S,0,0,7); c.fill();
-  c.fillStyle='#fff'; c.fillRect(cx-7*S,top+3*S,14*S,3*S);
-  // バッターボックスとホーム
-  c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=1.6*S; c.strokeRect(cx-46*S,py-34*S,24*S,44*S); c.strokeRect(cx+22*S,py-34*S,24*S,44*S);
-  c.fillStyle='rgba(0,0,0,.2)'; c.beginPath(); c.moveTo(cx-12*S,py-10*S); c.lineTo(cx+14*S,py-10*S); c.lineTo(cx+14*S,py-2*S); c.lineTo(cx+1*S,py+6*S); c.lineTo(cx-12*S,py-2*S); c.closePath(); c.fill();
-  c.fillStyle='#fff'; c.beginPath(); c.moveTo(cx-13*S,py-12*S); c.lineTo(cx+13*S,py-12*S); c.lineTo(cx+13*S,py-4*S); c.lineTo(cx,py+4*S); c.lineTo(cx-13*S,py-4*S); c.closePath(); c.fill();
-  // 捕手・審判
-  person(c,cx+2*S,py+22*S,COL[L.pc]||'#666',1.25*S,Math.PI,{glove:true});
-  person(c,cx+4*S,py+44*S,'#2b2d42',1.3*S,Math.PI);
-  // 投手(投げるときに少し動く)
-  const wind=L.wind||0, arm=Math.sin(wind*Math.PI)*0.6;
-  person(c,cx,top-6*S-wind*3*S,COL[L.pc]||'#666',1.2*S,Math.PI+arm,{glove:true});
-  // ボール
-  if(L.u!=null&&L.u<1.35){
-    const u=L.u, ty=py-16*S, by=top+2*S+(ty-top-2*S)*u, bx=cx+(L.cv||0)*12*S*u*u, r=(2.4+4.2*Math.min(u,1.15))*S, hgt=(4+6*(1-Math.min(1,u)))*S;
-    if(L.v) ballDraw(c,bx,by,r,hgt);
-    else if(L.mag){ c.fillStyle='#e0aaff'; c.textAlign='center'; c.textBaseline='middle'; c.font=FONT(800,15*S); c.lineWidth=4*S; c.strokeStyle='rgba(60,9,108,.8)'; c.strokeText('消える魔球!',cx,y+h*0.45); c.fillText('消える魔球!',cx,y+h*0.45); }
+  const bg=laneBg(w,h); c.drawImage(bg.cv,x,y,w,h);
+  const cx=x+w/2, S=w/220, pc=L.pc||'r', bc=L.bc||'b';
+  // 投手
+  const pf=pitcherFrame(L), ph=h*(pf===4?0.22:0.26);
+  if(!standSpr(c,`fp_${pc}_${pf}`,cx,y+h*0.385,ph)){ c.fillStyle=COL[pc]; c.beginPath(); c.ellipse(cx,y+h*0.3,10*S,16*S,0,0,7); c.fill(); }
+  // ボール(奥から手前へ大きくなる)と地面の影
+  if(L.u!=null&&L.u<1.3){
+    const u=L.u, k=Math.min(u,1.3), sx=cx+6*S, sy=y+h*0.27, ex=cx, ey=y+h*0.7;
+    const bx=sx+(ex-sx)*k+(L.cv||0)*20*S*k*k, by=sy+(ey-sy)*k, r=(2+7*k*k)*S, gy=y+h*(0.385+(0.86-0.385)*k);
+    if(L.v){ c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bx,gy,r*1.1,r*.35,0,0,7); c.fill(); ballDraw(c,bx,by,r); }
+    else if(L.mag){ c.fillStyle='#e0aaff'; c.textAlign='center'; c.textBaseline='middle'; c.font=FONT(800,15*S); c.lineWidth=4*S; c.strokeStyle='rgba(60,9,108,.8)'; c.strokeText('消える魔球!',cx,y+h*0.52); c.fillText('消える魔球!',cx,y+h*0.52); }
   }
-  // 打者(左のバッターボックス、ホームのほうを向く)とバット
-  const big=L.big?1.35:1, hx=cx-26*S, hy=py-16*S;
-  person(c,cx-36*S,py-14*S,COL[L.bc]||'#666',1.3*S,Math.PI/2,{helmet:true});
-  drawBatAt(c,hx,hy,batAngle(L.sw),50*S*big,7*S*big);
-  if(L.txt){ const bh=Math.round(Math.min(44,12*S+14)); c.fillStyle='rgba(20,33,58,.82)'; rr(c,x+8,y+h-bh-8,w-16,bh,10); c.fill();
-    c.fillStyle=L.txtc||'#ffd84a'; c.textAlign='center'; c.textBaseline='middle'; c.font=FONT(800,Math.min(26,10*S)); c.fillText(L.txt,cx,y+h-8-bh/2); }
+  // 捕手と審判(後ろ姿)
+  if(!standSpr(c,`bc_${pc}`,cx+2*S,y+h*1.0,h*0.2)){ c.fillStyle=COL[pc]; c.beginPath(); c.ellipse(cx,y+h*0.93,14*S,10*S,0,0,7); c.fill(); }
+  standSpr(c,'bu',cx+w*0.3,y+h*1.08,h*0.3,false);
+  // 打者(後ろ姿、ホームの左)。バットを大きくするアイテム中は少し大きく
+  const bf=batterFrame(L), bh=h*0.5*(L.big?1.12:1);
+  if(!standSpr(c,`bk_${bc}_${bf}`,cx-w*0.24,y+h*0.99,bh)){ c.fillStyle=COL[bc]; c.beginPath(); c.ellipse(cx-w*0.24,y+h*0.8,16*S,30*S,0,0,7); c.fill(); }
+  if(L.big){ c.fillStyle='#ffd84a'; c.font=FONT(800,11*S); c.textAlign='center'; c.textBaseline='middle'; c.fillText('BIG',cx-w*0.24,y+h*0.47); }
+  if(L.txt){ const bh2=Math.round(Math.min(44,12*S+14)); c.fillStyle='rgba(20,33,58,.82)'; rr(c,x+8,y+h-bh2-8,w-16,bh2,10); c.fill();
+    c.fillStyle=L.txtc||'#ffd84a'; c.textAlign='center'; c.textBaseline='middle'; c.font=FONT(800,Math.min(26,10*S)); c.fillText(L.txt,cx,y+h-8-bh2/2); }
   c.restore();
   c.strokeStyle='rgba(255,255,255,.35)'; c.lineWidth=2; rr(c,x+1,y+1,w-2,h-2,14); c.stroke();
 }
 function drawDyn(c,s,o){
   const bt=s.bt||'b', fd=other(bt), playing=!!s.g;
   // 守備の選手
-  FIELDERS.forEach(([x,y])=>{ const dir=Math.atan2(HX-x,-(HY-y))+Math.PI; person(c,x,y,COL[fd],1.05,dir,{glove:true}); });
-  person(c,HX,HY-MOUND-2,COL[fd],1.1,Math.PI,{glove:true});
-  person(c,HX,HY+14,COL[fd],1,Math.PI,{glove:true});
+  FIELDERS.forEach(([x,y])=>{ const dir=Math.atan2(HX-x,-(HY-y)); topSpr(c,`tp_${fd}_f`,x,y,36,dir)||person(c,x,y,COL[fd],1.05,dir,{glove:true}); });
+  const lnp=s.ln||{}, throwing=lnp.u!=null&&((lnp.wind||0)>0.15||(lnp.u>0&&lnp.u<0.45));
+  topSpr(c,`tp_${fd}_${throwing?'p2':'p1'}`,HX,HY-MOUND-4,38,Math.PI)||person(c,HX,HY-MOUND-2,COL[fd],1.1,Math.PI,{glove:true});
+  topSpr(c,`tp_${fd}_c`,HX,HY+16,30,0)||person(c,HX,HY+14,COL[fd],1,0,{glove:true});
   // ランナーと打者
-  (s.bs||[]).forEach((on,i)=>{ if(!on) return; const [x,y]=BASES[i]; person(c,x+(i===0?-14:i===2?14:0),y-(i===1?14:6),COL[bt],1.1,0,{helmet:true}); });
-  if(playing&&s.g!=='change') person(c,HX-19,HY-14,COL[bt],1,Math.PI/2,{helmet:true});
+  (s.bs||[]).forEach((on,i)=>{ if(!on) return; const [x,y]=BASES[i], nx=i<2?BASES[i+1]:[HX,HY], dir=Math.atan2(nx[0]-x,-(nx[1]-y)), px=x+(i===0?-14:i===2?14:0), py=y-(i===1?14:6);
+    topSpr(c,`tp_${bt}_run`,px,py,32,dir)||person(c,px,py,COL[bt],1.1,dir,{helmet:true}); });
+  if(playing&&s.g!=='change') topSpr(c,`tp_${bt}_bat`,HX-22,HY-14,30,Math.PI/2)||person(c,HX-19,HY-14,COL[bt],1,Math.PI/2,{helmet:true});
   // 球が止まった面を光らせる
   if(s.hz!=null&&ZONES[s.hz]){ const z=ZONES[s.hz]; zonePath(c,z[1],z[2],z[3],z[4]); c.fillStyle='rgba(255,255,255,.28)'; c.fill(); c.lineWidth=5; c.strokeStyle='#ffd84a'; c.stroke(); }
   // ボール
