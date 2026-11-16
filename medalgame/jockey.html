@@ -85,7 +85,7 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
 .jtop{display:flex;align-items:center;gap:16px;padding:6px 14px;background:#0a1622;font-size:13px;color:var(--soft)}.jtop .hn{font-size:18px;margin:0;color:#fff}.jtop .big{font-family:var(--f-num);font-weight:400;font-size:24px;color:var(--gold)}
 .jscr{position:relative;flex:1 1 52%;min-height:0;background:#2e7d3b;overflow:hidden}
 .form{position:absolute;left:8px;top:8px;display:flex;align-items:center;gap:8px;background:rgba(10,22,34,.86);border-radius:10px;padding:6px 10px}.form small{font-size:10px;color:var(--soft);line-height:1.3}
-.fl{display:flex;gap:4px}.fl span{width:24px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;border-radius:5px;border:1px solid rgba(0,0,0,.5);opacity:.85}
+.form small.hd{font-size:12px;font-weight:800;color:#fff}.fl{display:flex;gap:4px}.fl span{width:24px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;border-radius:5px;border:1px solid rgba(0,0,0,.5);opacity:.85}
 .fl span.z{box-shadow:0 0 0 2px #0a1622,0 0 0 4px #a8e6b6}.fl span.me{outline:3px solid var(--gold);opacity:1;transform:scale(1.15)}
 .hint{position:absolute;left:8px;bottom:8px;background:#fff;color:#1b2430;border-radius:999px;padding:6px 16px;font-weight:800;font-size:15px;max-width:calc(100% - 16px)}
 .mnote{position:absolute;left:50%;top:22%;transform:translateX(-50%);padding:6px 16px;border-radius:10px;font-weight:900;font-size:17px;white-space:nowrap}.mnote.up{background:#1f9d4a}.mnote.dn{background:#c8102e}
@@ -139,7 +139,7 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
    先生のPC:レースの計算・メダルの増減 / iPad:騎手は操作、ほかの人はBETして観戦 */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ
-const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=5;
+const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=6;
 const now=()=>Date.now();
 const LAP=1600, REAL=true, isPhone=()=>false;
 let G=null, csCache={};
@@ -1618,7 +1618,7 @@ function padDyn(){
   $('#jRank').textContent=me&&me[6]?me[6]:rank; $('#jRem').textContent=rem;
   // 隊列(左が先頭)
   const z0=Math.round(sty.z[0]*(N-1)), z1=Math.round(sty.z[1]*(N-1));
-  $('#form').innerHTML=`<small>${sty.n}の<br>得意位置</small><div class="fl">${ord.map((i,k)=>`<span class="${k>=z0&&k<=z1?'z':''} ${i===role?'me':''}" style="background:${wk(hs[i].no)[0]};color:${wk(hs[i].no)[1]}">${hs[i].no}</span>`).join('')}</div><small>← 先頭</small>`;
+  $('#form').innerHTML=`<small class="hd">◀ 先頭</small><div class="fl">${ord.map((i,k)=>`<span class="${k>=z0&&k<=z1?'z':''} ${i===role?'me':''}" style="background:${wk(hs[i].no)[0]};color:${wk(hs[i].no)[1]}">${hs[i].no}</span>`).join('')}</div><small class="hd">後ろ</small><small>緑の枠＝<br>${sty.n}の得意位置</small>`;
   const ln=P.inp.ln!=null?P.inp.ln:me?Math.round(me[1]/100*SIM.LANES):Math.round(role/Math.max(1,N-1)*SIM.LANES), cur=me?me[1]/100*SIM.LANES:ln;
   $('#lcol').innerHTML='<small>内</small>'+Array.from({length:SIM.LANES+1},(_,k)=>`<i class="${k===ln?'t':''} ${Math.abs(k-cur)<0.5?'c':''}"></i>`).join('')+'<small>外</small>';
   if(!me) return;
