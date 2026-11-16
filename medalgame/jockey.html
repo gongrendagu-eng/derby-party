@@ -136,7 +136,7 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
    先生のPC:レースの計算・メダルの増減 / iPad:騎手は操作、ほかの人はBETして観戦 */
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、最後にルーレットパークへ引き継ぐ
-const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=3;
+const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=4;
 const now=()=>Date.now();
 const LAP=1600, REAL=true, isPhone=()=>false;
 let G=null, csCache={};
@@ -1267,7 +1267,7 @@ function closeBet(){
   paint($('#cv'),gateRun());   // コースの形を確定させる(コーナーの判定に使う)
   const D=M.D, sec=D===1200?55:D===2000?85:70;
   M.R=createRace({D,V0:D/(sec-2.5),horses:M.hs,corner:x=>{ try{ const l=segOf(toS(x)); return l==='c12'||l==='c34'; }catch(e){ return false; } }});
-  M.ph='gate'; M.gateAt=now()+5200+Math.random()*2000; M.dl=M.gateAt; say('各馬ゲートに入りました');
+  M.ph='gate'; M.gateAt=now()+6000+Math.random()*1800; M.dl=M.gateAt; say('各馬ゲートに入りました');
   members().forEach(writeMe); setPhase();
 }
 function openGate(){
