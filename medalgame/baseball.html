@@ -480,7 +480,7 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.rando
    ========================================================================= */
 let HOST=null, CTX=null, BB='', HCACHE={dpr:0};
 const CFG_KEY='mg.baseball.cfg';
-const C=Object.assign({mode:'vol',fee:30,inn:3,outs:3,tlim:10,extra:1,magic:2,psec:12,entSec:20,betSec:20,cost:10,auto:false},(()=>{try{return JSON.parse(localStorage.getItem(CFG_KEY))||{}}catch(e){return{}}})());
+const C=Object.assign({bgm:true,mode:'vol',fee:30,inn:3,outs:3,tlim:10,extra:1,magic:2,psec:12,entSec:20,betSec:20,cost:10,auto:false},(()=>{try{return JSON.parse(localStorage.getItem(CFG_KEY))||{}}catch(e){return{}}})());
 const saveCfg=()=>{try{localStorage.setItem(CFG_KEY,JSON.stringify(C))}catch(e){}};
 const M={ph:'lobby',mid:'',pl:{},fee:{},ent:new Set(),bets:{},used:{},side:{},q:{b:[],r:[]},lastB:{},dl:0,msg:'',win:'',res:{},ev:null,evSeq:0,cool:0,busy:false,
   inn:1,half:0,outs:0,str:0,sc:{b:0,r:0},bases:[0,0,0],line:{b:[],r:[]},batter:'',g:'',gdl:0,P:null,ball:null,wind:null,show:null,swAt:0,
@@ -524,7 +524,7 @@ async function hostMain(){
   BB=HOST.P+'/bb';
   await HOST.be.remove(BB).catch(()=>{});
   app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">${NAME}<small>先生のPC</small></div><span class="sp"></span>
-      <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>
+      <button class="btn" id="bgm">♪ BGM</button><span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>
       <button class="btn danger" id="stop">停止する(全員を精算)</button></div>
     <div class="grid"><div class="rink"><canvas id="cv"></canvas></div>
       <div><div class="box" id="ctl"></div>
@@ -542,7 +542,9 @@ async function hostMain(){
     await HOST.stop(); await HOST.be.remove(BB).catch(()=>{}); HOST=null;
     fail('停止しました',`${n}人を精算しました。このタブは閉じてかまいません。`); };
   addEventListener('beforeunload',e=>{ if(HOST&&HOST.seated().length){ e.preventDefault(); e.returnValue=''; } });
-  document.addEventListener('pointerdown',()=>sfx.unlock(),{once:true});
+  document.addEventListener('pointerdown',()=>{ sfx.unlock(); BGM.unlock(); },{once:true});
+  const bgB=$('#bgm'), bgL=()=>{ bgB.textContent=C.bgm?'♪ BGM オン':'♪ BGM オフ'; }; bgL();
+  bgB.onclick=()=>{ C.bgm=!C.bgm; saveCfg(); bgL(); BGM.unlock(); };
   people().forEach(writeMe); stDirty=true;
   try{ const w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),16)'],{type:'text/javascript'}))); w.onmessage=tick; }catch(e){ setInterval(tick,16); }
   const draw=()=>{ if(HOST&&CTX) drawScene(CTX,snap(),hostOverlay(),HCACHE); requestAnimationFrame(draw); }; requestAnimationFrame(draw);
@@ -659,7 +661,7 @@ function assignSides(){
 function closeBet(){ assignSides(); M.ph='ready'; M.dl=now()+3000; people().forEach(writeMe); setPhase(); }
 function startPlay(){ M.ph='play'; resetGame(); M.tStart=now(); M.line={b:[0],r:[]}; newAtBat(); setPhase(); }
 function toLobby(msg){ M.ph='lobby'; M.msg=msg||''; M.pl={}; M.fee={}; M.bets={}; M.ent=new Set(); M.side={}; resetGame(); people().forEach(writeMe); setPhase(); }
-function setPhase(){ stDirty=panelDirty=true; cfgRender(); }
+function setPhase(){ stDirty=panelDirty=true; cfgRender(); BGM.update(); }
 function cancelMatch(msg){
   const inv=[...Object.values(M.pl),...Object.keys(M.bets)];
   M.tLeft=M.tStart&&M.ph==='play'?tLeftSec():null;
@@ -939,6 +941,15 @@ function hostOverlay(){
   return o;
 }
 
+/* ---------- BGM(先生のPCだけ。試合中=bgm_play、結果=bgm_result) ---------- */
+const BGM=(()=>{ const tr={}, vol={play:.45,result:.5}; let cur='', unlocked=false;
+  const get=n=>{ if(!tr[n]){ const a=new Audio('bb-assets/bgm_'+n+'.mp3'); a.loop=true; a.preload='auto'; a.volume=vol[n]; tr[n]=a; } return tr[n]; };
+  const want=()=>!C.bgm?'':['entry','bet','ready','play'].includes(M.ph)?'play':M.ph==='result'?'result':'';
+  return { unlock(){ unlocked=true; this.update(); },
+    update(){ if(!unlocked) return; const w=want(); if(w===cur) return;
+      if(cur&&tr[cur]){ tr[cur].pause(); if(cur==='result') tr[cur].currentTime=0; }
+      cur=w; if(w){ const a=get(w); if(w==='result') a.currentTime=0; a.play().catch(()=>{}); } } };
+})();
 /* ---------- 効果音(先生のPCだけ) ---------- */
 const sfx=(()=>{ let ac=null;
   const tone=(f,d,type,vol,slide)=>{ if(!ac) return; const t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
