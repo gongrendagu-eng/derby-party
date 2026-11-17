@@ -280,7 +280,7 @@ const DLS=(()=>{
     const a1=spawn('wl_ghost',{x:-50,y:G+8,h:Math.round(H*.32),z:3,fly:1,face:1}), a2=spawn('wl_mimic',{x:-110,h:Math.round(H*.3),z:3,face:1});
     run(a1,Math.round(W*.5),700,6); run(a2,Math.round(W*.6),760);
     await wait(500*k); if(!live(t)) return;
-    pose('wl_dragon_win'); heroJump(34,560); sparks(hero._x,H*.4,22,['#ffe27a','#fff6c0'],150);
+    heroJump(34,560); sparks(hero._x,H*.4,22,['#ffe27a','#fff6c0'],150);
     const e=egg=spawn('wl_egg',{x:Math.round(W*.5),y:Math.round(H*.44),h:Math.round(H*.26),z:8,fly:1});
     an(e,[{transform:tf(e._x,e._y+60,.4),opacity:0},{transform:tf(e._x,e._y,1.1),opacity:1,offset:.6},{transform:tf(e._x,e._y)}],{duration:520}); bob(e.firstChild,5,.5);
     banner('CHANCE!!',{size:44,dur:1300}); await wait(800*k); }
@@ -307,7 +307,7 @@ const DLS=(()=>{
     banner(`FREE SPIN ${d.fsAdd||''}回!`,{size:40,dur:1600,rb:true}); await wait(1500); }
   async function result(d,tier,B){ if(!ok||!root) return; const t=tok;
     if(d.fsStart){ await hatch(t,d); return settle(t); }
-    if((d.pay||0)>0){ const r=(d.pay||0)/(B||1); pose('wl_dragon_win'); heroJump(30,520); sparks(hero._x,H*.5,12+Math.min(30,Math.round(r*3)),['#ffe27a','#fff'],140); if(r>=3) coins(Math.min(60,10+Math.round(r*4)));
+    if((d.pay||0)>0){ const r=(d.pay||0)/(B||1); if(r>=10) pose('wl_dragon_win'); heroJump(30,520); /* たまごが割れる勝ちポーズは BIG WIN だけ */ sparks(hero._x,H*.5,12+Math.min(30,Math.round(r*3)),['#ffe27a','#fff'],140); if(r>=3) coins(Math.min(60,10+Math.round(r*4)));
       if(boss){ const b=boss; boss=null; flashing(.5,260,'#fff'); sparks(b._x,H*.45,18,['#fff','#ffd84d'],170); an(b,[{transform:tf(b._x,b._y),opacity:1},{transform:tf(b._x+60,b._y+H*.9,.5,480),opacity:0}],{duration:650,easing:'ease-in'}); }
       await wait(900); }
     else if(boss&&tier>=2){ const b=boss; boss=null; an(b,[{transform:tf(b._x,b._y)},{transform:tf(W+160,b._y)}],{duration:700,easing:'ease-in'}); mark(hero,'…'); slide(hero,D,300); await wait(700); }
