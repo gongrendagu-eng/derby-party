@@ -73,7 +73,8 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .qtext{background:var(--panel);border-radius:16px;padding:22px 28px;font-size:clamp(1.8rem,3.4vw,3.2rem);line-height:1.5;font-weight:900;min-height:3.4em;display:flex;align-items:center}
 .qtext.idle{font-size:clamp(1.1rem,1.8vw,1.6rem);color:var(--soft);font-weight:700}
 .answer{display:flex;align-items:center;gap:18px;border:3px solid var(--maru);border-radius:14px;padding:10px 24px}
-.answer span{color:var(--maru);font-size:1.3rem;white-space:nowrap}
+.answer span{color:var(--maru);font-size:1.3rem;white-space:nowrap;text-align:center;line-height:1.2}
+.answer small{font-size:.65em;color:var(--soft)}
 .answer b{font-size:clamp(1.6rem,3vw,2.7rem);line-height:1.3}
 /* 解答者のランプ */
 .lamp{border-radius:16px;padding:14px 26px;display:flex;align-items:center;gap:22px;min-height:96px;border:3px dashed var(--line);color:var(--soft);font-size:1.3rem}
@@ -239,6 +240,9 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
 .s-join label{font-size:1rem;color:var(--soft)}
 .s-join input{font-size:1.5rem;text-align:center}
 .s-join .btn{font-size:1.3rem;padding:14px}
+.flist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px}
+.flist li{background:var(--panel);border:2px solid var(--maru);border-radius:12px;padding:8px 14px;display:flex;flex-direction:column}
+.flist b{font-size:1.5rem}.flist span{color:var(--soft);font-size:.95rem}
 .msg{background:var(--panel2);border-radius:10px;padding:10px 14px;color:var(--ink)!important}
 
 @media (max-width:900px){
@@ -277,7 +281,7 @@ textarea{resize:vertical;line-height:1.7;font-weight:500}
   </div>
 </section>
 
-<!-- 先生の画面(プロジェクター) -->
+<!-- 先生の管理画面(先生の手元。プロジェクターには映さない) -->
 <section id="host" class="host" hidden>
   <header class="bar">
     <h1 class="logo">早押しクイズ</h1>
@@ -714,6 +718,9 @@ const rid=n=>Array.from({length:n},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.
 const normName=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,'');
 const tname=i=>(i>=0&&i<26?String.fromCharCode(65+i):String(i+1))+'班';
 const MODE_NAME={buzz:'早押し',all:'全員回答'};
+// 「答え;別解;別解」→ 表示用(1つ目)と別解
+const ansParts=a=>String(a||'').split(/[;；]/).map(x=>x.trim()).filter(Boolean);
+const ansMain=a=>ansParts(a)[0]||'';
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function show(id){ ['landing','login','host','stu'].forEach(k=>$('#'+k).hidden=k!==id); }
 let toastT=null;
@@ -932,7 +939,7 @@ function pushState(){
   const f=H.fin;
   const st={epoch:H.epoch,game:H.game,qn:H.qn,no:H.pos+1,total:H.deck.length,plan:Math.min(+H.set.n||0,QL.length),
     smode:H.set.mode, mode:H.phase==='idle'?(H.set.mode==='random'?'':H.set.mode):H.mode,
-    phase:H.phase, q:H.phase==='idle'?'':q.q, a:H.showAns?(q.a||''):'', rev:!!H.showAns,
+    phase:H.phase, q:H.phase==='idle'?'':q.q, a:H.showAns?ansMain(q.a):'', rev:!!H.showAns,
     ans:H.ans||'', right:H.right||'', wrong:H.wrong, order:order().map(o=>o.pid), mark:H.mark, kicked:H.kicked,
     tn:H.set.teamN, tm:H.set.method, teams, lb:H.set.label||'掃除当番',
     fin:f?{view:f.view,ids:f.pend?[]:f.ids,pend:!!f.pend}:null};
@@ -1110,7 +1117,7 @@ function renderHost(){
     else if(last&&done) B.push(['final','結果発表へ','Enter','go',true]);
     else B.push(['next2','次の問題を出す','Enter','go',done]);
     if(H.mode==='buzz'){ const can=H.phase==='open'&&!!H.ans; B.push(['ok','○ 正解','O','ok',can],['ng','× 不正解','X','ng',can]); }
-    B.push(['reveal',H.showAns?'答えを隠す':'答えを出す','A','',H.phase!=='idle']);
+    B.push(['reveal',H.showAns?'答えを隠す':'答えを学生に見せる','A','',H.phase!=='idle']);
     B.push(['next','次の問題','→','',!last]);
     B.push(['|']);
     B.push(['ext1','＋1問','','sm',true],['ext5','＋5問','','sm',true]);
@@ -1133,9 +1140,9 @@ function renderPlay(ids){
   $('#hPhase').textContent={idle:'出題前',open:H.mode==='buzz'?'早押し受付中':'回答受付中',done:'この問題は終わりました',closed:'締め切りました'}[H.phase];
   const qt=$('#hQ');
   qt.classList.toggle('idle',H.phase==='idle');
-  qt.innerHTML=H.phase==='idle'?'Enterキー(または「出題する」)で問題を出します'+(!H.mode?'。早押しか全員回答かは、出題したときにランダムで決まります':''):esc(q?q.q:'');
-  $('#hA').hidden=!H.showAns||!q;
-  if(q) $('#hA').innerHTML=`<span>答え</span><b>${esc(q.a||'(答えが入っていません)')}</b>`;
+  qt.innerHTML=H.phase==='idle'?`<span><small style="display:block;font-size:.8em;color:var(--soft)">次の問題(まだ学生には見えていません)。Enterキーか「出題する」で出題${!H.mode?'。早押しか全員回答かは出題したときにランダムで決まります':''}</small>${esc(q?q.q:'')}</span>`:esc(q?q.q:'');
+  $('#hA').hidden=!q;
+  if(q) $('#hA').innerHTML=`<span>答え<br><small>${H.showAns?'学生に公開中':'先生だけに表示'}</small></span><b>${esc(ansMain(q.a)||'(答えが入っていません)')}${ansParts(q.a).length>1?`<small style="display:block;font-size:.45em;color:var(--soft);font-weight:700">別解:${esc(ansParts(q.a).slice(1).join('、'))}</small>`:''}</b>`;
   const lamp=$('#hLamp'), list=$('#hList');
   if(H.mode==='buzz'){
     const o=order(), t0=o.length?o[0].t:0;
@@ -1332,6 +1339,8 @@ function onState(){
   const ep=SS.getItem(sk('ep'));
   if(ep&&+ep!==st.epoch){ SS.removeItem(sk('name')); SS.removeItem(sk('ep')); if(P.joined) leave('新しいクラスが始まりました。名前を入れてください。'); }
   if(!P.joined&&!P.tried){ P.tried=true; const n=SS.getItem(sk('name')); if(n) join(n,true); }
+  if(P.lastQn!==undefined&&st.qn!==P.lastQn&&st.phase==='open'&&st.mode&&st.smode==='random') stuAnnounce(st.mode);
+  P.lastQn=st.qn;
   const ak=st.qn+'/'+P.pid;
   if(ak!==P.ansKey){ P.ansKey=ak; if(P.unAns) P.unAns();
     const qn=st.qn; P.unAns=be.on(`${P.base}/answers/${qn}/${P.pid}`,v=>{ P.myAns[qn]=v&&v.text||''; renderStu(); }); }
@@ -1375,6 +1384,11 @@ function myTeam(){
   t=(t===undefined||t===null)?-1:+t;
   return Number.isInteger(t)&&t>=0&&t<st.tn?t:-1;
 }
+let sAnnT=null;
+function stuAnnounce(m){
+  const a=$('#hAnnounce'); a.innerHTML=`<div class="${m}">${MODE_NAME[m]}!</div>`; a.hidden=false;
+  clearTimeout(sAnnT); sAnnT=setTimeout(()=>a.hidden=true,1300);
+}
 function canBuzz(){ const st=P.st; return !!st&&P.joined&&(st.game||'play')==='play'&&st.mode==='buzz'&&st.phase==='open'&&!P.pressed[st.qn]&&!(st.order||[]).includes(P.pid); }
 function buzz(){
   if(!canBuzz()) return;
@@ -1414,7 +1428,7 @@ function joinHtml(){
     <p class="err">${esc(P.ferr)}</p>
     <button class="btn main" data-sact="join" ${P.busy?'disabled':''}>${P.renaming?'この名前に変える':'参加する'}</button>
     ${P.renaming?'<button class="btn" data-sact="cancel">やめる</button>':''}
-    <p>名前は先生の画面(プロジェクター)に表示されます。本名や学籍番号は入れないでください。</p>
+    <p>名前は先生の画面に表示されます。本名や学籍番号は入れないでください。</p>
   </div></div>`;
 }
 const pickerHtml=(tn,tm)=>`<div class="tpick">${Array.from({length:tn},(_,i)=>`<button class="${tm===i?'on':''}" data-sact="team" data-t="${i}">${tname(i)}</button>`).join('')}</div>`;
@@ -1464,12 +1478,15 @@ function titleHtml(tn,tm){
 }
 function finalHtml(tm){
   const st=P.st, f=st.fin, lb=esc(st.lb||'掃除当番');
-  if(!f) return `<div class="s-body"><p class="s-big">結果発表!</p><p class="s-sub">プロジェクターを見てね</p></div>`;
-  if(f.pend) return `<div class="s-body"><p class="s-big">同点のため<br>抽選中…</p><p class="s-sub">プロジェクターを見てね</p></div>`;
+  if(!f) return `<div class="s-body"><p class="s-big">結果発表!</p><p class="s-sub">先生が発表するのを待っています…</p></div>`;
+  if(f.pend) return `<div class="s-body"><p class="s-big">同点のため<br>抽選中…</p><p class="s-sub">ドキドキ…</p></div>`;
   const ids=(f.ids||[]).map(String);
   const hit=f.view==='p'?ids.includes(P.pid):(tm>=0&&ids.includes(String(tm)));
   if(hit) return `<div class="s-body hit"><div class="mk">🧹</div><p class="s-big">${f.view==='t'?`${tname(tm)}は`:'あなたは'}<br>${lb}です!</p><p class="s-sub">${f.view==='p'?'個人戦':'グループ戦'}の結果</p></div>`;
-  return `<div class="s-body"><p class="s-big">${f.view==='p'?'個人戦':'グループ戦'}の結果発表</p><p class="s-sub">${lb}はプロジェクターに出ている${f.view==='p'?'人':'チーム'}です</p></div>`;
+  const pn=p=>(P.players[p]&&P.players[p].name)||'(退室した人)';
+  const list=f.view==='p'?ids.map(p=>`<li><b>${esc(pn(p))}</b></li>`).join('')
+    :ids.map(t=>{ const mem=Object.keys(P.players).filter(p=>String((st.teams||{})[p]??(P.players[p]||{}).team)===t).map(pn); return `<li><b>${tname(+t)}</b><span>${mem.map(esc).join('、')}</span></li>`; }).join('');
+  return `<div class="s-body"><div class="mk" style="font-size:4rem">🎉</div><p class="s-big">セーフ!</p><p class="s-sub">${f.view==='p'?'個人戦':'グループ戦'}の${lb}は…</p><ul class="flist">${list}</ul></div>`;
 }
 // 早押しは指が触れた瞬間に送る(click より速い)
 $('#stu').addEventListener('pointerdown',e=>{ if(e.target.closest('[data-sact="buzz"]')){ e.preventDefault(); buzz(); } });
