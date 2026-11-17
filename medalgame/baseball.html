@@ -114,6 +114,9 @@ body.pad{background:linear-gradient(180deg,#dff3e6,#cfeadb 60%,#c2e2cf)}
 .magic:disabled{opacity:.4}
 .batbox{background:#0e2238;border-radius:24px;padding:10px;user-select:none;-webkit-user-select:none}
 .batbox canvas{width:auto;max-width:100%;max-height:54vh;margin:0 auto;touch-action:none}
+.zone{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:min(60vw,240px);margin:6px auto 10px;padding:8px;background:#0e2238;border-radius:16px}
+.zone button{aspect-ratio:1;border:3px solid rgba(255,255,255,.35);border-radius:8px;background:rgba(255,255,255,.08)}
+.zone button.on{border-color:var(--gold);background:#ffd84a}
 .swing{display:block;width:100%;margin-top:10px;border:0;border-radius:22px;padding:16px;font-family:var(--f-num);font-size:34px;color:#fff;background:linear-gradient(#ff7a59,#e63946);box-shadow:inset 0 -6px 0 rgba(0,0,0,.2);touch-action:none}
 .swing:active{transform:translateY(3px)}
 .teamtag{display:inline-block;border-radius:999px;padding:2px 12px;color:#fff;font-weight:800}
@@ -166,6 +169,10 @@ const BASES=[pol(45,BASE),pol(0,BASE*Math.SQRT2),pol(-45,BASE)];   // 1塁・2�
 /* ---------- 投球 ---------- */
 const PITCH={st:{n:'ストレート',dm:1,wm:1,cv:0},cv:{n:'カーブ',dm:1.12,wm:.9,cv:1},sh:{n:'シュート',dm:1.02,wm:.9,cv:-1},ch:{n:'チェンジアップ',dm:1.3,wm:.95,cv:0,slow:1}};
 const SPD={1:{n:'遅い',d:1150,w:1.15},2:{n:'ふつう',d:900,w:1},3:{n:'速い',d:700,w:.85}};
+// コース:ストライクゾーンは3×3のマス(1マス=1の単位)。マスの中心は x=-1,0,1(左・中・右)、y=-1,0,1(上・中・下)
+const COURSE_N=['左上','上','右上','左','まん中','右','左下','下','右下'];
+const DRIFT={1:0,2:0.12,3:0.26};   // 速い球ほど、ねらった場所からずれる(マスの単位)
+const RC0=1.0;                       // バットの円がボールにとどく距離(マスの単位)
 const WIN0=115;          // バットに当たるタイミングの幅(±ミリ秒)の基本
 const LEAD=900;          // 投球モーションの長さ(ミリ秒)
 // 投げてから t ミリ秒のときの進み具合(0=投手の手、1=ホーム)
@@ -199,11 +206,13 @@ function ballStep(b,dt,wind){
   return '';
 }
 // タイミングのずれ d(ミリ秒、マイナス=早い)から打球を作る。null=当たらない
-function makeHit(d,P,pw){
+// dist:バットの円とボールの中心のはなれ具合(マスの単位。null=位置は問わない)
+function makeHit(d,P,pw,dist){
   const W=P.win; if(d==null||Math.abs(d)>W) return null;
-  const q=1-Math.abs(d)/W;
+  const RC=P.rc||RC0; if(dist!=null&&dist>RC) return null;               // 円がボールに届かない:空振り
+  const qt=1-Math.abs(d)/W, qp=dist==null?1:1-dist/RC, q=0.6*qt+0.4*qp;  // タイミング6割・位置4割
   if(q<0.22&&Math.random()<0.5) return {foul:1};                          // バットのはし:ファウル
-  const ang=(d/W)*42+(Math.random()-.5)*14;                             // 早い=左(三塁側)、遅い=右(一塁側)
+  const ang=-(d/W)*42+(Math.random()-.5)*14;                            // 左打ち:早い=右(一塁側)、遅い=左(三塁側)
   if(Math.abs(ang)>45) return {foul:1};
   const power=Math.min(1.15,(0.35+0.65*Math.pow(q,0.8))*(0.85+0.3*Math.random())*(1+0.06*(P.spd-2))*(pw?1.2:1));
   const v0=PHY.va+PHY.vb*power;
@@ -335,11 +344,11 @@ function drawField(c){
   c.fillStyle='#ffd84a'; c.font=FONT(800,12); c.fillText('フェンスに強く当たってもHR',22,150);
 }
 // ===== 選手の絵(bb-assets/。読み込めないときは図形で描く) =====
-// tp_:真上から(グラウンド用、下向きに描いてある)、fp_:投手の正面(1構え 2足を上げる 3投げる 4投げ終わり)、bk_:打者の後ろ姿(1構え 2テイクバック 3ミート 4振り抜き)、bc_:捕手の後ろ姿、bu:審判の後ろ姿
+// tp_:真上から(グラウンド用、下向きに描いてある)、fp_:投手の正面(1構え 2足を上げる 3投げる 4投げ終わり)、bk_:打者(左打ち・球審の側から見た横向き。1構え 2テイクバック 3ミート 4振り抜き)
 const IMG={};
 (function loadImgs(){
-  const ns=['bu','tu'];
-  ['b','r'].forEach(t=>{ ['p1','p2','bat','c','f','run'].forEach(n=>ns.push(`tp_${t}_${n}`)); [1,2,3,4].forEach(i=>{ ns.push(`fp_${t}_${i}`); ns.push(`bk_${t}_${i}`); }); ns.push('bc_'+t); });
+  const ns=['tu'];
+  ['b','r'].forEach(t=>{ ['p1','p2','bat','c','f','run'].forEach(n=>ns.push(`tp_${t}_${n}`)); [1,2,3,4].forEach(i=>{ ns.push(`fp_${t}_${i}`); ns.push(`bk_${t}_${i}`); }); });
   ns.forEach(n=>{ const im=new Image(); im.src='bb-assets/'+n+'.webp'; IMG[n]=im; });
 })();
 const imOk=n=>{ const im=IMG[n]; return !!(im&&im.complete&&im.naturalWidth); };
@@ -395,23 +404,31 @@ function drawLane(c,x,y,w,h,L){
   c.save(); rr(c,x,y,w,h,14); c.clip();
   const bg=laneBg(w,h); c.drawImage(bg.cv,x,y,w,h);
   const cx=x+w/2, S=w/220, pc=L.pc||'r', bc=L.bc||'b';
+  // ストライクゾーン(3×3)。1マスの大きさ=cell。まん中が(cx,zy)
+  const cell=h*0.073, zy=y+h*0.72, zx0=cx-cell*1.5, zy0=zy-cell*1.5;
+  c.fillStyle='rgba(255,255,255,.10)'; c.fillRect(zx0,zy0,cell*3,cell*3);
+  c.strokeStyle='rgba(255,255,255,.55)'; c.lineWidth=Math.max(1,S*0.9);
+  c.strokeRect(zx0,zy0,cell*3,cell*3); c.beginPath();
+  for(let i=1;i<3;i++){ c.moveTo(zx0+cell*i,zy0); c.lineTo(zx0+cell*i,zy0+cell*3); c.moveTo(zx0,zy0+cell*i); c.lineTo(zx0+cell*3,zy0+cell*i); } c.stroke();
   // 投手
   const pf=pitcherFrame(L), ph=h*(pf===4?0.22:0.26);
   if(!standSpr(c,`fp_${pc}_${pf}`,cx,y+h*0.385,ph)){ c.fillStyle=COL[pc]; c.beginPath(); c.ellipse(cx,y+h*0.3,10*S,16*S,0,0,7); c.fill(); }
-  // ボール(奥から手前へ大きくなる)と地面の影
-  if(L.u!=null&&L.u<1.3){
-    const u=L.u, k=Math.min(u,1.3), sx=cx+6*S, sy=y+h*0.27, ex=cx, ey=y+h*0.7;
-    const bx=sx+(ex-sx)*k+(L.cv||0)*20*S*k*k, by=sy+(ey-sy)*k, r=(2+7*k*k)*S, gy=y+h*(0.385+(0.86-0.385)*k);
+  // ボール(奥から手前へ大きくなり、ねらったマスにとどく)と地面の影
+  if(L.u!=null&&L.u<1.04){
+    const k=Math.max(0,Math.min(L.u,1.04)), sx=cx+6*S, sy=y+h*0.27, ex=cx+(L.bx||0)*cell, ey=zy+(L.by||0)*cell, rEnd=cell*0.45;
+    const bx=sx+(ex-sx)*k+(L.cv||0)*cell*1.6*Math.sin(Math.PI*Math.min(k,1)), by=sy+(ey-sy)*k, r=1.6*S+(rEnd-1.6*S)*k*k, gy=y+h*(0.385+(0.86-0.385)*k);
     if(L.v){ c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bx,gy,r*1.1,r*.35,0,0,7); c.fill(); ballDraw(c,bx,by,r); }
     else if(L.mag){ c.fillStyle='#e0aaff'; c.textAlign='center'; c.textBaseline='middle'; c.font=FONT(800,15*S); c.lineWidth=4*S; c.strokeStyle='rgba(60,9,108,.8)'; c.strokeText('消える魔球!',cx,y+h*0.52); c.fillText('消える魔球!',cx,y+h*0.52); }
   }
-  // 捕手と審判(後ろ姿)
-  if(!standSpr(c,`bc_${pc}`,cx+2*S,y+h*1.0,h*0.2)){ c.fillStyle=COL[pc]; c.beginPath(); c.ellipse(cx,y+h*0.93,14*S,10*S,0,0,7); c.fill(); }
-  standSpr(c,'bu',cx+w*0.3,y+h*1.08,h*0.3,false);
-  // 打者(後ろ姿、ホームの左)。バットを大きくするアイテム中は少し大きく
-  const bf=batterFrame(L), bh=h*0.5*(L.big?1.12:1);
-  if(!standSpr(c,`bk_${bc}_${bf}`,cx-w*0.24,y+h*0.99,bh)){ c.fillStyle=COL[bc]; c.beginPath(); c.ellipse(cx-w*0.24,y+h*0.8,16*S,30*S,0,0,7); c.fill(); }
-  if(L.big){ c.fillStyle='#ffd84a'; c.font=FONT(800,11*S); c.textAlign='center'; c.textBaseline='middle'; c.fillText('BIG',cx-w*0.24,y+h*0.47); }
+  // 打者(左打ちなのでホームの右。後ろ姿ではなく、球審から見た横向き)。バットを大きくするアイテム中は少し大きく
+  const bf=batterFrame(L), bh=h*0.5*(L.big?1.12:1), bxx=cx+h*0.25;
+  if(!standSpr(c,`bk_${bc}_${bf}`,bxx,y+h*0.99,bh)){ c.fillStyle=COL[bc]; c.beginPath(); c.ellipse(bxx,y+h*0.8,16*S,30*S,0,0,7); c.fill(); }
+  if(L.big){ c.fillStyle='#ffd84a'; c.font=FONT(800,11*S); c.textAlign='center'; c.textBaseline='middle'; c.fillText('BIG',bxx,y+h*0.47); }
+  // 打者のバットの円(打者のiPadだけ)
+  if(L.cur){ const px=cx+L.cur.x*cell, py=zy+L.cur.y*cell, rr0=cell*0.62*(L.big?1.3:1);
+    c.fillStyle='rgba(255,216,74,.20)'; c.beginPath(); c.arc(px,py,rr0,0,7); c.fill();
+    c.strokeStyle='#ffd84a'; c.lineWidth=Math.max(2,S*1.4); c.stroke();
+    c.beginPath(); c.moveTo(px-rr0*0.35,py); c.lineTo(px+rr0*0.35,py); c.moveTo(px,py-rr0*0.35); c.lineTo(px,py+rr0*0.35); c.stroke(); }
   if(L.txt){ const bh2=Math.round(Math.min(44,12*S+14)); c.fillStyle='rgba(20,33,58,.82)'; rr(c,x+8,y+h-bh2-8,w-16,bh2,10); c.fill();
     c.fillStyle=L.txtc||'#ffd84a'; c.textAlign='center'; c.textBaseline='middle'; c.font=FONT(800,Math.min(26,10*S)); c.fillText(L.txt,cx,y+h-8-bh2/2); }
   c.restore();
@@ -427,7 +444,7 @@ function drawDyn(c,s,o){
   // ランナーと打者
   (s.bs||[]).forEach((on,i)=>{ if(!on) return; const [x,y]=BASES[i], nx=i<2?BASES[i+1]:[HX,HY], dir=Math.atan2(nx[0]-x,-(nx[1]-y)), px=x+(i===0?-14:i===2?14:0), py=y-(i===1?14:6);
     topSpr(c,`tp_${bt}_run`,px,py,32,dir)||person(c,px,py,COL[bt],1.1,dir,{helmet:true}); });
-  if(playing&&s.g!=='change') topSpr(c,`tp_${bt}_bat`,HX-22,HY-14,30,Math.PI/2)||person(c,HX-19,HY-14,COL[bt],1,Math.PI/2,{helmet:true});
+  if(playing&&s.g!=='change') topSpr(c,`tp_${bt}_bat`,HX+22,HY-14,30,-Math.PI/2)||person(c,HX+19,HY-14,COL[bt],1,-Math.PI/2,{helmet:true});   // 左打ちなので右のバッターボックス
   // 球が止まった面を光らせる
   if(s.hz!=null&&ZONES[s.hz]){ const z=ZONES[s.hz]; zonePath(c,z[1],z[2],z[3],z[4]); c.fillStyle='rgba(255,255,255,.28)'; c.fill(); c.lineWidth=5; c.strokeStyle='#ffd84a'; c.stroke(); }
   // ボール
@@ -768,13 +785,16 @@ function newAtBat(){
   writeMe(M.pl[fd()]); stDirty=panelDirty=true;
 }
 function waitPitch(){ M.g='wait'; M.gdl=now()+C.psec*1000; M.P=null; M.ball=null; M.show=null; writeMe(M.batter); writeMe(M.pl[fd()]); stDirty=true; }
-function doPitch(k,spd,mag){
-  if(!PITCH[k]) k='st'; spd=SPD[spd]?+spd:2;
+function doPitch(k,spd,mag,cell){
+  if(!PITCH[k]) k='st'; spd=SPD[spd]?+spd:2; cell=(cell>=0&&cell<=8)?Math.floor(cell):4;
   const t=fd(); if(mag&&M.mag[t]>0) M.mag[t]--; else mag=false;
   const pk=PITCH[k], sp=SPD[spd];
   const dur=Math.round(sp.d*pk.dm*(fx('sp')?0.82:1));
   const win=Math.round(WIN0*sp.w*pk.wm*(mag?0.6:1)*(fx('b'+bt())?1.45:1));
-  M.P={id:now().toString(36)+Math.floor(Math.random()*1e4),k,spd,mag:mag?1:0,cv:pk.cv,slow:pk.slow?1:0,dur,win,t0:now()+LEAD+150,got:false,sw:undefined,hit:0};
+  const big=fx('b'+bt()), rc=Math.round(RC0*(big?1.3:1)*(mag?0.8:1)*100)/100;
+  const dr=DRIFT[spd]*Math.sqrt(Math.random()), da=Math.random()*Math.PI*2;                       // ねらいのずれ
+  const bx=Math.round(((cell%3-1)+dr*Math.cos(da))*100)/100, by=Math.round((((cell/3)|0)-1+dr*Math.sin(da))*100)/100;
+  M.P={id:now().toString(36)+Math.floor(Math.random()*1e4),k,spd,mag:mag?1:0,cv:pk.cv,slow:pk.slow?1:0,dur,win,rc,cell,bx,by,t0:now()+LEAD+150,got:false,sw:undefined,cx:null,cy:null,hit:0};
   M.g='pitch'; M.swAt=0;
   writeMe(M.batter); writeMe(M.pl[t]); stDirty=panelDirty=true;
   if(mag) notice('消える魔球!');
@@ -782,7 +802,8 @@ function doPitch(k,spd,mag){
 function resolveSwing(){
   const P=M.P, d=P.sw;
   if(d!=null){ M.swAt=now(); sfx.swing(); }
-  const h=makeHit(d,P,fx('p'+bt()));
+  const dist=(d!=null&&P.cx!=null)?Math.hypot(P.cx-P.bx,P.cy-P.by):null;
+  const h=makeHit(d,P,fx('p'+bt()),dist);
   if(d==null) return strike('見逃し');
   if(!h) return strike('空振り');
   sfx.bat();
@@ -883,12 +904,13 @@ async function padReq(sid,r){
     if(M.ph!=='play'||M.g!=='wait') return {ok:false,msg:'いまは投げられません'};
     if(pt!==fd()) return {ok:false,msg:'いまはあなたの投球ではありません'};
     if(r.mag&&M.mag[pt]<=0) return {ok:false,msg:'魔球はもう使えません'};
-    doPitch(String(r.k||'st'),+r.spd||2,!!r.mag); return {ok:true,msg:'投げた!'};
+    doPitch(String(r.k||'st'),+r.spd||2,!!r.mag,r.c==null?4:+r.c); return {ok:true,msg:'投げた!'};
   }
   if(t==='g:swing'){
     const P=M.P;
     if(!P||M.g!=='pitch'||r.pid!==P.id||sid!==M.batter||P.got) return {ok:false,msg:''};
     P.got=true; P.sw=r.d==null?null:Math.max(-5000,Math.min(5000,Math.round(+r.d||0)));
+    if(r.d!=null&&r.cx!=null&&isFinite(+r.cx)&&isFinite(+r.cy)){ P.cx=Math.max(-4,Math.min(4,+r.cx)); P.cy=Math.max(-4,Math.min(4,+r.cy)); }
     return {ok:true};
   }
   if(t==='g:item'){
@@ -912,7 +934,7 @@ function notice(text,pt){ M.evSeq++; M.ev={s:M.evSeq,t:text,p:pt==null?text:pt,u
 function writeMe(sid){
   if(!HOST||!sid) return; const a=HOST.acc()[sid]; if(!a||!a.vk) return;
   const pt=pitcherTeam(sid), play=M.ph==='play', bat=play&&sid===M.batter&&['wait','pitch','show','ball'].includes(M.g);
-  const P=M.P, pitch=bat&&P&&M.g==='pitch'?{id:P.id,k:P.k,spd:P.spd,mag:P.mag,cv:P.cv,slow:P.slow,dur:P.dur,win:P.win,big:fx('b'+bt())?1:0}:null;
+  const P=M.P, pitch=bat&&P&&M.g==='pitch'?{id:P.id,k:P.k,spd:P.spd,mag:P.mag,cv:P.cv,slow:P.slow,dur:P.dur,win:P.win,rc:P.rc,bx:P.bx,by:P.by,big:fx('b'+bt())?1:0}:null;
   HOST.be.set(BB+'/me/'+a.vk,{mid:M.mid,role:pt,side:M.side[sid]||'',bat:bat?bt():'',pitch,
     turn:play&&pt&&pt===fd()&&M.g==='wait'?1:0,gdl:play&&M.g==='wait'?Math.max(0,M.gdl-now()):0,mag:pt?M.mag[pt]||0:0,
     ent:M.ent.has(sid),bet:M.bets[sid]||null,used:M.used[sid]||0,rsv:reserved(sid),res:M.res[sid]||null,b:CLEAN?(CB[sid]||0):null,t:now()}).catch(()=>{});
@@ -945,7 +967,7 @@ function snap(net){
     const sw=M.swAt?Math.min(1,(t-M.swAt)/280):0, big=fx('b'+bt())?1:0;
     if(M.g==='pitch'&&P&&!P.hit){
       const el=t-P.t0, u=pitchU(P,el), v=pitchVis(P,u);
-      s.ln={id:P.id,u:R(u*1000)/1000,cv:P.cv,v:v?1:0,mag:P.mag,sw,big,wind:el<0?Math.max(0,1+el/LEAD):0};
+      s.ln={id:P.id,u:R(u*1000)/1000,cv:P.cv,v:v?1:0,mag:P.mag,sw,big,bx:P.bx,by:P.by,wind:el<0?Math.max(0,1+el/LEAD):0};
       s.pk=`${PITCH[P.k].n}・${SPD[P.spd].n}`;
       if(u<1.25&&v) s.q=[R(HX+P.cv*8*u*u),R(HY-MOUND+(MOUND-14)*u)];
     }else if(M.g==='wait'||M.g==='show'||M.g==='ball'){
@@ -1007,7 +1029,7 @@ const sfx=(()=>{ let ac=null;
 let PAD=null, PCTX=null, PCACHE=null, BCTX=null;
 const PAD_DPR=1;
 const G={view:undefined,live:true,games:{},st:null,stAt:0,me:{},buf:[],off:null,side:'b',bet:10,busy:false,lastEv:0,ev:null,here:null,
-  pk:'st',pv:2,pm:false,pitch:null,lastPid:'',swAt:0,fb:null};
+  pk:'st',pv:2,pm:false,pc:4,pitch:null,lastPid:'',swAt:0,fb:null,cur:{x:0,y:0}};
 async function padMain(){
   document.body.className='pad'; document.documentElement.classList.add('padmode');
   document.querySelector('meta[name=viewport]').content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
@@ -1047,7 +1069,7 @@ const leftP=()=>G.st?Math.max(0,Math.ceil(G.st.left-(now()-G.stAt)/1000)):0;
 function gotMe(){
   const me=meNow(), p=me.pitch;
   if(p&&p.id!==G.lastPid){ G.lastPid=p.id; G.pitch=Object.assign({},p,{ls:pnow()+LEAD,done:false}); G.swAt=0; G.fb=null; }
-  if(!me.bat){ G.pitch=null; }
+  if(!me.bat){ G.pitch=null; G.cur={x:0,y:0}; }
 }
 function swing(){
   const P=G.pitch; if(!P||P.done) return;
@@ -1056,9 +1078,9 @@ function swing(){
   const d=Math.round(t-(P.ls+P.dur)); sendSwing(P,d);
 }
 function sendSwing(P,d){
-  const W=P.win, a=d==null?null:Math.abs(d);
-  G.fb=d==null?['見逃し…','#fff']:a<=W*0.25?['ジャスト!','#ffd84a']:a<=W?[d<0?'少し早い':'少し遅い','#8be9a8']:[d<0?'早すぎ!':'遅すぎ!','#ff9b9b'];
-  PAD.req('g:swing',{pid:P.id,d},GID).catch(()=>{});
+  const W=P.win, a=d==null?null:Math.abs(d), cx=G.cur.x, cy=G.cur.y, dist=Math.hypot(cx-(P.bx||0),cy-(P.by||0)), far=d!=null&&dist>(P.rc||1);
+  G.fb=d==null?['見逃し…','#fff']:far?['バットがずれた!','#ff9b9b']:a<=W*0.25?['ジャスト!','#ffd84a']:a<=W?[d>0?'少し遅い':'少し早い','#8be9a8']:[d<0?'早すぎ!':'遅すぎ!','#ff9b9b'];
+  PAD.req('g:swing',d==null?{pid:P.id,d}:{pid:P.id,d,cx:Math.round(cx*100)/100,cy:Math.round(cy*100)/100},GID).catch(()=>{});
 }
 function batTick(){
   const P=G.pitch; if(!P||P.done) return;
@@ -1067,7 +1089,7 @@ function batTick(){
 function drawBat(){
   const c=BCTX, W=600, H=520, P=G.pitch, t=pnow(), me=meNow(), b=me.bat||'b';
   const last=G.buf.length?G.buf[G.buf.length-1]:null;
-  const L={pc:other(b),bc:b,u:null,sw:G.swAt&&t-G.swAt<900?Math.min(1,(t-G.swAt)/280):0,big:P?P.big:0};
+  const L={pc:other(b),bc:b,u:null,sw:G.swAt&&t-G.swAt<900?Math.min(1,(t-G.swAt)/280):0,big:P?P.big:0,cur:G.cur,bx:P?P.bx:0,by:P?P.by:0};
   if(P){ const el=t-P.ls, u=pitchU(P,el); L.u=u; L.cv=P.cv; L.v=pitchVis(P,u); L.mag=P.mag; L.wind=el<0?Math.max(0,1+el/LEAD):0;
     if(el<0&&!P.done){ L.txt='かまえて…'; L.txtc='#fff'; } }
   if(G.fb&&(!P||P.done)){ L.txt=G.fb[0]; L.txtc=G.fb[1]; }
@@ -1130,7 +1152,7 @@ function padRender(){
       <div class="pc" id="batw" hidden><div class="phase" id="batTtl">あなたの打席!</div>
         <div class="batbox"><canvas id="bcv"></canvas></div>
         <button class="swing" id="swing">振る!</button>
-        <p class="note center">投手が投げたら、ボールがホームに来るタイミングで「振る!」(画面のどこをさわってもOK)。早いと左(三塁側)、遅いと右(一塁側)に飛びます。</p></div>
+        <p class="note center">黄色い円を<b>ドラッグ</b>して、ボールが来る場所に合わせます(球が飛んでいる間も動かせます)。ボールが手前に来るタイミングで「振る!」。円とボールがずれると空振り。左打ちなので、早いと右(一塁側)、遅いと左(三塁側)に飛びます。</p></div>
       <div class="pc" id="fieldw"><div class="cv"><canvas id="pcv"></canvas></div></div>
       <div class="pc" id="act"></div>
       <div class="center" style="margin-top:12px"><a href="${esc(top)}" class="pbtn" style="font-size:14px">トップへ${CLEAN?'':'(メダルは預けたまま)'}</a></div>
@@ -1138,7 +1160,15 @@ function padRender(){
     PCTX=setupCanvas($('#pcv'),CW,CH,PAD_DPR); PCACHE={dpr:PAD_DPR};
     const bcv=$('#bcv'); setupCanvas(bcv,600,520,Math.min(2,window.devicePixelRatio||1)); G.bctx=bcv.getContext('2d');
     const hit=e=>{ e.preventDefault(); swing(); };
-    bcv.addEventListener('pointerdown',hit); $('#swing').addEventListener('pointerdown',hit);
+    $('#swing').addEventListener('pointerdown',hit);
+    // 円のドラッグ(指でかくれないように、動かした分だけ円が動く)。1マス=画面の cell ぶん
+    let drag=null;
+    bcv.addEventListener('pointerdown',e=>{ e.preventDefault(); drag={id:e.pointerId,x:e.clientX,y:e.clientY}; try{ bcv.setPointerCapture(e.pointerId); }catch(_){} });
+    bcv.addEventListener('pointermove',e=>{ if(!drag||drag.id!==e.pointerId) return; e.preventDefault();
+      const rc=bcv.getBoundingClientRect(), k=(600/rc.width)/(520*0.073);   // 画面の動き → マスの単位
+      G.cur={x:Math.max(-2.6,Math.min(2.6,G.cur.x+(e.clientX-drag.x)*k)),y:Math.max(-2.6,Math.min(2.6,G.cur.y+(e.clientY-drag.y)*k))}; drag.x=e.clientX; drag.y=e.clientY; });
+    const up=e=>{ if(drag&&drag.id===e.pointerId) drag=null; };
+    bcv.addEventListener('pointerup',up); bcv.addEventListener('pointercancel',up);
     $('#batw').addEventListener('touchstart',e=>{ if(e.target.closest('.batbox,.swing')) e.preventDefault(); },{passive:false});
     if(!CLEAN){ $('#tAdd').onclick=()=>amtModal('add'); $('#tBack').onclick=()=>amtModal('back');
     $('#tQuit').onclick=async()=>{ if(!confirm(`やめますか?\n${yen(seatA())}枚を貯金にもどします。${meNow().rsv?'\n(試合が終わってから、自動で貯金にもどします)':''}`)) return;
@@ -1160,7 +1190,7 @@ function actRender(){
   const st=G.st||{}, me=meNow(), left=leftP(), ph=st.ph||'lobby', av=availP(), pool=st.pool||{}, tot=st.tot||0, np=st.np||{};
   const od=t=>pool[t]?'×'+(tot/pool[t]).toFixed(2):'—';
   const gl=me.turn?Math.max(0,Math.ceil(((me.gdl||0)-(now()-(me.t||now())))/1000)):0;
-  const key=JSON.stringify([ph,st.g,st.bt,me,st.ent,pool,st.win,st.busy,av,G.side,G.bet,G.busy,st.mid,G.pk,G.pv,G.pm,gl]);
+  const key=JSON.stringify([ph,st.g,st.bt,me,st.ent,pool,st.win,st.busy,av,G.side,G.bet,G.busy,st.mid,G.pk,G.pv,G.pm,G.pc,gl]);
   if(box.dataset.k===key){ const l=$('#left'); if(l) l.textContent=left; return; }
   const keepFocus=document.activeElement&&document.activeElement.id==='bIn';
   box.dataset.k=key;
@@ -1179,9 +1209,11 @@ function actRender(){
       h=`<div class="phase" style="color:${COL[t]}">投げる番です!(あと${gl}秒)</div>
         <div class="kinds">${Object.entries(PITCH).map(([k,p])=>`<button data-k="${k}" class="${G.pk===k?'on':''}">${p.n}</button>`).join('')}</div>
         <div class="spds">${Object.entries(SPD).map(([k,p])=>`<button data-v="${k}" class="${G.pv==k?'on':''}">${p.n}</button>`).join('')}</div>
+        <div class="phase" style="font-size:16px;margin-top:6px">コース <small style="font-size:13px;font-family:var(--f-body)">${COURSE_N[G.pc]}</small></div>
+        <div class="zone">${COURSE_N.map((n,i)=>`<button data-c="${i}" class="${G.pc===i?'on':''}" aria-label="${n}"></button>`).join('')}</div>
         <button class="magic ${G.pm&&me.mag>0?'on':''}" id="mag" ${me.mag>0?'':'disabled'}>🌀 消える魔球(のこり${me.mag}回)${G.pm&&me.mag>0?' ・ 使う':''}</button>
         <div class="center"><button class="pbtn go" id="throw" style="font-size:24px;padding:16px 60px" ${G.busy?'disabled':''}>投げる!</button></div>
-        <p class="note center">速い球ほど打たれにくいけど、当たると遠くへ飛びます。チェンジアップは途中から遅くなります。時間切れはふつうのストレート。</p><p class="perr" id="err"></p>`;
+        <p class="note center">コースは9マスから選びます。速い球ほど打たれにくいけど、ねらった場所からずれやすく、当たると遠くへ飛びます。チェンジアップは途中から遅くなります。時間切れは まん中のふつうのストレート。</p><p class="perr" id="err"></p>`;
     }else{
       h=`<div class="phase" style="color:${COL[t]}">あなたは ${TEAM[t]}の投手!</div>
         <p class="note center">${ph==='play'?(st.bt===t?`いまは${TEAM[t]}の攻撃中。相手の攻撃になったら、ここで球種を選んで投げます。`:'打者の結果を待っています…'):`${TEAM[other(t)]}の攻撃のときに投げます。${TEAM[t]}が勝つと参戦料 ${st.fee*2}枚 がもらえます。`}</p>
@@ -1216,9 +1248,10 @@ function actRender(){
   on('[data-b]',x=>{ G.bet=+x.dataset.b; actRender(); });
   on('[data-k]',x=>{ G.pk=x.dataset.k; actRender(); });
   on('[data-v]',x=>{ G.pv=+x.dataset.v; actRender(); });
+  on('[data-c]',x=>{ G.pc=+x.dataset.c; actRender(); });
   on('#mag',()=>{ G.pm=!G.pm; actRender(); });
   on('#throw',async()=>{ if(G.busy) return; G.busy=true; actRender(); const mag=G.pm&&(meNow().mag||0)>0;
-    const r=await PAD.req('g:pitch',{k:G.pk,spd:G.pv,mag},GID); G.busy=false; if(r.ok&&mag) G.pm=false; actRender(); if(!r.ok){ const e=$('#err'); if(e) e.textContent=r.msg; } });
+    const r=await PAD.req('g:pitch',{k:G.pk,spd:G.pv,mag,c:G.pc},GID); G.busy=false; if(r.ok&&mag) G.pm=false; actRender(); if(!r.ok){ const e=$('#err'); if(e) e.textContent=r.msg; } });
   const bi=$('#bIn'); if(bi){ bi.oninput=e=>{ G.bet=Math.floor(+e.target.value||0); const g=$('#betGo'); if(g) g.disabled=G.busy||G.bet<1||G.bet>availP(); }; if(keepFocus) bi.focus(); }
   on('#betGo',async()=>{ if(G.busy) return; G.busy=true; actRender(); const r=await PAD.req('g:bet',{s:G.side,amt:G.bet},GID); G.busy=false; actRender(); if(r.ok) toast(r.msg); else { const e=$('#err'); if(e) e.textContent=r.msg; } });
   on('[data-it]',async x=>{ if(G.busy) return; G.busy=true; actRender(); const r=await PAD.req('g:item',{k:x.dataset.it},GID); G.busy=false; actRender(); if(r.ok) toast(r.msg); else { const e=$('#err'); if(e) e.textContent=r.msg; } });
