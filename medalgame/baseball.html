@@ -133,7 +133,7 @@ body.pad{background:linear-gradient(180deg,#dff3e6,#cfeadb 60%,#c2e2cf)}
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 // モード:フリーモード(貯金のメダルを持ち込む)/掃除モード(?clean=ID。掃除決めのメダルで遊び、次のゲームへ引き継ぐか、最後なら掃除当番を決める)
 const CLEAN=MG.qs.get('clean')||'';
-const GID=CLEAN?'bbclean':'baseball', NAME=CLEAN?'野球盤(掃除決め)':'野球盤';
+const GID=CLEAN?'bbclean_'+CLEAN:'baseball', NAME=CLEAN?'野球盤(掃除決め)':'野球盤';
 let CI=null, SESS=null, CB={};   // 掃除モード:ゲームの順番、掃除決めのデータ、その日だけのメダル
 let toastT=null; function toast(m){ if(!m) return; const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
 const now=()=>Date.now();
@@ -532,7 +532,7 @@ async function addBal(sid,d){
 }
 function saveCB(){ if(HOST&&CLEAN) HOST.clean.update(CLEAN,{ah:{b:CB,t:now()}}).catch(e=>console.warn(e)); }
 
-if(MG.qs.get('mg')) padMain(); else hostMain();
+if(MG.qs.get('mg')&&MG.qs.get('view')) viewMain(); else if(MG.qs.get('mg')) padMain(); else hostMain();
 
 async function hostMain(){
   document.body.className='host';
@@ -557,7 +557,7 @@ async function hostMain(){
         async onReq(sid,r){ return padReq(sid,r); }
       }});
   }catch(e){ return fail('つながりませんでした',esc(e.message)); }
-  BB=HOST.P+'/bb'+(CLEAN?'c':'');
+  BB=HOST.P+'/bb'+(CLEAN?'c/'+CLEAN:'');
   await HOST.be.remove(BB).catch(()=>{});
   if(CLEAN){ HOST.clean.update(CLEAN,{st:'playing',ah:{b:CB,t:now()}}).catch(()=>{});
     let seen=false;   // 読み込み前の空のデータで止まらないように、一度見えてから判断する
@@ -1024,6 +1024,36 @@ const sfx=(()=>{ let ac=null;
 })();
 
 /* =========================================================================
+   観戦専用(別の教室のプロジェクター用。?mg=公開の鍵&view=1。ログインなし・操作なし)
+   ========================================================================= */
+async function viewMain(){
+  document.body.className='view';
+  const st0=document.createElement('style'); st0.textContent='body.view{margin:0;background:#0b1220;overflow:hidden}body.view canvas{width:100vw;height:100vh;object-fit:contain}'; document.head.appendChild(st0);
+  app.innerHTML='<canvas id="vcv"></canvas>';
+  let V=null; try{ V=await MG.startViewer(); }catch(e){}
+  if(!V){ app.innerHTML='<p style="color:#fff;padding:30px;font-size:20px">観戦画面を開けません(URLに ?mg=… が必要です)</p>'; return; }
+  const BBp=V.P+'/bb'+(CLEAN?'c/'+CLEAN:'');
+  const ctx=setupCanvas($('#vcv'),CW,CH), cache={dpr:Math.min(2,window.devicePixelRatio||1)};
+  V.onGames(g=>{ G.games=g||{}; G.live=!!G.games[GID]; });
+  V.be.on(BBp+'/st',v=>{ G.st=v; G.stAt=now(); });
+  V.be.on(BBp+'/f',v=>{ if(!v) return; const t=now(), o=t-v.t; G.off=G.off==null||o<G.off?o:G.off+(o-G.off)*0.002;
+    G.buf.push(v); if(G.buf.length>30) G.buf.shift();
+    if(v.e&&v.e[0]!==G.lastEv){ G.lastEv=v.e[0]; G.ev={t:v.e[1],until:t+2600}; } });
+  const overlay=()=>{
+    const st=G.st||{}, o={names:{b:'青(先攻)',r:'赤(後攻)'}}, left=leftP(), pool=st.pool||{};
+    if(!G.live){ o.big=NAME.replace('(掃除決め)',''); o.sub='ゲームが始まるまで待っています'; }
+    else if(st.ph==='lobby'||!st.ph){ o.big=NAME.replace('(掃除決め)',''); o.sub=st.msg||'まもなく始まります'; }
+    else if(st.ph==='entry'){ o.big=`立候補 ${left}`; o.sub=`投手の立候補・いま${st.ent||0}人`; }
+    else if(st.ph==='bet'){ o.big=`BET ${left}`; o.sub=`青 ${yen(pool.b||0)}枚 / 赤 ${yen(pool.r||0)}枚`; }
+    else if(st.ph==='ready'){ o.big=String(left||'プレイボール!'); o.sub=`青(先攻)${st.nb||0}人 ・ 赤(後攻)${st.nr||0}人`; }
+    else if(st.ph==='play'&&st.g==='change'){ o.big='攻守交代'; }
+    else if(st.ph==='result'){ o.big=st.win?`${TEAM[st.win]}の勝ち!`:'試合終了'; o.bigc=st.win?COL[st.win]:'#14213a'; }
+    if(G.ev&&G.ev.until>now()) o.ev=G.ev.t;
+    return o; };
+  const loop=()=>{ requestAnimationFrame(loop); drawScene(ctx,interp(),overlay(),cache); };
+  requestAnimationFrame(loop);
+}
+/* =========================================================================
    iPad
    ========================================================================= */
 let PAD=null, PCTX=null, PCACHE=null, BCTX=null;
@@ -1036,7 +1066,7 @@ async function padMain(){
   app.innerHTML='<div class="pwrap"><div class="pc">接続しています…</div></div>';
   try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pwrap"><div class="pc">つながりません:${esc(e.message)}</div></div>`; return; }
   if(!PAD.vk()){ location.href=PAD.indexUrl(); return; }
-  const BBp=PAD.P+'/bb'+(CLEAN?'c':''), vk=PAD.vk(); G.BBp=BBp;
+  const BBp=PAD.P+'/bb'+(CLEAN?'c/'+CLEAN:''), vk=PAD.vk(); G.BBp=BBp;
   PAD.onView(v=>{ if(!v){ location.href=PAD.indexUrl(); return; } G.view=v; herePresence(); padRender(); });
   PAD.onGames(g=>{ G.games=g||{}; G.live=!!G.games[GID]; herePresence(); padRender(); });
   PAD.be.on(BBp+'/st',v=>{ G.st=v; G.stAt=now(); padRender(); });

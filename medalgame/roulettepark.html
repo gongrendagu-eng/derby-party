@@ -2356,7 +2356,7 @@ async function mgHostOpen(cfg,sv){
     H.cfg.games=sess.games;H.cfg.clean=sess.clean;H.cfg.mode='solo';H.sess=sess;
   }
   const clean=cfg.mg==='clean';
-  MGH=await MG.startHost({gid:clean?MG_GID_CL:MG_GID_RP,name:clean?'ルーレットパーク（掃除決め）':'ルーレットパーク',art:'roulette',url:joinUrl(),
+  MGH=await MG.startHost({gid:clean?MG_GID_CL+'_'+cfg.cs:MG_GID_RP,name:clean?'ルーレットパーク（掃除決め）':'ルーレットパーク',art:'roulette',url:joinUrl(),
     info:clean?{clean:cfg.cs}:{},hooks:clean?{}:RP_HOOKS});
   await new Promise(ok=>{let off=null;off=MGH.onAcc(()=>{ok();setTimeout(()=>{if(off)off()},0)})});
   const acc=MGH.acc();
@@ -2548,6 +2548,7 @@ async function padInit(){
   $('pad').hidden=false;
   requestAnimationFrame(seaLoop);
   if(!ROOM){renderCodeEntry();return}
+  if(params.get('view'))return viewInit();
   if(MGQ)return mgPadInit();
   const me=loadMe();P.pid=me&&me.pid||newId(10);P.name=me&&me.name||'';
   $('pBody').innerHTML='<div class="pmsg"><h2>接続しています…</h2></div>';
@@ -3306,6 +3307,42 @@ function padWheel(){
   }else if(!spin&&st.spinning&&st.ball&&st.ball!==PW.evBall&&!ready){ready=true;readyAt=performance.now();rest=null;hi=-1}
 }
 
+/* =========================================================
+   観戦専用(別の教室のプロジェクター用。?room=…&view=1。ログインなし・操作なし)
+   ========================================================= */
+const VIEW_PH={lobby:'参加を受け付けています',bet:'BET受付中',dbl:'ダブルアップ！',draw:'抽選中！',result:'ゲームの結果',reveal:'結果発表',end:'最終結果',sd_pick:'サドンデス',sd_spin:'サドンデス',gsd_pick:'サドンデス',gsd_spin:'サドンデス',closed:'ゲームは終了しました'};
+async function viewInit(){
+  document.body.classList.add('rview');
+  const sy=document.createElement('style');
+  sy.textContent='.rview .pbar .who,.rview #pBalBox,.rview #pMgBtn{display:none}.rview .pwsq{width:min(46vw,64vh,640px)}.rview #pBody{width:min(1500px,96%)}.rview .vrow{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}.rview .vlist{columns:3 280px;column-gap:22px;font-weight:800;font-size:24px;line-height:1.9;margin:0;padding:0;list-style:none}.rview .vlist li{display:flex;justify-content:space-between;gap:10px;break-inside:avoid;border-bottom:2px dashed rgba(0,0,0,.15)}.rview .vlist li.cl{color:#c8102e}.rview .vtitle{font-size:44px;margin:0 0 8px}';
+  document.head.appendChild(sy);
+  $('pad').hidden=false;
+  requestAnimationFrame(seaLoop);
+  if(!ROOM){$('pBody').innerHTML='<div class="pmsg panel"><h2>観戦画面を開けません</h2><p class="hint">URLに room=… が必要です。</p></div>';return}
+  $('pBody').innerHTML='<div class="pmsg"><h2>接続しています…</h2></div>';
+  try{P.net=await connectNet(LOCAL?'local':'firebase',ROOM)}
+  catch(e){$('pBody').innerHTML=`<div class="pmsg panel"><h2>接続できませんでした</h2><p class="err">${esc(e.message||e)}</p></div>`;return}
+  if(P.net.offset)P.net.offset(v=>{P.off=v});
+  P.net.on('state',st=>{P.st=st;viewRender()});
+  setInterval(()=>{if(P.st&&['bet'].includes(P.st.phase))viewRender()},500);
+}
+function viewRender(){
+  const st=P.st;
+  padWheel();
+  if(!st){setBody('wait','<div class="pmsg panel"><h2>先生のPCを待っています…</h2></div>');return}
+  const ros=Object.entries(st.roster||{}).filter(([k,r])=>r&&!r.gone).map(([k,r])=>({k,n:r.n,b:r.b}));
+  ros.sort((a,b)=>b.b-a.b||String(a.n).localeCompare(String(b.n),'ja'));
+  const R=st.rev||{},shown=new Set(R.shown||[]),ph=st.phase;
+  const free=st.mg&&st.mg.m==='free';
+  let title=VIEW_PH[ph]||'';
+  if(st.gno&&['bet','dbl','draw','result'].includes(ph))title+=free?`(第${st.gno}ゲーム)`:`(第${st.gno}ゲーム／全${st.cfg.games})`;
+  if(ph==='bet'&&st.betLeft>=0)title+=` 残り${st.betLeft}秒`;
+  if(ph==='lobby'&&st.names&&!ros.length)title+='';
+  const list=ros.length?`<ul class="vlist">${ros.map((r,i)=>`<li class="${shown.has(r.k)?'cl':''}"><span>${i+1}. ${esc(r.n)}${shown.has(r.k)?' 🧹':''}</span><b>${r.b}枚</b></li>`).join('')}</ul>`:'<p class="hint">参加者を待っています…</p>';
+  const need=ph==='reveal'||ph==='end'?`<p class="hint">掃除当番 ${shown.size}／${R.need||st.cfg.clean}人</p>`:'';
+  const key='v:'+ph+':'+title+':'+JSON.stringify(ros.map(r=>[r.k,r.b]))+':'+shown.size;
+  setBody(key,`<div class="panel"><h2 class="vtitle">${esc(title)}</h2>${need}${list}</div>`);
+}
 /* =========================================================
    iPad:メダルゲームから入ったとき(?mg=公開の鍵)
    ========================================================= */
