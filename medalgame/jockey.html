@@ -140,7 +140,7 @@ table.card tr.on td{background:#22405c}table.card .nm{font-weight:800}table.card
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const CLEAN=MG.qs.get('clean')||'';   // 掃除モード(?clean=ID):掃除決めのメダルで遊び、次のゲームへ引き継ぐ(最後のゲームなら掃除当番を決める)
 let CI=null;   // 掃除決めのゲームの順番(MG.cleanInfo)
-const GID=CLEAN?'jkclean':'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=6;
+const GID=CLEAN?'jkclean_'+CLEAN:'jockey', NAME=CLEAN?'ジョッキーダービー(掃除決め)':'ジョッキーダービー', VERSION=6;
 const now=()=>Date.now();
 const LAP=1600, REAL=true, isPhone=()=>false;
 let G=null, csCache={};
@@ -1173,7 +1173,7 @@ async function hostMain(){
       async onReq(sid,r){ return padReq(sid,r); }
     }});
   }catch(e){ return fail('つながりませんでした',esc(e.message)); }
-  JD=HOST.P+'/jd'+(CLEAN?'c':'');
+  JD=HOST.P+'/jd'+(CLEAN?'c/'+CLEAN:'');
   await HOST.be.remove(JD).catch(()=>{});
   if(CLEAN){ HOST.clean.update(CLEAN,{st:'playing',ah:{b:CB,t:now()}}).catch(()=>{});
     let seen=false;
@@ -1417,7 +1417,7 @@ async function padMain(){
   app.innerHTML='<div class="pwrap"><div class="pc">接続しています…</div></div>';
   try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pwrap"><div class="pc">つながりません:${esc(e.message)}</div></div>`; return; }
   if(!PAD||!PAD.vk()){ location.href=PAD?PAD.indexUrl():'index.html'; return; }
-  const J=PAD.P+'/jd'+(CLEAN?'c':''), vk=PAD.vk(); P.J=J;
+  const J=PAD.P+'/jd'+(CLEAN?'c/'+CLEAN:''), vk=PAD.vk(); P.J=J;
   const clock=t=>{ const o=now()-t; P.off=P.off==null||o<P.off?o:P.off+(o-P.off)*0.002; };
   PAD.onView(v=>{ if(!v){ location.href=PAD.indexUrl(); return; } P.view=v; herePresence(); padRender(); });
   PAD.onGames(g=>{ P.games=g||{}; P.live=!!(g||{})[GID]; herePresence(); padRender(); });

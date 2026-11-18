@@ -382,6 +382,13 @@ async function startPad(){
   presOn();
   return pad;
 }
+// 観戦専用(別の教室のプロジェクター用)。ログインなし・書きこみなし。公開の鍵(?mg=)だけで読む
+async function startViewer(){
+  const pub=(qs.get('mg')||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(!pub) return null;
+  const be=await connect(), P='mg/p_'+pub;
+  return {be,P,pub,onGames:f=>be.on(P+'/games',v=>f(v||{})),onConn:f=>be.connected(f),indexUrl:()=>indexUrl(pub)};
+}
 // 掃除決めの一覧(ゲームの設定画面用。ホストを立てずに読む)
 async function cleanList(){ const be=await connect(), k=keys.get(); if(!k) throw new Error('NOKEY'); return (await be.get('mg/s_'+k.secret+'/clean'))||{}; }
 
@@ -442,6 +449,6 @@ function cleanResultHtml(acc,m,cl,gname){
     <p><a class="btn pri" href="${esc(indexUrl())}" target="_blank" rel="noopener">管理画面を開く</a></p></div></div>`;
 }
 
-window.MG={VER,get LOCAL(){return LOCAL},setLocal(v){ if(!!v!==LOCAL){ LOCAL=!!v; bePromise=null; } },connect,cleanList,keys,startHost,startPad,normSid,yen,esc,rid,indexUrl,qs,
+window.MG={VER,get LOCAL(){return LOCAL},setLocal(v){ if(!!v!==LOCAL){ LOCAL=!!v; bePromise=null; } },connect,cleanList,keys,startHost,startPad,startViewer,normSid,yen,esc,rid,indexUrl,qs,
   CLEAN_GAMES,cleanSeq,cleanStage,cleanUrl,cleanLabel,cleanInfo,cleanNext,cleanFinish,cleanGo,cleanResultHtml};
 })();

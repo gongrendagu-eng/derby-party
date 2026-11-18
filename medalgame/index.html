@@ -423,7 +423,7 @@ function renderGames(b){
   const li=sid=>{ const a=acc[sid]; return `<li><span>${esc(a.n)}</span><small style="color:var(--soft)">${esc(sid)}・${esc(a.c||'')}</small>${a.seat.leave?'<span class="where lv">精算待ち</span>':''}<span class="bank">${yen(a.seat.a)}</span><button class="btn sm danger" data-settle="${esc(sid)}">精算</button></li>`; };
   const stopped=Object.keys(by).filter(k=>!g[k]);
   b.innerHTML=`<div class="grid2">${ids.length?ids.map(id=>{ const list=by[id]||[]; const sum=list.reduce((s,x)=>s+(acc[x].seat.a||0),0);
-      return `<div class="gcard"><h3>${art(g[id].art)}${esc(g[id].n)}<span class="sp"></span><span class="chip"><i class="dot"></i>稼働中</span></h3>
+      return `<div class="gcard"><h3>${art(g[id].art)}${esc(g[id].n)}<span class="sp"></span><span class="chip"><i class="dot"></i>稼働中</span>${VIEW_ART.includes(g[id].art)&&!g[id].clean?`<a class="btn sm" href="${esc(viewUrl({game:id}))}" target="_blank" rel="noopener" title="別の教室のプロジェクター用">観戦画面</a>`:''}</h3>
         <p class="note">遊んでいる人 ${list.length}人 ・ 持ち込み中 ${yen(sum)}枚</p><ul>${list.map(li).join('')||'<li style="color:var(--soft)">まだ誰もいません</li>'}</ul></div>`; }).join('')
       :`<div class="box"><h2>いま動いているゲームはありません</h2><p class="note">下の「稼働する」を押すと、このPCの新しいタブでゲームが始まり、iPadのゲーム一覧に出ます。<b>そのタブは閉じずに置いておいてください</b>(閉じると停止します)。</p></div>`}
     ${idle.map(x=>`<div class="gcard" style="border-style:dashed;opacity:.95"><h3>${art(x.art)}${esc(x.n)}<span class="sp"></span><span class="chip off"><i class="dot"></i>停止中</span></h3>
@@ -488,6 +488,9 @@ const CL_ST={ready:'準備OK',playing:'進行中',done:'結果が出ました',b
 const CLG=MG.CLEAN_GAMES;
 const clStage=c=>({n:CLG[MG.cleanSeq(c)[MG.cleanStage(c)]].n});
 const cleanGameUrl=c=>MG.cleanUrl(c);
+// 別の教室のプロジェクター用の観戦画面(操作はできない)
+const VIEW_ART=['roulette','hockey','foos','baseball'];
+const viewUrl=p=>{ const u=new URL('view.html',location.href); u.searchParams.set('mg',HOST.pub); Object.keys(p||{}).forEach(k=>u.searchParams.set(k,p[k])); if(MG.LOCAL) u.searchParams.set('local','1'); return u.href; };
 const clActive=()=>Object.values(HOST.clean.all()).filter(c=>['ready','playing','done','banking'].includes(c.st)).sort((a,b)=>b.at-a.at);
 // 小テストの点数:1行に「学籍番号(または名前) 点数」
 function parseScores(t){
@@ -518,6 +521,7 @@ function renderClean(b){
     return `<div class="ses"><b>${esc(MG.cleanLabel(c))}</b><span>${esc(c.cls||'')} ・ ${n}人 ・ ${MG.cleanSeq(c).includes('roulettepark')?`ルーレット${c.games}ゲーム ・ `:''}掃除 ${c.clean}人${c.room?` ・ ルーム ${esc(c.room)}`:''}</span>
       <span class="st ${c.st==='done'?'done':c.st==='ready'?'ready':''}">${CL_ST[c.st]||c.st}</span><span class="sp"></span>
       ${c.st==='ready'||c.st==='playing'?`<a class="btn pri" href="${esc(cleanGameUrl(c))}" target="_blank" rel="noopener">${esc(clStage(c).n)}を開く</a>`:''}
+      ${c.st==='ready'||c.st==='playing'?`<a class="btn" href="${esc(viewUrl({clean:c.id}))}" target="_blank" rel="noopener" title="別の教室のプロジェクター用。このURLを別のPCで開く">観戦画面</a>`:''}
       ${c.res?`<button class="btn gold" data-cv="${esc(c.id)}">結果と貯金</button>`:''}
       ${c.st!=='banking'?`<button class="btn sm danger" data-cx="${esc(c.id)}">中止</button>`:''}</div>`; }).join('');
   b.innerHTML=`${ses}<div class="cl-wrap">
