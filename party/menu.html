@@ -106,6 +106,10 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-ro
 .kcards span:nth-child(3){background:#050820;border:2px solid #3ee6ff;color:#3ee6ff;font:clamp(16px,1.9vw,30px)/1 "DotGothic16",monospace;transform:rotate(8deg)}
 
 /* 早押しクイズ:クイズ番組のスタジオ */
+.escape{background:#1a1424;color:#e8dcc8}
+.escape .art{background:radial-gradient(ellipse at 50% 100%,#3a2a55 0,#120c1c 70%);font-size:clamp(40px,6vw,84px)}
+.escape h2{font-family:var(--f-disp)}
+.escape .tag{background:#e8c36a;color:#2a1f00}
 .buzz{background:#eef2ff;color:#15245a}
 .buzz .art{background:radial-gradient(ellipse at 50% 110%,#2f4cb8 0,#15245a 60%,#0f1a44 100%)}
 .buzz h2{font-family:var(--f-disp)}
@@ -166,6 +170,11 @@ footer{padding:0 4vw 2.4vh 180px;color:var(--soft);font-size:clamp(12px,1.05vw,1
     <div class="art" aria-hidden="true"><div class="bz">押せ!</div></div>
     <div class="txt"><h2>早押しクイズ</h2><p>問題を出して、最初に押した人が解答。全員回答モードもあり。</p><span class="tag">iPadで早押し</span></div>
     <span class="key">7</span>
+  </a>
+  <a class="g escape" href="../escape/index.html?host" data-k="8">
+    <div class="art" aria-hidden="true">🚪</div>
+    <div class="txt"><h2>謎解き脱出ゲーム</h2><p>夜の校舎に閉じ込められた班が、謎を解いて玄関を目指す。最後に残った班が掃除当番。</p><span class="tag">iPadで脱出</span></div>
+    <span class="key">8</span>
   </a>
 </main>
 
