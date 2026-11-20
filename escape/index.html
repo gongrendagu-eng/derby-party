@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>夜の校舎から脱出せよ</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#05070b;color:#d8dde8;font-family:-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:#1b2030;border:1px solid #3a4260;border-radius:12px;padding:12px 18px;font-size:17px;cursor:pointer}
+button:active{transform:scale(.97)}
+button.pri{background:#7a5a14;border-color:#e8c36a;color:#ffeab8}
+button.ghost{background:transparent;border-color:#2c3347;color:#9aa3b5;font-size:14px;padding:8px 12px}
+input{font:inherit;font-size:19px;background:#0e121b;color:#fff;border:1px solid #3a4260;border-radius:12px;padding:12px 14px;min-width:0;-webkit-user-select:text;user-select:text}
+.bad{color:#ff8a8a}.good{color:#8fe3b0}
+#game{position:relative;width:100%;height:100dvh;overflow:hidden}
+#cvwrap{position:absolute;inset:0;transform-origin:50% 55%;transition:transform .85s ease-in,opacity .85s ease-in}
+#cvwrap.mv-front{transform:scale(2.3);opacity:0}
+#cvwrap.mv-right{transform-origin:92% 55%;transform:scale(2.3);opacity:0}
+#cvwrap.mv-left{transform-origin:8% 55%;transform:scale(2.3);opacity:0}
+#cvwrap.mv-back{transform:scale(.8);opacity:0}
+#cvwrap.noanim{transition:none}
+#cvwrap.fadein{animation:fi .8s ease-out}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+#cv{width:100%;height:100%;display:block;touch-action:manipulation}
+#hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;font-size:15px;text-shadow:0 1px 4px #000}
+#hud button{pointer-events:auto;font-size:13px;padding:6px 10px;background:rgba(10,12,20,.6)}
+#hudTime{font-size:22px;font-weight:500;font-variant-numeric:tabular-nums;margin-right:10px}
+#sub{position:absolute;left:50%;top:24%;transform:translateX(-50%);max-width:86%;text-align:center;font-size:19px;line-height:1.6;color:#f0e6c8;text-shadow:0 2px 8px #000,0 0 18px #000;opacity:0;transition:opacity .6s;pointer-events:none}
+#sub.on{opacity:1}
+#doors{position:absolute;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.dbtn{background:rgba(20,16,10,.85);border-color:#e8c36a;color:#ffeab8;min-width:130px;font-size:18px;padding:14px 20px}
+#panel{position:absolute;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:820px;margin:0 auto;max-height:62%;overflow:auto;background:rgba(8,10,16,.9);border:1px solid #2c3347;border-radius:16px;padding:16px 18px}
+#panel.shake{animation:sh .35s}
+@keyframes sh{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.ptitle{font-size:14px;color:#e8c36a;margin-bottom:6px}
+.pbody{font-size:19px;line-height:1.75;margin-bottom:12px}
+.prow{display:flex;gap:10px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.prow input{flex:1;min-width:150px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.opt{font-size:19px}
+.hint{font-size:15px;color:#cdb98a;margin-top:8px;min-height:1em}
+#pmsg{margin-top:8px;font-size:16px;min-height:1.2em}
+#screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,3,8,.55);padding:16px}
+#screen[hidden]{display:none}
+.card{background:rgba(10,12,20,.92);border:1px solid #2c3347;border-radius:18px;padding:26px 30px;text-align:center;max-width:560px;width:100%}
+.card h1{font-size:28px;font-weight:500;color:#e8c36a;margin:0 0 14px}
+.card p{font-size:17px;line-height:1.7;margin:10px 0}
+.card .sm{font-size:14px;color:#9aa3b5}
+.big{font-size:56px;font-weight:500;color:#ffe9b0;font-variant-numeric:tabular-nums}
+.card.intro{text-align:left;max-width:680px;max-height:90dvh;overflow:auto}
+.card.intro h1{text-align:center}
+.card.intro .pg{font-size:13px;color:#7f89a8;text-align:center}
+.itext p,.itext li{font-size:17px;line-height:1.85;margin:8px 0}
+.itext ul,.itext ol{padding-left:22px;margin:6px 0}
+.itext .dim,p.dim{color:#9aa3b5;font-size:15px}
+.itext .ex{width:100%;height:auto;margin:10px 0;background:#0e121b;border-radius:12px}
+.introbtns{display:flex;justify-content:space-between;margin-top:16px}
+.big.sm2{font-size:30px;line-height:1.5}
+.card .clean{margin-top:12px;padding:10px;border-radius:12px;background:#4a1d1d;color:#ffd6d6;font-size:18px}
+#announce{position:absolute;left:50%;top:60px;transform:translate(-50%,-20px);max-width:90%;padding:14px 26px;border-radius:14px;font-size:21px;font-weight:500;text-align:center;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;z-index:5}
+#announce.on{opacity:1;transform:translate(-50%,0)}
+#announce.escape{background:rgba(20,70,44,.96);border:2px solid #69db7c;color:#d6ffe2}
+#announce.clean{background:rgba(80,24,24,.96);border:2px solid #ff8a8a;color:#ffe0e0}
+.tchips{margin-bottom:10px;font-size:14px;color:#aab3cc;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{padding:6px 16px;font-size:16px;font-weight:700;border-radius:99px;background:transparent;border:2px solid #3a4260;color:#5d6785}
+.chip.on{border-color:var(--c);color:var(--c);background:rgba(255,255,255,.05)}
+.tclean{margin:0 0 12px;padding:14px;border-radius:14px;background:#4a1d1d;border:2px solid #ff8a8a;color:#ffe0e0;font-size:22px;font-weight:700;text-align:center}
+.grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.gbtn{font-size:34px;font-weight:700;padding:22px;border-width:2px}
+/* 先生用 */
+#teacher{position:absolute;inset:0;overflow:auto;background:#0c0f18;padding:14px;-webkit-user-select:text;user-select:text}
+#teacher[hidden],#game[hidden]{display:none}
+.tgate{max-width:420px;margin:12vh auto;text-align:center;display:flex;flex-direction:column;gap:12px}
+.thead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.roomcode{margin-left:10px;color:#e8c36a;font-size:15px}.roomcode b{font-size:22px;letter-spacing:.2em}
+.qrov{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:50}
+.qrcard{background:#fff;color:#111;border-radius:16px;padding:24px;text-align:center;max-width:90vw}.qrcard h2{margin:0 0 12px;color:#111}.qrcard #qrBox{display:flex;justify-content:center;margin:8px 0}.qrcard .dim{color:#555;font-size:12px}
+.tbtns{display:flex;gap:8px;flex-wrap:wrap}
+.tbtns button{font-size:15px;padding:10px 14px}
+.pill{display:inline-block;margin-left:8px;padding:3px 12px;border-radius:99px;background:#2c3347;font-size:13px}
+.pill.run{background:#1b4a34;color:#c8f7d4}
+.tmsg{margin-bottom:10px;font-size:14px}
+.tbody{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.tbody{grid-template-columns:1fr}}
+.tmap{width:100%;height:auto;background:#10131f;border-radius:14px}
+.tleg{font-size:12px;color:#7f89a8;margin-top:6px}
+.tside{display:flex;flex-direction:column;gap:10px}
+.tcard{border:2px solid;border-radius:14px;padding:10px 14px;background:#10131f}
+.tname{font-weight:700;font-size:17px;margin-bottom:4px}
+.tstat{font-size:16px;margin-bottom:2px}
+.tsub{font-size:13px;color:#aab3cc;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="game" hidden>
+  <div id="cvwrap"><canvas id="cv"></canvas></div>
+  <div id="hud"><span id="hudGroup"></span><span style="display:flex;align-items:center"><span id="hudTime"></span><button id="btnRead">読み物</button> <button id="btnSound">音：ON</button></span></div>
+  <div id="sub"></div>
+  <div id="announce"></div>
+  <div id="doors" hidden></div>
+  <div id="panel" hidden></div>
+  <div id="screen" hidden></div>
+</div>
+<div id="teacher" hidden></div>
+<script src="../firebase-config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="net.js"></script>
+<script src="puzzles.js"></script>
+<script src="scenes.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
