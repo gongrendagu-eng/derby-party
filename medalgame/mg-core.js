@@ -396,7 +396,7 @@ async function cleanList(){ const be=await connect(), k=keys.get(); if(!k) throw
 // c.seq=[ゲームID…](最後のゲームで掃除当番が決まる)、c.si=いま何番目か。
 // 古い形(c.pre=エアホッケーなど → ルーレットパーク、終わりの印は c.ah.done)も読める。
 const CLEAN_GAMES={roulettepark:{f:'roulettepark.html',n:'ルーレットパーク'},airhockey:{f:'airhockey.html',n:'エアホッケー'},jockey:{f:'jockey.html',n:'ジョッキーダービー'},
-  baseball:{f:'baseball.html',n:'野球盤'},soccerboard:{f:'soccerboard.html',n:'サッカーボード'}};
+  baseball:{f:'baseball.html',n:'野球盤'},soccerboard:{f:'soccerboard.html',n:'サッカーボード'},towerbattle:{f:'towerbattle.html',n:'タワーバトル'}};
 function cleanSeq(c){ if(c&&Array.isArray(c.seq)&&c.seq.length) return c.seq.filter(g=>CLEAN_GAMES[g]); return c&&CLEAN_GAMES[c.pre]?[c.pre,'roulettepark']:['roulettepark']; }
 function cleanStage(c){ const q=cleanSeq(c); if(c&&Array.isArray(c.seq)) return Math.max(0,Math.min(q.length-1,c.si||0)); return c&&CLEAN_GAMES[c.pre]&&!(c.ah&&c.ah.done)?0:q.length-1; }
 function cleanUrl(c,i){ const q=cleanSeq(c); if(i==null) i=cleanStage(c); const u=new URL(CLEAN_GAMES[q[i]].f,CORE_SRC); u.searchParams.set('clean',c.id); if(LOCAL) u.searchParams.set('local','1'); return u.href; }
