@@ -30,7 +30,7 @@ iframe{position:fixed;inset:0;width:100vw;height:100vh;border:0;background:#0b12
   let V=null; try{ V=await MG.startViewer(); }catch(e){}
   if(!V){ say('観戦画面を開けません','URLに ?mg=… が必要です。管理画面の「観戦画面」のリンクから開いてください。'); return; }
   let fr=null, cur='', picked=GAME;
-  const HAS_VIEW=['roulette','hockey','foos','baseball'];   // 観戦画面があるゲーム(art)
+  const HAS_VIEW=['roulette','hockey','foos','baseball','tower'];   // 観戦画面があるゲーム(art)
   const show=g=>{
     const u=new URL(g.url); u.searchParams.set('mg',V.pub); u.searchParams.set('view','1'); if(MG.LOCAL) u.searchParams.set('local','1');
     if(u.href===cur) return; cur=u.href;
