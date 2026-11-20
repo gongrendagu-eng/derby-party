@@ -74,6 +74,27 @@ let ROOM = (Q.get('room') || '').toUpperCase();
 if (MODE === 'teacher' && !ROOM){ ROOM = lsGet('esc.room') || rid(5); }
 if (MODE === 'teacher') lsSet('esc.room', ROOM);
 function studentUrl(){ return location.origin + location.pathname + '?room=' + ROOM + (LOCAL ? '&local=1' : ''); }
+/* 参加URLをコピー(Clipboard API → だめなら選択コピー → それもだめなら表示だけ) */
+function copyText(text){
+  return new Promise(res => {
+    const fb = () => {
+      try {
+        const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', '');
+        t.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+        document.body.appendChild(t); t.focus(); t.select(); t.setSelectionRange(0, text.length);
+        const ok = document.execCommand('copy'); t.remove(); res(!!ok);
+      } catch (e) { res(false); }
+    };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => res(true), fb); else fb(); } catch (e) { fb(); }
+  });
+}
+function copyUrlBtn(btn){
+  const label = btn.dataset.label || btn.textContent; btn.dataset.label = label;
+  copyText(studentUrl()).then(ok => {
+    btn.textContent = ok ? 'コピーしました' : 'コピーできませんでした（アドレスを長押しで選択）';
+    setTimeout(() => { btn.textContent = label; }, 2000);
+  });
+}
 window.addEventListener('hashchange', () => location.reload());
 const fmt = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
 
@@ -536,8 +557,8 @@ function teacherMapSvg(){
 
 function showQr(){
   const ov = document.createElement('div'); ov.className = 'qrov';
-  ov.innerHTML = '<div class="qrcard"><h2>参加コード　' + ROOM + '</h2><div id="qrBox"></div><p>各グループのiPadでQRコードを読み取ってください</p><p class="dim" style="word-break:break-all">' + esc(studentUrl()) + '</p><button class="pri" id="qrClose">閉じる</button></div>';
-  document.body.appendChild(ov); $('qrClose').onclick = () => ov.remove(); ov.onclick = e => { if (e.target === ov) ov.remove(); };
+  ov.innerHTML = '<div class="qrcard"><h2>参加コード　' + ROOM + '</h2><div id="qrBox"></div><p>各グループのiPadでQRコードを読み取るか、URLをコピーして送ってください</p><p class="dim" style="word-break:break-all;user-select:all;-webkit-user-select:all">' + esc(studentUrl()) + '</p><p><button class="pri" id="qrCopy">参加URLをコピー</button> <button class="ghost" id="qrClose">閉じる</button></p></div>';
+  document.body.appendChild(ov); $('qrCopy').onclick = e => copyUrlBtn(e.currentTarget); $('qrClose').onclick = () => ov.remove(); ov.onclick = e => { if (e.target === ov) ov.remove(); };
   if (window.QRCode) new QRCode($('qrBox'), { text: studentUrl(), width: 280, height: 280, correctLevel: QRCode.CorrectLevel.M });
   else $('qrBox').textContent = '（QRを作れませんでした。上のアドレスを使ってください）';
 }
@@ -566,7 +587,7 @@ function renderTeacher(){
     }
     cards += '<div class="tcard" style="border-color:' + GCOLOR[g] + '"><div class="tname" style="color:' + GCOLOR[g] + '">グループ ' + g + '</div>' + body + '</div>';
   });
-  root.innerHTML = '<div class="thead"><div><b>先生用 進行状況</b> <span class="pill ' + (running ? 'run' : '') + '">' + (running ? '進行中' : '待機中') + '</span> <span class="roomcode">参加コード <b>' + ROOM + '</b>' + (LOCAL ? '（お試し）' : '') + '</span> <button class="ghost" id="tQr">QRを表示</button></div><div class="tbtns">' +
+  root.innerHTML = '<div class="thead"><div><b>先生用 進行状況</b> <span class="pill ' + (running ? 'run' : '') + '">' + (running ? '進行中' : '待機中') + '</span> <span class="roomcode">参加コード <b>' + ROOM + '</b>' + (LOCAL ? '（お試し）' : '') + '</span> <button class="ghost" id="tQr">QRを表示</button> <button class="ghost" id="tCopy">参加URLをコピー</button></div><div class="tbtns">' +
     (running ? '' : '<button id="tRegen">マップを作り直す</button><button class="pri" id="tStart">ゲーム開始</button>') +
     '<button id="tReset">' + (now - resetArmed < 4000 ? 'もう一度押すとリセット' : 'リセット（新しいゲーム）') + '</button></div></div>' +
     (tErr ? '<div class="bad tmsg">' + esc(tErr) + '</div>' : '') +
@@ -575,6 +596,7 @@ function renderTeacher(){
     '<div class="tbody"><div class="tmapwrap">' + teacherMapSvg() + '<div class="tleg">点線＝廊下 ／ 実線＝部屋 ／ 線＝扉でつながっている ／ 矢印＝向いている方角</div></div><div class="tside">' + cards + '</div></div>';
   root.querySelectorAll('.chip').forEach(b => b.onclick = () => toggleActive(b.dataset.g));
   $('tQr').onclick = showQr;
+  $('tCopy').onclick = e => copyUrlBtn(e.currentTarget);
   const b1 = $('tStart'); if (b1) b1.onclick = startGame;
   const b2 = $('tRegen'); if (b2) b2.onclick = () => newGame(true);
   $('tReset').onclick = () => {
