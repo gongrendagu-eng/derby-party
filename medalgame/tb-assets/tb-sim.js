@@ -10,7 +10,7 @@ const MODES = {
   '1v1': { W: 1800, H: 1000, nTeams: 2, nPlayers: 2, label: '1対1' },
   '2v2': { W: 2320, H: 1240, nTeams: 2, nPlayers: 4, label: '2対2' },
   '4p':  { W: 2000, H: 1600, nTeams: 4, nPlayers: 4, label: '4人戦' },
-  team:  { W: 2400, H: 1800, nTeams: 4, nPlayers: 16, label: 'チーム戦' }
+  team:  { W: 1920, H: 1440, nTeams: 4, nPlayers: 16, label: 'チーム戦' }
 };
 const TEAM_COLORS = ['#ff4d88', '#3d8bff', '#3fc45f', '#ffb020'];
 const TEAM_NAMES = ['ピンク', 'ブルー', 'グリーン', 'オレンジ'];
@@ -307,14 +307,14 @@ const TRAPS = {
 const UT = {
   slime:    { name: 'スライム', cost: 20, hp: 70, spd: 62, dps: 14, range: 24, passive: true, aggro: 0, uagg: 30, sm: 1, inc: 1, h: 38, fly: false, nf: 0, desc: '最短でクリスタルへ' },
   goblin:   { name: 'ゴブリン', cost: 40, hp: 100, spd: 58, dps: 20, range: 26, aggro: 170, uagg: 110, sm: 1.8, inc: 2, h: 50, fly: false, nf: -1, desc: '建物をこわす' },
-  gargoyle: { name: 'ガーゴイル', cost: 60, hp: 85, spd: 80, dps: 16, range: 28, aggro: 120, uagg: 100, sm: 1, inc: 3, h: 52, fly: true, nf: -1, intercept: true, desc: '【迎撃】空から敵ユニットを襲う・障害物を越える' },
+  gargoyle: { name: 'ガーゴイル', cost: 60, hp: 85, spd: 80, dps: 16, range: 28, aggro: 120, uagg: 240, sm: 1, inc: 3, h: 52, fly: true, nf: -1, intercept: true, desc: '【迎撃】空から敵ユニットを襲う・障害物を越える' },
   dragon:   { name: 'ドラゴン', cost: 150, hp: 520, spd: 42, dps: 34, range: 80, aggro: 190, uagg: 140, sm: 1.2, splash: 55, inc: 8, h: 78, fly: false, ranged: true, nf: -1, desc: '建物や敵をまとめて燃やす' },
-  skeleton: { name: 'スケルトン', cost: 45, hp: 75, spd: 52, dps: 15, range: 125, aggro: 150, uagg: 150, sm: 1.2, inc: 2, h: 52, fly: false, ranged: true, nf: 1, intercept: true, desc: '【迎撃】遠くから矢で敵ユニットを撃つ（空もOK）' },
+  skeleton: { name: 'スケルトン', cost: 45, hp: 75, spd: 52, dps: 15, range: 125, aggro: 150, uagg: 260, sm: 1.2, inc: 2, h: 52, fly: false, ranged: true, nf: 1, intercept: true, desc: '【迎撃】遠くから矢で敵ユニットを撃つ（空もOK）' },
   orc:      { name: 'オーク', cost: 90, hp: 340, spd: 36, dps: 26, range: 30, aggro: 140, uagg: 110, sm: 2.2, inc: 5, h: 70, fly: false, nf: 1, desc: 'とても頑丈で建物にも強い' },
   ghost:    { name: 'ゴースト', cost: 70, hp: 120, spd: 56, dps: 15, range: 26, aggro: 130, uagg: 110, sm: 1.2, inc: 3, h: 50, fly: false, phase: true, nf: 0, desc: '障害物も罠もすり抜ける' },
-  wolf:     { name: 'ウルフ', cost: 50, hp: 90, spd: 112, dps: 14, range: 26, aggro: 110, uagg: 100, sm: 1, inc: 2, h: 52, fly: false, nf: 1, intercept: true, desc: '【迎撃】足が速く、敵の攻撃隊に追いつく' },
+  wolf:     { name: 'ウルフ', cost: 50, hp: 90, spd: 112, dps: 14, range: 26, aggro: 110, uagg: 260, sm: 1, inc: 2, h: 52, fly: false, nf: 1, intercept: true, desc: '【迎撃】足が速く、敵の攻撃隊に追いつく' },
   healer:   { name: 'ヒーラー', cost: 65, hp: 80, spd: 50, dps: 4, range: 24, passive: true, aggro: 0, uagg: 30, sm: 1, inc: 3, h: 54, fly: false, heal: { r: 90, hps: 9 }, nf: 1, desc: '近くの味方を回復する' },
-  bomber:   { name: 'ボム', cost: 35, hp: 55, spd: 78, dps: 0, range: 30, aggro: 140, uagg: 110, sm: 1, inc: 1, h: 46, fly: false, boom: { r: 62, ds: 150, du: 100 }, nf: 1, intercept: true, desc: '【迎撃】敵の集団に飛びこんで自爆する' }
+  bomber:   { name: 'ボム', cost: 35, hp: 55, spd: 78, dps: 0, range: 30, aggro: 140, uagg: 220, sm: 1, inc: 1, h: 46, fly: false, boom: { r: 62, ds: 150, du: 100 }, nf: 1, intercept: true, desc: '【迎撃】敵の集団に飛びこんで自爆する' }
 };
 const TOWER_ORDER = ['archer', 'cannon', 'ice', 'mage', 'wall', 'ballista', 'catapult', 'fountain', 'venom', 'flame'];
 const TRAP_ORDER = ['spike', 'shock', 'fire', 'pit', 'barrel', 'web', 'bog', 'freeze', 'curse', 'saw'];
