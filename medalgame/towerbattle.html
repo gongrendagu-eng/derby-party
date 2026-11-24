@@ -122,8 +122,8 @@ body.view canvas{position:fixed;inset:0;width:100vw;height:100vh}
 'use strict';
 const {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
 const SIM=TBSIM, {TT,TRAPS,UT,MINE,ITEMS,ITEM,MAPS,MAP_ORDER,CELL,STEP,ROLES,ROLE_NAMES:RN,TEAM_COLORS:TC,TEAM_NAMES:TN,TEAM_CFG,COURIER}=SIM;
-const CLEAN=MG.qs.get('clean')||'';
-const GID='tbclean_'+CLEAN, NAME='タワーバトル(掃除決め)';
+const CLEAN=MG.qs.get('clean')||'', NORMAL=!CLEAN, KEY=CLEAN||'main';   // NORMAL=稼働中のゲームとして動く通常モード(メダルは貯金から持ち込んだ手持ち)
+const GID=NORMAL?'towerbattle':'tbclean_'+CLEAN, NAME=NORMAL?'タワーバトル':'タワーバトル(掃除決め)';
 const now=()=>Date.now();
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const ROLE_DESC={front:'攻撃キャラを出撃させて、相手のクリスタルをこわす',back:'防御タワーを自陣に置いて、クリスタルを守る',eng:'罠をしかける。壁・障害物で敵の道をふさぐ',cmd:'チーム金庫のゴールドを配る。金鉱・狙う相手・アイテム回収'};
@@ -344,8 +344,7 @@ function setupCanvas(cv,fixed){ const ctx=cv.getContext('2d'); const fit=()=>{ c
   const w=fixed?fixed[0]:Math.max(10,r.width), h=fixed?fixed[1]:Math.max(10,r.height); cv.width=Math.round(w*(fixed?1:d)); cv.height=Math.round(h*(fixed?1:d)); ctx.W=w; ctx.H=h; ctx.D=fixed?1:d; };
   fit(); addEventListener('resize',fit); ctx.refit=fit; return ctx; }
 
-if(!CLEAN){ document.body.className='host'; app.innerHTML=`<div class="wrap"><div class="box"><h2>タワーバトル チーム戦は掃除決め専用です</h2><p class="note">管理画面の「掃除決め」で、ゲームの順番に「タワーバトル」を足して始めてください。</p><p><a class="btn pri" href="${esc(MG.indexUrl())}">管理画面を開く</a></p></div></div>`; }
-else if(MG.qs.get('mg')&&MG.qs.get('view')) viewMain(); else if(MG.qs.get('mg')) padMain(); else hostMain();
+if(MG.qs.get('mg')&&MG.qs.get('view')) viewMain(); else if(MG.qs.get('mg')) padMain(); else hostMain();
 
 /* =========================================================
    先生のPC(ホスト)
@@ -356,7 +355,13 @@ const C=(()=>{ let c={}; try{ c=JSON.parse(localStorage.getItem(CFG_KEY))||{}; }
 const saveCfg=()=>{ try{ localStorage.setItem(CFG_KEY,JSON.stringify(C)); }catch(e){} };
 const M={ph:'lobby',team:{},role:{},deck:{},slot:{},paid:{},pool:0,res:null,got:{},map:'forest',seed:1,busy:false};
 let HERE=new Set(), lobbyDirty=true, panelDirty=true, lastF=0, lastTm=0, lastMsgT=-1, acc=0, lastTick=0, cbT=null;
-const people=()=>Object.keys(SESS.m||{}).sort((a,b)=>a.localeCompare(b,'ja',{numeric:true}));
+const people=()=>(NORMAL?HOST.seated():Object.keys(SESS.m||{})).sort((a,b)=>a.localeCompare(b,'ja',{numeric:true}));
+// いまの持ちメダル(通常モード=ゲームの中の手持ち / 掃除決め=預かり分)
+const bal=sid=>NORMAL?Math.max(0,Math.floor((((HOST.acc()[sid]||{}).seat)||{}).a||0)):(CB[sid]||0);
+// 通常モード:ゲームの中のメダルを増減。席がなくなっていたら貯金に入れる(参加料の返却・配当用)
+async function moveMedals(sid,n){ n=Math.floor(n); if(!n) return;
+  if(!NORMAL){ CB[sid]=(CB[sid]||0)+n; return; }
+  try{ await HOST.change(sid,n); }catch(e){ if(n>0) await HOST.accTx(sid,a=>{ a.b=(a.b||0)+n; return a; }).catch(x=>console.warn(x)); else throw e; } }
 const nm=sid=>{ const a=HOST.acc()[sid]; return a?a.n:sid; };
 const vkOf=sid=>{ const a=HOST.acc()[sid]; return a&&a.vk; };
 const isHere=sid=>{ const v=vkOf(sid); return !!(v&&HERE.has(v)); };
@@ -373,31 +378,43 @@ async function hostMain(){
   app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
   let refunded=0;
   try{
-    SESS=(await MG.cleanList())[CLEAN];
-    if(!SESS) return fail('その掃除決めが見つかりません','管理画面の「掃除決め」で確認してください。');
-    if(!['ready','playing'].includes(SESS.st)) return fail('この掃除決めはもう終わっています','管理画面で新しく始めてください。');
-    CI=MG.cleanInfo(SESS,'towerbattle');
-    if(!CI.mine) return fail(`いまは${esc(CI.cur)}の番です`,`この掃除決めは、タワーバトルではなく${esc(CI.cur)}に進んでいます。<a href="${esc(CI.curUrl)}">${esc(CI.cur)}を開く</a>`);
-    CB={}; Object.keys(SESS.m||{}).forEach(s=>CB[s]=Math.max(0,Math.floor(+((SESS.ah&&SESS.ah.b&&SESS.ah.b[s]!=null)?SESS.ah.b[s]:SESS.m[s])||0)));
-    // 前に開いたタブが試合の途中で閉じた:集めた参加料を返す
-    const hold=SESS.ah&&SESS.ah.tb&&SESS.ah.tb.fee;
-    if(hold) Object.keys(hold).forEach(s=>{ if(CB[s]!=null){ CB[s]+=Math.max(0,Math.floor(+hold[s]||0)); refunded++; } });
-    HOST=await MG.startHost({gid:GID,name:NAME,art:'tower',anyone:true,url:location.origin+location.pathname+'?clean='+encodeURIComponent(CLEAN),info:{clean:CLEAN},
-      hooks:{onReq:async(sid,r)=>padReq(sid,r)}});
+    if(!NORMAL){
+      SESS=(await MG.cleanList())[CLEAN];
+      if(!SESS) return fail('その掃除決めが見つかりません','管理画面の「掃除決め」で確認してください。');
+      if(!['ready','playing'].includes(SESS.st)) return fail('この掃除決めはもう終わっています','管理画面で新しく始めてください。');
+      CI=MG.cleanInfo(SESS,'towerbattle');
+      if(!CI.mine) return fail(`いまは${esc(CI.cur)}の番です`,`この掃除決めは、タワーバトルではなく${esc(CI.cur)}に進んでいます。<a href="${esc(CI.curUrl)}">${esc(CI.cur)}を開く</a>`);
+      CB={}; Object.keys(SESS.m||{}).forEach(s=>CB[s]=Math.max(0,Math.floor(+((SESS.ah&&SESS.ah.b&&SESS.ah.b[s]!=null)?SESS.ah.b[s]:SESS.m[s])||0)));
+      // 前に開いたタブが試合の途中で閉じた:集めた参加料を返す
+      const hold=SESS.ah&&SESS.ah.tb&&SESS.ah.tb.fee;
+      if(hold) Object.keys(hold).forEach(s=>{ if(CB[s]!=null){ CB[s]+=Math.max(0,Math.floor(+hold[s]||0)); refunded++; } });
+      HOST=await MG.startHost({gid:GID,name:NAME,art:'tower',anyone:true,url:location.origin+location.pathname+'?clean='+encodeURIComponent(CLEAN),info:{clean:CLEAN},
+        hooks:{onReq:async(sid,r)=>padReq(sid,r)}});
+    }else{
+      HOST=await MG.startHost({gid:GID,name:NAME,art:'tower',
+        hooks:{onReq:async(sid,r)=>padReq(sid,r),
+          // 試合中にやめる人は、配当が終わってから自動で貯金にもどす
+          beforeQuit:async sid=>(M.ph==='play'&&M.slot[sid]!=null)?'later':true,
+          onLeave:sid=>{ if(M.ph==='lobby'){ delete M.team[sid]; delete M.role[sid]; delete M.deck[sid]; lobbyDirty=panelDirty=true; } }}});
+      // 前のタブが試合の途中で閉じた:集めた参加料を返す
+      const hold=await HOST.be.get(HOST.S+'/tbhold').catch(()=>null);
+      if(hold){ for(const sid of Object.keys(hold)){ const n=Math.floor(+hold[sid]||0); if(n>0&&HOST.acc()[sid]){ await moveMedals(sid,n).catch(()=>{}); refunded++; } } await HOST.be.remove(HOST.S+'/tbhold').catch(()=>{}); }
+      if(MG.qs.get('launch')) history.replaceState(null,'',location.pathname+(MG.LOCAL?'?local=1':''));
+    }
   }catch(e){ return fail('つながりませんでした',esc(e.message)); }
-  TB=HOST.P+'/tbc/'+CLEAN;
+  TB=HOST.P+'/tbc/'+KEY;
   await HOST.be.remove(TB).catch(()=>{});
-  await HOST.clean.update(CLEAN,{st:'playing',ah:{b:CB,t:now()}}).catch(()=>{});
+  if(!NORMAL) await HOST.clean.update(CLEAN,{st:'playing',ah:{b:CB,t:now()}}).catch(()=>{});
   if(refunded) setTimeout(()=>toast(`前の試合が途中で止まっていたので、${refunded}人に参加料を返しました`),400);
-  let seen=false;
-  HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } });
-  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">タワーバトル チーム戦<small>先生のPC${SESS.cls?' ・ '+esc(SESS.cls):''} ・ 掃除決め</small></div><span class="sp"></span>
+  if(!NORMAL){ let seen=false;
+    HOST.onClean(v=>{ const c=v&&v[CLEAN]; if(c&&c.st!=='cancel') seen=true; if(seen&&HOST&&M.ph!=='stop'&&(!c||c.st==='cancel')){ M.ph='stop'; HOST.stop().catch(()=>{}); HOST=null; fail('掃除決めが中止されました','このタブは閉じてかまいません。'); } }); }
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">タワーバトル チーム戦<small>先生のPC${NORMAL?' ・ 通常モード(メダル)':(SESS.cls?' ・ '+esc(SESS.cls):'')+' ・ 掃除決め'}</small></div><span class="sp"></span>
       <span class="chip" id="conn"><i class="dot"></i><span>稼働中</span></span>
-      <button class="btn pri" id="toNext">${CI.last?'結果を出す(掃除当番を決める)':esc(CI.next)+'へ進む'}</button></div>
+      <button class="btn pri" id="toNext">${NORMAL?'ゲームを止める(メダルを貯金にもどす)':CI.last?'結果を出す(掃除当番を決める)':esc(CI.next)+'へ進む'}</button></div>
     <div class="grid"><div class="stage"><canvas id="cv"></canvas></div><div id="side"></div></div></div>`;
   HCTX=setupCanvas($('#cv'),[1600,1200]);
   let accSeen=false;
-  HOST.onAcc(()=>{ panelDirty=true; if(!accSeen){ accSeen=true; if(C.tmode==='auto'&&M.ph==='lobby'&&!Object.keys(M.role).length) autoTeams(true); people().forEach(writeMe); } });
+  HOST.onAcc(()=>{ panelDirty=true; syncNormal(); if(!accSeen){ accSeen=true; if(C.tmode==='auto'&&M.ph==='lobby'&&!Object.keys(M.role).length) autoTeams(true); people().forEach(writeMe); } });
   HOST.onOnline(()=>{ panelDirty=true; });
   HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'稼働中':'通信が切れています'; });
   HOST.be.on(TB+'/here',v=>{ HERE=new Set(Object.keys(v||{})); panelDirty=true; });
@@ -409,6 +426,15 @@ async function hostMain(){
 }
 // ロビーで見せるマップ(試合もこのマップで行う)
 function newPreview(){ M.map=C.map==='random'?MAP_ORDER[(Math.random()*MAP_ORDER.length)|0]:C.map; M.seed=(Math.random()*1e9)|0; lobbyDirty=true; }
+// 通常モード:あとから入った人をチームに入れ、メダルが変わった人のiPad表示を更新する
+const lastBal={};
+function syncNormal(){
+  if(!NORMAL||!HOST) return;
+  const ps=people(); let ch=false;
+  if(M.ph==='lobby') ps.forEach(s=>{ if(M.team[s]===undefined){ const cnt=[0,1,2,3].map(t=>membersOf(t).length), t=cnt.indexOf(Math.min(...cnt)); M.team[s]=(C.tmode==='auto'&&cnt[t]<4)?t:-1; ch=true; } });
+  ps.forEach(s=>{ const b=bal(s); if(ch||lastBal[s]!==b){ lastBal[s]=b; writeMe(s); } });
+  if(ch) lobbyDirty=panelDirty=true;
+}
 function autoTeams(first){
   let list=people(); const on=list.filter(isOnline);
   if(on.length) list=on;              // ログインしている人だけで分ける(だれもいないときは全員)
@@ -426,7 +452,7 @@ function setTeam(sid,t){
 function writeMe(sid){
   const v=vkOf(sid); if(!v||!TB) return;
   const t=M.team[sid]!=null?M.team[sid]:-1;
-  HOST.be.set(TB+'/me/'+v,{ph:M.ph,team:t,role:M.role[sid]||'',deck:M.deck[sid]||'',slot:M.slot[sid]!=null?M.slot[sid]:-1,b:CB[sid]||0,paid:M.paid[sid]||0,got:M.got[sid]||0,t:now()}).catch(()=>{});
+  HOST.be.set(TB+'/me/'+v,{ph:M.ph,team:t,role:M.role[sid]||'',deck:M.deck[sid]||'',slot:M.slot[sid]!=null?M.slot[sid]:-1,b:bal(sid),paid:M.paid[sid]||0,got:M.got[sid]||0,t:now()}).catch(()=>{});
 }
 function stDoc(){
   const d={ph:M.ph,map:M.map,seed:M.seed,fee:Math.max(0,Math.floor(+C.fee||0)),prep:TEAM_CFG.prep,tl:SIM.TIME_LIMIT,pool:M.pool,t:now()};
@@ -512,7 +538,7 @@ function roster(t,withMoney){
 }
 function renderLobby(side){
   const fee=Math.max(0,Math.floor(+C.fee||0)), ps=people(), inT=ps.filter(s=>M.team[s]>=0);
-  const pool=inT.reduce((a,s)=>a+Math.min(fee,CB[s]||0),0), short=inT.filter(s=>(CB[s]||0)<fee);
+  const pool=inT.reduce((a,s)=>a+Math.min(fee,bal(s)),0), short=inT.filter(s=>bal(s)<fee);
   side.innerHTML=`<div class="box"><h2>1 チーム分け</h2>
       <div class="seg"><button id="tmAuto" aria-pressed="${C.tmode==='auto'}">自動で分ける</button><button id="tmMan" aria-pressed="${C.tmode==='manual'}">先生が決める</button></div>
       ${C.tmode==='auto'?`<p class="note">ログインしている人を4チームにランダムで分けます(1チーム4人まで)。足りない役割はCPUが担当します。</p><button class="btn" id="reAuto">もう一度自動で分ける</button>`
@@ -527,9 +553,9 @@ function renderLobby(side){
       <button class="btn pri big" id="go" ${inT.length?'':'disabled'}>試合をはじめる(6分)</button>
       <p class="note">はじめると参加料を集めます。役割を選んでいない人には、空いている役割を自動で割り当てます。</p></div>
     <details class="box" ${C.tmode==='manual'?'open':''}><summary style="font-weight:800">参加者(${ps.length}人・チームに入っている ${inT.length}人)</summary><ul class="pl">${ps.map(s=>{ const t=M.team[s];
-      return `<li><span class="nm">${esc(nm(s))}</span><span class="od ${isHere(s)?'y':isOnline(s)?'':''}" title="${isHere(s)?'タワーバトルを開いている':isOnline(s)?'ログイン中':'ログインしていない'}">${isHere(s)?'●':isOnline(s)?'○':'・'}</span><small>${yen(CB[s]||0)}枚</small>
+      return `<li><span class="nm">${esc(nm(s))}</span><span class="od ${isHere(s)?'y':isOnline(s)?'':''}" title="${isHere(s)?'タワーバトルを開いている':isOnline(s)?'ログイン中':'ログインしていない'}">${isHere(s)?'●':isOnline(s)?'○':'・'}</span><small>${yen(bal(s))}枚</small>
         <span class="tsel">${[0,1,2,3].map(i=>`<button data-st="${esc(s)}" data-t="${i}" aria-pressed="${t===i}" style="${t===i?`background:${TC[i]};border-color:${TC[i]}`:`color:${TC[i]}`}">${TN[i][0]}</button>`).join('')}<button data-st="${esc(s)}" data-t="-1" aria-pressed="${t===-1}" style="${t===-1?'background:#5b6b85;border-color:#5b6b85':''}">観</button></span></li>`; }).join('')}</ul>
-      <p class="note">● タワーバトルを開いている ○ メダルゲームにログイン中 ・ ログインしていない</p></details>`;
+      <p class="note">● タワーバトルを開いている ○ メダルゲームにログイン中 ・ ログインしていない</p>${NORMAL&&!ps.length?'<p class="note"><b>まだだれも入っていません。</b>iPadのメダルゲームのトップで「タワーバトル」に入ってもらってください(貯金から持ち込む枚数を選びます)。</p>':''}</details>`;
   $('#tmAuto').onclick=()=>{ C.tmode='auto'; saveCfg(); panelDirty=true; };
   $('#tmMan').onclick=()=>{ C.tmode='manual'; saveCfg(); panelDirty=true; };
   if($('#reAuto')) $('#reAuto').onclick=()=>{ if(Object.keys(M.role).length&&!confirm('選んだ役割と3枠はリセットされます。分け直しますか?')) return; autoTeams(); };
@@ -550,8 +576,9 @@ function renderResult(side){
   side.innerHTML=`<div class="box"><h2>結果</h2><table class="res">${R.ranks.map(r=>`<tr><td style="color:${TC[r.team]};font-weight:800">${r.rank}位 ${TN[r.team]}</td><td>${r.n?`${yen(r.share)}枚 ・ 1人 ${yen(r.each)}枚`:'CPUだけ'}</td></tr>`).join('')}</table>
     <p class="note">参加料の合計 ${yen(R.pool)}枚 を配りました。${R.reason==='time'?'時間切れのため、クリスタルHPの割合で順位を決めました。':''}</p></div>
     <div class="teams">${[0,1,2,3].map(t=>roster(t)).join('')}</div>
-    <div class="box" style="margin-top:12px"><h2>いまのメダル</h2><ul class="pl">${people().slice().sort((a,b)=>(CB[b]||0)-(CB[a]||0)).map(s=>`<li><span class="nm">${esc(nm(s))}</span>${M.team[s]>=0?`<small style="color:${TC[M.team[s]]}">${TN[M.team[s]]}</small>`:'<small>観戦</small>'}<small>${M.got[s]?'+'+yen(M.got[s]):''}${M.paid[s]?' −'+yen(M.paid[s]):''}</small><b>${yen(CB[s]||0)}枚</b></li>`).join('')}</ul>
-    <p class="note">右上の「${CI.last?'結果を出す':esc(CI.next)+'へ進む'}」を押して進めてください。</p></div>`;
+    <div class="box" style="margin-top:12px"><h2>いまのメダル</h2><ul class="pl">${people().slice().sort((a,b)=>bal(b)-bal(a)).map(s=>`<li><span class="nm">${esc(nm(s))}</span>${M.team[s]>=0?`<small style="color:${TC[M.team[s]]}">${TN[M.team[s]]}</small>`:'<small>観戦</small>'}<small>${M.got[s]?'+'+yen(M.got[s]):''}${M.paid[s]?' −'+yen(M.paid[s]):''}</small><b>${yen(bal(s))}枚</b></li>`).join('')}</ul>
+    ${NORMAL?'<button class="btn pri" id="again">つぎの試合へ(ロビーにもどる)</button><p class="note">メダルは、いまの手持ちのまま続けます。終わるときは、右上の「ゲームを止める」で全員の貯金にもどします。</p>':`<p class="note">右上の「${CI.last?'結果を出す':esc(CI.next)+'へ進む'}」を押して進めてください。</p>`}</div>`;
+  if(NORMAL&&$('#again')) $('#again').onclick=nextMatch;
 }
 /* ---- 試合の開始・終了 ---- */
 async function startMatch(){
@@ -569,8 +596,8 @@ async function startMatch(){
     people().forEach(s=>{ const t=M.team[s]; if(t>=0&&M.role[s]){ const slot=t*4+ROLES.indexOf(M.role[s]); M.slot[s]=slot; humans[slot]=true; decks[slot]=M.deck[s]||null; } });
     // 参加料
     M.paid={}; M.pool=0; M.got={};
-    inT.forEach(s=>{ const p=Math.min(fee,CB[s]||0); M.paid[s]=p; CB[s]=(CB[s]||0)-p; M.pool+=p; });
-    await saveCB({tb:{fee:M.paid,at:now()}});
+    for(const s of inT){ let p=Math.min(fee,bal(s)); if(p>0){ try{ await moveMedals(s,-p); }catch(e){ p=0; } } M.paid[s]=p; M.pool+=p; }
+    if(NORMAL) await HOST.be.set(HOST.S+'/tbhold',M.paid).catch(()=>{}); else await saveCB({tb:{fee:M.paid,at:now()}});
     G=SIM.newGame({mode:'team',map:M.map,seed:M.seed,prep:TEAM_CFG.prep,cpuLevel:clamp(+C.cpu||0,0,2),decks,humans});
     G.zones=[0,4,8,12].map(i=>G.L.zones[i]);
     M.ph='play'; M.res=null; acc=0; lastMsgT=-1;
@@ -596,9 +623,9 @@ async function finishMatch(){
   if(M.ph!=='play'||M.busy) return;
   M.busy=true;
   try{
-    const p=computePayout(); M.got=p.got; Object.keys(p.got).forEach(s=>CB[s]=(CB[s]||0)+p.got[s]);
+    const p=computePayout(); M.got=p.got; for(const s of Object.keys(p.got)) await moveMedals(s,p.got[s]);
     M.res={ranks:p.ranks,pool:p.pool,reason:p.reason}; M.ph='result';
-    await saveCB();      // 参加料の預かり(tb)を消して、配当後の枚数を保存
+    if(NORMAL){ await HOST.be.remove(HOST.S+'/tbhold').catch(()=>{}); await settleLeavers(); } else await saveCB();      // 参加料の預かり(tb)を消して、配当後の枚数を保存
     HOST.be.set(TB+'/f',frameDoc()).catch(()=>{}); HOST.be.set(TB+'/st',stDoc()).catch(()=>{});
     [0,1,2,3].forEach(i=>HOST.be.set(TB+'/tm/'+i,teamDoc(i)).catch(()=>{}));
     people().forEach(writeMe);
@@ -607,11 +634,32 @@ async function finishMatch(){
 async function abortMatch(){
   if(M.ph!=='play') return;
   M.busy=true;
-  try{ Object.keys(M.paid).forEach(s=>CB[s]=(CB[s]||0)+M.paid[s]); M.paid={}; M.pool=0; await saveCB();
+  try{ for(const s of Object.keys(M.paid)) await moveMedals(s,M.paid[s]); M.paid={}; M.pool=0; if(NORMAL){ await HOST.be.remove(HOST.S+'/tbhold').catch(()=>{}); await settleLeavers(); } else await saveCB();
     G=null; M.ph='lobby'; M.slot={}; newPreview(); people().forEach(writeMe); lobbyDirty=true; toast('試合を中止して、参加料を返しました');
   }finally{ M.busy=false; panelDirty=true; }
 }
+// 通常モード:試合中に「やめる」を押した人を、配当のあとで貯金にもどす
+async function settleLeavers(){ for(const s of Object.keys(HOST.acc())){ const x=HOST.acc()[s].seat; if(x&&x.g===GID&&x.leave) await HOST.settle(s,'試合後').catch(e=>console.warn(e)); } panelDirty=true; }
+// 通常モード:結果のあと、同じメンバーでつぎの試合へ
+async function nextMatch(){
+  if(M.ph!=='result'||M.busy) return;
+  M.ph='lobby'; G=null; M.slot={}; M.paid={}; M.pool=0; M.got={}; M.res=null; M.role={}; M.deck={}; lastMsgT=-1;
+  await HOST.be.remove(TB+'/f').catch(()=>{});
+  newPreview(); if(C.tmode==='auto') autoTeams(true); people().forEach(writeMe); HOST.be.set(TB+'/st',stDoc()).catch(()=>{}); pubLobby(); lobbyDirty=panelDirty=true;
+}
+async function stopNormal(){
+  if(M.ph==='play') return toast('試合が終わってから止めてください(中止もできます)');
+  if(M.busy) return toast('少し待ってください');
+  const n=HOST.seated().length;
+  if(!confirm(`タワーバトルを止めますか?\n${n}人 のゲームの中のメダルを、全員の貯金にもどします。`)) return;
+  M.busy=true; M.ph='stop'; $('#toNext').disabled=true;
+  try{ await HOST.stop(); await HOST.be.remove(TB).catch(()=>{}); HOST=null;
+    app.innerHTML=`<div class="wrap"><div class="box"><h2>タワーバトルを止めました</h2><p class="note">メダルは全員の貯金にもどりました。このタブは閉じてかまいません。</p><p><a class="btn pri" href="${esc(MG.indexUrl())}">管理画面を開く</a></p></div></div>`;
+  }catch(e){ M.ph=G?'result':'lobby'; $('#toNext').disabled=false; toast('止められませんでした:'+e.message); }
+  finally{ M.busy=false; }
+}
 async function toNext(){
+  if(NORMAL) return stopNormal();
   if(M.ph==='play') return toast('試合が終わってから進んでください(中止もできます)');
   if(M.busy) return toast('少し待ってください');
   const m={}; people().forEach(s=>m[s]=Math.max(0,Math.floor(CB[s]||0)));
@@ -623,7 +671,7 @@ async function toNext(){
 }
 /* ---- iPadからの申請 ---- */
 async function padReq(sid,r){
-  if(!(SESS.m&&SESS.m[sid]!=null)) return {ok:false,msg:'この掃除決めには参加していません'};
+  if(!NORMAL&&!(SESS.m&&SESS.m[sid]!=null)) return {ok:false,msg:'この掃除決めには参加していません'};
   const t=r.type, tm=M.team[sid]!=null?M.team[sid]:-1;
   if(t==='g:hello'){ writeMe(sid); return {ok:true}; }
   if(t==='g:role'){
@@ -664,7 +712,7 @@ async function viewMain(){
   let V=null; try{ V=await MG.startViewer(); }catch(e){}
   if(!V){ app.innerHTML='<p style="color:#fff;padding:30px;font-size:20px">観戦画面を開けません(URLに ?mg=… が必要です)</p>'; return; }
   app.innerHTML='<canvas id="vcv"></canvas>';
-  const ctx=setupCanvas($('#vcv')), T=V.P+'/tbc/'+CLEAN, S={st:null,F:[],off:null,R:null};
+  const ctx=setupCanvas($('#vcv')), T=V.P+'/tbc/'+KEY, S={st:null,F:[],off:null,R:null};
   V.be.on(T+'/st',v=>{ S.st=v; if(v&&v.map&&(!S.R||S.R.seed!==v.seed)) S.R=emptyR(v); });
   V.be.on(T+'/f',v=>{ if(!v) return; const t=now(), o=t-v.t; S.off=S.off==null||o<S.off?o:S.off+(o-S.off)*0.01; S.F.push(decodeFrame(v)); if(S.F.length>8) S.F.shift(); });
   const draw=()=>{ const c=ctx; c.setTransform(c.D,0,0,c.D,0,0); const W=c.W,H=c.H;
@@ -686,7 +734,7 @@ async function padMain(){
   document.body.className='pad'; document.documentElement.classList.add('padmode');
   try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pwrap"><div class="pc">つながりません:${esc(e.message)}</div></div>`; return; }
   if(!PAD||!PAD.vk()){ location.href=PAD?PAD.indexUrl():MG.indexUrl(); return; }
-  const T=PAD.P+'/tbc/'+CLEAN, vk=PAD.vk(); P.T=T;
+  const T=PAD.P+'/tbc/'+KEY, vk=PAD.vk(); P.T=T;
   PAD.onView(v=>{ if(!v){ location.href=PAD.indexUrl(); return; } P.view=v; herePresence(); padRender(); });
   PAD.onGames(g=>{ P.games=g||{}; P.live=!!P.games[GID]; herePresence(); padRender(); });
   PAD.be.on(T+'/st',v=>{ const ph=P.st&&P.st.ph; P.st=v; if(v&&v.map&&(!P.R||P.R.seed!==v.seed)) P.R=emptyR(v); if(!v||v.ph!==ph) P.F=[]; padRender(); });
@@ -699,7 +747,7 @@ let tmOffFn=null;
 function subTeam(){ if(tmOffFn){ tmOffFn(); tmOffFn=null; } P.tm=null; const t=P.me&&P.me.team; if(t==null||t<0) return;
   tmOffFn=PAD.be.on(P.T+'/tm/'+t,v=>{ P.tm=v||null; if(P.st&&P.st.ph==='lobby') padRender(); else updPlay(); }); }
 function herePresence(){
-  const on=!!(P.view&&P.view.cl===CLEAN)&&P.live;
+  const on=(NORMAL?!!(P.view&&P.view.seat&&P.view.seat.g===GID):!!(P.view&&P.view.cl===CLEAN))&&P.live;
   if(on&&!P.here){ P.here=PAD.be.presence(P.T+'/here/'+PAD.vk(),{t:now()}); PAD.req('g:hello',{},GID); }
   else if(!on&&P.here){ try{ P.here(); }catch(e){} P.here=null; }
 }
@@ -713,7 +761,11 @@ async function act(type,data){
 }
 function padRender(){
   const v=P.view; if(v===undefined) return;
-  if(v.cl!==CLEAN) return padMsg('この掃除決めには参加していません','先生に確認してください。');
+  if(NORMAL){
+    const sd=v.seat;
+    if(!sd||sd.g!==GID) return padMsg('タワーバトルにはまだ入っていません','メダルゲームのトップで、持ち込む枚数を選んでから入ってね。');
+    if(!P.live) return padMsg('タワーバトルは止まりました','先生がゲームを止めました。メダルは貯金にもどっています(もどっていないときは、トップで「貯金にもどす」を押してください)。');
+  }else if(v.cl!==CLEAN) return padMsg('この掃除決めには参加していません','先生に確認してください。');
   if(!P.live){
     const id=Object.keys(P.games).find(k=>P.games[k].clean===CLEAN);
     if(id){ const u=new URL(P.games[id].url); u.searchParams.set('mg',PAD.pub); if(MG.LOCAL) u.searchParams.set('local','1');
