@@ -332,8 +332,8 @@ const airOK = k => !!(TT[k] && !TT[k].ground && !TT[k].noAtk);   // defender tha
 function deckOK(d) { return !!(d && Array.isArray(d.def) && Array.isArray(d.atk) && d.def.length === DECK_N && d.atk.length === DECK_N && d.def.every(k => TT[k] || TRAPS[k]) && d.atk.every(k => UT[k])); }
 function copyDeck(d) { return { def: d.def.slice(), atk: d.atk.slice(), name: d.name }; }
 const DMULT = [1, 1, 1.45, 2.0], HMULT = [1, 1, 1.4, 1.9];
-// ---- team mode settings. start = starting gold of the team safe (bank) and each role's wallet
-const TEAM_CFG = { start: { bank: 150, front: 120, back: 160, eng: 100 }, inc: 20, tgtCd: 30, give: [10, 50, 100], wallCost: 30, prep: 30, deckN: 3 };
+// ---- team mode settings. start = starting gold of the team safe (bank) and each role's wallet (all 500G start in the safe; the commander hands it out)
+const TEAM_CFG = { start: { bank: 500, front: 0, back: 0, eng: 0 }, inc: 20, tgtCd: 30, give: [10, 50, 100], wallCost: 30, prep: 30, deckN: 3 };
 const COURIER = { cost: 40, type: 'wolf', name: '回収隊' };
 // cards each role can choose (3 of them). the engineer always has the wall and the obstacle; the commander has no cards
 const ROLE_POOL = { front: UNIT_ORDER.slice(), back: TOWER_ORDER.filter(k => k !== 'wall'), eng: TRAP_ORDER.slice(), cmd: [] };
