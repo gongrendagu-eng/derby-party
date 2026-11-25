@@ -88,7 +88,8 @@ const Scenes = (function(){
   const TINT = {
     '教室': [1, 1, 1], '職員室': [1.1, 1, 0.9], '体育倉庫': [1, 0.9, 0.8], '美術室': [1.1, 0.95, 1.15],
     '音楽室': [1, 0.95, 1.25], '調理室': [1.15, 1.05, 0.9], '理科室': [0.9, 1.15, 1.1], '図書室': [1.15, 1, 0.85],
-    '保健室': [1.15, 1.15, 1.2], '校長室': [1.2, 0.95, 0.85], '放送室': [0.95, 0.95, 1.25]
+    '保健室': [1.15, 1.15, 1.2], '校長室': [1.2, 0.95, 0.85], '放送室': [0.95, 0.95, 1.25],
+    'パソコン教室': [0.9, 1.05, 1.25], '視聴覚室': [1.05, 0.9, 1.15], '玄関': [0.95, 1.1, 1.0]
   };
 
   function plate(text, z, y){
@@ -119,20 +120,48 @@ const Scenes = (function(){
     poly(qX(-hw, -0.5, 0.1, 0.7, 1.9), rgb(120, 150, 210, moon), rgb(60, 70, 100), 2);
     poly(qX(hw, -0.5, 0.1, 0.7, 1.9), rgb(120, 150, 210, moon * 0.8), rgb(60, 70, 100), 2);
     poly([pr(-hw, yf, 0.7), pr(-hw, yf, 1.9), pr(-0.3, yf, 2.9), pr(-0.3, yf, 1.7)], rgb(130, 160, 220, 0.09 * l));
-    poly(qZ(zb, -1.45, -0.5, -0.5, 0.15), T(18, 44, 36), rgb(90, 70, 50), 3);
-    ctx.strokeStyle = rgb(200, 210, 200, 0.35); ctx.lineWidth = 2;
-    [[-1.3, -0.3, -1.0, -0.3], [-1.3, -0.15, -0.8, -0.15], [-1.3, 0.0, -0.9, 0.0]].forEach(s => { const a = pr(s[0], s[1], zb), b = pr(s[2], s[3], zb); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); });
+    if (v.exitLocked) entrance(zb, yf, t, l);
+    else {
+      poly(qZ(zb, -1.45, -0.5, -0.5, 0.15), T(18, 44, 36), rgb(90, 70, 50), 3);
+      ctx.strokeStyle = rgb(200, 210, 200, 0.35); ctx.lineWidth = 2;
+      [[-1.3, -0.3, -1.0, -0.3], [-1.3, -0.15, -0.8, -0.15], [-1.3, 0.0, -0.9, 0.0]].forEach(s => { const a = pr(s[0], s[1], zb), b = pr(s[2], s[3], zb); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); });
+    }
     hits = [];
     const dr = v.doors || {};
     if (dr.front) door('front', qZ(zb, -0.3, 0.3, -0.55, yf), dr.front, t); else { const c = pr(0, -0.1, zb), r = 0.25 * P.f / zb; ctx.strokeStyle = rgb(160, 150, 120, 0.6); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(c[0], c[1], r, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(c[0], c[1] - r * 0.8); ctx.moveTo(c[0], c[1]); ctx.lineTo(c[0] + r * 0.5, c[1]); ctx.stroke(); }
     if (dr.right) door('right', qX(hw, -0.55, yf, 2.4, 3.4), dr.right, t); else poly(qX(hw, -0.4, 0.1, 2.4, 3.4), rgb(58 * l, 52 * l, 40 * l), rgb(90, 80, 60), 2);
     if (dr.left) door('left', qX(-hw, -0.55, yf, 2.4, 3.4), dr.left, t); else poly(qX(-hw, -0.4, 0.1, 2.4, 3.4), rgb(58 * l, 52 * l, 40 * l), rgb(90, 80, 60), 2);
-    const desks = [[-1.0, 1.7], [1.0, 1.9], [-0.95, 3.5], [0.95, 3.7]];
+    const desks = v.exitLocked ? [] : [[-1.0, 1.7], [1.0, 1.9], [-0.95, 3.5], [0.95, 3.7]];
     desks.sort((a, b) => b[1] - a[1]).forEach(d => box(d[0] - 0.3, d[0] + 0.3, 0.3, 0.8, d[1], d[1] + 0.4, [40 * tn[0], 34 * tn[1], 30 * tn[2]], l));
     plate(v.name || '', zb, -0.68);
     const g = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, H * 0.7);
     g.addColorStop(0, rgb(255, 230, 170, 0.10 * l)); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+
+  /* 玄関：奥の壁の左側に、錠前のかかったガラスの両開き扉（タップでは開かない） */
+  function entrance(zb, yf, t, l){
+    const x0 = -1.5, x1 = -0.42, y0 = -0.62, xm = (x0 + x1) / 2;
+    poly(qZ(zb, x0 - 0.05, x1 + 0.05, y0 - 0.06, yf), rgb(70 * l, 72 * l, 80 * l));
+    const night = 0.35 + 0.1 * Math.sin(t * 0.6);
+    poly(qZ(zb, x0, xm - 0.01, y0, yf), rgb(40, 60, 100, night), rgb(150, 160, 180, 0.8), 2);
+    poly(qZ(zb, xm + 0.01, x1, y0, yf), rgb(40, 60, 100, night), rgb(150, 160, 180, 0.8), 2);
+    ctx.strokeStyle = rgb(190, 190, 200, 0.85); ctx.lineWidth = 3;
+    [[xm - 0.06, xm - 0.06], [xm + 0.06, xm + 0.06]].forEach(h => { const a = pr(h[0], 0.0, zb), b = pr(h[1], 0.3, zb); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); });
+    /* 鎖と錠前 */
+    const c1 = pr(xm - 0.22, 0.08, zb), c2 = pr(xm + 0.22, 0.22, zb), c3 = pr(xm - 0.22, 0.22, zb), c4 = pr(xm + 0.22, 0.08, zb);
+    ctx.strokeStyle = rgb(170, 160, 140, 0.95); ctx.lineWidth = Math.max(2, 0.025 * P.f / zb); ctx.setLineDash([5, 3]);
+    ctx.beginPath(); ctx.moveTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.moveTo(c3[0], c3[1]); ctx.lineTo(c4[0], c4[1]); ctx.stroke(); ctx.setLineDash([]);
+    const lk = pr(xm, 0.2, zb), s = 0.07 * P.f / zb;
+    ctx.strokeStyle = rgb(210, 175, 80); ctx.lineWidth = Math.max(2, s * 0.3);
+    ctx.beginPath(); ctx.arc(lk[0], lk[1], s * 0.7, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = rgb(210, 175, 80); ctx.fillRect(lk[0] - s, lk[1], s * 2, s * 1.6);
+    ctx.fillStyle = rgb(40, 30, 10); ctx.beginPath(); ctx.arc(lk[0], lk[1] + s * 0.7, s * 0.25, 0, 7); ctx.fill();
+    /* 「出口」の非常灯 */
+    const ex = pr(xm, y0 - 0.16, zb), fs = Math.max(10, 0.09 * P.f / zb);
+    ctx.font = '700 ' + fs + 'px -apple-system,"Hiragino Sans",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ew = fs * 3.2; ctx.fillStyle = rgb(30, 160, 90, 0.85 + 0.15 * Math.sin(t * 4)); ctx.fillRect(ex[0] - ew / 2, ex[1] - fs * 0.7, ew, fs * 1.4);
+    ctx.fillStyle = '#fff'; ctx.fillText('出口', ex[0], ex[1]);
   }
 
   function drawCorridor(v, t, l){

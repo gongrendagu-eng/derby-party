@@ -1,13 +1,17 @@
 /* ===== 見取り図の自動生成（シードから毎回同じ形を再現） ===== */
 function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function shuffle(arr, rng){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-const COLS = 5, ROWS = 4, NCELL = 20;
+const COLS = 6, ROWS = 5, NCELL = COLS * ROWS;
 const DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0]];           // 北・東・南・西（北＝図の上）
 const REL = ['front', 'right', 'back', 'left'];
 const idx = (c, r) => r * COLS + c;
 const cr = i => [i % COLS, Math.floor(i / COLS)];
-const ROOM_NAMES = ['職員室', '体育倉庫', '美術室', '音楽室', '調理室', '理科室', '図書室', '保健室', '校長室', '放送室'];
-const MIN_DIST = 6;
+const ROOM_NAMES = ['職員室', '体育倉庫', '美術室', '音楽室', '調理室', '理科室', '図書室', '保健室', '校長室', '放送室', 'パソコン教室', '視聴覚室'];
+const N_ROOMS = 12;        // お題のある部屋の数（教室・玄関は別）
+const N_EXTRA = 10;        // 迷路に足す近道の数（ルートを複数にする）
+const MIN_DIST = 7;        // スタート→玄関の最短マス数
+const KEY_MIN_START = 4, KEY_MIN_EXIT = 3;   // 鍵の部屋：スタートから4マス以上・玄関から3マス以上
+const DIR_NAME = ['北', '東', '南', '西'];
 
 function bfs(adj, s){
   const d = new Array(NCELL).fill(-1); d[s] = 0; const q = [s];
@@ -37,7 +41,7 @@ function genMap(seed){
       const [c, r] = cr(a);
       [0, 1].forEach(d => { const nc = c + DIRS[d][0], nr = r + DIRS[d][1]; if (nc < COLS && nr < ROWS && adj[a][d] == null) extras.push([a, idx(nc, nr), d]); });
     }
-    shuffle(extras, rng).slice(0, 7).forEach(e => link(e[0], e[1], e[2]));
+    shuffle(extras, rng).slice(0, N_EXTRA).forEach(e => link(e[0], e[1], e[2]));
     const start = Math.floor(rng() * NCELL);
     const dist = bfs(adj, start);
     const far = []; for (let i = 0; i < NCELL; i++) if (dist[i] >= MIN_DIST) far.push(i);
@@ -46,13 +50,17 @@ function genMap(seed){
     const deg = i => adj[i].filter(x => x != null).length;
     const rest = []; for (let i = 0; i < NCELL; i++) if (i !== start && i !== exit) rest.push(i);
     rest.sort((a, b) => (deg(b) + rng() * 1.5) - (deg(a) + rng() * 1.5));
-    const roomCells = rest.slice(0, 10), names = shuffle(ROOM_NAMES, rng);
+    const roomCells = rest.slice(0, N_ROOMS), names = shuffle(ROOM_NAMES, rng);
+    const dExit = bfs(adj, exit);
+    const keyCand = roomCells.filter(i => dist[i] >= KEY_MIN_START && dExit[i] >= KEY_MIN_EXIT);
+    if (!keyCand.length) continue;
+    const keyRoom = keyCand[Math.floor(rng() * keyCand.length)];
     const cells = new Array(NCELL);
     cells[start] = { type: 'room', name: '教室' };
     cells[exit] = { type: 'exit', name: '玄関' };
     roomCells.forEach((ci, k) => { cells[ci] = { type: 'room', name: names[k] }; });
-    rest.slice(10).forEach(ci => { cells[ci] = { type: 'corridor', name: '廊下' }; });
-    return { seed, adj, start, exit, cells, dist };
+    rest.slice(N_ROOMS).forEach(ci => { cells[ci] = { type: 'corridor', name: '廊下' }; });
+    return { seed, adj, start, exit, keyRoom, cells, dist };
   }
   throw new Error('map generation failed');
 }
@@ -63,6 +71,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const GROUPS = ['A', 'B', 'C', 'D'];
 const GCOLOR = { A: '#ff6b6b', B: '#4dabf7', C: '#69db7c', D: '#ffd43b' };
 const PENALTY_MS = 30000;
+const CLUE_RATE = 0.2;     // お題を解いたとき、手がかり（紙切れ）が出る確率
 const TEACHER_PIN = '2026';
 const Q = new URLSearchParams(location.search);
 const LOCAL = Q.has('local');
@@ -113,7 +122,7 @@ let S = null, MAP = null, G = null, walkStart = 0, walkP = 1, dbTried = false;
 let dbOk = false, introSeen = false;
 let GD = {}, seenFin = null, CLEAN = null, annTimer = null;
 
-function blank(group){ return { group, introDone: false, resetId: null, seed: null, cell: null, facing: 0, phase: 'idle', solved: {}, assigned: {}, queue: [], hintCells: {}, hints: 0, wrong: 0, startedAt: 0, finishedAt: 0 }; }
+function blank(group){ return { group, introDone: false, resetId: null, seed: null, cell: null, facing: 0, phase: 'idle', solved: {}, assigned: {}, queue: [], hintCells: {}, hints: 0, wrong: 0, hasKey: false, sawExit: false, notes: [], startedAt: 0, finishedAt: 0 }; }
 function save(){ if (MODE === 'test') return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 function load(){ if (MODE === 'test') return null; try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
 
@@ -133,6 +142,7 @@ function snapshotData(){
     type: info ? info.type : null, name: info ? info.name : null,
     puzzleTitle: S.phase === 'puzzle' && p ? p.title : null,
     solved: Object.keys(S.solved).length, hints: S.hints, wrong: S.wrong,
+    hasKey: !!S.hasKey, sawExit: !!S.sawExit, notes: (S.notes || []).length,
     startedAt: S.startedAt, finishedAt: S.finishedAt, updatedAt: Date.now()
   };
 }
@@ -154,6 +164,7 @@ const INTRO = [
     '<p>扉を開けると、そこは見慣れた廊下ではなかった。いつもの校舎のはずなのに、扉と廊下がどこまでも続いている。</p>' +
     '<p>「夜になると、学校は迷宮に変わる」――生徒たちのあいだで語り継がれてきた、あの噂は本当だったのだ。</p>' +
     '<p>出口は、ただ一つ。「玄関」だけ。けれど、どの扉にも鍵がかかっている。鍵を開けられるのは、部屋に残された謎を解いた者だけだ。</p>' +
+    '<p>そして玄関の扉には、ひときわ大きな錠前がかかっているという。その<b>鍵</b>は、校舎のどこかの部屋に眠っているらしい。</p>' +
     '<p>夜が明ける前に、仲間と力を合わせて、校舎から脱出せよ。</p>' +
     '<p class="dim">……ただし、暗い廊下では、何かが君たちを見ているかもしれない。</p>' },
   { t: 'ルール', h:
@@ -163,8 +174,10 @@ const INTRO = [
     '<li>通ってきた扉は「後ろ」に残ります。迷ったら戻ってもかまいません。一度解いた部屋は、お題が出ません。</li>' +
     '<li><b>廊下</b>にお題はありません。ただ歩くだけ……のはずですが、何かが起こるかもしれません。</li>' +
     '<li>お題で詰まったら<b>ヒント</b>を見られます。ただし、1回につき<b>30秒</b>がタイムに加わります。</li>' +
-    '<li>全グループが同じ校舎に閉じ込められています。</li>' +
-    '<li>最初に<b>玄関</b>にたどり着いたグループの勝ちです（ヒントの30秒を足したタイムで決めます）。</li>' +
+    '<li><b>玄関には鍵がかかっています。</b>鍵は、どこかの部屋のお題を解くと見つかります。鍵を持たずに玄関へ行っても、扉は開きません。</li>' +
+    '<li>お題を解くと、ときどき<b>紙切れ（手がかり）</b>が見つかります。鍵や玄関の場所のヒントです。あとから「メモ」ボタンで読み返せます。</li>' +
+    '<li>全グループが同じ校舎に閉じ込められています。鍵のある部屋も、玄関の場所も、全グループ同じです。</li>' +
+    '<li>最初に<b>鍵を持って玄関</b>にたどり着いたグループの勝ちです（ヒントの30秒を足したタイムで決めます）。</li>' +
     '<li>脱出したグループがあると、ほかのグループの画面にお知らせが出ます。<b>最後まで脱出できなかったグループが、本日の掃除当番</b>です。</li>' +
     '<li><b>iPadやその他のデバイスを使って、検索することは一切禁止します。</b></li>' +
     '<li><b>使用できるのは、紙とペンのみです。</b></li>' +
@@ -174,11 +187,13 @@ const INTRO = [
     '<p>この学校は、迷宮です。しかも、ゲームのたびに形が変わります。<b>画面に地図は出ません。</b>自分たちで地図を描くことが、脱出への近道です。</p>' +
     '<ol>' +
     '<li>紙とペンを用意します。</li>' +
-    '<li>最初にいる教室を「スタート」として、紙の中ほどに四角で描きます。そのとき向いている方向を、地図の<b>「上」</b>と決めます。</li>' +
+    '<li>画面の左上に<b>方位磁針</b>があります。矢印が、いま自分たちが向いている方角です。地図は<b>「上＝北」</b>で描きましょう。</li>' +
+    '<li>最初にいる教室を「スタート」として、紙の中ほどに四角で描きます。</li>' +
     '<li>部屋は実線の四角、廊下は点線の四角で描き、部屋の名前（音楽室など）を書き込みます。</li>' +
-    '<li>扉を通ったら、進んだ方角に新しいマスを描いて、線でつなぎます。</li>' +
-    '<li>注意：<b>進んだ向きが、次の部屋の「正面」になります。</b>右の扉から出たら、次の部屋の「正面」は地図の「右」です。向きが変わるたびに、地図のどちらへ進んだのかを確かめましょう。</li>' +
-    '<li>行き止まりや、お題を解いた部屋にしるしをつけておくと、迷いません。</li>' +
+    '<li>扉のボタンには<b>方角</b>が書いてあります（例：「右の扉（東）」）。扉を通ったら、その方角に新しいマスを描いて、線でつなぎます。</li>' +
+    '<li>進んだ向きが、次の部屋の「正面」になります。「右・左」は向きによって変わりますが、<b>方角（東西南北）は変わりません</b>。地図には方角で描くのがコツです。</li>' +
+    '<li>校舎は<b>横6マス×縦5マス</b>の広さです。</li>' +
+    '<li>行き止まりや、お題を解いた部屋、<b>玄関の場所</b>にしるしをつけておくと、迷いません。</li>' +
     '</ol>' +
     '<svg viewBox="0 0 360 86" class="ex" role="img"><title>地図の描き方の例</title>' +
     '<rect x="8" y="20" width="96" height="46" rx="8" fill="#5a4210" stroke="#e8c36a" stroke-width="2"/><text x="56" y="48" text-anchor="middle" font-size="14" fill="#ffe9b0">スタート</text>' +
@@ -186,7 +201,7 @@ const INTRO = [
     '<rect x="132" y="20" width="96" height="46" rx="8" fill="#1a1e30" stroke="#6b78a6" stroke-width="2" stroke-dasharray="6 5"/><text x="180" y="48" text-anchor="middle" font-size="14" fill="#aab3cc">廊下</text>' +
     '<line x1="228" y1="43" x2="256" y2="43" stroke="#8a95b8" stroke-width="4"/>' +
     '<rect x="256" y="20" width="96" height="46" rx="8" fill="#2d3350" stroke="#6b78a6" stroke-width="2"/><text x="304" y="48" text-anchor="middle" font-size="14" fill="#e6ebff">音楽室</text>' +
-    '<text x="118" y="14" text-anchor="middle" font-size="11" fill="#cdb98a">右の扉</text><text x="242" y="14" text-anchor="middle" font-size="11" fill="#cdb98a">正面の扉</text>' +
+    '<text x="118" y="14" text-anchor="middle" font-size="11" fill="#cdb98a">東の扉</text><text x="242" y="14" text-anchor="middle" font-size="11" fill="#cdb98a">東の扉</text>' +
     '</svg>' +
     '<p class="dim">役割を分けると、うまくいきます。例：地図係、お題を読む係、答えを入力する係、時間を見る係。</p>' }
 ];
@@ -272,7 +287,7 @@ function onGameState(){
 function begin(seed, startedAt, resetId){
   MAP = genMap(seed);
   S.seed = seed; S.resetId = resetId; S.startedAt = startedAt; S.finishedAt = 0;
-  S.solved = {}; S.assigned = {}; S.hintCells = {}; S.hints = 0; S.wrong = 0;
+  S.solved = {}; S.assigned = {}; S.hintCells = {}; S.hints = 0; S.wrong = 0; S.hasKey = false; S.sawExit = false; S.notes = [];
   S.queue = shuffle(PUZZLES.map(p => p.id), Math.random);
   S.facing = Math.floor(Math.random() * 4);
   showScreen('');
@@ -282,17 +297,31 @@ function begin(seed, startedAt, resetId){
 
 function resume(){
   MAP = genMap(S.seed); showScreen('');
+  if (!S.notes) S.notes = [];
   if (S.phase === 'finished'){ finishScreen(); return; }
   if (S.phase === 'cleaning'){ screenCleaning(); return; }
   if (S.phase === 'puzzle') { showPuzzle(); return; }
+  if (S.phase === 'unlocking'){ finish(); return; }
   S.phase = 'choose'; showDoors(); sync();
 }
 
 /* --- マスへの進入 --- */
 function enterCell(cell, first){
   S.cell = cell; const info = MAP.cells[cell];
-  hideUI();
-  if (info.type === 'exit'){ finish(); return; }
+  hideUI(); updateHud();
+  if (info.type === 'exit'){
+    if (S.hasKey){
+      S.phase = 'unlocking'; save(); sync();
+      Sound.unlock(); sub('鍵を差し込んで、回す……ガチャリ。', 2400);
+      setTimeout(finish, 1600);
+      return;
+    }
+    const firstTime = !S.sawExit; S.sawExit = true;
+    Sound.buzz(); setTimeout(() => Sound.knock(), 300);
+    sub(firstTime ? '玄関だ！……でも、扉には大きな錠前がかかっている。鍵を探さなければ。' : '玄関の扉は、鍵がないと開かない……。', 4200);
+    S.phase = 'choose'; showDoors(); save(); sync();
+    return;
+  }
   if (info.type === 'room'){
     if (!first && Math.random() < 0.3){ Math.random() < 0.5 ? (Sound.whisper(), sub('……だれか いる……？')) : (Sound.creak(), sub('どこかで床がきしんだ…')); }
     if (S.solved[cell]){ S.phase = 'choose'; showDoors(); }
@@ -335,11 +364,11 @@ function exitsNow(){
   for (let d = 0; d < 4; d++){ if (MAP.adj[S.cell][d] != null) out.push({ d, rel: REL[(d - S.facing + 4) % 4] }); }
   return out;
 }
-const REL_LABEL = { left: '左の扉', front: '正面の扉', right: '右の扉', back: '後ろの扉（戻る）' };
+const REL_LABEL = { left: '左の扉', front: '正面の扉', right: '右の扉', back: '後ろの扉' };
 function showDoors(){
   $('panel').hidden = true;
   const box = $('doors'), ex = exitsNow(), order = ['left', 'front', 'right', 'back'];
-  box.innerHTML = order.map(r => { const e = ex.find(x => x.rel === r); return e ? '<button class="dbtn" data-d="' + e.d + '" data-r="' + r + '">' + REL_LABEL[r] + '</button>' : ''; }).join('');
+  box.innerHTML = order.map(r => { const e = ex.find(x => x.rel === r); return e ? '<button class="dbtn" data-d="' + e.d + '" data-r="' + r + '">' + REL_LABEL[r] + '<span class="dirn">（' + DIR_NAME[e.d] + '）</span></button>' : ''; }).join('');
   box.hidden = false;
   box.querySelectorAll('.dbtn').forEach(b => b.onclick = () => go(Number(b.dataset.d), b.dataset.r));
 }
@@ -349,7 +378,7 @@ function go(d, rel){
   Sound.creak();
   const w = $('cvwrap'); w.className = 'mv-' + rel;
   setTimeout(() => {
-    S.facing = d;
+    S.facing = d; updateHud();
     const next = MAP.adj[S.cell][d];
     w.className = 'noanim'; void w.offsetWidth; w.className = 'fadein';
     enterCell(next);
@@ -388,8 +417,17 @@ function answer(p, v){
   if (checkAnswer(p, v)){
     Sound.chime(); setTimeout(() => Sound.unlock(), 350);
     S.solved[S.cell] = true; msg.textContent = 'カチッ…扉の鍵が開いた！'; msg.className = 'good';
-    S.phase = 'choose'; save(); sync();
-    setTimeout(() => { if (S.phase === 'choose') showDoors(); }, 1100);
+    S.phase = 'choose';
+    let found = null;
+    if (S.cell === MAP.keyRoom && !S.hasKey){ S.hasKey = true; found = 'key'; }
+    else if (Math.random() < CLUE_RATE){ const c = makeClue(); if (c){ S.notes.push({ room: MAP.cells[S.cell].name, text: c }); found = c; } }
+    save(); sync(); updateHud();
+    setTimeout(() => {
+      if (S.phase !== 'choose') return;
+      if (found === 'key') showFound('key');
+      else if (found) showFound('clue', found);
+      else showDoors();
+    }, 1100);
   } else {
     S.wrong++; Sound.buzz(); msg.textContent = 'ガチャガチャ…鍵は開かない。もう一度みんなで考えよう。'; msg.className = 'bad';
     const pn = $('panel'); pn.classList.remove('shake'); void pn.offsetWidth; pn.classList.add('shake');
@@ -397,6 +435,62 @@ function answer(p, v){
   }
 }
 
+
+/* --- 鍵・手がかり（紙切れ） --- */
+function dirWord(from, to){
+  const [c1, r1] = cr(from), [c2, r2] = cr(to), dx = c2 - c1, dy = r2 - r1;   // r が大きいほど北
+  const ns = dy > 0 ? '北' : dy < 0 ? '南' : '', ew = dx > 0 ? '東' : dx < 0 ? '西' : '';
+  if (Math.abs(dx) > 2 * Math.abs(dy)) return ew;
+  if (Math.abs(dy) > 2 * Math.abs(dx)) return ns;
+  return ns + ew;
+}
+function makeClue(){
+  const d = bfs(MAP.adj, S.cell), opts = [];
+  if (!S.hasKey){
+    const kn = MAP.cells[MAP.keyRoom].name;
+    opts.push('玄関の鍵は「' + kn + '」にしまってある。');
+    opts.push('鍵のある部屋は、ここから見て【' + dirWord(S.cell, MAP.keyRoom) + '】の方角にある。');
+    opts.push('鍵のある部屋までは、ここから扉を ' + d[MAP.keyRoom] + ' 回くぐれば着く。');
+    if (!S.sawExit) opts.push('玄関は、ここから見て【' + dirWord(S.cell, MAP.exit) + '】の方角にある。');
+  } else {
+    opts.push('玄関は、ここから見て【' + dirWord(S.cell, MAP.exit) + '】の方角にある。');
+    opts.push('玄関までは、ここから扉を ' + d[MAP.exit] + ' 回くぐれば着く。');
+  }
+  const have = (S.notes || []).map(n => n.text);
+  const fresh = opts.filter(o => !have.includes(o));
+  if (!fresh.length) return null;
+  return fresh[Math.floor(Math.random() * fresh.length)];
+}
+function showFound(kind, text){
+  hideUI();
+  if (kind === 'key'){
+    Sound.chime(); setTimeout(() => Sound.unlock(), 300); setTimeout(() => Sound.chime(), 700);
+    showScreen('<div class="card found"><div class="fic">🔑</div><h1>鍵を見つけた！</h1><p>机の引き出しの奥に、古びた鍵が入っていた。<br>札には「<b>玄関</b>」と書いてある。</p><p class="dim">これで玄関の扉が開けられる。玄関をめざそう。</p><p><button class="pri" id="fOk">鍵を持っていく</button></p></div>');
+  } else {
+    Sound.creak();
+    showScreen('<div class="card found"><div class="fic">📜</div><h1>紙切れを見つけた</h1><p class="dim">床に、くしゃくしゃの紙が落ちていた。こう書いてある――</p><div class="clue">' + esc(text) + '</div><p class="dim">（あとから「メモ」ボタンで読み返せます）</p><p><button class="pri" id="fOk">メモに書き写す</button></p></div>');
+  }
+  $('fOk').onclick = () => { showScreen(''); if (S.phase === 'choose') showDoors(); };
+}
+function screenNotes(){
+  const notes = S.notes || [];
+  showScreen('<div class="card intro"><h1>メモ</h1><div class="itext">' +
+    '<p>' + (S.hasKey ? '🔑 <b>玄関の鍵を持っている</b>' : '🔒 玄関の鍵は、まだ見つけていない') + '</p>' +
+    (S.sawExit ? '<p>🚪 玄関の場所は、もう見つけた</p>' : '') +
+    (notes.length ? '<ul>' + notes.map(n => '<li><span class="dim">' + esc(n.room) + 'で：</span>' + esc(n.text) + '</li>').join('') + '</ul>' : '<p class="dim">紙切れ（手がかり）は、まだ見つけていません。お題を解くと、ときどき見つかります。</p>') +
+    '<p class="dim">※方角や「あと何回」は、紙切れを見つけた部屋から見たものです。</p>' +
+    '</div><div class="introbtns"><span></span><button class="pri" id="nClose">閉じる</button></div></div>');
+  $('nClose').onclick = () => showScreen('');
+}
+function updateHud(){
+  const cp = $('compass'), kb = $('hudKey'), mb = $('btnNotes');
+  const on = !!(S && S.startedAt && MAP && S.phase !== 'finished' && S.phase !== 'cleaning' && S.phase !== 'idle');
+  cp.hidden = !on; kb.hidden = !(on && S.hasKey); mb.hidden = !on;
+  if (!on) return;
+  $('needle').setAttribute('transform', 'rotate(' + (S.facing * 90) + ' 50 50)');
+  $('cpText').textContent = DIR_NAME[S.facing] + 'を向いている';
+  mb.textContent = 'メモ' + ((S.notes || []).length ? '（' + S.notes.length + '）' : '');
+}
 
 /* --- 脱出のお知らせ・掃除当番 --- */
 function activeList(){ return (G && Array.isArray(G.active) && G.active.length) ? G.active : GROUPS; }
@@ -448,9 +542,10 @@ function finishScreen(){
 function currentView(){
   if (!S || !MAP || S.cell == null || S.phase === 'idle' || S.phase === 'cleaning') return { kind: 'title' };
   const info = MAP.cells[S.cell];
-  if (info.type === 'exit' || S.phase === 'finished') return { kind: 'exit' };
+  if (S.phase === 'finished' || S.phase === 'unlocking') return { kind: 'exit' };
   const doors = {};
   exitsNow().forEach(e => { if (e.rel === 'back') return; doors[e.rel] = info.type === 'room' ? (S.solved[S.cell] ? 2 : 1) : (S.phase === 'choose' ? 2 : 1); });
+  if (info.type === 'exit') return { kind: 'room', name: '玄関', doors, exitLocked: true };
   if (info.type === 'room') return { kind: 'room', name: info.name, doors };
   return { kind: 'corridor', walk: S.phase === 'walk' ? walkP : 1, doors };
 }
@@ -466,7 +561,9 @@ function startStudent(){
       const el = (S.finishedAt || Date.now()) - S.startedAt + S.hints * PENALTY_MS;
       hud.textContent = fmt(el); $('hudGroup').textContent = 'グループ ' + S.group;
     } else { hud.textContent = ''; $('hudGroup').textContent = S && S.group ? 'グループ ' + S.group : ''; }
+    updateHud();
   }, 500);
+  $('btnNotes').onclick = () => { if ($('screen').hidden && S && S.startedAt && S.phase !== 'finished') screenNotes(); };
   $('btnRead').onclick = () => { if ($('screen').hidden && S && S.startedAt && S.phase !== 'finished') screenIntro(0, true); };
   if (MODE === 'student' && !ROOM){ screenRoomCode(); return; }
   const saved = load();
@@ -539,7 +636,9 @@ function teacherMapSvg(){
     if (a === M.start){ fill = '#5a4210'; stroke = '#e8c36a'; tc = '#ffe9b0'; }
     if (info.type === 'exit'){ fill = '#1b4a34'; stroke = '#69db7c'; tc = '#c8f7d4'; }
     s += '<rect x="' + X(c) + '" y="' + Y(r) + '" width="' + cw + '" height="' + ch + '" rx="10" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2" ' + (info.type === 'corridor' ? 'stroke-dasharray="6 5"' : '') + '/>';
-    s += '<text x="' + (X(c) + 10) + '" y="' + (Y(r) + 22) + '" fill="' + tc + '" font-size="15" font-weight="500">' + info.name + (a === M.start ? '（スタート）' : '') + '</text>';
+    s += '<text x="' + (X(c) + 10) + '" y="' + (Y(r) + 22) + '" fill="' + tc + '" font-size="15" font-weight="500">' + info.name + '</text>' + (a === M.start ? '<text x="' + (X(c) + 10) + '" y="' + (Y(r) + 40) + '" fill="' + tc + '" font-size="12">スタート</text>' : '');
+    if (a === M.keyRoom) s += '<text x="' + (X(c) + cw - 8) + '" y="' + (Y(r) + ch - 10) + '" text-anchor="end" font-size="20">🔑</text>';
+    if (info.type === 'exit') s += '<text x="' + (X(c) + cw - 8) + '" y="' + (Y(r) + ch - 10) + '" text-anchor="end" font-size="20">🚪</text>';
   }
   const at = {};
   GROUPS.forEach(g => { const d = TG[g]; if (d && d.cell != null && d.startedAt){ (at[d.cell] = at[d.cell] || []).push(g); } });
@@ -578,10 +677,11 @@ function renderTeacher(){
       const [c, r] = d.cell != null ? cr(d.cell) : [0, 0];
       const fin = d.finishedAt > 0, el = (fin ? d.finishedAt : now) - d.startedAt + (d.hints || 0) * PENALTY_MS;
       const place = rank.findIndex(x => x.g === g);
-      const st = fin ? '脱出！ ' + (place + 1) + '位' : (d.phase === 'cleaning' ? '本日の掃除当番に決定' : d.phase === 'puzzle' ? 'お題に挑戦中' : d.phase === 'walk' ? '廊下を歩いている' : d.phase === 'moving' ? '扉を開けた' : '扉を選んでいる');
+      const st = fin ? '脱出！ ' + (place + 1) + '位' : (d.phase === 'cleaning' ? '本日の掃除当番に決定' : d.phase === 'puzzle' ? 'お題に挑戦中' : d.phase === 'walk' ? '廊下を歩いている' : d.phase === 'moving' ? '扉を開けた' : d.phase === 'unlocking' ? '玄関の鍵を開けている' : d.type === 'exit' ? '玄関に来たが、鍵がない' : '扉を選んでいる');
       const idle = Math.floor((now - (d.updatedAt || now)) / 1000);
       body = '<div class="tstat">' + st + '</div><div class="tsub">現在地：' + esc(d.name || '') + '（' + (c + 1) + '列' + (r + 1) + '行）</div>' +
         (d.puzzleTitle ? '<div class="tsub">お題：' + esc(d.puzzleTitle) + '</div>' : '') +
+        '<div class="tsub">' + (d.hasKey ? '🔑 鍵あり' : '鍵なし') + (d.sawExit ? ' ・ 玄関を発見ずみ' : '') + ' ・ 紙切れ ' + (d.notes || 0) + '</div>' +
         '<div class="tsub">解いた部屋 ' + (d.solved || 0) + ' ・ ヒント ' + (d.hints || 0) + ' ・ 誤答 ' + (d.wrong || 0) + '</div>' +
         '<div class="tsub">経過 ' + fmt(el) + (!fin && idle > 90 ? ' ・ <span class="bad">' + idle + '秒間 動きなし</span>' : '') + '</div>';
     }
@@ -593,7 +693,7 @@ function renderTeacher(){
     (tErr ? '<div class="bad tmsg">' + esc(tErr) + '</div>' : '') +
     (running ? '' : '<div class="tchips">参加グループ：' + GROUPS.map(g => '<button class="chip' + (act.includes(g) ? ' on' : '') + '" data-g="' + g + '" style="--c:' + GCOLOR[g] + '">' + g + '</button>').join('') + '</div>') +
     (clean ? '<div class="tclean">本日の掃除当番：' + clean + 'グループ</div>' : '') +
-    '<div class="tbody"><div class="tmapwrap">' + teacherMapSvg() + '<div class="tleg">点線＝廊下 ／ 実線＝部屋 ／ 線＝扉でつながっている ／ 矢印＝向いている方角</div></div><div class="tside">' + cards + '</div></div>';
+    '<div class="tbody"><div class="tmapwrap">' + teacherMapSvg() + '<div class="tleg">上＝北 ／ 点線＝廊下 ／ 実線＝部屋 ／ 線＝扉でつながっている ／ 矢印＝向いている方角 ／ 🔑＝鍵のある部屋 ／ 🚪＝玄関</div></div><div class="tside">' + cards + '</div></div>';
   root.querySelectorAll('.chip').forEach(b => b.onclick = () => toggleActive(b.dataset.g));
   $('tQr').onclick = showQr;
   $('tCopy').onclick = e => copyUrlBtn(e.currentTarget);
