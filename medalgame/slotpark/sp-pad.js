@@ -173,23 +173,29 @@ let PAD=null;
 function goLobby(){ location.href=SP_LOBBY+location.search; }
 const G={view:undefined,live:true,mid:null,busy:false,cred:0,hold:false,auto:false,jp:0,st:{},bet:{},after:null,scr:0,screen:'',fail:0};
 try{ Object.assign(G.bet,JSON.parse(localStorage.getItem('mg.slotpark.bet'))||{}); }catch(e){}
-MLIST.forEach(m=>{ const B=m.bet, v=+G.bet[m.id]; G.bet[m.id]=(v>=B.min&&v<=B.max&&!(v%B.step))?v:B.def; });
+// 選べるBETの一覧(list があればそれ、なければ min〜max の step きざみ)
+function betList(B){ if(B.list) return B.list; const a=[]; for(let v=B.min;v<=B.max;v+=B.step) a.push(v); return a; }
+function betOk(B,v){ return B.list?B.list.indexOf(v)>=0:(v>=B.min&&v<=B.max&&!(v%B.step)); }
+function betRange(B){ return B.list?`${B.list.slice(0,-2).length>2?`${B.min}〜${B.list[B.list.length-3]}枚(${B.list[1]-B.list[0]}枚きざみ)・${B.list.slice(-2).join('枚・')}枚`:B.list.join('・')+'枚'}`:`${B.min}〜${B.max}枚${B.step>1?`(${B.step}枚きざみ)`:''}`; }
+MLIST.forEach(m=>{ const B=m.bet, v=+G.bet[m.id]; G.bet[m.id]=betOk(B,v)?v:B.def; });
 // BETの枚数をえらぶ部品
 function betBox(mid){ return `<div class="betbox" id="betbox"><button class="bb" data-bm="-" aria-label="BETを減らす">−</button><button class="bv" id="betVal" aria-label="BETの枚数を入力する"><small>BET</small><b id="betNum">${G.bet[mid]}</b></button><button class="bb" data-bm="+" aria-label="BETを増やす">＋</button><button class="bb max" data-bm="max">MAX</button></div>`; }
-function setBet(mid,v){ const B=MBY[mid].bet; v=Math.round(v/B.step)*B.step; G.bet[mid]=Math.max(B.min,Math.min(B.max,v));
+function setBet(mid,v){ const B=MBY[mid].bet; if(B.list){ G.bet[mid]=B.list.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a); }
+  else { v=Math.round(v/B.step)*B.step; G.bet[mid]=Math.max(B.min,Math.min(B.max,v)); }
   try{ localStorage.setItem('mg.slotpark.bet',JSON.stringify(G.bet)); }catch(e){} updTop(); }
 function bindBet(mid,locked){ const B=MBY[mid].bet;
   document.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{ if(locked&&locked()) return toast('いまはBETを変えられません'); let v=G.bet[mid];
-    if(b.dataset.bm==='+') v+=B.step; else if(b.dataset.bm==='-') v-=B.step; else v=Math.max(B.min,Math.min(B.max,Math.floor(G.cred/B.step)*B.step));
+    const L=betList(B), i=Math.max(0,L.indexOf(v));
+    if(b.dataset.bm==='+') v=L[Math.min(L.length-1,i+1)]; else if(b.dataset.bm==='-') v=L[Math.max(0,i-1)]; else { const ok=L.filter(n=>n<=G.cred); v=ok.length?ok[ok.length-1]:L[0]; }
     setBet(mid,v); });
   $('#betVal').onclick=()=>{ if(locked&&locked()) return toast('いまはBETを変えられません'); betModal(mid); }; }
 function updBet(mid,locked,shown){ const n=$('#betNum'); if(!n) return; n.textContent=shown??G.bet[mid]; const l=$('#ledBet'); if(l) l.textContent=shown??G.bet[mid];
   document.querySelectorAll('#betbox button').forEach(b=>b.disabled=!!locked); }
 function betModal(mid){
   const B=MBY[mid].bet; let amt=G.bet[mid];
-  const pre=(B.step===1?[1,2,3,5,10,20,50,100]:B.step===3?[3,6,9,15,30]:[5,10,20,30,50]).filter(n=>n<=B.max);
+  const pre=(B.list?[3,6,9,15,30,50,100].filter(n=>B.list.indexOf(n)>=0):B.step===1?[1,2,3,5,10,20,50,100]:B.step===3?[3,6,9,15,30]:[5,10,20,30,50]).filter(n=>n<=B.max);
   const box=document.createElement('div'); box.className='msgbox'; box.style.background='rgba(40,20,30,.45)'; box.style.zIndex=50; $('#stage').appendChild(box);
-  box.innerHTML=`<div class="card" style="width:560px"><h2>BETの枚数</h2><p class="note">1回あたり ${B.min}〜${B.max}枚${B.step>1?`(${B.step}枚きざみ)`:''}。BETを増やすと、当たったときの配当も同じ倍率で増えます。</p>
+  box.innerHTML=`<div class="card" style="width:560px"><h2>BETの枚数</h2><p class="note">1回あたり ${betRange(B)}。BETを増やすと、当たったときの配当も同じ倍率で増えます。</p>
     <div style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="bIn" type="number" inputmode="numeric" value="${amt}" min="${B.min}" max="${B.max}" step="${B.step}" style="flex:1;min-width:0;width:100%;border:3px solid #ff5c8a;border-radius:18px;padding:8px 14px;font-family:var(--f-num);font-size:34px;text-align:right"><span style="flex-shrink:0;font-size:18px;font-weight:800">枚</span></div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${pre.map(n=>`<button class="pbtn" data-q="${n}">${n}枚</button>`).join('')}</div>
     <p id="bErr" style="color:#d63c5e;font-weight:800;min-height:1.4em"></p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="pbtn" id="bNo">やめる</button><button class="pbtn go" id="bGo">決める</button></div></div>`;
@@ -197,7 +203,7 @@ function betModal(mid){
   box.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ inp.value=b.dataset.q; });
   box.querySelector('#bNo').onclick=()=>box.remove();
   box.querySelector('#bGo').onclick=()=>{ const v=Math.floor(+inp.value||0);
-    if(v<B.min||v>B.max||v%B.step){ box.querySelector('#bErr').textContent=`${B.min}〜${B.max}枚${B.step>1?`の${B.step}枚きざみ`:''}で入れてください`; return; }
+    if(!betOk(B,v)){ box.querySelector('#bErr').textContent=`${betRange(B)}の中から入れてください`; return; }
     setBet(mid,v); box.remove(); };
 }
 // 回っているあいだに押されたボタンは、AUTOを止めて、今の回が終わってから実行する

@@ -394,8 +394,8 @@ function pachi(mid){ return {
         const el=this.reels[i]; el.animate([{transform:'translateY(6px)'},{transform:'none'}],{duration:120}); if(P.run.every(x=>!x)) this.allStopped(); } }
     this.draw(); if(any) P.raf=requestAnimationFrame(x=>this.loop(x)); else P.raf=0; },
   // ボーナスが光っている・ボーナス中は、BETを当たったときの枚数で固定
-  betLock(){ const s=G.st[mid]||{}, P=this.P; if(!s.hk) return 0; if(s.bonus) return 3*s.hk;
-    if(s.held&&s.lampOn&&(mid!=='battle'||(P&&P.revealed))) return 3*s.hk; return 0; },
+  betLock(){ const s=G.st[mid]||{}, P=this.P; if(!s.hk) return 0; if(s.bonus) return Math.round(3*s.hk);
+    if(s.held&&s.lampOn&&(mid!=='battle'||(P&&P.revealed))) return Math.round(3*s.hk); return 0; },
   upd(){ const P=this.P; if(!P||!$('#bLever')) return; const spinning=P.run.some(x=>x);
     const lk=this.betLock(); if(lk&&G.bet[mid]!==lk){ G.bet[mid]=lk; try{ localStorage.setItem('mg.slotpark.bet',JSON.stringify(G.bet)); }catch(e){} }
     const wait=mid==='battle'&&!P.revealed; // PUSH待ちのときは、レバーを引くとPUSHと同じ

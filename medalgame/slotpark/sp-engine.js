@@ -14,7 +14,7 @@
   const payFrac = (st, v) => { const t = v + (st.frac || 0); const p = Math.floor(t + 1e-9); st.frac = t - p; return p; };
 
   const MACHINES = [
-    // BETは min〜max を step きざみで自由に選べる。配当はBETに比例するので、還元率はBETに関係なく同じ
+    // BETは min〜max を step きざみで自由に選べる。list があるときは、その中からだけ選べる。配当はBETに比例するので、還元率はBETに関係なく同じ
     // いったん休止中の台(行頭の // を消せば元にもどる。中身のプログラムは残してある)
     // { id: 'classic', name: 'フルーツクラシック', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
     // { id: 'oshi', name: '目押しチャレンジ', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } },
@@ -23,7 +23,7 @@
     // { id: 'jackpot', name: 'ジャックポット777', style: 'chic', bet: { min: 5, max: 50, step: 5, def: 5 } },
     // { id: 'drop', name: 'キラリドロップ', style: 'pop', bet: { min: 1, max: 100, step: 1, def: 1 } },
     // ⑦ は id を 'battle' のまま、中身を GUILD RUSH に差し替え(先生のPCに保存した台の状態をそのまま使うため)
-    { id: 'battle', name: 'GUILD RUSH', style: 'chic', bet: { min: 3, max: 30, step: 3, def: 3 } }
+    { id: 'battle', name: 'GUILD RUSH', style: 'chic', bet: { min: 3, max: 100, step: 1, def: 3, list: [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 50, 100] } }
   ];
 
   /* ---------- ① フルーツクラシック ---------- */
@@ -72,15 +72,17 @@
   const P_PAY = { replay: 3, bell: 8, cherry: 4, bonusGame: 12 };
   const P_GAMES = { big: 30, reg: 12 };
   function pachiLever(st, bet) {
-    let k = Math.max(1, Math.round(bet / 3));
+    // k = BET÷3(BET50なら16.67倍)。BET3枚の配当×k を払い、1枚未満の端数は次の配当に持ちこす
+    let k = Math.max(1, bet / 3);
     // ボーナスが当たってから終わるまでは、当たったときのBETで固定(当たってからBETを上げて増やすのを防ぐ)
     if (st.held || st.bonus) { if (!st.hk) st.hk = k; k = st.hk; }
     st.k = k;
-    const res = { bet: 3 * k, pay: 0, newHit: false, k };
+    const kb = Math.round(3 * k);
+    const res = { bet: kb, pay: 0, newHit: false, k };
     if (st.bonus) {
-      st.bonus.left--; res.flag = 'bonusGame'; res.pay = P_PAY.bonusGame * k;
+      st.bonus.left--; res.flag = 'bonusGame'; res.pay = payFrac(st, P_PAY.bonusGame * k);
       res.bonus = { type: st.bonus.type, left: st.bonus.left };
-      st.bonusGet = (st.bonusGet || 0) + res.pay - 3 * k;
+      st.bonusGet = (st.bonusGet || 0) + res.pay - kb;
       res.bonusGet = st.bonusGet;
       if (st.bonus.left <= 0) { res.bonusEnd = true; st.bonus = null; st.bonusGet = 0; if (!st.held) st.hk = null; }
       st.last = null; res.held = st.held || null; return res;
@@ -93,14 +95,14 @@
       else if (b < P_PROB.big + P_PROB.reg) { st.held = 'reg'; res.newHit = true; st.hk = k; }
     }
     res.flag = flag; res.held = st.held || null;
-    if (flag === 'replay') res.pay = P_PAY.replay * k;
-    if (flag === 'bell') res.pay = P_PAY.bell * k;
+    if (flag === 'replay') res.pay = kb; // リプレイはBETと同じ枚数(もう1回)
+    if (flag === 'bell') res.pay = payFrac(st, P_PAY.bell * k);
     st.last = flag; st.games = (st.games || 0) + 1;
     return res;
   }
   function pachiStop(st, d) {
     const res = { bet: 0, pay: 0 };
-    if (st.last === 'cherry' && d.cherryOk) res.pay = P_PAY.cherry * (st.k || 1);
+    if (st.last === 'cherry' && d.cherryOk) res.pay = payFrac(st, P_PAY.cherry * (st.k || 1));
     st.last = null;
     if (d.aligned && st.held && !st.bonus) {
       st.bonus = { type: st.held, left: P_GAMES[st.held] }; st.bonusGet = 0;
@@ -310,6 +312,7 @@
     if (!m) throw new Error('機種がありません');
     const needBet = !(mid === 'wide' && st.fs > 0) && !(mid === 'rocket' && st.chain) && !(d.type === 'stop');
     const B = m.bet;
+    if (needBet && B.list && B.list.indexOf(bet) < 0) throw new Error('BETは' + B.list.join('・') + '枚から選んでください');
     if (needBet && (!(bet >= B.min && bet <= B.max) || bet % B.step)) throw new Error('BETは' + B.min + '〜' + B.max + '枚' + (B.step > 1 ? '(' + B.step + '枚きざみ)' : '') + 'で選んでください');
     switch (mid) {
       case 'classic': return classicSpin(st, bet);
@@ -335,7 +338,7 @@
     if (d.type === 'stop') return 0;
     if (mid === 'wide' && st.fs > 0) return 0;
     if (mid === 'rocket' && st.chain) return 0;
-    if ((mid === 'oshi' || mid === 'battle') && (st.held || st.bonus) && st.hk) return 3 * st.hk;
+    if ((mid === 'oshi' || mid === 'battle') && (st.held || st.bonus) && st.hk) return Math.round(3 * st.hk);
     return d.bet | 0;
   }
 
