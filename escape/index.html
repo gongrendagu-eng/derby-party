@@ -26,6 +26,17 @@ input{font:inherit;font-size:19px;background:#0e121b;color:#fff;border:1px solid
 #hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;font-size:15px;text-shadow:0 1px 4px #000}
 #hud button{pointer-events:auto;font-size:13px;padding:6px 10px;background:rgba(10,12,20,.6)}
 #hudTime{font-size:22px;font-weight:500;font-variant-numeric:tabular-nums;margin-right:10px}
+#hudKey{margin-left:10px;padding:3px 10px;border-radius:99px;background:rgba(122,90,20,.85);border:1px solid #e8c36a;color:#ffeab8;font-size:14px}
+#hudKey[hidden],#compass[hidden],#btnNotes[hidden]{display:none}
+#compass{position:absolute;top:calc(46px + env(safe-area-inset-top));left:12px;width:118px;text-align:center;pointer-events:none;z-index:2}
+#compass svg{width:118px;height:118px;display:block;filter:drop-shadow(0 2px 6px #000)}
+#compass .cn,#compass .cd{text-anchor:middle;font-size:14px;font-weight:700;fill:#aab3cc}
+#compass .cn{fill:#ff8a8a;font-size:15px}
+#needle{transition:transform .5s ease}
+#cpText{margin-top:2px;font-size:15px;font-weight:500;color:#ffeab8;text-shadow:0 1px 4px #000,0 0 10px #000}
+.dbtn .dirn{font-size:15px;color:#e8c36a;margin-left:2px}
+.card.found .fic{font-size:54px;line-height:1.1}
+.card.found .clue{margin:12px 0;padding:14px 16px;border-radius:12px;background:#e9dfc2;color:#2b2416;font-size:19px;line-height:1.7;text-align:left;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;transform:rotate(-1deg)}
 #sub{position:absolute;left:50%;top:24%;transform:translateX(-50%);max-width:86%;text-align:center;font-size:19px;line-height:1.6;color:#f0e6c8;text-shadow:0 2px 8px #000,0 0 18px #000;opacity:0;transition:opacity .6s;pointer-events:none}
 #sub.on{opacity:1}
 #doors{position:absolute;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
@@ -95,7 +106,16 @@ input{font:inherit;font-size:19px;background:#0e121b;color:#fff;border:1px solid
 <body>
 <div id="game" hidden>
   <div id="cvwrap"><canvas id="cv"></canvas></div>
-  <div id="hud"><span id="hudGroup"></span><span style="display:flex;align-items:center"><span id="hudTime"></span><button id="btnRead">読み物</button> <button id="btnSound">音：ON</button></span></div>
+  <div id="hud"><span><span id="hudGroup"></span><span id="hudKey" hidden>🔑 鍵</span></span><span style="display:flex;align-items:center"><span id="hudTime"></span><button id="btnNotes" hidden>メモ</button> <button id="btnRead">読み物</button> <button id="btnSound">音：ON</button></span></div>
+  <div id="compass" hidden>
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="46" fill="rgba(10,12,20,.75)" stroke="#e8c36a" stroke-width="2"/>
+      <circle cx="50" cy="50" r="34" fill="none" stroke="#3a4260" stroke-width="1"/>
+      <text x="50" y="17" class="cn">北</text><text x="86" y="54" class="cd">東</text><text x="50" y="92" class="cd">南</text><text x="14" y="54" class="cd">西</text>
+      <g id="needle"><polygon points="50,20 59,52 50,46 41,52" fill="#ff6b6b"/><circle cx="50" cy="50" r="4" fill="#e8c36a"/></g>
+    </svg>
+    <div id="cpText"></div>
+  </div>
   <div id="sub"></div>
   <div id="announce"></div>
   <div id="doors" hidden></div>
