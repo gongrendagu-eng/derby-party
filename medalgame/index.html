@@ -239,6 +239,7 @@ const ART={
   slot:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#ffe3ec"/><rect x="22" y="26" width="70" height="74" rx="12" fill="#ff5c8a" stroke="#173b33" stroke-width="4"/><rect x="30" y="44" width="54" height="30" rx="5" fill="#fff" stroke="#173b33" stroke-width="3"/><text x="38" y="67" font-family="Dela Gothic One" font-size="20" fill="#e63946">7</text><text x="52" y="67" font-family="Dela Gothic One" font-size="20" fill="#e63946">7</text><text x="66" y="67" font-family="Dela Gothic One" font-size="20" fill="#e63946">7</text><rect x="34" y="31" width="46" height="8" rx="4" fill="#ffd23f"/><circle cx="57" cy="87" r="7" fill="#3ddc84" stroke="#173b33" stroke-width="3"/><path d="M92 50 L102 40" stroke="#173b33" stroke-width="4" stroke-linecap="round"/><circle cx="104" cy="37" r="7" fill="#e63946" stroke="#173b33" stroke-width="3"/></svg>`,
   baseball:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#dff4ea"/><path d="M60 100 L18 58 A60 60 0 0 1 102 58 Z" fill="#52b788" stroke="#173b33" stroke-width="4" stroke-linejoin="round"/><path d="M60 98 L40 78 L60 58 L80 78 Z" fill="#d9a066" stroke="#173b33" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="40" r="11" fill="#fff" stroke="#173b33" stroke-width="3"/><path d="M53 33 Q57 40 53 47 M67 33 Q63 40 67 47" fill="none" stroke="#e63946" stroke-width="2.5"/></svg>`,
   tower:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#e6e0ff"/><path d="M30 96 V52 H26 V40 H34 V46 H40 V40 H48 V46 H54 V40 H62 V52 H58 V96 Z" fill="#9aa6c2" stroke="#173b33" stroke-width="4" stroke-linejoin="round"/><path d="M40 96 V80 A4 4 0 0 1 48 80 V96" fill="#173b33"/><path d="M84 46 L96 64 L84 92 L72 64 Z" fill="#ff4d88" stroke="#173b33" stroke-width="4" stroke-linejoin="round"/><path d="M84 46 L84 92" stroke="#fff" stroke-width="2" opacity=".6"/><path d="M20 98 H100" stroke="#173b33" stroke-width="4" stroke-linecap="round"/></svg>`,
+  typing:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#e3e9ff"/><rect x="16" y="40" width="88" height="46" rx="8" fill="#fff" stroke="#173b33" stroke-width="4"/>${[0,1,2,3,4,5].map(i=>`<rect x="${24+i*12.5}" y="48" width="9" height="9" rx="2" fill="#8a96c9"/><rect x="${30+i*12.5}" y="61" width="9" height="9" rx="2" fill="#8a96c9"/>`).join('')}<rect x="36" y="74" width="48" height="7" rx="2" fill="#f2b705"/><text x="60" y="32" text-anchor="middle" font-family="Dela Gothic One" font-size="18" fill="#173b33">ABC</text></svg>`,
   medal:`<svg class="art" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#fff6cf"/><circle cx="60" cy="60" r="34" fill="#f2b705" stroke="#a86f00" stroke-width="4"/><text x="60" y="74" text-anchor="middle" font-family="Dela Gothic One" font-size="38" fill="#8a5a00">M</text></svg>`
 };
 const art=k=>ART[k]||ART.medal;
@@ -249,7 +250,11 @@ if(MG.qs.get('mg')) padMain(); else adminMain();
    先生のPC:管理画面
    ========================================================= */
 let HOST=null;
-const A={tab:'roster',cls:'',q:'',paste:'',rows:[],over:false,cl:{cls:null,sel:{},med:'same',n:100,paste:'',mul:2,games:5,clean:4,view:'',seq:['roulettepark']}};
+const A={tab:'roster',cls:'',q:'',paste:'',rows:[],over:false,cl:{cls:null,sel:{},med:'same',n:100,paste:'',mul:2,games:5,clean:4,view:'',seq:['roulettepark'],tday:'',div:+(localStorage.getItem('mg.typ.div')||2)}};
+// 朝のタイピングの記録(mg/s_/typ/<日付>/<学籍番号> = {st,n,...})
+let TYP={};
+const typDays=()=>Object.keys(TYP).filter(k=>/^\d{8}$/.test(k)).sort().reverse();
+const typDayLabel=k=>{ const d=new Date(+k.slice(0,4),+k.slice(4,6)-1,+k.slice(6,8)); return `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; };
 function adminMain(){
   document.body.className='admin';
   if(!MG.keys.get()) return adminSetup();
@@ -260,6 +265,7 @@ function adminMain(){
     h.onGames(()=>{ adminTabs(); if(A.tab==='games'||A.tab==='roster'||A.tab==='clean') adminRender(); });
     h.onClean(()=>{ adminTabs(); if(A.tab==='clean'||A.tab==='roster') adminRender(); });
     h.onOnline(()=>{ if(A.tab==='clean') adminRender(); });
+    h.be.on(h.S+'/typ',v=>{ TYP=v||{}; if(A.tab==='clean'&&A.cl.med==='typing') adminRender(); });
     h.onConn(ok=>{ const c=$('#conn'); if(c){ c.classList.toggle('off',!ok); c.lastChild.textContent=ok?(MG.LOCAL?'お試しモード':'接続中'):'通信が切れています'; } });
   }).catch(e=>{ app.innerHTML=`<div class="setup"><div class="box"><h2>つながりませんでした</h2><p class="note warn">${esc(e.message)}</p>
     <p class="note">firebase-config.js を medalgame フォルダの1つ上(リポジトリの一番上)に置いてください。PCでファイルを直接開いた場合は、URLの最後に <b>?local=1</b> をつけると、お試しモードで動かせます。</p></div></div>`; });
@@ -408,6 +414,7 @@ const GAME_LIST=[{id:'g1road',n:'G1ロード',art:'horse',f:'g1road.html',d:'競
   {id:'baseball',n:'野球盤',art:'baseball',f:'baseball.html',d:'投手2人の対戦。打者は観戦者からランダム'},
   {id:'jockey',n:'ジョッキーダービー',art:'horse',f:'jockey.html',d:'学生が騎手になる競馬。ほかの人は1着を当てる'},
   {id:'towerbattle',n:'タワーバトル',art:'tower',f:'towerbattle.html',d:'4チームの役割分担バトル。参加料を順位で配当(掃除決めとは別に遊べる通常モード)'},
+  {id:'typing',n:'朝のタイピング',art:'typing',f:'typing.html',d:'5分間のタイピング(学生はPCで)。打った文字数を、掃除決めの配るメダルに使える'},
   {id:'cointoss',n:'コイントス(テスト機)',art:'coin',f:'cointoss.html',d:'しくみの確認用'}];
 const launching={};
 function launchGame(x){
@@ -509,6 +516,8 @@ function parseScores(t){
 function clMedals(sids){
   const C=A.cl, m={}; let sc=null;
   if(C.med==='score') sc=parseScores(C.paste);
+  if(C.med==='typing'){ const day=TYP[C.tday]||{}, dv=+C.div>0?+C.div:1;
+    sids.forEach(sid=>{ const r=day[sid]; m[sid]=r&&r.n!=null?Math.round((+r.n||0)/dv):null; }); return {m,sc:null}; }
   sids.forEach(sid=>{ let v=C.med==='same'?Math.round(+C.n||0):(sc.out[sid]!=null?Math.round(sc.out[sid]*(+C.mul||0)):null); m[sid]=v; });
   return {m,sc};
 }
@@ -516,6 +525,7 @@ function renderClean(b){
   const C=A.cl, act=clActive();
   if(C.view){ const c=HOST.clean.all()[C.view]; if(c&&c.res) return renderCleanResult(b,c); C.view=''; }
   const acc=HOST.acc(), cs=classes(), on=HOST.onlineSids();
+  if(C.med==='typing'&&!TYP[C.tday]) C.tday=typDays()[0]||'';
   if(C.cls==null||!cs.includes(C.cls)){ C.cls=cs[0]||''; C.sel={}; accList().filter(a=>(a.c||'')===C.cls).forEach(a=>C.sel[a.sid]=true); }
   const people=accList().filter(a=>(a.c||'')===C.cls);
   const busy=sid=>{ const a=acc[sid]; return a&&a.cl&&HOST.clean.all()[a.cl]&&['ready','playing','done','banking'].includes(HOST.clean.all()[a.cl].st); };
@@ -541,8 +551,8 @@ function renderClean(b){
           <button class="btn sm" data-sup="${i}" ${i===0||g==='roulettepark'?'disabled':''} aria-label="上へ">↑</button><button class="btn sm" data-srm="${i}" aria-label="外す">×</button></li>`).join('')||'<li><small>ゲームを足してください</small></li>'}</ol>
         <select id="clAdd"><option value="">+ ゲームを足す</option>${Object.keys(CLG).map(g=>`<option value="${g}" ${g==='roulettepark'&&C.seq.includes(g)?'disabled':''}>${esc(CLG[g].n)}</option>`).join('')}</select></div>
       <p class="note">${!C.seq.length?'':C.seq[C.seq.length-1]==='roulettepark'?`${C.seq.length>1?'前のゲームで増やしたメダルを引き継いで、':''}最後のルーレットパークでメダルが少なかった人が掃除当番です。`:`最後の${esc(CLG[C.seq[C.seq.length-1]].n)}で、先生が「結果を出す」を押したときにメダルが少ない人から掃除当番になります(同じ枚数はくじ)。`}${C.seq.length>1?'途中のゲームは、先生が「〇〇へ進む」を押すと、そのときの枚数で次のゲームが始まります。':''}</p>
-      <div class="fld">配るメダル<div class="seg"><button id="clSame" aria-pressed="${C.med==='same'}">全員同じ枚数</button><button id="clScore" aria-pressed="${C.med==='score'}">小テストの点数</button></div></div>
-      ${C.med==='same'?`<label class="fld">1人あたりの枚数<input id="clN" type="number" min="10" step="10" value="${esc(C.n)}"></label>`
+      <div class="fld">配るメダル<div class="seg"><button id="clSame" aria-pressed="${C.med==='same'}">全員同じ枚数</button><button id="clScore" aria-pressed="${C.med==='score'}">小テストの点数</button><button id="clTyp" aria-pressed="${C.med==='typing'}">朝のタイピング</button></div></div>
+      ${C.med==='typing'?typHtml(chosen,m,noScore,acc):C.med==='same'?`<label class="fld">1人あたりの枚数<input id="clN" type="number" min="10" step="10" value="${esc(C.n)}"></label>`
         :`<label class="fld">点数を貼り付け(1行に「学籍番号 点数」か「名前 点数」)<textarea id="clPaste" rows="4" placeholder="2401001	85&#10;2401002	72">${esc(C.paste)}</textarea></label>
         <label class="fld" style="flex-direction:row;align-items:center;gap:8px">点数 ×<input id="clMul" type="number" min="0" step="0.5" value="${esc(C.mul)}" style="width:5em">枚 を配る</label>
         <p class="note">${Object.keys(sc.out).length}人分を読みました${sc.bad.length?`<br><span class="st-err">読めなかった行:${sc.bad.slice(0,3).map(esc).join('/')}${sc.bad.length>3?' ほか':''}</span>`:''}${noScore.length?`<br><span class="st-err">点数がない参加者 ${noScore.length}人:${noScore.slice(0,4).map(s=>esc(acc[s].n)).join('・')}${noScore.length>4?' ほか':''}(10枚にします)</span>`:''}</p>`}
@@ -556,7 +566,9 @@ function renderClean(b){
   $('#clNone').onclick=()=>{ people.forEach(p=>C.sel[p.sid]=false); rer(); };
   $('#clOn').onclick=()=>{ people.forEach(p=>C.sel[p.sid]=on.has(p.sid)); rer(); if(!on.size) toast('いまログインしている人はいません'); };
   $('#clGrid').onchange=e=>{ const i=e.target.closest('input[data-sid]'); if(!i) return; C.sel[i.dataset.sid]=i.checked; rer(); };
-  $('#clSame').onclick=()=>{ C.med='same'; rer(); }; $('#clScore').onclick=()=>{ C.med='score'; rer(); };
+  $('#clSame').onclick=()=>{ C.med='same'; rer(); }; $('#clScore').onclick=()=>{ C.med='score'; rer(); }; $('#clTyp').onclick=()=>{ C.med='typing'; rer(); };
+  const td=$('#clTday'); if(td) td.onchange=e=>{ C.tday=e.target.value; rer(); };
+  const dv=$('#clDiv'); if(dv) dv.onchange=e=>{ C.div=e.target.value; try{ localStorage.setItem('mg.typ.div',C.div); }catch(x){} rer(); };
   const bindN=(id,k)=>{ const el=$(id); if(el) el.onchange=e=>{ C[k]=e.target.value; rer(); }; };
   $('#clAdd').onchange=e=>{ const g=e.target.value; if(!g) return; const q=C.seq.slice();
     if(g==='roulettepark'){ if(!q.includes(g)) q.push(g); } else { const ri=q.indexOf('roulettepark'); if(ri>=0) q.splice(ri,0,g); else q.push(g); }
@@ -581,6 +593,16 @@ function renderClean(b){
       await HOST.clean.update(c.id,{seq,si:0}); c.seq=seq; c.si=0;
       window.open(cleanGameUrl(c),'_blank'); toast(`${CLG[seq[0]].n}を開きました`); });
   };
+}
+function typHtml(chosen,m,noRec,acc){
+  const C=A.cl, days=typDays();
+  if(!days.length) return `<p class="note st-err">朝のタイピングの記録がまだありません。「稼働中のゲーム」で「朝のタイピング」を稼働して、学生に打ってもらってください。</p>`;
+  const got=chosen.filter(s=>m[s]!=null), vals=got.map(s=>m[s]), day=TYP[C.tday]||{}, playing=chosen.filter(s=>day[s]&&day[s].st==='p');
+  return `<label class="fld">どの日の記録を使う<select id="clTday">${days.map(k=>`<option value="${k}" ${k===C.tday?'selected':''}>${typDayLabel(k)}(${Object.keys(TYP[k]||{}).length}人)</option>`).join('')}</select></label>
+    <label class="fld" style="flex-direction:row;align-items:center;gap:8px">文字数 ÷<input id="clDiv" type="number" min="0.5" step="0.5" value="${esc(C.div)}" style="width:5em">枚 を配る</label>
+    <p class="note">${got.length}人分の記録があります${vals.length?`(いちばん多い人 ${yen(Math.max(...vals))}枚・少ない人 ${yen(Math.min(...vals))}枚・平均 ${yen(vals.reduce((a,b)=>a+b,0)/vals.length)}枚)`:''}
+      ${playing.length?`<br><span class="st-err">まだ打っている人が ${playing.length}人 います(いまの文字数で計算します)</span>`:''}
+      ${noRec.length?`<br><span class="st-err">記録がない参加者 ${noRec.length}人:${noRec.slice(0,4).map(s=>esc(acc[s].n)).join('・')}${noRec.length>4?' ほか':''}(10枚にします)</span>`:''}</p>`;
 }
 function renderCleanHist(){
   const list=Object.values(HOST.clean.all()).filter(c=>c.st==='banked'||c.st==='cancel').sort((a,b)=>b.at-a.at).slice(0,12);
@@ -725,7 +747,8 @@ function renderHome(m){
   let seat='';
   if(s) seat=`<div class="seatbar">${medalSvg(52)}<div class="t">${esc(s.gn)}に <b>${yen(s.a)}</b>枚 あります${s.leave?'<br><small>払い戻しが終わったら、自動で貯金にもどります</small>':live?'':'<br><small>このゲームはいま止まっています</small>'}</div>
     ${live&&!s.leave?`<button class="pbtn go" id="sGo">続ける</button>`:''}${s.leave?'':`<button class="pbtn gold" id="sBack">貯金にもどす</button>`}</div>`;
-  const cards=ids.map(id=>{ const g=games[id], here=s&&s.g===id, block=s&&!here||!!v.cl;
+  const cards=ids.map(id=>{ const g=games[id], here=s&&s.g===id, block=!g.nb&&(s&&!here||!!v.cl);
+    if(g.nb) return `<div class="game">${art(g.art)}<b>${esc(g.n)}</b><small>メダルは使いません</small><button class="pbtn go" data-g="${esc(id)}">はじめる</button></div>`;
     return `<div class="game">${art(g.art)}<b>${esc(g.n)}</b><small>${here?`${yen(s.a)}枚 持ち込み中`:block?(v.cl?'掃除決めに参加中':'ほかのゲームで遊んでいます'):'稼働中'}</small>
       <button class="pbtn ${here?'go':'gold'}" data-g="${esc(id)}" ${block||(here&&s.leave)?'disabled':''}>${here?'続ける':'遊ぶ'}</button></div>`; }).join('');
   const lg=(v.lg||[]).map(x=>`<li><span>${fmtT(x.t)}</span><span>${esc(x.w)}</span><b class="${x.d>0?'p':x.d<0?'m':''}">${x.d>0?'+':''}${yen(x.d)}</b></li>`).join('');
@@ -736,7 +759,7 @@ function renderHome(m){
     ${ids.length?`<div class="games">${cards}</div>`:'<div class="pc empty">いま動いているゲームはありません<br><small>先生がゲームを始めると、ここに出ます</small></div>'}
     ${lg?`<div class="sec">さいきんの記録</div><div class="pc"><ul class="hist">${lg}</ul></div>`:''}
     <div id="pmod"></div>`;
-  m.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const id=b.dataset.g; if(s&&s.g===id) goGame(id); else openBring(id); });
+  m.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const id=b.dataset.g; if(s&&s.g===id||games[id].nb) goGame(id); else openBring(id); });
   const sg=$('#sGo'); if(sg) sg.onclick=()=>goGame(s.g);
   const cg=$('#clGo'); if(cg) cg.onclick=()=>goGame(clId);
   const sb=$('#sBack'); if(sb) sb.onclick=async()=>{ if(!confirm(`${s.gn}の ${yen(s.a)}枚 を貯金にもどしますか?`)) return;

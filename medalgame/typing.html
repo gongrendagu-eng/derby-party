@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>朝のタイピング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=M+PLUS+1+Code:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="mg-core.js"></script>
+<style>
+/* 朝のタイピング:5分間で打った「画面の文字の数」を記録し、掃除決めの配るメダルに使う */
+:root{--f-num:"Dela Gothic One",sans-serif;--f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;--f-mono:"M PLUS 1 Code",ui-monospace,Consolas,monospace;
+  --gold:#f2b705;--ink:#173b33;--soft:#5d7c74;--line:#d5efe5;--warn:#d63c5e;--ok:#12a37a}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font-family:var(--f-body);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sp{flex:1}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2b27;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;z-index:99}
+
+/* ===== 先生のPC ===== */
+body.host{background:#f5efe1;--ink:#1e1a14;--soft:#6f6555;--line:#dccfb4}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ttl{font-family:var(--f-num);font-size:28px}
+.ttl small{font-family:var(--f-body);font-size:14px;color:var(--soft);font-weight:800;margin-left:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:3px 12px;font-weight:800;font-size:14px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:#1f9d4a}.chip.off .dot{background:var(--warn)}
+.box{background:#fffaf0;border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.box h2{margin:0 0 8px;font-size:18px}
+.note{color:var(--soft);font-size:14px;line-height:1.7;margin:4px 0}
+.btn{border:2px solid var(--line);background:#fffaf0;border-radius:10px;padding:7px 14px;font-weight:800}
+.btn.pri{background:#1e1a14;border-color:#1e1a14;color:#fff}
+.btn.sm{padding:4px 10px;font-size:13px}
+.btn.danger{background:#c8102e;border-color:#c8102e;color:#fff}
+.hgrid{display:grid;grid-template-columns:1fr 330px;gap:14px;align-items:start}
+@media (max-width:900px){.hgrid{grid-template-columns:1fr}}
+.tool{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.tool select{border:2px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;font-weight:800}
+.sum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sum div{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 14px;font-weight:800}
+.sum b{font-family:var(--f-num);font-weight:400;font-size:24px;margin-left:6px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:13px;color:var(--soft);padding:6px 8px;border-bottom:2px solid var(--line);position:sticky;top:0;background:#fffaf0}
+td{padding:6px 8px;border-bottom:1px dashed var(--line);font-weight:700}
+td.r,th.r{text-align:right}
+td.n{font-family:var(--f-num);font-weight:400;font-size:20px;text-align:right}
+.tbl{max-height:68vh;overflow:auto}
+.st{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:800;background:#eee6d4;color:var(--soft)}
+.st.p{background:#fff1c4;color:#8a5a00}.st.d{background:#d7f3e6;color:#0f7a57}
+.bar{height:8px;border-radius:4px;background:#e9dfc9;overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#f2b705,#e07a00)}
+.qr{display:flex;justify-content:center;padding:8px;background:#fff;border-radius:12px;border:2px solid var(--line)}
+.url{font-family:var(--f-mono);font-size:12px;word-break:break-all;background:#fff;border:2px dashed var(--line);border-radius:10px;padding:8px;margin:8px 0}
+
+/* ===== 学生のPC ===== */
+body.pad{background:#0f1530;color:#eef1ff;--ink:#eef1ff;--soft:#9aa3cf;--line:#2b3566;
+  background-image:radial-gradient(1000px 500px at 85% -10%,#2b2b78 0%,transparent 60%),radial-gradient(800px 500px at -10% 110%,#0b4a57 0%,transparent 55%);background-attachment:fixed;min-height:100vh}
+.pw{max-width:1100px;margin:0 auto;padding:16px 24px 40px}
+.phead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.plogo{font-family:var(--f-num);font-size:22px;letter-spacing:.04em}
+.plogo span{color:var(--gold)}
+.pwho{color:var(--soft);font-weight:800}
+.pbtn{border:0;border-radius:999px;padding:12px 26px;font-weight:800;font-size:17px;background:#26305e;color:#eef1ff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.pbtn.sm{padding:6px 14px;font-size:13px}
+.pbtn.go{background:linear-gradient(#ffd84a,var(--gold));color:#3a2600}
+.pbtn:disabled{opacity:.45}
+.card{background:#171f45;border:2px solid var(--line);border-radius:22px;padding:24px 28px}
+.card h1{font-family:var(--f-num);font-weight:400;font-size:clamp(30px,4vw,44px);margin:0 0 6px}
+.card h1 em{font-style:normal;color:var(--gold)}
+.card p{line-height:1.8;color:#cfd5f5}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.rules div{background:#111838;border:2px solid var(--line);border-radius:16px;padding:14px}
+.rules b{display:block;font-size:15px;color:var(--gold);margin-bottom:4px}
+.rules span{font-size:14px;color:#cfd5f5;line-height:1.7}
+@media (max-width:800px){.rules{grid-template-columns:1fr}}
+.kbd{display:inline-block;font-family:var(--f-mono);font-weight:700;border:2px solid #4a5592;border-bottom-width:4px;border-radius:8px;padding:0 8px;background:#222b57;color:#fff}
+.center{text-align:center}
+.big{font-family:var(--f-num);font-size:clamp(60px,10vw,120px);line-height:1;color:var(--gold)}
+.big small{font-size:.32em;color:#eef1ff;margin-left:6px}
+.login{max-width:460px;margin:6vh auto 0}
+.login label{display:block;font-weight:800;color:var(--soft);margin:14px 0 6px}
+.login input{width:100%;border:3px solid #3a4580;border-radius:14px;background:#0d132c;padding:12px 14px;font-family:var(--f-mono);font-size:26px;color:#fff;letter-spacing:.06em}
+.login input:focus{border-color:var(--gold);outline:0}
+.perr{color:#ff7b95;font-weight:800;min-height:1.5em;margin:10px 0 0}
+/* プレイ画面 */
+.hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.hud div{background:#171f45;border:2px solid var(--line);border-radius:18px;padding:10px 18px}
+.hud small{display:block;color:var(--soft);font-weight:800;font-size:13px}
+.hud b{font-family:var(--f-num);font-weight:400;font-size:44px;line-height:1.1}
+.hud .time b{color:#7cf2c8}.hud .time.low b{color:#ff7b95}
+.hud .cnt b{color:var(--gold)}
+.tbox{background:#fbfaf6;color:#1c1f33;border-radius:24px;padding:22px 30px 26px;box-shadow:0 10px 0 rgba(0,0,0,.25);position:relative}
+.tbox.miss{animation:shake .12s}
+@keyframes shake{0%{transform:translateX(0)}50%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+.chap{font-size:14px;font-weight:800;color:#8a8fae;display:flex;gap:10px}
+.chap .lap{color:#c8102e}
+.sent{white-space:pre-wrap;font-size:clamp(24px,2.6vw,34px);line-height:2.15;font-weight:700;margin:6px 0 10px;word-break:break-all}
+.sent ruby rt{font-size:.42em;color:#9a9cb4;font-weight:700}
+.sent .t.done{color:#c4c6d6}.sent .t.done rt{color:#d6d8e4}
+.sent .t.cur{color:#c8102e;background:linear-gradient(transparent 82%,#ffd84a 82%)}
+.roma{font-family:var(--f-mono);font-size:clamp(18px,1.8vw,24px);letter-spacing:.04em;color:#9a9cb4;word-break:break-all;line-height:1.6;border-top:2px dashed #e1e2ec;padding-top:10px}
+.roma .ty{color:#1c9f73}
+.roma .nx{color:#1c1f33;background:#ffe27a;border-radius:4px}
+.next{margin-top:14px;color:#9aa3cf;font-size:18px;font-weight:700;line-height:1.7;opacity:.8}
+.next small{display:block;font-size:12px;color:#6e78a8}
+.warnbar{background:#c8102e;color:#fff;font-weight:800;border-radius:14px;padding:12px 18px;margin-bottom:12px;font-size:18px}
+.cd{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,14,34,.75);font-family:var(--f-num);font-size:180px;color:var(--gold);z-index:50}
+.mut{color:var(--soft)}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+const GID='typing', NAME='朝のタイピング', {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
+const CPS_MAX=7;            // 1秒あたりの文字数の上限(これを超える記録は切り捨てる。不正防止)
+const GRACE=90000;          // 時間切れから自動で「終了」にするまでの猶予(通信切れの人のため)
+const LATE_END=600000;      // 終了の報告を受け付ける期限(時間切れから10分)
+let toastT=null; function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
+const pad2=n=>String(n).padStart(2,'0');
+const dayKey=(d=new Date())=>`${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+const fmtDay=k=>{ const d=new Date(+k.slice(0,4),+k.slice(4,6)-1,+k.slice(6,8)); return `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; };
+const mmss=ms=>{ ms=Math.max(0,ms); const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${pad2(s%60)}`; };
+
+// ===== お題(第〇話の見出しと文。{漢字|よみ}) =====
+const STORY=[{"h": "第1話 奇跡の朝"}, "{朝|あさ}6{時|じ}58{分|ふん}、{目覚まし|めざまし}{時計|とけい}が{鳴る|なる}2{分|ふん}{前|まえ}に、{大原|おおはら}ハルトは{目|め}を{覚まし|さまし}た。", "「{今日|きょう}のぼくは、なにかが{違う|ちがう}！」と、ハルトは{天井|てんじょう}に{向かっ|むかっ}てつぶやいた。", "{枕元|まくらもと}のスマホには、{通知|つうち}が47{件|けん}。そのうち46{件|けん}はゲームの「ログインボーナスを{受け取っ|うけとっ}てね」だった。", "{残り|のこり}の1{件|けん}は、{母|はは}からの「{冷蔵庫|れいぞうこ}のプリン、{食べ|たべ}たら{許さ|ゆるさ}ない（{怒|いかり}）」というメッセージだった。", "ハルトは{冷蔵庫|れいぞうこ}を{開け|あけ}、プリン（3{個|こ}{入り|いり}・298{円|えん}）の{最後|さいご}の1{個|こ}を、5{秒|びょう}で{食べ|たべ}た。", "「{証拠|しょうこ}は{残さ|のこさ}ない。ふたは{燃える|もえる}ゴミ、カップはプラ。{分別|ぶんべつ}は{社会人|しゃかいじん}の{基本|きほん}だ。」", {"h": "第2話 通学路の試練"}, "7{時|じ}42{分|ふん}{発|はつ}のバスは、なぜか7{時|じ}39{分|ふん}に{出発|しゅっぱつ}していた。", "{時刻表|じこくひょう}のすみには、{小さく|ちいさく}「{当日|とうじつ}の{交通|こうつう}{状況|じょうきょう}により、{早まる|はやまる}ことがあります」と{書い|かい}てあった。", "「{早まる|はやまる}ことって、ある！？」とハルトは{叫ん|さけん}だが、バスはもう{交差点|こうさてん}の{向こう|むこう}だった。", "しかたなく{走る|はしる}こと1.2km、{心拍数|しんぱくすう}は162、{汗|あせ}の{量|りょう}はペットボトル{約|やく}1/3{本|ぽん}{分|ぶん}。", "{途中|とちゅう}、{近所|きんじょ}の{猫|ねこ}「ポチ」に{道|みち}をふさがれた。{名前|なまえ}は{犬|いぬ}っぽいが、{性格|せいかく}はもっと{犬|いぬ}っぽい。", "ポチはハルトの{靴ひも|くつひも}をくわえ、「にゃん（{訳|やく}：{遊べ|あそべ}）」と{言っ|いっ}た。", "「ごめん、{今日|きょう}は{朝|あさ}のタイピングがあるんだ！メダルがかかってるんだよ！」", {"h": "第3話 教室にて"}, "8{時|じ}29{分|ふん}59{秒|びょう}、ハルトは{教室|きょうしつ}のドアを{開け|あけ}た。セーフ！", "{黒板|こくばん}には、{先生|せんせい}の{字|じ}で{大きく|おおきく}こう{書い|かい}てあった。「{本日|ほんじつ}の{目標|もくひょう}：1{人|にん}500{文字|もじ}{以上|いじょう}！！」", "「{打っ|うっ}た{文字|もじ}{数|すう}が、そのままメダルになります。ただし、{速|はや}すぎる{人|ひと}は{半分|はんぶん}にします。」", "{教室|きょうしつ}がざわついた。「{半分|はんぶん}！？」「ずるい！」「いや、むしろ{燃える|もえる}！」", "{隣|となり}の{席|せき}のミサキは、{指|ゆび}をポキポキ{鳴らし|ならし}ながら{言っ|いっ}た。「{去年|きょねん}の{最高|さいこう}{記録|きろく}は1,024{文字|もじ}。{今年|ことし}は{私|わたし}が{抜く|ぬく}。」", "{後ろ|うしろ}の{席|せき}のゴウは、なぜかキーボードを2{台|だい}{並べ|ならべ}ていた。「{両手|りょうて}で{別々|べつべつ}に{打て|うて}ば、2{倍|ばい}だろ？」", "{先生|せんせい}は、だまって1{台|だい}を{回収|かいしゅう}した。", {"h": "第4話 タイピング開始"}, "「よーい、スタート！」の{合図|あいず}で、{教室中|きょうしつじゅう}にカタカタという{音|おと}が{響い|ひびい}た。", "{画面|がめん}に{出|で}てきたのは、なぜか{会社|かいしゃ}の{住所|じゅうしょ}だった。「メダル{市|し}そうじ{町|ちょう}1-2-3、メダル{商事|しょうじ}（{株|かぶ}）」", "「{住所|じゅうしょ}って、こんなに{打ち|うち}にくいの！？」ハイフン、{数字|すうじ}、ハイフン、{数字|すうじ}。{指|ゆび}がもつれる。", "{次|つぎ}は{電話|でんわ}{番号|ばんごう}。「TEL:052-000-1234／FAX:052-000-5678」", "さらにメールアドレス。「haruto.oohara_2026@example.jp」", "ミサキがつぶやいた。「アンダーバーは、シフトを{押し|おし}ながら{右下|みぎした}。{落ち着い|おちつい}て。」", {"h": "第5話 ビジネスマナーの時間"}, "{電話|でんわ}が{鳴っ|なっ}たら、3コール{以内|いない}に{出る|でる}のがビジネスマナーの{基本|きほん}である。", "「お{電話|でんわ}ありがとうございます。{株式|かぶしき}{会社|かいしゃ}メダル{商事|しょうじ}、{総務部|そうむぶ}の{大原|おおはら}でございます。」", "「{恐れ入り|おそれいり}ますが、もう{一度|いちど}お{名前|なまえ}をうかがってもよろしいでしょうか？」", "{相手|あいて}は{言っ|いっ}た。「はい、わたくし、ポチと{申し|もうし}ます。」", "「ポチ{様|さま}でいらっしゃいますね。いつもお{世話|せわ}になっております。」", "{電話|でんわ}を{切っ|きっ}たあと、ハルトは{気づい|きづい}た。「いま、{猫|ねこ}と{話し|はなし}てた？」", {"h": "第6話 簿記の時間"}, "{先生|せんせい}「では{問題|もんだい}です。{商品|しょうひん}5,000{円|えん}を{仕入れ|しいれ}、{代金|だいきん}は{掛け|かけ}とした。{仕訳|しわけ}は？」", "ハルトは{自信|じしん}{満々|まんまん}に{答え|こたえ}た。「{借方|かりかた}：{仕入|しいれ}5,000／{貸方|かしかた}：{買掛金|かいかけきん}5,000！」", "「{正解|せいかい}。では、プリン298{円|えん}を{無断|むだん}で{食べ|たべ}た{場合|ばあい}の{仕訳|しわけ}は？」", "「{借方|かりかた}：{幸せ|しあわせ}298／{貸方|かしかた}：{母|はは}の{信用|しんよう}298、です。」", "{教室|きょうしつ}は{笑い|わらい}に{包ま|つつま}れたが、ハルトの{家|いえ}での{信用|しんよう}{残高|ざんだか}は、マイナス1,000,000{円|えん}になっていた。", {"h": "第7話 昼休み"}, "{学食|がくしょく}のメニューは、カレー400{円|えん}、ラーメン450{円|えん}、そして{謎|なぞ}の「{本日|ほんじつ}のA{定食|ていしょく}」550{円|えん}。", "「A{定食|ていしょく}って{何|なに}？」と{聞く|きく}と、{食堂|しょくどう}のおばちゃんは「Aは、Aよ。」とだけ{答え|こたえ}た。", "{勇気|ゆうき}を{出し|だし}て{頼む|たのむ}と、{出|で}てきたのはカレーとラーメンが1つの{皿|さら}に{乗っ|のっ}た{何|なん}かだった。", "{名前|なまえ}は「カレーメン（{税込|ぜいこみ}550{円|えん}、{大盛り|おおもり}は+50{円|えん}）」。{意外|いがい}とうまい。", "ゴウは3{杯|ばい}おかわりして、{午後|ごご}の{授業|じゅぎょう}{中|ちゅう}ずっと「ぐぅ～」という{音|おと}を{出し|だし}ていた。", {"h": "第8話 パスワード事件"}, "{午後|ごご}、{情報|じょうほう}の{授業|じゅぎょう}でパスワードを{決める|きめる}ことになった。", "{先生|せんせい}「パスワードは、{英語|えいご}の{大文字|おおもじ}・{小文字|こもじ}・{数字|すうじ}・{記号|きごう}をまぜて、12{文字|もじ}{以上|いじょう}にしましょう。」", "ゴウが{決め|きめ}たパスワードは「password1234」だった。{先生|せんせい}は{無言|むごん}で{首|くび}を{横|よこ}にふった。", "ミサキのパスワードは「Misaki#Neko&2026!」。{強|つよ}そうだが、{本人|ほんにん}がもう{忘れ|わすれ}ている。", "ハルトは{考え|かんがえ}に{考え|かんがえ}て「Pochi_Love_Purin=298」にした。{秘密|ひみつ}がぜんぶ{入っ|はいっ}ている。", {"h": "第9話 放課後の掃除決め"}, "{帰り|かえり}のホームルーム。いよいよ、{朝|あさ}のタイピングの{結果|けっか}{発表|はっぴょう}である。", "「{第|だい}3{位|い}、ゴウくん、412{文字|もじ}。キーボード1{台|だい}でよくがんばりました。」", "「{第|だい}2{位|い}、ハルトくん、687{文字|もじ}。{途中|とちゅう}で{猫|ねこ}の{話|はなし}が{多|おお}すぎて、{少し|すこし}ロスしました。」", "「{第|だい}1{位|い}、ミサキさん、1,025{文字|もじ}！{去年|きょねん}の{記録|きろく}を1{文字|もじ}だけ{更新|こうしん}！」", "ミサキは{小さく|ちいさく}ガッツポーズをした。1{文字|もじ}の{差|さ}は、メダル{約|やく}0.5{枚|まい}{分|ぶん}である。", "そして{始まる|はじまる}{掃除|そうじ}{決め|きめ}。ルーレットが{回る|まわる}。{赤|あか}か、{黒|くろ}か、それとも{緑|みどり}の0か。", "ハルトは{全部|ぜんぶ}のメダルを「17」に{賭け|かけ}た。{理由|りゆう}は、{特に|とくに}ない。", "ルーレットの{玉|たま}は、カラカラと{音|おと}を{立て|たて}て「0」に{入っ|はいっ}た。", "「えっ、ゼロってあり！？」{本日|ほんじつ}2{回|かい}{目|め}のセリフである。", "こうしてハルトは、{今週|こんしゅう}3{回|かい}{目|め}の{掃除|そうじ}{当番|とうばん}になった。", {"h": "第10話 夜"}, "{家|いえ}に{帰る|かえる}と、{冷蔵庫|れいぞうこ}に{新しい|あたらしい}プリンが4{個|こ}{入っ|はいっ}ていた。メモには「1{人|にん}1{個|こ}。{数え|かぞえ}てあります。{母|はは}」", "ハルトは{静か|しずか}に{冷蔵庫|れいぞうこ}を{閉じ|とじ}た。{今日|きょう}の{教訓|きょうくん}は、「{証拠|しょうこ}より{信用|しんよう}」である。", "{明日|あした}の{目標|もくひょう}は、タイピング800{文字|もじ}、バスに{乗る|のる}、そしてプリンに{手|て}を{出さ|ださ}ないこと。", {"h": "第11話 週末のおつかい"}, "{土曜日|どようび}、ハルトは{母|はは}から{買い物|かいもの}メモを{渡さ|わたさ}れた。", "「たまご1パック（10{個|こ}{入り|いり}）、{牛乳|ぎゅうにゅう}1Lを2{本|ほん}、{豆腐|とうふ}3{丁|ちょう}、ネギ1{本|ぽん}。プリンは{禁止|きんし}。」", "スーパーのチラシには「{本日|ほんじつ}{限り|かぎり}！{全品|ぜんぴん}20%OFF、ただしプリンは50%OFF」と{書い|かい}てあった。", "レジの{合計|ごうけい}は1,986{円|えん}。ポイントを86{円|えん}{分|ぶん}{使っ|つかっ}て、ちょうど1,900{円|えん}になった。", "{帰り道|かえりみち}、SNSに{投稿|とうこう}した。「#おつかい{完了|かんりょう} #プリン{我慢|がまん} #えらい (^_^)v」", "3{分|ふん}{後|ご}、{母|はは}から{返信|へんしん}が{来|き}た。「レシートに、プリン1{個|こ}って{書い|かい}てあるけど？」", {"h": "第12話 ミサキの秘密特訓"}, "ミサキは{毎晩|まいばん}、22:00~22:30の30{分間|ふんかん}、タイピングの{特訓|とっくん}をしている。", "{練習用|れんしゅうよう}の{文章|ぶんしょう}は、なぜか{早口言葉|はやくちことば}ばかりだ。", "「{生麦|なまむぎ}{生米|なまごめ}{生卵|なまたまご}、{隣|となり}の{客|きゃく}はよく{柿|かき}{食う|くう}{客|きゃく}だ、{東京|とうきょう}{特許|とっきょ}{許可|きょか}{局|きょく}！！」", "「すもももももももものうち」は、{打っ|うっ}てみると{指|ゆび}がつりそうになる。", "{彼女|かのじょ}のモットーは「Practice makes perfect.」である。", "ちなみに、ミサキの{特訓|とっくん}を{毎晩|まいばん}{見守っ|みまもっ}ているのは、ハムスターの「ハムスケ（2{歳|さい}）」だ。", {"h": "第13話 ゴウの大発明"}, "ゴウは「タイピングが{速く|はやく}なるマシン」を{発明|はつめい}したと{言い|いい}{出し|だし}た。", "その{名|な}も「ハヤウチ3000（Hayauchi-3000）」。{材料|ざいりょう}は、{割りばし|わりばし}8{本|ほん}と{輪|わ}ゴム15{本|ほん}。", "{使い方|つかいかた}は{簡単|かんたん}。{指|ゆび}に{割りばし|わりばし}をつけて、キーボードを2{倍|ばい}の{範囲|はんい}でたたく。", "{結果|けっか}、1{分間|ふんかん}に{打て|うて}た{文字|もじ}{数|すう}は、ふだんの72{文字|もじ}から、なんと9{文字|もじ}に{減っ|へっ}た。", "ゴウは{言っ|いっ}た。「{失敗|しっぱい}は{成功|せいこう}のもと。{次|つぎ}は{輪|わ}ゴムを30{本|ほん}にする。」", "{先生|せんせい}は「その{前|まえ}に、ホームポジションを{覚えよう|おぼえよう}。{左手|ひだりて}はF、{右手|みぎて}はJ。」と{言っ|いっ}た。", {"h": "第14話 文化祭の準備"}, "{文化祭|ぶんかさい}で、クラスは「メダルカジノ（ただしお{金|かね}は1{円|えん}も{使い|つかい}ません）」を{出す|だす}ことになった。", "{看板|かんばん}の{文字|もじ}は、ミサキが{担当|たんとう}。「WELCOME!! ~{本日|ほんじつ}のラッキーナンバーは7~」", "ゴウは{入口|いりぐち}で{呼びこみ|よびこみ}{係|かかり}。「いらっしゃいませ！1{回|かい}100メダル、{当たれ|あたれ}ば3{倍|ばい}！」", "ハルトは{会計|かいけい}{係|かかり}として、{電卓|でんたく}をたたき{続け|つづけ}た。1,280+3,450-990=3,740。{合っ|あっ}てる。", "しかし、{最後|さいご}に{数え|かぞえ}たメダルは、なぜか3{枚|まい}{足り|たり}なかった。", "{犯人|はんにん}は、{店|みせ}の{前|まえ}で{寝|ね}ていたポチだった。{口|くち}の{中|なか}から、メダルが3{枚|まい}{出|で}てきた。", "「ポチ、それはプリンじゃないよ。」とハルトは{言っ|いっ}た。", {"h": "第15話 エピローグ"}, "こうして、{大原|おおはら}ハルトの{毎日|まいにち}は、{今日|きょう}もにぎやかに{過ぎ|すぎ}ていく。", "{朝|あさ}はタイピング、{昼|ひる}はカレーメン、{夕方|ゆうがた}は{掃除|そうじ}{決め|きめ}、{夜|よる}はプリンとの{戦い|たたかい}。", "{目標|もくひょう}は、1{年|ねん}{後|ご}に「タイピング1,500{文字|もじ}」と「{掃除|そうじ}{当番|とうばん}ゼロ{週|しゅう}」を{達成|たっせい}すること。", "そのためには、まずホームポジション。{左手|ひだりて}はASDF、{右手|みぎて}はJKL;だ。", "もしこの{文章|ぶんしょう}を{最後|さいご}まで{打て|うて}た{人|ひと}がいたら、それはもう、ミサキを{超え|こえ}ている。", "{最初|さいしょ}の{文章|ぶんしょう}にもどって、もう{一周|いっしゅう}どうぞ。（つづく）"];
+
+if(MG.qs.get('mg')) padMain(); else hostMain();
+
+/* =====================================================================
+   先生のPC(このタブが開いている間、学生のPCから記録を受け付ける)
+   記録の置き場所:mg/s_<秘密の鍵>/typ/<日付>/<学籍番号>
+     {st:'p'(打っている)|'d'(終わり), t0:開始時刻, dur:秒, n:文字数, nb:いまの文の前までの文字数, si:いまの文の番号, ms:ミス, k:打鍵数, c:クラス, t1:終了時刻, fin:'c'|'auto'}
+   ===================================================================== */
+let HOST=null, DAY=dayKey(), TY={}, tyOff=null;
+const HS={cls:'',sort:'n',hide:false,dur:+(localStorage.getItem('mg.typing.dur')||5)};
+async function hostMain(){
+  document.body.className='host';
+  if(!MG.keys.get()){ app.innerHTML=`<div class="wrap"><div class="box"><h2>この画面は先生のPC用です</h2><p class="note">学生の人は、先生の画面に出ているQRコードかURLから開いてください。<br>先生:先にこのPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。</p></div></div>`; return; }
+  app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
+  try{
+    HOST=await MG.startHost({gid:GID,name:NAME,art:'typing',anyone:true,info:{nb:1},hooks:{onReq:hostReq}});
+  }catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
+  const url=studentUrl();
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">⌨ ${NAME}<small>先生のPC</small></div><span class="sp"></span>
+      <span class="chip" id="conn"><i class="dot"></i><span>受付中</span></span><a class="btn" href="${esc(MG.indexUrl())}" target="_blank" rel="noopener">管理画面</a></div>
+    <div class="hgrid"><section class="box"><div class="tool"><b id="day"></b>
+        <select id="cls"></select>
+        <select id="sort"><option value="n">文字数の多い順</option><option value="sid">学籍番号順</option></select>
+        <label style="font-weight:800;font-size:14px"><input type="checkbox" id="hide"> 名前をかくす(プロジェクター用)</label>
+        <span class="sp"></span><button class="btn sm" id="copy">記録をコピー(Excel用)</button></div>
+      <div class="sum" id="sum"></div><div class="tbl" id="tbl"></div></section>
+    <aside><div class="box"><h2>学生のPCで開く</h2><div class="qr" id="qr"></div><div class="url">${esc(url)}</div>
+        ${MG.LOCAL?`<p class="note"><a href="${esc(url)}" target="_blank" rel="noopener">お試し:学生の画面を別タブで開く</a></p>`:''}
+        <p class="note">学籍番号と4桁の合言葉でログインして打ちます。1人1日1回です。</p></div>
+      <div class="box"><h2>設定</h2><label style="font-weight:800">時間 <select id="dur">${[1,3,5,10].map(m=>`<option value="${m}" ${m===HS.dur?'selected':''}>${m}分</option>`).join('')}</select></label>
+        <p class="note">これから始める人に使われます(いま打っている人はそのまま)。</p>
+        <p class="note">打った「画面の文字の数」がそのまま記録になります。帰りに管理画面の「掃除決め」→ 配るメダル →「朝のタイピング」を選ぶと、文字数 ÷ 好きな数 のメダルを配れます。</p>
+        <p class="note"><b>このタブは閉じずに置いておいてください</b>(閉じると記録を受け付けません)。</p></div></aside></div></div>`;
+  try{ new QRCode($('#qr'),{text:url,width:220,height:220,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ $('#qr').textContent='QRコードを表示できません'; }
+  HOST.onConn(ok=>{ const c=$('#conn'); c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'受付中':'通信が切れています'; });
+  HOST.onAcc(hostRender);
+  $('#cls').onchange=e=>{HS.cls=e.target.value;hostRender()};
+  $('#sort').onchange=e=>{HS.sort=e.target.value;hostRender()};
+  $('#hide').onchange=e=>{HS.hide=e.target.checked;hostRender()};
+  $('#dur').onchange=e=>{HS.dur=+e.target.value;localStorage.setItem('mg.typing.dur',HS.dur)};
+  $('#copy').onclick=copyRec;
+  $('#tbl').onclick=e=>{ const b=e.target.closest('[data-redo]'); if(!b) return; const sid=b.dataset.redo, a=HOST.acc()[sid];
+    if(!confirm(`${a?a.n:sid} さんの今日の記録を消して、もう一度打てるようにしますか?`)) return;
+    HOST.be.remove(recPath(sid)).then(()=>toast('やり直しできるようにしました')); };
+  watchDay();
+  setInterval(()=>{ if(dayKey()!==DAY) watchDay(); sweep(); hostRender(); },15000);
+  addEventListener('beforeunload',e=>{ if(Object.values(TY).some(r=>r.st==='p')){ e.preventDefault(); e.returnValue=''; } });
+}
+function studentUrl(){ const u=new URL(location.href); u.search=''; u.hash=''; u.searchParams.set('mg',HOST.pub); if(MG.LOCAL) u.searchParams.set('local','1'); return u.href; }
+const recPath=(sid,day)=>HOST.S+'/typ/'+(day||DAY)+'/'+sid;
+function watchDay(){ if(tyOff) tyOff(); DAY=dayKey(); TY={}; tyOff=HOST.be.on(HOST.S+'/typ/'+DAY,v=>{ TY=v||{}; hostRender(); }); }
+const capN=ms=>Math.ceil(Math.max(0,ms)/1000*CPS_MAX)+10;
+const toI=v=>Math.max(0,Math.floor(+v||0));
+// 時間切れから GRACE たっても報告がない人は、最後に届いた文字数で終わりにする
+function sweep(){ const t=Date.now();
+  Object.keys(TY).forEach(sid=>{ const r=TY[sid]; if(r&&r.st==='p'&&t-r.t0>r.dur*1000+GRACE)
+    HOST.be.tx(recPath(sid),c=>{ if(!c||c.st!=='p') return; c.st='d'; c.fin='auto'; c.t1=Date.now(); return c; }).catch(()=>{}); }); }
+async function hostReq(sid,r,acc){
+  const t=Date.now(), path=recPath(sid);
+  if(r.type==='g:state'){
+    const c=await HOST.be.get(path);
+    return {ok:true,d:{dur:HS.dur*60,sn:t,day:DAY,rec:c||0}};
+  }
+  if(r.type==='g:start'){
+    let out=null;
+    const x=await HOST.be.tx(path,c=>{
+      if(c&&c.st==='d'){ out={done:true}; return; }
+      if(c&&c.st==='p'){ if(t-c.t0>c.dur*1000+5000){ c.st='d'; c.fin='auto'; c.t1=t; out={done:true}; return c; } out={resume:true}; return c; }
+      out={fresh:true}; return {st:'p',t0:t+3000,dur:HS.dur*60,n:0,nb:0,si:0,ms:0,k:0,c:(acc&&acc.c)||''};
+    });
+    const c=x.val;
+    if(out&&out.done) return {ok:false,msg:'今日のタイピングはもう終わっています。やり直したいときは先生に言ってください',d:{rec:c||0}};
+    return {ok:true,d:{sn:t,rec:c}};
+  }
+  if(r.type==='g:prog'||r.type==='g:end'){
+    const end=r.type==='g:end'; let why='';
+    const x=await HOST.be.tx(path,c=>{ why='';
+      if(!c){ why='nore'; return; }
+      const lim=c.dur*1000;
+      if(c.st==='d'&&!(end&&c.fin==='auto'&&t-c.t0<lim+LATE_END)){ why='done'; return; }
+      if(!end&&t-c.t0>lim+GRACE){ c.st='d'; c.fin='auto'; c.t1=t; why='late'; return c; }
+      const cap=capN(Math.min(t-c.t0,lim));
+      const n=Math.min(toI(r.n),cap);
+      c.n=end&&c.st==='d'?Math.max(c.n||0,n):n; c.nb=Math.min(toI(r.nb),c.n); c.si=toI(r.si); c.ms=toI(r.ms); c.k=toI(r.k);
+      if(end){ c.st='d'; c.fin='c'; c.t1=t; }
+      return c; });
+    if(why==='nore') return {ok:false,msg:'記録が見つかりません。やり直してください'};
+    if(why==='done'||why==='late') return {ok:true,d:{over:true,rec:x.val}};
+    return {ok:true,d:{rec:x.val}};
+  }
+  return {ok:false,msg:'その操作はできません'};
+}
+function rows(){
+  const acc=HOST.acc();
+  const sids=new Set([...Object.keys(acc).filter(s=>!HS.cls||(acc[s].c||'')===HS.cls), ...Object.keys(TY).filter(s=>!HS.cls||((acc[s]&&acc[s].c)||TY[s].c||'')===HS.cls)]);
+  const list=[...sids].map(s=>({sid:s,a:acc[s]||{n:s,c:''},r:TY[s]||null}));
+  list.sort(HS.sort==='n'?(x,y)=>(y.r?y.r.n||0:-1)-(x.r?x.r.n||0:-1)||x.sid.localeCompare(y.sid,'ja',{numeric:true}):(x,y)=>x.sid.localeCompare(y.sid,'ja',{numeric:true}));
+  return list;
+}
+function hostRender(){
+  if(!HOST||!$('#tbl')) return;
+  const acc=HOST.acc(), cs=[...new Set(Object.values(acc).map(a=>a.c||''))].sort((a,b)=>a.localeCompare(b,'ja'));
+  const sel=$('#cls'); const want=`<option value="">全クラス</option>${cs.map(c=>`<option value="${esc(c)}">${esc(c||'(クラスなし)')}</option>`).join('')}`;
+  if(sel.dataset.h!==want){ sel.innerHTML=want; sel.dataset.h=want; } sel.value=HS.cls;
+  $('#day').textContent=fmtDay(DAY)+'の記録';
+  const list=rows(), max=Math.max(1,...list.map(x=>x.r?x.r.n||0:0)), t=Date.now();
+  const nd=list.filter(x=>x.r&&x.r.st==='d').length, np=list.filter(x=>x.r&&x.r.st==='p').length;
+  $('#sum').innerHTML=`<div>終わった<b>${nd}</b>人</div><div>打っている<b>${np}</b>人</div><div>まだ<b>${list.length-nd-np}</b>人</div>`;
+  let rank=0,prev=null;
+  $('#tbl').innerHTML=`<table><thead><tr><th class="r">順位</th><th>名前</th><th>状態</th><th class="r">文字数</th><th></th><th class="r">ミス</th><th></th></tr></thead><tbody>${list.map((x,i)=>{
+    const r=x.r, n=r?r.n||0:null;
+    if(r&&n!==prev){ rank=i+1; prev=n; }
+    const st=!r?'<span class="st">まだ</span>':r.st==='d'?'<span class="st d">終わり</span>':t<r.t0?'<span class="st p">はじまる</span>':`<span class="st p">打っている 残り${mmss(r.t0+r.dur*1000-t)}</span>`;
+    const nm=HS.hide?'●●●●':`${esc(x.a.n)} <small style="color:var(--soft)">${esc(x.sid)}</small>`;
+    return `<tr><td class="r">${r&&HS.sort==='n'?rank:''}</td><td>${nm}</td><td>${st}</td><td class="n">${r?yen(n):''}</td><td style="width:22%">${r?`<div class="bar"><i style="width:${n/max*100}%"></i></div>`:''}</td><td class="r">${r?yen(r.ms||0):''}</td><td>${r?`<button class="btn sm" data-redo="${esc(x.sid)}">やり直し</button>`:''}</td></tr>`; }).join('')||'<tr><td colspan="7" class="note">名簿にだれもいません</td></tr>'}</tbody></table>`;
+}
+async function copyRec(){
+  const tsv=['学籍番号\t名前\tクラス\t文字数\tミス\t状態'].concat(rows().map(x=>[x.sid,x.a.n,x.a.c||'',x.r?x.r.n||0:'',x.r?x.r.ms||0:'',!x.r?'まだ':x.r.st==='d'?'終わり':'打っている'].join('\t'))).join('\n');
+  try{ await navigator.clipboard.writeText(tsv); toast('コピーしました。Excelに貼り付けできます'); }catch(e){ toast('コピーできませんでした'); }
+}
+
+/* =====================================================================
+   ローマ字入力エンジン(typing/index.html のものを、記号・英大文字に対応させたもの)
+   ===================================================================== */
+const KT = {
+  'あ':['a'],'い':['i','yi'],'う':['u','wu','whu'],'え':['e'],'お':['o'],
+  'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],
+  'さ':['sa'],'し':['si','shi','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],
+  'た':['ta'],'ち':['ti','chi'],'つ':['tu','tsu'],'て':['te'],'と':['to'],
+  'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
+  'は':['ha'],'ひ':['hi'],'ふ':['hu','fu'],'へ':['he'],'ほ':['ho'],
+  'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
+  'や':['ya'],'ゆ':['yu'],'よ':['yo'],
+  'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
+  'わ':['wa'],'を':['wo'],
+  'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
+  'ざ':['za'],'じ':['zi','ji'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
+  'だ':['da'],'ぢ':['di'],'づ':['du'],'で':['de'],'ど':['do'],
+  'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
+  'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
+  'ぁ':['xa','la'],'ぃ':['xi','li'],'ぅ':['xu','lu'],'ぇ':['xe','le'],'ぉ':['xo','lo'],
+  'ゃ':['xya','lya'],'ゅ':['xyu','lyu'],'ょ':['xyo','lyo'],'ゎ':['xwa','lwa'],
+  'ゔ':['vu'],'ー':['-'],'、':[','],'。':['.'],'！':['!'],'？':['?'],'・':['/'],
+  '「':['['],'」':[']'],'（':['('],'）':[')'],'：':[':'],'／':['/'],'～':['~'],
+};
+const KT2 = {};
+(function(){
+  const y = (k, base, extra) => {
+    const sm = ['ゃ','ぃ','ゅ','ぇ','ょ'], v = ['a','i','u','e','o'];
+    sm.forEach((s,i)=>{ KT2[k+s] = base.map(b=>b+v[i]); });
+    if (extra) for (const s in extra) KT2[k+s] = (KT2[k+s]||[]).concat(extra[s]);
+  };
+  y('き',['ky']); y('に',['ny']); y('ひ',['hy']); y('み',['my']); y('り',['ry']);
+  y('ぎ',['gy']); y('ぢ',['dy']); y('び',['by']); y('ぴ',['py']);
+  y('し',['sy'],{'ゃ':['sha'],'ゅ':['shu'],'ぇ':['she'],'ょ':['sho']});
+  y('ち',['ty','cy'],{'ゃ':['cha'],'ゅ':['chu'],'ぇ':['che'],'ょ':['cho']});
+  y('じ',['zy','jy'],{'ゃ':['ja'],'ゅ':['ju'],'ぇ':['je'],'ょ':['jo']});
+  Object.assign(KT2,{
+    'ふぁ':['fa'],'ふぃ':['fi','fyi'],'ふぇ':['fe','fye'],'ふぉ':['fo'],'ふゅ':['fyu'],
+    'てぃ':['thi'],'てゅ':['thu'],'でぃ':['dhi'],'でゅ':['dhu'],
+    'うぃ':['wi','whi'],'うぇ':['we','whe'],'うぉ':['who'],
+    'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo'],
+    'つぁ':['tsa'],'とぅ':['twu'],'どぅ':['dwu'],'くぁ':['qa','kwa'],'ぐぁ':['gwa'],'いぇ':['ye'],
+  });
+})();
+const CONS = /^[bcdfghjklmpqrstvwxyz]/;
+function toHira(s){ return s.replace(/[ァ-ヶ]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60)); }
+function uniq(a){ return [...new Set(a)]; }
+function parseKana(kana){
+  kana = toHira(kana);
+  const raw = [];
+  for (let i=0; i<kana.length; ){
+    const two = kana.substr(i,2);
+    if (KT2[two]) {
+      const cart = [];
+      for (const a of KT[two[0]]) for (const b of KT[two[1]]) cart.push(a+b);
+      raw.push({k:two, c:uniq([...KT2[two], ...cart])}); i+=2; continue;
+    }
+    const ch = kana[i];
+    if (ch==='っ' || ch==='ん') raw.push({k:ch, sp:ch});
+    else raw.push({k:ch, c:KT[ch] ? KT[ch].slice() : [ch]});   // 英字・数字・記号はそのまま(大文字はシフト)
+    i++;
+  }
+  const out = [];
+  for (let j=0; j<raw.length; j++){
+    const u = raw[j];
+    if (u.sp==='っ'){
+      const nx = raw[j+1];
+      const small = ['xtu','ltu','xtsu','ltsu'];
+      if (nx && !nx.sp && CONS.test(nx.c[0])){
+        const cs = [];
+        for (const c of nx.c) if (CONS.test(c) && c[0]!=='n'){ cs.push(c[0]+c); if (c.startsWith('ch')) cs.push('t'+c); }
+        for (const p of small) for (const c of nx.c) cs.push(p+c);
+        out.push({k:'っ'+nx.k, c:uniq(cs)}); j++; continue;
+      }
+      out.push({k:'っ', c:small}); continue;
+    }
+    out.push(u);
+  }
+  for (let j=0; j<out.length; j++){
+    const u = out[j];
+    if (u.sp!=='ん') continue;
+    const nx = out[j+1];
+    const ok1 = !!(nx && !nx.sp && nx.c.some(c=>!/^[aiueoyn]/.test(c)));
+    const pref1 = ok1 && !/^[aiueoyn]/.test(nx.c[0]);
+    u.c = ok1 ? (pref1 ? ['n','nn','xn'] : ['nn','n','xn']) : ['nn','xn'];
+  }
+  return out;
+}
+class Typer {
+  constructor(kana){ this.units = parseKana(kana); this.i = 0; this.buf = ''; this.typed = ''; }
+  done(){ return this.i >= this.units.length; }
+  key(k){
+    if (this.done()) return 'miss';
+    const u = this.units[this.i], nb = this.buf + k;
+    if (u.c.some(c=>c.startsWith(nb))){
+      this.buf = nb; this.typed += k;
+      if (u.c.includes(nb) && !u.c.some(c=>c.length>nb.length && c.startsWith(nb))){ this.i++; this.buf=''; }
+      return this.done() ? 'done' : 'ok';
+    }
+    if (this.buf && u.c.includes(this.buf) && !(u.sp==='ん' && this.buf==='n' && /[aiueoyn]/.test(k))){
+      const save = {i:this.i, buf:this.buf, typed:this.typed};
+      this.i++; this.buf='';
+      const r = this.key(k);
+      if (r==='miss'){ Object.assign(this, save); }
+      return r;
+    }
+    return 'miss';
+  }
+  cur(){ const u=this.units[this.i]; return u ? (u.c.find(c=>c.startsWith(this.buf))||u.c[0]) : ''; }
+  rest(){ let s=''; for (let j=this.i; j<this.units.length; j++){ const u=this.units[j]; s += j===this.i ? this.cur().slice(this.buf.length) : u.c[0]; } return s; }
+  // 打ち終わったかなの数(よみの何文字目まで進んだか)
+  kanaDone(){ let n=0; for (let j=0; j<this.i; j++) n+=this.units[j].k.length; return n; }
+}
+// 文を「表示とよみ」の小さなかたまりに分ける。{漢字|よみ} は1かたまり、それ以外は1文字ずつ
+function parseSent(s){
+  const toks=[], re=/\{([^|}]+)\|([^}]+)\}|([\s\S])/g; let m, y=0;
+  while((m=re.exec(s))){ const d=m[1]||m[3], r=m[2]||m[3]; y+=r.length; toks.push({d,r,y}); }
+  return {toks, yomi:toks.map(t=>t.r).join(''), len:toks.reduce((a,t)=>a+t.d.length,0)};
+}
+const SENTS=[]; (function(){ let ch=''; STORY.forEach(x=>{ if(typeof x==='string') SENTS.push({...parseSent(x),ch}); else ch=x.h; }); })();
+
+/* =====================================================================
+   学生のPC
+   ===================================================================== */
+let PAD=null;
+const P={view:undefined,scr:'wait',err:'',busy:false,step:'sid',sid:'',pin1:'',
+  dur:300,rec:null,off:0,       // off:先生のPCとの時計のずれ(先生のPCの時刻 - このPCの時刻)
+  si:0,nb:0,ms:0,k:0,lap:0,ty:null,end:0,saved:'',ime:false,caps:false};
+const lsKey=()=>`mg.typ.${PAD.pub}.${P.day||dayKey()}.${PAD.vk()}`;
+const lsGet=()=>{ try{ return JSON.parse(localStorage.getItem(lsKey()))||null; }catch(e){ return null; } };
+const lsSet=v=>{ try{ localStorage.setItem(lsKey(),JSON.stringify(v)); }catch(e){} };
+async function padMain(){
+  document.body.className='pad';
+  app.innerHTML='<div class="pw"><div class="card">接続しています…</div></div>';
+  try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pw"><div class="card">つながりません:${esc(e.message)}</div></div>`; return; }
+  document.addEventListener('keydown',onKey);
+  if(!PAD.vk()){ P.scr='login'; return padRender(); }
+  watchMe();
+}
+let viewOff=null;
+function watchMe(){
+  if(viewOff) viewOff();
+  let first=true;
+  viewOff=PAD.onView(v=>{
+    if(!v){ if(first){ first=false; setTimeout(()=>{ if(P.view===undefined){ PAD.logout(); P.scr='login'; padRender(); } },3000); return; }
+      if(P.scr==='play') return;   // 打っている途中は止めない
+      PAD.logout(); P.view=undefined; P.scr='login'; padRender(); return; }
+    first=false; const firstView=P.view===undefined; P.view=v; if(firstView) loadState(); else padRender(); });
+}
+async function loadState(){
+  P.scr='wait'; P.err=''; padRender();
+  const r=await PAD.req('g:state',{},GID);
+  if(!r.ok){ P.scr='nohost'; P.err=r.msg; return padRender(); }
+  P.dur=r.d.dur; P.day=r.d.day; P.off=r.d.sn-Date.now(); P.rec=r.d.rec||null;
+  const rec=P.rec;
+  if(rec&&rec.st==='d') P.scr='result';
+  else if(rec&&rec.st==='p'&&(rec.t0+rec.dur*1000)-(Date.now()+P.off)>3000) P.scr='resume';
+  else if(rec&&rec.st==='p'){   // 画面が閉じたまま時間が過ぎた:このPCに残っている記録か、最後に送れた記録で終わりにする
+    const loc=lsGet(); const b=loc&&loc.t0===rec.t0&&loc.nb>(rec.n||0)?loc:rec;
+    P.final={n:Math.max(b.nb||0,rec.n||0),nb:b.nb||0,si:b.si||0,ms:b.ms||0,k:b.k||0}; P.scr='result'; P.saved='sending';
+    padRender(); return sendEnd(); }
+  else P.scr='ready';
+  padRender();
+}
+function head(){
+  const v=P.view;
+  return `<div class="phead"><div class="plogo">⌨ 朝の<span>タイピング</span></div><span class="sp"></span>${v?`<span class="pwho">${esc(v.n)} さん</span>${P.scr!=='play'?'<button class="pbtn sm" id="lo">ログアウト</button>':''}`:''}</div>`;
+}
+function padRender(){
+  const s=P.scr;
+  if(s==='play') return;   // プレイ中は drawPlay が描く
+  let body='';
+  if(s==='wait') body='<div class="card">読み込み中…</div>';
+  else if(s==='login') body=loginHtml();
+  else if(s==='nohost') body=`<div class="card"><h1>先生のPCで<em>タイピング</em>が開いていません</h1><p>${esc(P.err)}</p><button class="pbtn go" id="again">もう一度</button></div>`;
+  else if(s==='ready'||s==='resume') body=`<div class="card"><h1>${s==='resume'?'つづきから打つ':`<em>${P.dur/60}分間</em>、ひたすら打とう`}</h1>
+      <p>${s==='resume'?`途中で画面が閉じました。残り <b>${mmss(P.rec.t0+P.rec.dur*1000-(Date.now()+P.off))}</b> から、文のはじめにもどって続けます。時間は止まっていません。急いで!`:'画面の文章をローマ字で打ちます。打った<b>画面の文字の数</b>が、今日の記録になります。帰りの掃除決めで、この記録がメダルになります。'}</p>
+      <div class="rules"><div><b>① 半角英数にする</b><span>キーボードの <span class="kbd">半角/全角</span> を押して、日本語入力をオフにしてから始めてね。</span></div>
+        <div><b>② 記号も数字もそのまま</b><span>「 は <span class="kbd">[</span>、（ は <span class="kbd">Shift</span>+<span class="kbd">8</span>、大文字は <span class="kbd">Shift</span> を押しながら。白いカードの下の段(ローマ字)がお手本。</span></div>
+        <div><b>③ 1日1回だけ</b><span>始めたら${P.dur/60}分間止まりません。ミスをしても文字数は減りません。あわてず正確に。</span></div></div>
+      <div class="center"><button class="pbtn go" id="go" style="font-size:24px;padding:16px 60px" ${P.busy?'disabled':''}>${P.busy?'準備中…':'スペースキーでスタート'}</button><p class="perr">${esc(P.err)}</p></div></div>`;
+  else if(s==='result'){ const r=P.rec||{};
+    body=`<div class="card center"><p class="mut" style="font-weight:800">今日の記録</p><div class="big">${yen(r.n||0)}<small>文字</small></div>
+      <p>ミス ${yen(r.ms||0)}回 ・ ${P.saved==='ng'?'<b style="color:#ff7b95">先生のPCに送れていません</b>':P.saved==='sending'?'先生のPCに送っています…':'先生のPCに記録しました'}</p>
+      ${P.saved==='ng'?'<button class="pbtn go" id="resend">もう一度送る</button>':''}
+      <p>帰りの掃除決めで、この記録をもとにメダルが配られます。おつかれさま!</p></div>`; }
+  app.innerHTML=`<div class="pw">${head()}${body}</div>`;
+  const lo=$('#lo'); if(lo) lo.onclick=()=>{ if(confirm('ログアウトしますか?')){ PAD.logout(); P.view=undefined; if(viewOff) viewOff(); P.scr='login'; P.step='sid'; padRender(); } };
+  const ag=$('#again'); if(ag) ag.onclick=loadState;
+  const go=$('#go'); if(go) go.onclick=start;
+  const rs=$('#resend'); if(rs) rs.onclick=sendEnd;
+  if(s==='login') bindLogin();
+}
+/* ---- ログイン(PCのキーボードで) ---- */
+function loginHtml(){
+  const st=P.step;
+  const lead={sid:'学籍番号を入れて Enter',pin:'4桁の合言葉を入れて Enter',set1:'はじめてのログインです。自分で4桁の数字を決めてください',set2:'確認のため、同じ4桁をもう一度'}[st];
+  return `<div class="card login"><h1>ログイン</h1><p>${lead}</p>
+    ${st==='sid'?`<label for="sid">学籍番号</label><input id="sid" value="${esc(P.sid)}" autocomplete="off" spellcheck="false">`
+      :`<p class="mut">学籍番号 <b style="color:#fff">${esc(P.sid)}</b></p><label for="pin">合言葉(4桁の数字)</label><input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off">`}
+    <p class="perr">${esc(P.err)}</p>
+    <div class="flex" style="justify-content:space-between;margin-top:10px">${st!=='sid'?'<button class="pbtn" id="bk">もどる</button>':'<span></span>'}<button class="pbtn go" id="nx" ${P.busy?'disabled':''}>${P.busy?'確認中…':'次へ'}</button></div></div>`;
+}
+function bindLogin(){
+  const i=$('#sid')||$('#pin'); if(i){ i.focus(); i.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); loginNext(); } }; }
+  $('#nx').onclick=loginNext;
+  const bk=$('#bk'); if(bk) bk.onclick=()=>{ P.step='sid'; P.err=''; padRender(); };
+}
+async function loginNext(){
+  if(P.busy) return; P.err='';
+  if(P.step==='sid'){
+    P.sid=MG.normSid($('#sid').value); if(!P.sid){ P.err='学籍番号を入れてください'; return padRender(); }
+    P.busy=true; padRender(); const r=await PAD.req('check',{sid:P.sid}); P.busy=false;
+    if(!r.ok){ P.err=r.msg; return padRender(); }
+    P.step=r.d&&r.d.ps?'pin':'set1'; return padRender();
+  }
+  const pin=$('#pin').value.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  if(!/^\d{4}$/.test(pin)){ P.err='4桁の数字で入れてください'; return padRender(); }
+  if(P.step==='set1'){ P.pin1=pin; P.step='set2'; return padRender(); }
+  if(P.step==='set2'&&pin!==P.pin1){ P.err='1回目とちがいます。最初から決めなおしてください'; P.step='set1'; return padRender(); }
+  P.busy=true; padRender();
+  const r=await PAD.req('login',{sid:P.sid,pin,set:P.step==='set2'}); P.busy=false;
+  if(!r.ok){ P.err=r.msg; if(r.d&&r.d.needSet) P.step='set1'; return padRender(); }
+  PAD.setVk(r.d.vk); P.step='sid'; P.err=''; P.view=undefined; if(r.msg) toast(r.msg); watchMe();
+}
+/* ---- スタート ---- */
+async function start(){
+  if(P.busy) return; P.busy=true; P.err=''; padRender();
+  const r=await PAD.req('g:start',{},GID); P.busy=false;
+  if(!r.ok){ if(r.d&&r.d.rec){ P.rec=r.d.rec; P.scr='result'; return padRender(); } P.err=r.msg; return padRender(); }
+  P.off=r.d.sn-Date.now(); const rec=r.d.rec; P.rec=rec;
+  const loc=lsGet();
+  P.nb=rec.nb||0; P.si=rec.si||0; P.ms=rec.ms||0; P.k=rec.k||0;
+  if(loc&&loc.t0===rec.t0&&loc.nb>P.nb){ P.nb=loc.nb; P.si=loc.si; P.ms=loc.ms; P.k=loc.k; }
+  P.lap=Math.floor(P.si/SENTS.length);
+  P.startAt=rec.t0-P.off; P.end=P.startAt+rec.dur*1000; P.saved='';
+  P.scr='play'; loadSent(); drawPlay(true);
+  const wait=P.startAt-Date.now();
+  if(wait>200){ countdown(wait); } else P.live=true;
+  clearInterval(P.tick); P.tick=setInterval(tick,200);
+  clearInterval(P.sendT); P.sendT=setInterval(()=>sendProg(),10000);
+}
+function countdown(ms){
+  P.live=false; const el=document.createElement('div'); el.className='cd'; document.body.appendChild(el);
+  const f=()=>{ const left=P.startAt-Date.now(); if(left<=0){ el.remove(); P.live=true; drawPlay(); return; } el.textContent=Math.ceil(left/1000); setTimeout(f,80); }; f();
+}
+function loadSent(){ P.ty=new Typer(SENTS[P.si%SENTS.length].yomi); }
+// いまの文で打ち終わった「画面の文字の数」
+function sentDone(){ const s=SENTS[P.si%SENTS.length], kd=P.ty.kanaDone(); let n=0; for(const t of s.toks){ if(t.y<=kd) n+=t.d.length; else break; } return n; }
+const curN=()=>P.nb+sentDone();
+function onKey(e){
+  if(P.scr==='ready'||P.scr==='resume'){ if(e.key===' '&&!P.busy){ e.preventDefault(); start(); } return; }
+  if(P.scr!=='play') return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key==='Process'||e.isComposing||e.keyCode===229){ P.ime=true; drawWarn(); return; }
+  if(e.key.length!==1) return;
+  e.preventDefault();
+  if(!P.live) return;
+  P.caps=e.getModifierState&&e.getModifierState('CapsLock');
+  if(P.ime){ P.ime=false; }
+  const r=P.ty.key(e.key);
+  if(r==='miss'){ P.ms++; const b=$('#tbox'); if(b){ b.classList.remove('miss'); void b.offsetWidth; b.classList.add('miss'); } drawWarn(); return; }
+  P.k++;
+  if(r==='done'){ P.nb+=SENTS[P.si%SENTS.length].len; P.si++; P.lap=Math.floor(P.si/SENTS.length); loadSent(); lsSet({t0:P.rec.t0,nb:P.nb,si:P.si,ms:P.ms,k:P.k}); drawPlay(true); return; }
+  drawPlay();
+}
+function tick(){
+  const left=P.end-Date.now();
+  const t=$('#tm'); if(t){ t.textContent=mmss(left); t.parentNode.classList.toggle('low',left<30000); }
+  if(left<=0&&P.scr==='play') finish();
+}
+function drawWarn(){
+  const w=$('#warn'); if(!w) return;
+  const msg=P.ime?'日本語入力がオンになっています。キーボードの「半角/全角」を押して、英数入力にしてください':P.caps?'CapsLock がオンになっています。Shift+CapsLock(英数キー)で解除してください':'';
+  w.textContent=msg; w.hidden=!msg;
+}
+function drawPlay(full){
+  const s=SENTS[P.si%SENTS.length], nx=SENTS[(P.si+1)%SENTS.length];
+  if(full||!$('#tbox')){
+    app.innerHTML=`<div class="pw">${head()}<div class="warnbar" id="warn" hidden></div>
+      <div class="hud"><div class="time"><small>のこり時間</small><b id="tm">${mmss(P.end-Date.now())}</b></div><div class="cnt"><small>打った文字数</small><b id="cn"></b></div><div><small>ミス</small><b id="ms"></b></div></div>
+      <div class="tbox" id="tbox"><div class="chap"><span>${esc(s.ch)}</span>${P.lap?`<span class="lap">${P.lap+1}周目</span>`:''}<span class="sp"></span><span>${P.si%SENTS.length+1} / ${SENTS.length}</span></div>
+        <div class="sent" id="sent">${s.toks.map((t,i)=>`<span class="t" data-i="${i}">${t.d!==t.r&&/[一-鿿々]/.test(t.d)?`<ruby>${esc(t.d)}<rt>${esc(t.r)}</rt></ruby>`:esc(t.d)}</span>`).join('')}</div>
+        <div class="roma" id="roma"></div></div>
+      <div class="next"><small>つぎの文</small>${esc(nx.toks.map(t=>t.d).join(''))}</div></div>`;
+    drawWarn();
+  }
+  const kd=P.ty.kanaDone(); let curI=-1;
+  $('#sent').querySelectorAll('.t').forEach((el,i)=>{ const t=s.toks[i], done=t.y<=kd; el.classList.toggle('done',done); if(!done&&curI<0) curI=i; el.classList.toggle('cur',i===curI); });
+  const rest=P.ty.rest();
+  $('#roma').innerHTML=`<span class="ty">${esc(P.ty.typed)}</span><span class="nx">${esc(rest.slice(0,1))}</span>${esc(rest.slice(1))}`;
+  $('#cn').textContent=yen(curN()); $('#ms').textContent=yen(P.ms);
+}
+async function sendProg(){
+  if(P.scr!=='play'||!P.live) return;
+  const r=await PAD.req('g:prog',{n:curN(),nb:P.nb,si:P.si,ms:P.ms,k:P.k},GID);
+  if(r.ok&&r.d&&r.d.over){ P.rec=r.d.rec; stopPlay(); P.scr='result'; padRender(); toast('時間が過ぎていたので、ここまでの記録で終わりました'); }
+}
+function stopPlay(){ clearInterval(P.tick); clearInterval(P.sendT); P.live=false; }
+async function finish(){
+  stopPlay(); P.final={n:curN(),nb:P.nb,si:P.si,ms:P.ms,k:P.k};
+  P.rec={...P.rec,n:P.final.n,ms:P.ms,st:'d'}; P.scr='result'; P.saved='sending';
+  app.innerHTML=`<div class="pw">${head()}<div class="card center"><h1>そこまで!</h1><div class="big">${yen(P.final.n)}<small>文字</small></div><p>先生のPCに送っています…</p></div></div>`;
+  await sendEnd();
+}
+async function sendEnd(){
+  for(let i=0;i<3;i++){
+    const r=await PAD.req('g:end',P.final||{n:P.rec.n||0},GID);
+    if(r.ok){ if(r.d&&r.d.rec) P.rec=r.d.rec; P.saved='ok'; padRender(); return; }
+    if(!r.timeout) break;
+  }
+  P.saved='ng'; padRender();
+}
+</script>
+</body>
+</html>
