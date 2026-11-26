@@ -300,8 +300,9 @@ MACH.rocket={
     for(let i=0;i<2;i++) await spinStop(this.reels[i],col(i),pool,i?260:600);
     let cd=null; if(reach&&!c){ cd=this.countdown(sev); cd.catch(()=>{}); }
     if(reach&&c){ this.text('NEXT STAGE…','sub',200,1300); sfx.rumble(1.2,.25); }
-    await spinStop(this.reels[2],col(2),pool,reach?(c?1300:2000):260);
+    // カウントダウン中は3つ目のリールを回したままにし、終わってから止める(先に結果が見えないように)
     if(cd) await cd;
+    await spinStop(this.reels[2],col(2),pool,reach?(c?1300:1200):260);
     if(d.pay>0){ $('#ledWin').textContent=d.pay; sfx.win(); }
     if(d.start) await this.launch(d.sup);
     else if(d.moon) await this.moon(d);
