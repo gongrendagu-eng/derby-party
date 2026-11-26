@@ -182,6 +182,7 @@
 .gparty{position:absolute;left:70px;bottom:4px;display:flex;align-items:flex-end;transition:transform .5s cubic-bezier(.3,.7,.3,1),opacity .5s;transform-origin:0 100%;z-index:3}
 .gparty img{margin-left:-48px;transform-origin:50% 100%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6));animation:gwalk .42s ease-in-out infinite alternate}
 .gparty img:first-child{margin-left:0}
+.gparty img.ga{animation:none}
 @keyframes gwalk{to{transform:translateY(-7px) rotate(-1.2deg)}}
 .gparty.back{transform:translateX(-30px) scale(.78)}
 .gparty.out{transform:translateX(-120px) scale(.7);opacity:0}
@@ -575,7 +576,38 @@ const gtc=t=>GR.tc[Math.max(0,Math.min(5,t|0))];
 // リールの絵柄(エンジンの名前 → 絵)。lemon は当たりのない宝石
 const GSYM={seven:'gr_s7',bar:'gr_sbar',bell:'gr_scoin',cherry:'gr_spot',replay:'gr_sshield',lemon:'gr_sgem'};
 const gsym=(k,s)=>`<svg viewBox="0 0 100 100" width="${s||'100%'}" height="${s||'100%'}" aria-hidden="true"><image href="${ASSET}${GSYM[k]}.webp" x="3" y="3" width="94" height="94" preserveAspectRatio="xMidYMid meet"/>${k==='bar'?'<text x="50" y="60" text-anchor="middle" font-family="Dela Gothic One,sans-serif" font-size="25" fill="#5a3a10" stroke="#fff6d8" stroke-width="3" paint-order="stroke" letter-spacing="1">BAR</text>':''}</svg>`;
-const GPRE=[]; function grPreload(){ if(GPRE.length) return;
+// 動画から切り出したコマ(歩く walk・攻撃 atk・やられ hit)。シート ga_<名前>_<種類>.webp は横に n コマ(1コマ w×h)。
+// sh=シートの中の立ち姿の高さ、sa=元の立ち絵(gr_<名前>.webp)の 横÷縦。立ち絵とコマで体の大きさと足もとがそろうように、高さと左右の余白を合わせる
+const GAM={"rei":{"sh":306,"walk":{"n":12,"w":318,"h":318,"fps":9.0},"atk":{"n":14,"w":631,"h":366},"sa":0.741},"garm":{"sh":211,"walk":{"n":12,"w":269,"h":225,"fps":9.0},"atk":{"n":14,"w":422,"h":355},"sa":1.063},"cecil":{"sh":271,"walk":{"n":12,"w":261,"h":281,"fps":9.6},"atk":{"n":14,"w":304,"h":314},"sa":0.833},"mil":{"sh":297,"walk":{"n":12,"w":204,"h":308,"fps":8.2},"atk":{"n":14,"w":393,"h":342},"sa":0.66},"soma":{"sh":299,"walk":{"n":12,"w":242,"h":318,"fps":8.7},"atk":{"n":14,"w":396,"h":337},"sa":0.718},"freya":{"sh":292,"walk":{"n":12,"w":249,"h":303,"fps":11.5},"atk":{"n":12,"w":285,"h":322},"hit":{"n":12,"w":317,"h":353},"sa":0.768},"grad":{"sh":274,"walk":{"n":12,"w":240,"h":287,"fps":8.2},"atk":{"n":12,"w":369,"h":388},"hit":{"n":12,"w":266,"h":351},"sa":0.986},"zeros":{"sh":282,"walk":{"n":12,"w":321,"h":293,"fps":8.5},"atk":{"n":12,"w":392,"h":351},"hit":{"n":12,"w":301,"h":322},"sa":0.875},"maou":{"sh":320,"walk":{"n":12,"w":235,"h":336,"fps":9.3},"atk":{"n":12,"w":312,"h":335},"hit":{"n":12,"w":312,"h":329},"sa":0.83}};
+const GA={f:{},
+  load(){ if(this._l) return; this._l=1;
+    for(const n in GAM) for(const k of ['walk','atk','hit']){ const M=GAM[n][k]; if(!M) continue; const im=new Image();
+      im.onload=()=>{ const fr=[]; let left=M.n;
+        for(let i=0;i<M.n;i++){ const c=document.createElement('canvas'); c.width=M.w; c.height=M.h; c.getContext('2d').drawImage(im,i*M.w,0,M.w,M.h,0,0,M.w,M.h);
+          c.toBlob(b=>{ fr[i]=b?URL.createObjectURL(b):c.toDataURL(); if(--left===0){ this.f[n+'_'+k]=fr; if(k==='walk') this.ready(n); } },'image/png'); } };
+      im.src=ASSET+'ga_'+n+'_'+k+'.webp'; } },
+  has(n,k){ return !!this.f[n+'_'+k]; },
+  // ふだん画面のパーティーは、コマが読みこめたらすぐ歩きはじめる
+  ready(n){ document.querySelectorAll(`#gParty img[data-n="${n}"]`).forEach(img=>{ if(!img._ga){ img.classList.add('ga'); this.play(img,n,'walk',{loop:1}); } }); },
+  // o.loop=くり返す o.back=終わったら立ち絵にもどる(なければ最後のコマのまま) o.fps=速さ
+  play(img,n,k,o){ o=o||{}; const fr=this.f[n+'_'+k], M=GAM[n]&&GAM[n][k]; if(!img||!fr||!M) return false;
+    this.stop(img,true);
+    if(img.dataset.gaH==null){ const cs=getComputedStyle(img); img.dataset.gaH=parseFloat(img.style.height)||img.getBoundingClientRect().height||M.h; img.dataset.gaL=parseFloat(cs.marginLeft)||0; img.dataset.gaR=parseFloat(cs.marginRight)||0; }
+    const bh=+img.dataset.gaH, h=bh*M.h/GAM[n].sh, w=h*M.w/M.h, mg=-(w-bh*GAM[n].sa)/2;
+    img.style.height=h.toFixed(1)+'px'; img.style.marginLeft=(+img.dataset.gaL+mg).toFixed(1)+'px'; img.style.marginRight=(+img.dataset.gaR+mg).toFixed(1)+'px';
+    const st={n,i:0}; img._ga=st; img.src=fr[0];
+    st.t=setInterval(()=>{ if(!img.isConnected||img.src!==fr[st.i]){ this.stop(img); return; } st.i++;
+      if(st.i>=fr.length){ if(o.loop) st.i=0; else { clearInterval(st.t); if(o.back) this.stop(img); return; } }
+      img.src=fr[st.i]; },1000/(o.fps||M.fps||14));
+    return true; },
+  // 止めて立ち絵の大きさにもどす(keep=大きさはそのまま。続けて別のコマを再生するとき)
+  stop(img,keep){ const st=img&&img._ga; if(!st) return; clearInterval(st.t); img._ga=null; if(keep) return;
+    img.style.height=img.dataset.gaH+'px'; img.style.marginLeft=img.dataset.gaL+'px'; img.style.marginRight=img.dataset.gaR+'px';
+    if(img.src.startsWith('blob:')||img.src.startsWith('data:')) img.src=gImg(st.n); },
+  // 立ち絵(または別の絵)に差しかえる
+  set(img,name){ if(!img) return; this.stop(img); img.src=gImg(name); }
+};
+const GPRE=[]; function grPreload(){ GA.load(); if(GPRE.length) return;
   ['rei','garm','cecil','mil','soma','nina','rei_atk','rei_sp','rei_win','rei_lose','rei_f1','rei_f2','garm_sk','cecil_sk','mil_sk','soma_sk','garm_f','cecil_f','mil_f','soma_f',
    'freya','grad','zeros','maou','freya_l','grad_l','zeros_l','maou_f','m1','m2','m3','m4','m5','m6','m7','m8','s7','sbar','spot','scoin','sgem','sshield','chest','chest_o','bg0','bg1','bg2','bg3','bg4','bg5']
   .forEach(n=>{ const i=new Image(); i.src=gImg(n); GPRE.push(i); }); }
@@ -772,9 +804,9 @@ Object.assign(M,{
   /* ---- 場面 ---- */
   // ふだん:パーティーが迷宮を進む
   walk(){ const S=this.part(false,'stage'); if(!S) return; this.full(false); this.setBg(this.floor()+1); $('#lcd').classList.remove('gbon');
-    S.innerHTML=`<div class="gdim"></div><div class="gparty" id="gParty">${['soma','mil','cecil','garm','rei'].map((k,i)=>`<img src="${gImg(k)}" alt="" style="height:${GR.h[k]}px;animation-delay:-${(i*.11).toFixed(2)}s">`).join('')}</div>
+    S.innerHTML=`<div class="gdim"></div><div class="gparty" id="gParty">${['soma','mil','cecil','garm','rei'].map((k,i)=>`<img data-n="${k}" src="${gImg(k)}" alt="" style="height:${GR.h[k]}px;animation-delay:-${(i*.11).toFixed(2)}s">`).join('')}</div>
       <div class="gdust">${Array.from({length:10},(_,i)=>`<i style="left:${260+i*84}px;animation-delay:-${(i*.27).toFixed(2)}s"></i>`).join('')}</div>`;
-    this.scn='walk'; this.foe=null; this.hero=null; this.mons=[]; this.hud(); },
+    this.scn='walk'; this.foe=null; this.hero=null; this.mons=[]; this.hud(); for(const n in GAM) if(GA.has(n,'walk')) GA.ready(n); },
   // 前の演出が途中で打ち切られたとき、ふだん画面に残った敵・宝箱・HPバーなどを片づける(パーティーと背景だけ残す)
   sweep(){ const S=this.part(false,'stage'); if(!S) return;
     if(!S.querySelector('#gParty')){ this.walk(); return; } // バトル画面に置きかわっていたら、ふだん画面にもどす
@@ -847,7 +879,7 @@ Object.assign(M,{
   // 第1停止:敵があらわれる
   async enc(tok,pl){ const e=pl.enemy, S=this.part(false,'stage'); if(!S||this.isFull) return; const c=pl.tier;
     this.flash(false,Math.max(1,c-1)); sfx.alert(); const p=$('#gParty'); if(p) p.classList.add('back');
-    if(e.boss){ this.foe=this.spr(S,e.boss,`right:30px;bottom:0;height:${GR.eh[e.boss]}px;z-index:4`,'gin-r'); this.tint(false,c,.3);
+    if(e.boss){ this.foe=this.spr(S,e.boss,`right:30px;bottom:0;height:${GR.eh[e.boss]}px;z-index:4`,'gin-r'); GA.play(this.foe,e.boss,'walk',{back:1}); this.tint(false,c,.3);
       this.say(null,`${GR.nm[e.boss]}があらわれた！`,2400); if(e.boss==='maou'){ this.quake(false); sfx.roar(); } }
     else { this.mons=[]; this.addMon(e.mon); this.say(null,`${GR.mon[e.mon]}があらわれた！`,2200); if(e.mon===8){ this.quake(false); sfx.roar(); } }
     await this.w(500,tok); if(this.foe) this.foe.classList.add('gbreath'); },
@@ -868,7 +900,7 @@ Object.assign(M,{
     const S=this.part(full,'stage'); if(!S) return; const e=pl.enemy||{mon:1};
     const foeN=bt==='duel'?'zeros':(e.boss||('m'+e.mon)), fh=bt==='duel'?GR.eh.zeros:e.boss?GR.eh[e.boss]:GR.mh[e.mon];
     S.innerHTML=`<div class="gdim"></div>${bt==='duel'?'<div class="gvs"></div>':''}`;
-    this.foe=this.spr(S,foeN,`right:${full?70:40}px;bottom:${(e.mon===5||e.mon===6)&&bt!=='duel'?50:0}px;height:${Math.min(fh,full?420:400)}px;z-index:3`,'gin-r gbreath');
+    this.foe=this.spr(S,foeN,`right:${full?70:40}px;bottom:${(e.mon===5||e.mon===6)&&bt!=='duel'?50:0}px;height:${Math.min(fh,full?420:400)}px;z-index:3`,'gin-r gbreath'); GA.play(this.foe,foeN,'walk',{back:1});
     this.hero=this.spr(S,bt==='pinch'?'rei_lose':bt==='blazer'?'rei_sp':'rei',`left:${full?90:60}px;bottom:0;height:${bt==='blazer'?340:bt==='pinch'?250:300}px;z-index:4`,'gin-l');
     this.el(S,`<div class="ghp" style="left:30px"><i id="hpL" style="width:${bt==='pinch'?14:100}%;background:${bt==='pinch'?'#ff3045':'#4aa8ff'}"></i></div>`);
     this.el(S,`<div class="ghp" style="right:30px"><i id="hpR" style="width:100%;background:#ff3045;margin-left:auto"></i></div>`);
@@ -897,19 +929,21 @@ Object.assign(M,{
     const retrig=(el,cls)=>{ if(!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
     if(hit){
       if(bt==='pinch'&&hero){ if(hpL){ hpL.style.width='100%'; hpL.style.background='#4aa8ff'; } this.rays(full,4); this.txt(full,'星の祈り！',{t:2,top:80,size:56,ms:1300}); sfx.magic(); this.sparks(full,'#fff6a0',26); await this.w(1200,tok);
-        hero.src=gImg('rei_sp'); this.txt(full,'力がみなぎる…！',{t:4,top:170,size:40,sub:1,ms:1100}); await this.w(800,tok); }
+        GA.set(hero,'rei_sp'); this.txt(full,'力がみなぎる…！',{t:4,top:170,size:40,sub:1,ms:1100}); await this.w(800,tok); }
       // 1 溜め
       const sk=bt==='skill'&&S.querySelector(`img[src$="${pl.ally}_sk.webp"]`);
-      if(hero&&!sk){ hero.src=gImg(bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); }
+      const reiA=hero&&!sk&&bt!=='blazer'&&bt!=='pinch'&&GA.has('rei','atk'); // 動画のコマがあれば、突進のときに斬る
+      if(hero&&!sk&&!reiA){ GA.set(hero,bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); }
       this.rays(full,5); this.sparks(full,'#ffe27a',26); sfx.charge(); this.quake(full);
       this.txt(full,bt==='blazer'?'ブレイブ…ブレイザー！！':bt==='duel'?'これで終わりだ！':'いっけぇぇぇ！',{t:5,top:60,size:64,ms:1100});
       await this.w(1100,tok);
       // 2 突進
-      if(sk) sk.classList.add('gdash'); else if(hero){ hero.classList.remove('gin-l','gbreath'); hero.classList.add('gdash'); }
+      if(sk) sk.classList.add('gdash'); else if(hero){ hero.classList.remove('gin-l','gbreath'); hero.classList.add('gdash'); if(reiA) GA.play(hero,'rei','atk',{fps:18}); }
       sfx.slash(); this.lines(full,5,20); await this.w(260,tok);
       if(foe) foe.classList.remove('gbreath','gin-r','gfloat');
       // 3 連撃
       const n=bt==='blazer'?7:(full?5:3);
+      const foeK=bt==='duel'?'zeros':e.boss; if(foe&&foeK) GA.play(foe,foeK,'hit',{fps:Math.max(8,12/(n*.24))});
       for(let i=0;i<n;i++){ retrig(foe,'ghit'); sfx.hit(); if(i%2===0) sfx.slash(); this.quake(full); this.lines(full,5,8);
         this.dmg(full,(900+Math.random()*2600)|0,(full?560:520)+((i*83)%260),80+((i*57)%170));
         if(hpR) hpR.style.width=Math.max(8,(n-1-i)/n*100)+'%';
@@ -918,7 +952,7 @@ Object.assign(M,{
       if(foe) foe.classList.remove('ghit');
       this.flash(full,5); sfx.big(); this.dmg(full,bt==='blazer'?99999:((9000+Math.random()*8000)|0),full?700:640,40); if(hpR) hpR.style.width='0%';
       const ln=foe&&e.boss&&GR.lose[bt==='duel'?'zeros':e.boss];
-      if(foe){ if(ln){ foe.src=gImg(ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); }
+      if(foe){ if(ln){ GA.set(foe,ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); }
       await this.w(1000,tok);
       // 5 クエストクリア(画面全体)
       if(!full){ this.full(true); full=true; }
@@ -934,7 +968,7 @@ Object.assign(M,{
       const mon=!e.boss&&bt!=='duel', sk=bt==='skill'&&S.querySelector(`img[src$="${pl.ally}_sk.webp"]`);
       if(foe) foe.classList.remove('gbreath','gin-r','gfloat');
       // 1 こちらの攻撃
-      if(sk) sk.classList.add('gdash'); else if(hero){ hero.src=gImg(bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); hero.classList.remove('gin-l','gbreath'); hero.classList.add('gdash'); }
+      if(sk) sk.classList.add('gdash'); else if(hero){ if(bt==='blazer'||bt==='pinch'||!GA.play(hero,'rei','atk',{fps:18})) GA.set(hero,bt==='blazer'||bt==='pinch'?'rei_sp':'rei_atk'); hero.classList.remove('gin-l','gbreath'); hero.classList.add('gdash'); }
       sfx.slash(); this.lines(full,T,14); await this.w(300,tok);
       if(mon&&Math.random()<.45){
         // かわされた／にげられた:敵は無傷、こちらの攻撃は空ぶり
@@ -953,8 +987,8 @@ Object.assign(M,{
         if(sk) sk.classList.remove('gdash'); else if(hero){ hero.classList.remove('gdash'); hero.classList.add('gknock'); }
         await this.w(700,tok);
         // 敵の反撃
-        if(foe) foe.classList.add('glunge'); await this.w(260,tok); sfx.hit(); this.quake(full);
-        if(hero){ hero.src=gImg('rei_lose'); hero.classList.remove('gknock'); hero.classList.add('ghit'); }
+        if(foe){ foe.classList.add('glunge'); GA.play(foe,bt==='duel'?'zeros':e.boss,'atk',{fps:16,back:1}); } await this.w(260,tok); sfx.hit(); this.quake(full);
+        if(hero){ GA.set(hero,'rei_lose'); hero.classList.remove('gknock'); hero.classList.add('ghit'); }
         if(hpL){ hpL.style.width='12%'; hpL.style.background='#ff3045'; }
         const foeN=bt==='duel'?'zeros':e.boss;
         this.txt(full,bt==='pinch'?'ミルの祈りもとどかない…':'反撃をうけた！',{t:0,top:110,size:46,ms:1500});
@@ -1002,16 +1036,16 @@ Object.assign(M,{
     const who=type==='big'?['rei','garm','cecil','soma','mil'][(no-1)%5]:'cecil';
     if(this.hero) this.hero.remove(); this.hero=this.spr(S,who,`left:80px;bottom:0;height:${GR.h[who]*1.35}px;z-index:4`,'gin-l gbreath');
     if(type==='big'){ const f=left<=0?'maou':GR.bigFoes[(no-1)%GR.bigFoes.length], boss=!f.startsWith('m'), m=boss?0:+f.slice(1);
-      this.foe=this.spr(S,f,`right:50px;bottom:${m===5||m===6?50:0}px;height:${boss?GR.eh[f]:Math.min(GR.mh[m],360)}px;z-index:3`,'gin-r gbreath'); this.foeN=f;
+      this.foe=this.spr(S,f,`right:50px;bottom:${m===5||m===6?50:0}px;height:${boss?GR.eh[f]:Math.min(GR.mh[m],360)}px;z-index:3`,'gin-r gbreath'); this.foeN=f; GA.play(this.foe,f,'walk',{back:1});
       if(left<=0){ this.txt(false,'最後の敵！ 魔王ゾルディア',{t:5,top:70,size:44,ms:1600}); sfx.roar(); } }
     else { this.foe=this.spr(S,'chest','right:200px;bottom:20px;height:170px;z-index:3','gin-d'); this.foeN='chest'; }
     this.ban(type,left+1,no-1,this.bGet); this.bNo=no; this.bLeft=left; },
   // ボーナス中の1ゲーム(止めたあと)
   async bonusHit(tok,d,pay){ const type=this.bType||'big', foe=this.foe, hero=this.hero;
     if(type==='big'){ const who=['rei','garm','cecil','soma','mil'][((this.bNo||1)-1)%5];
-      if(hero){ hero.src=gImg(who==='rei'?'rei_atk':who+'_sk'); hero.classList.remove('gbreath','gin-l'); hero.classList.add('gdash'); }
-      sfx.slash(); await this.w(240,tok); if(foe){ foe.classList.remove('gbreath','gin-r'); foe.classList.add('ghit'); } sfx.hit(); this.dmg(false,(800+Math.random()*1800)|0,760,120);
-      await this.w(380,tok); if(foe){ foe.classList.remove('ghit'); const ln=GR.lose[this.foeN]; if(ln){ foe.src=gImg(ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); } }
+      if(hero){ if(!GA.play(hero,who,'atk',{fps:18})) GA.set(hero,who==='rei'?'rei_atk':who+'_sk'); hero.classList.remove('gbreath','gin-l'); hero.classList.add('gdash'); }
+      sfx.slash(); await this.w(240,tok); if(foe){ foe.classList.remove('gbreath','gin-r'); foe.classList.add('ghit'); GA.play(foe,this.foeN,'hit',{fps:24}); } sfx.hit(); this.dmg(false,(800+Math.random()*1800)|0,760,120);
+      await this.w(380,tok); if(foe){ foe.classList.remove('ghit'); const ln=GR.lose[this.foeN]; if(ln){ GA.set(foe,ln); foe.classList.add('gout'); } else foe.classList.add('gfly'); } }
     else { if(foe){ sfx.chest(); foe.src=gImg('chest_o'); foe.classList.remove('gin-d'); foe.classList.add('ghit'); } this.coins(false,840,300,16); }
     this.txt(false,`+${Math.max(0,pay-(d.bet||0))}`,{t:4,top:150,size:58,ms:1000}); this.bGet=d.bonusGet||this.bGet; this.ban(type,this.bLeft??0,this.bNo||0,this.bGet); },
   // ボーナスの終わり:ギルドにもどって依頼達成(画面全体)
