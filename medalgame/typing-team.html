@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>朝のタイピング(グループ戦)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=M+PLUS+1+Code:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="mg-core.js"></script>
+<script src="typing-core.js"></script>
+<style>
+/* 朝のタイピング(グループ戦):4人1組でランダムに交代しながら打つ */
+:root{--f-num:"Dela Gothic One",sans-serif;--f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;--f-mono:"M PLUS 1 Code",ui-monospace,Consolas,monospace;
+  --gold:#f2b705;--ink:#173b33;--soft:#5d7c74;--line:#d5efe5;--warn:#d63c5e;--ok:#12a37a}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font-family:var(--f-body);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sp{flex:1}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2b27;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;z-index:99}
+
+/* ===== 先生のPC ===== */
+body.host{background:#f5efe1;--ink:#1e1a14;--soft:#6f6555;--line:#dccfb4}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ttl{font-family:var(--f-num);font-size:28px}
+.ttl small{font-family:var(--f-body);font-size:14px;color:var(--soft);font-weight:800;margin-left:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:3px 12px;font-weight:800;font-size:14px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:#1f9d4a}.chip.off .dot{background:var(--warn)}
+.box{background:#fffaf0;border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.box h2{margin:0 0 8px;font-size:18px}
+.note{color:var(--soft);font-size:14px;line-height:1.7;margin:4px 0}
+.btn{border:2px solid var(--line);background:#fffaf0;border-radius:10px;padding:7px 14px;font-weight:800}
+.btn.pri{background:#1e1a14;border-color:#1e1a14;color:#fff}
+.btn.sm{padding:4px 10px;font-size:13px}
+.btn.danger{background:#c8102e;border-color:#c8102e;color:#fff}
+.hgrid{display:grid;grid-template-columns:1fr 330px;gap:14px;align-items:start}
+@media (max-width:900px){.hgrid{grid-template-columns:1fr}}
+.tool{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.tool select{border:2px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;font-weight:800}
+.sum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sum div{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 14px;font-weight:800}
+.sum b{font-family:var(--f-num);font-weight:400;font-size:24px;margin-left:6px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:13px;color:var(--soft);padding:6px 8px;border-bottom:2px solid var(--line);position:sticky;top:0;background:#fffaf0}
+td{padding:6px 8px;border-bottom:1px dashed var(--line);font-weight:700}
+td.r,th.r{text-align:right}
+td.n{font-family:var(--f-num);font-weight:400;font-size:20px;text-align:right}
+.tbl{max-height:68vh;overflow:auto}
+.st{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:800;background:#eee6d4;color:var(--soft)}
+.st.p{background:#fff1c4;color:#8a5a00}.st.d{background:#d7f3e6;color:#0f7a57}
+.bar{height:8px;border-radius:4px;background:#e9dfc9;overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#f2b705,#e07a00)}
+.qr{display:flex;justify-content:center;padding:8px;background:#fff;border-radius:12px;border:2px solid var(--line)}
+.url{font-family:var(--f-mono);font-size:12px;word-break:break-all;background:#fff;border:2px dashed var(--line);border-radius:10px;padding:8px;margin:8px 0}
+
+/* ===== 学生のPC ===== */
+body.pad{background:#0f1530;color:#eef1ff;--ink:#eef1ff;--soft:#9aa3cf;--line:#2b3566;
+  background-image:radial-gradient(1000px 500px at 85% -10%,#2b2b78 0%,transparent 60%),radial-gradient(800px 500px at -10% 110%,#0b4a57 0%,transparent 55%);background-attachment:fixed;min-height:100vh}
+.pw{max-width:1100px;margin:0 auto;padding:16px 24px 40px}
+.phead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.plogo{font-family:var(--f-num);font-size:22px;letter-spacing:.04em}
+.plogo span{color:var(--gold)}
+.pwho{color:var(--soft);font-weight:800}
+.pbtn{border:0;border-radius:999px;padding:12px 26px;font-weight:800;font-size:17px;background:#26305e;color:#eef1ff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.pbtn.sm{padding:6px 14px;font-size:13px}
+.pbtn.go{background:linear-gradient(#ffd84a,var(--gold));color:#3a2600}
+.pbtn:disabled{opacity:.45}
+.card{background:#171f45;border:2px solid var(--line);border-radius:22px;padding:24px 28px}
+.card h1{font-family:var(--f-num);font-weight:400;font-size:clamp(30px,4vw,44px);margin:0 0 6px}
+.card h1 em{font-style:normal;color:var(--gold)}
+.card p{line-height:1.8;color:#cfd5f5}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.rules div{background:#111838;border:2px solid var(--line);border-radius:16px;padding:14px}
+.rules b{display:block;font-size:15px;color:var(--gold);margin-bottom:4px}
+.rules span{font-size:14px;color:#cfd5f5;line-height:1.7}
+@media (max-width:800px){.rules{grid-template-columns:1fr}}
+.kbd{display:inline-block;font-family:var(--f-mono);font-weight:700;border:2px solid #4a5592;border-bottom-width:4px;border-radius:8px;padding:0 8px;background:#222b57;color:#fff}
+.center{text-align:center}
+.big{font-family:var(--f-num);font-size:clamp(60px,10vw,120px);line-height:1;color:var(--gold)}
+.big small{font-size:.32em;color:#eef1ff;margin-left:6px}
+.login{max-width:460px;margin:6vh auto 0}
+.login label{display:block;font-weight:800;color:var(--soft);margin:14px 0 6px}
+.login input{width:100%;border:3px solid #3a4580;border-radius:14px;background:#0d132c;padding:12px 14px;font-family:var(--f-mono);font-size:26px;color:#fff;letter-spacing:.06em}
+.login input:focus{border-color:var(--gold);outline:0}
+.perr{color:#ff7b95;font-weight:800;min-height:1.5em;margin:10px 0 0}
+/* プレイ画面 */
+.hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.hud div{background:#171f45;border:2px solid var(--line);border-radius:18px;padding:10px 18px}
+.hud small{display:block;color:var(--soft);font-weight:800;font-size:13px}
+.hud b{font-family:var(--f-num);font-weight:400;font-size:44px;line-height:1.1}
+.hud .time b{color:#7cf2c8}.hud .time.low b{color:#ff7b95}
+.hud .cnt b{color:var(--gold)}
+.tbox{background:#fbfaf6;color:#1c1f33;border-radius:24px;padding:22px 30px 26px;box-shadow:0 10px 0 rgba(0,0,0,.25);position:relative}
+.tbox.miss{animation:shake .12s}
+@keyframes shake{0%{transform:translateX(0)}50%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+.chap{font-size:14px;font-weight:800;color:#8a8fae;display:flex;gap:10px}
+.chap .lap{color:#c8102e}
+.sent{white-space:pre-wrap;font-size:clamp(24px,2.6vw,34px);line-height:2.15;font-weight:700;margin:6px 0 10px;word-break:break-all}
+.sent ruby rt{font-size:.42em;color:#9a9cb4;font-weight:700}
+.sent .t.done{color:#c4c6d6}.sent .t.done rt{color:#d6d8e4}
+.sent .t.cur{color:#c8102e;background:linear-gradient(transparent 82%,#ffd84a 82%)}
+.roma{font-family:var(--f-mono);font-size:clamp(18px,1.8vw,24px);letter-spacing:.04em;color:#9a9cb4;word-break:break-all;line-height:1.6;border-top:2px dashed #e1e2ec;padding-top:10px}
+.roma .ty{color:#1c9f73}
+.roma .nx{color:#1c1f33;background:#ffe27a;border-radius:4px}
+.next{margin-top:14px;color:#9aa3cf;font-size:18px;font-weight:700;line-height:1.7;opacity:.8}
+.next small{display:block;font-size:12px;color:#6e78a8}
+.warnbar{background:#c8102e;color:#fff;font-weight:800;border-radius:14px;padding:12px 18px;margin-bottom:12px;font-size:18px}
+.cd{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,14,34,.75);font-family:var(--f-num);font-size:180px;color:var(--gold);z-index:50}
+.mut{color:var(--soft)}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* ===== グループ戦で足したもの ===== */
+.lbl{font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.gdot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:8px}
+.gcol{background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px}
+.gcol h3{margin:0 0 6px;font-size:16px}.gcol h3 small{color:var(--soft);font-size:12px}
+.mrow{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px dashed var(--line);font-size:14px;font-weight:700}
+.mrow.off{color:var(--soft)}.mrow .mn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow select{border:1px solid var(--line);border-radius:6px;font-size:12px;padding:1px 2px;background:#fffaf0}
+.odot{width:10px;height:10px;border-radius:50%;border:2px solid #1f9d4a;flex:none}.odot.on{background:#1f9d4a}.odot.no{border-color:#c9bda3;background:repeating-linear-gradient(45deg,#c9bda3 0 2px,transparent 2px 4px)}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.lcard{background:#fff;border:3px solid;border-radius:14px;padding:10px 14px}
+.lh{display:flex;align-items:center;gap:8px;font-size:18px}.lt{font-weight:800}
+.ln{display:flex;gap:22px;margin:4px 0}.ln small{display:block;color:var(--soft);font-size:12px;font-weight:800}.ln b{font-family:var(--f-num);font-weight:400;font-size:30px}
+.ls{font-size:15px;line-height:1.7;color:#b3a990;max-height:5.2em;overflow:hidden}.ls .d{color:#1e1a14}
+.gtag{font-family:var(--f-body);font-size:13px;background:var(--gold);color:#3a2600;border-radius:999px;padding:2px 10px;vertical-align:4px}
+.banner{border-radius:18px;padding:14px 20px;margin-bottom:12px;font-size:24px;font-weight:800;text-align:center}
+.banner.mine{background:linear-gradient(#ffd84a,var(--gold));color:#3a2600;font-family:var(--f-num);font-weight:400;font-size:34px;letter-spacing:.04em}
+.banner.watch{background:#171f45;border:2px solid var(--line);color:#cfd5f5}
+.banner.over{background:#c8102e;color:#fff}
+.banner.pop{animation:pop .45s ease-out}
+@keyframes pop{0%{transform:scale(.8);opacity:.3}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+.tbox.watching{opacity:.82}
+.gpick{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.gbtn{border:3px solid var(--c);background:#111838;color:#fff;border-radius:16px;padding:12px 22px;min-width:110px}
+.gbtn b{display:block;font-family:var(--f-num);font-weight:400;font-size:26px;color:var(--c)}.gbtn small{color:var(--soft);font-weight:800}
+.gbtn.on{background:var(--c)}.gbtn.on b,.gbtn.on small{color:#fff}
+.mchips{display:flex;gap:8px;flex-wrap:wrap}
+.mchip{background:#111838;border:2px solid var(--line);border-radius:999px;padding:4px 14px;font-weight:800;color:#cfd5f5}
+.mchip.me{border-color:#7cf2c8}.mchip.cur{background:var(--gold);border-color:var(--gold);color:#3a2600}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+const GID='typingteam', NAME='朝のタイピング(グループ戦)', {esc,yen}=MG, $=s=>document.querySelector(s), app=$('#app');
+const CPS_MAX=7;                 // 1秒あたりの文字数の上限(グループ全体。不正防止)
+const SW_MIN=10000, SW_MAX=20000;// 交代までの時間(10〜20秒のランダム)
+const GONE=4000;                 // 打つ番の人の画面が消えてから、別の人に交代するまで
+const LV_GAP=120;                // 打っている内容を送る間隔(観戦用)
+const GNAME=i=>`${i+1}班`;
+const GCOL=['#e4572e','#2e86de','#17a673','#f2b705','#8e44ad','#e84393'];
+let toastT=null; function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
+const pad2=n=>String(n).padStart(2,'0');
+const dayKey=(d=new Date())=>`${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+const fmtDay=k=>{ const d=new Date(+k.slice(0,4),+k.slice(4,6)-1,+k.slice(6,8)); return `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; };
+const fmtTime=t=>{ const d=new Date(t); return `${d.getHours()}:${pad2(d.getMinutes())}`; };
+const mmss=ms=>{ ms=Math.max(0,ms); const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${pad2(s%60)}`; };
+const toI=v=>Math.max(0,Math.floor(+v||0));
+const shuffle=a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const STS=STORIES.map((x,i)=>({t:x.t,sents:x.s.map(y=>({...parseSent(y),ch:`お題${i+1} ${x.t}`}))}));
+const sentOf=(v,si)=>{ const S=STS[Math.max(0,Math.min(STS.length-1,+v||0))].sents; return S[((si%S.length)+S.length)%S.length]; };
+// 文の中で、よみの kd 文字目までに打ち終わった「画面の文字の数」と、そのかたまりの切れ目
+function doneChars(sent,kd){ let n=0,p=0; for(const t of sent.toks){ if(t.y<=kd){ n+=t.d.length; p=t.y; } else break; } return {n,p}; }
+// 観戦用:打ったローマ字をもう一度入れて、いまの位置を出す
+function replay(cache,v,L){
+  const sent=sentOf(v,L.si), key=v+'|'+L.si+'|'+L.k0, ty=L.ty||'';
+  if(cache.key!==key||!ty.startsWith(cache.typed)){ cache.key=key; cache.ty=new Typer(sent.yomi.slice(L.k0||0)); cache.typed=''; }
+  for(const ch of ty.slice(cache.typed.length)) cache.ty.key(ch);
+  cache.typed=ty;
+  return {sent,typer:cache.ty,kd:(L.k0||0)+cache.ty.kanaDone()};
+}
+// いちばん新しい「打つ番」の記録(s1, s2, … のうち番号が大きいもの)
+function latestLv(lvg){ let best=null,bs=-1; for(const k in (lvg||{})){ const s=+k.slice(1); if(s>bs&&lvg[k]){ bs=s; best={...lvg[k],s}; } } return best; }
+
+if(MG.qs.get('mg')) padMain(); else hostMain();
+
+/* =====================================================================
+   先生のPC
+   公開の場所(学籍番号・名前は置かない。人は試合ごとの番号 tk で表す)
+     mg/p_<公開の鍵>/tgm/m        {mid, st:'lobby'|'play'|'done', ng, dur, pick, t0, end, gv:[お題], at}
+     mg/p_<公開の鍵>/tgm/gm/<tk>  グループの番号(0〜、未所属は -1)
+     mg/p_<公開の鍵>/tgm/turn/<g> {s:何回目の番, tk}
+     mg/p_<公開の鍵>/tgm/lv/<g>/s<番> 打つ番の人が書く {tk, si, k0, ty, nb, n0, n, ms, k, t}
+     mg/p_<公開の鍵>/tgm/pr/<tk>  学生のPCが開いている印
+     mg/p_<公開の鍵>/tgm/res      結果 {g:[{n,ms}], tk:{<tk>:{n,ms,c}}}
+   記録(先生だけ):mg/s_<秘密の鍵>/typg/<日付>/<mid>
+     {at, st, ng, dur, pick, gv, t0, end, mem:{学籍番号:{g, tk, j:ログインした}}, tl:{g:[{s,tk,at}]}, res}
+   ===================================================================== */
+let HOST=null, PUB='', DAY=dayKey(), M=null, REC=null, LV={}, PR={}, TURN={}, NEXT={}, GONE_AT={}, DAYREC={};
+const HS={cls:localStorage.getItem('mg.typingteam.cls')||'',hide:false,
+  ng:+(localStorage.getItem('mg.typingteam.ng')||4), dur:+(localStorage.getItem('mg.typingteam.dur')||5),
+  pick:localStorage.getItem('mg.typingteam.pick')||'self', odai:localStorage.getItem('mg.typingteam.odai')||'auto',
+  ov:(()=>{ try{ return JSON.parse(localStorage.getItem('mg.typingteam.ov'))||[0,1,2,3,4,5]; }catch(e){ return [0,1,2,3,4,5]; } })()};
+if(![5,8,10].includes(HS.dur)) HS.dur=5;
+const recPath=(mid,day)=>HOST.S+'/typg/'+(day||DAY)+'/'+mid;
+const T=()=>HOST.P+'/tgm';
+async function hostMain(){
+  document.body.className='host';
+  if(!MG.keys.get()){ app.innerHTML=`<div class="wrap"><div class="box"><h2>この画面は先生のPC用です</h2><p class="note">学生の人は、先生の画面に出ているQRコードかURLから開いてください。<br>先生:先にこのPCで <a href="${esc(MG.indexUrl())}">メダルゲームの管理画面</a> を開いて「鍵」を作ってください。</p></div></div>`; return; }
+  app.innerHTML='<div class="wrap"><p class="note">接続しています…</p></div>';
+  try{ HOST=await MG.startHost({gid:GID,name:NAME,art:'typing',anyone:true,info:{nb:1},hooks:{onReq:hostReq}}); }
+  catch(e){ app.innerHTML=`<div class="wrap"><div class="box"><h2>つながりませんでした</h2><p class="note">${esc(e.message)}</p></div></div>`; return; }
+  PUB=HOST.pub;
+  // 前の試合が残っていれば続きから(先生のPCを読みこみ直したとき)
+  try{
+    const m=await HOST.be.get(T()+'/m');
+    if(m&&m.mid){ const r=await HOST.be.get(recPath(m.mid,m.day||DAY)); if(r){ M=m; REC=r; if(m.day) DAY=m.day; TURN=(await HOST.be.get(T()+'/turn'))||{}; for(const g in TURN) NEXT[g]=Date.now()+SW_MIN/2+Math.random()*(SW_MAX-SW_MIN)/2; } }
+  }catch(e){}
+  hostShell();
+  HOST.onConn(ok=>{ const c=$('#conn'); if(!c) return; c.classList.toggle('off',!ok); c.lastChild.textContent=ok?'受付中':'通信が切れています'; });
+  HOST.onAcc(()=>hostRender());
+  HOST.be.on(T()+'/lv',v=>{ LV=v||{}; liveRender(); });
+  HOST.be.on(T()+'/pr',v=>{ PR=v||{}; hostRender(); });
+  watchDay();
+  try{ const w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),200)'],{type:'text/javascript'}))); w.onmessage=hostTick; }catch(e){ setInterval(hostTick,200); }
+  setInterval(()=>{ if(M&&M.st==='play') liveRender(); },1000);
+  addEventListener('beforeunload',e=>{ if(M&&M.st==='play'){ e.preventDefault(); e.returnValue=''; } });
+}
+let dayOff=null;
+function watchDay(){ if(dayOff) dayOff(); dayOff=HOST.be.on(HOST.S+'/typg/'+DAY,v=>{ DAYREC=v||{}; hostRender(); }); }
+function studentUrl(){ const u=new URL(location.href); u.search=''; u.hash=''; u.searchParams.set('mg',PUB); if(MG.LOCAL) u.searchParams.set('local','1'); return u.href; }
+function hostShell(){
+  const url=studentUrl();
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="ttl">⌨ ${NAME}<small>先生のPC</small></div><span class="sp"></span>
+      <label style="font-weight:800;font-size:14px"><input type="checkbox" id="hide"> 名前をかくす(プロジェクター用)</label>
+      <span class="chip" id="conn"><i class="dot"></i><span>受付中</span></span><a class="btn" href="${esc(MG.indexUrl())}" target="_blank" rel="noopener">管理画面</a></div>
+    <div class="hgrid"><section id="main"></section>
+    <aside><div class="box"><h2>学生のPCで開く</h2><div class="qr" id="qr"></div><div class="url">${esc(url)}</div>
+        ${MG.LOCAL?`<p class="note"><a href="${esc(url)}" target="_blank" rel="noopener">お試し:学生の画面を別タブで開く</a></p>`:''}
+        <p class="note">学籍番号と4桁の合言葉でログインします(朝のタイピングと同じ)。</p></div>
+      <div class="box" id="hist"></div>
+      <div class="box"><p class="note"><b>このタブは閉じずに置いておいてください</b>(閉じると交代が止まります)。</p>
+        <p class="note">交代は10〜20秒のランダム。次に打つ人もランダムで、いま打った人は続けて選ばれません。学生の画面には、交代までの時間も次の人も出ません。</p></div></aside></div></div>`;
+  try{ new QRCode($('#qr'),{text:url,width:220,height:220,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ $('#qr').textContent='QRコードを表示できません'; }
+  $('#hide').onchange=e=>{ HS.hide=e.target.checked; hostRender(true); };
+  hostRender(true);
+}
+const accOf=sid=>(HOST.acc()[sid])||{n:sid,c:''};
+const nm=sid=>HS.hide?'●●●●':esc(accOf(sid).n);
+const tkSid=tk=>{ const mem=(REC&&REC.mem)||{}; for(const s in mem) if(mem[s].tk===tk) return s; return null; };
+const online=tk=>!!PR[tk];
+function members(g){ const mem=(REC&&REC.mem)||{}; return Object.keys(mem).filter(s=>mem[s].g===g); }
+let saveT=null;
+function saveRec(now){ clearTimeout(saveT); const f=()=>{ if(REC&&M) HOST.be.set(recPath(M.mid),REC).catch(()=>{}); }; if(now) f(); else saveT=setTimeout(f,400); }
+function pubGm(){ const gm={}, mem=(REC&&REC.mem)||{}; for(const s in mem) gm[mem[s].tk]=mem[s].g; return HOST.be.set(T()+'/gm',gm).catch(()=>{}); }
+// ---- 受付を始める(新しい試合) ----
+async function newMatch(){
+  if(M&&M.st==='play') return;
+  DAY=dayKey(); watchDay();
+  const mid='m'+Date.now().toString(36);
+  M={mid,day:DAY,st:'lobby',ng:HS.ng,dur:HS.dur*60,pick:HS.pick,at:Date.now()};
+  // 前の試合の名簿(グループ分け)を引きつぐ。番号 tk は新しくする
+  const old=(REC&&REC.mem)||{}, mem={};
+  for(const s in old) if(old[s].g!=null&&old[s].g>=0&&old[s].g<HS.ng) mem[s]={g:old[s].g,tk:MG.rid(8),j:0};
+  REC={at:M.at,st:'lobby',ng:M.ng,dur:M.dur,pick:M.pick,mem,tl:{}};
+  LV={}; TURN={}; NEXT={}; GONE_AT={};
+  await HOST.be.set(T(),{m:M});
+  await pubGm(); saveRec(true); hostRender(true);
+}
+async function setCfg(){ if(!M||M.st!=='lobby') return; M.ng=HS.ng; M.dur=HS.dur*60; M.pick=HS.pick; Object.assign(REC,{ng:M.ng,dur:M.dur,pick:M.pick});
+  for(const s in REC.mem) if(REC.mem[s].g>=M.ng) REC.mem[s].g=-1;
+  await HOST.be.set(T()+'/m',M).catch(()=>{}); pubGm(); saveRec(); }
+function setGroup(sid,g){ if(!REC||!M||M.st!=='lobby') return; const mem=REC.mem; if(!mem[sid]) mem[sid]={g:-1,tk:MG.rid(8),j:0}; mem[sid].g=g; pubGm(); saveRec(); hostRender(); }
+function autoSplit(){ if(!REC||!M||M.st!=='lobby') return;
+  const ids=shuffle(Object.keys(REC.mem).filter(s=>REC.mem[s].j));
+  if(!ids.length) return toast('まだ誰もログインしていません');
+  // 人数がそろうように順に配る(余りはランダムな班へ)
+  const order=shuffle([...Array(M.ng).keys()]);
+  ids.forEach((s,i)=>REC.mem[s].g=order[i%M.ng]);
+  pubGm(); saveRec(); hostRender(); toast(`${ids.length}人を${M.ng}班に分けました`); }
+function clearSplit(){ if(!REC||!M||M.st!=='lobby') return; for(const s in REC.mem) REC.mem[s].g=-1; pubGm(); saveRec(); hostRender(); }
+// ---- スタート ----
+async function startMatch(){
+  if(!M||M.st!=='lobby') return;
+  const gs=[...Array(M.ng).keys()], cnt=gs.map(g=>members(g).filter(s=>REC.mem[s].j).length);
+  if(!cnt.some(n=>n>0)) return toast('ログインして班に入っている人がいません');
+  const empty=gs.filter(g=>!cnt[g]).map(GNAME), un=Object.keys(REC.mem).filter(s=>REC.mem[s].j&&!(REC.mem[s].g>=0)).length;
+  if((empty.length||un)&&!confirm(`${empty.length?empty.join('・')+'にはログインした人がいません(その班は打ちません)。\n':''}${un?`班に入っていない人が${un}人います(その人は参加しません)。\n`:''}このままスタートしますか?`)) return;
+  const gv=HS.odai==='auto'?shuffle([...Array(STORIES.length).keys()]).slice(0,M.ng):gs.map(g=>Math.max(0,Math.min(STORIES.length-1,+HS.ov[g]||0)));
+  const t0=Date.now()+5000, ts=MG.LOCAL&&+MG.qs.get('testsec');   // お試し用:?local=1&testsec=秒 で時間を短くする
+  if(ts>0){ M.dur=ts; REC.dur=ts; }
+  Object.assign(M,{st:'play',gv,t0,end:t0+M.dur*1000});
+  Object.assign(REC,{st:'play',gv,t0,end:M.end,tl:{}});
+  NEXT={}; GONE_AT={}; TURN={};
+  await HOST.be.update(T(),{turn:null,lv:null,res:null});
+  await HOST.be.set(T()+'/m',M); saveRec(true); hostRender(true);
+}
+async function stopEarly(){ if(!M||M.st!=='play') return; if(!confirm('ここで終わりにして、結果を出しますか?')) return; M.end=Math.min(M.end,Date.now()); REC.end=M.end; await HOST.be.set(T()+'/m',M).catch(()=>{}); saveRec(true); }
+// ---- 交代(先生のPCの時計で決める) ----
+let finishing=false;
+function hostTick(){
+  if(!M||M.st!=='play') return;
+  const t=Date.now();
+  if(t>=M.end){ if(!finishing&&t>=M.end+1500){ finishing=true; finishMatch().finally(()=>finishing=false); } return; }
+  if(t<M.t0) return;
+  for(let g=0;g<M.ng;g++){
+    const cand=members(g).filter(s=>REC.mem[s].j).map(s=>REC.mem[s].tk);
+    if(!cand.length) continue;
+    const cur=TURN[g], on=cand.filter(online);
+    if(cur&&!online(cur.tk)){ GONE_AT[g]=GONE_AT[g]||t; } else delete GONE_AT[g];
+    const due=!cur||t>=(NEXT[g]||0)||(GONE_AT[g]&&t-GONE_AT[g]>=GONE);
+    if(!due) continue;
+    let pool=on.filter(tk=>!cur||tk!==cur.tk);
+    if(!pool.length){ NEXT[g]=t+2000; continue; }   // ほかに打てる人がいない:いまの人がそのまま
+    const tk=pool[Math.floor(Math.random()*pool.length)], s=(cur?cur.s:0)+1;
+    TURN[g]={s,tk}; NEXT[g]=t+SW_MIN+Math.random()*(SW_MAX-SW_MIN); delete GONE_AT[g];
+    HOST.be.set(T()+'/turn/'+g,{s,tk}).catch(()=>{});
+    (REC.tl[g]=REC.tl[g]||[]).push({s,tk,at:t}); saveRec();
+  }
+}
+// ---- 結果 ----
+function calcRes(){
+  const res={g:[],sid:{}}, mem=REC.mem, cap=Math.ceil(M.dur*CPS_MAX)+10;
+  for(let g=0;g<M.ng;g++){
+    const lvg=LV[g]||{}, arr=Object.keys(lvg).map(k=>({...lvg[k],s:+k.slice(1)})).filter(x=>x&&x.tk).sort((a,b)=>a.s-b.s);
+    let ms=0; const own={};
+    arr.forEach((x,i)=>{ const st=toI(x.n0), en=i+1<arr.length?toI(arr[i+1].n0):toI(x.n);
+      const o=own[x.tk]=own[x.tk]||{n:0,ms:0}; o.n+=Math.max(0,en-st); o.ms+=toI(x.ms); ms+=toI(x.ms); });
+    const n=Math.min(cap,arr.length?toI(arr[arr.length-1].n):0);
+    res.g[g]={n,ms,v:(M.gv||[])[g]||0};
+    const turns={}; ((REC.tl||{})[g]||[]).forEach(x=>turns[x.tk]=(turns[x.tk]||0)+1);
+    members(g).filter(s=>mem[s].j).forEach(s=>{ const tk=mem[s].tk, o=own[tk]||{n:0,ms:0}; res.sid[s]={g,n:o.n,ms:o.ms,c:turns[tk]||0}; });
+  }
+  return res;
+}
+async function finishMatch(){
+  if(!M||M.st!=='play') return;
+  const res=calcRes();
+  M.st='done'; REC.st='done'; REC.res=res; REC.fin=Date.now();
+  const pub={g:res.g.map(x=>({n:x.n,ms:x.ms})),tk:{}};
+  for(const s in res.sid){ const tk=REC.mem[s].tk; pub.tk[tk]={n:res.sid[s].n,ms:res.sid[s].ms,c:res.sid[s].c}; }
+  await HOST.be.set(recPath(M.mid),REC).catch(()=>{});
+  await HOST.be.set(T()+'/res',pub).catch(()=>{});
+  await HOST.be.set(T()+'/m',M).catch(()=>{});
+  hostRender(true); toast('結果が出ました。「記録をコピー」でExcelに貼れます');
+}
+// ---- 学生のPCからの申請 ----
+async function hostReq(sid,r,acc){
+  const t=Date.now();
+  if(!M) return {ok:true,d:{sn:t,st:'none'}};
+  const mem=REC.mem;
+  if(r.type==='g:state'){
+    if(M.st==='lobby'){ if(!mem[sid]) mem[sid]={g:-1,tk:MG.rid(8),j:1}; else mem[sid].j=1; pubGm(); saveRec(); hostRender(); }
+    const me=mem[sid]&&(mem[sid].j||M.st==='lobby')?{g:mem[sid].g,tk:mem[sid].tk}:null;
+    return {ok:true,d:{sn:t,mid:M.mid,st:M.st,me}};
+  }
+  if(r.type==='g:pick'){
+    if(M.st!=='lobby') return {ok:false,msg:'もう始まっています'};
+    if(M.pick!=='self') return {ok:false,msg:'班は先生が決めます'};
+    const g=Math.floor(+r.g); if(!(g>=0&&g<M.ng)) return {ok:false,msg:'その班はありません'};
+    if(!mem[sid]) mem[sid]={g:-1,tk:MG.rid(8),j:1};
+    mem[sid].g=g; mem[sid].j=1; pubGm(); saveRec(); hostRender();
+    return {ok:true,d:{g}};
+  }
+  if(r.type==='g:team'){
+    const me=mem[sid]; if(!me) return {ok:false,msg:'この試合に入っていません'};
+    const list=me.g>=0?members(me.g).filter(s=>mem[s].j||M.st==='lobby').map(s=>({tk:mem[s].tk,n:accOf(s).n||s,me:s===sid?1:0})):[];
+    return {ok:true,d:{sn:t,g:me.g,tk:me.tk,mem:list}};
+  }
+  return {ok:false,msg:'その操作はできません'};
+}
+// ---- 画面 ----
+function liveOf(g){ const L=latestLv(LV[g]); if(!L) return {n:0,ms:0,L:null}; let ms=0; for(const k in LV[g]) ms+=toI(LV[g][k]&&LV[g][k].ms); return {n:toI(L.n),ms,L}; }
+function hostRender(full){
+  if(!HOST||!$('#main')) return;
+  const main=$('#main');
+  if(!M||M.st==='done'){ main.innerHTML=(M&&M.st==='done'?resultHtml():'')+setupHtml(); bindSetup(); histRender(); return; }
+  if(M.st==='lobby'){ main.innerHTML=setupHtml()+lobbyHtml(); bindSetup(); bindLobby(); histRender(); return; }
+  if(full||!$('#live')){ main.innerHTML=`<div class="box"><div class="tool"><h2 style="margin:0">試合中</h2><span class="sp"></span><b id="lvTime" style="font-family:var(--f-num);font-size:30px;font-weight:400"></b><button class="btn sm danger" id="stop">ここで終わる</button></div><div id="live" class="lgrid"></div></div>`;
+    $('#stop').onclick=stopEarly; }
+  liveRender(); histRender();
+}
+function setupHtml(){
+  const lob=M&&M.st==='lobby';
+  return `<div class="box"><h2>${lob?'設定':'グループ戦の準備'}</h2>
+    <div class="tool">
+      <label class="lbl">班の数 <select id="ng">${[2,3,4,5,6].map(n=>`<option value="${n}" ${n===HS.ng?'selected':''}>${n}班</option>`).join('')}</select></label>
+      <label class="lbl">時間 <select id="dur">${[5,8,10].map(m=>`<option value="${m}" ${m===HS.dur?'selected':''}>${m}分</option>`).join('')}</select></label>
+      <label class="lbl">班の決め方 <select id="pick"><option value="self">学生が自分で選ぶ</option><option value="teacher">先生が決める／自動</option></select></label>
+      <label class="lbl">お題 <select id="odai"><option value="auto">班ごとにちがうお題(自動)</option><option value="man">班ごとに選ぶ</option></select></label></div>
+    ${HS.odai==='man'?`<div class="tool">${[...Array(HS.ng).keys()].map(g=>`<label class="lbl"><i class="gdot" style="background:${GCOL[g]}"></i>${GNAME(g)} <select data-ov="${g}" style="max-width:220px">${STORIES.map((x,i)=>`<option value="${i}" ${i===(+HS.ov[g]||0)?'selected':''}>${i+1}. ${esc(x.t)}</option>`).join('')}</select></label>`).join('')}</div>`:''}
+    ${lob?'':`<button class="btn pri" id="newm">受付を始める</button> <span class="note">押すと、学生がログインして班に入れるようになります。</span>`}</div>`;
+}
+function bindSetup(){
+  const sv=(k,v)=>localStorage.setItem('mg.typingteam.'+k,v);
+  $('#ng').onchange=e=>{ HS.ng=+e.target.value; sv('ng',HS.ng); setCfg(); hostRender(true); };
+  $('#dur').onchange=e=>{ HS.dur=+e.target.value; sv('dur',HS.dur); setCfg(); };
+  $('#pick').value=HS.pick; $('#pick').onchange=e=>{ HS.pick=e.target.value; sv('pick',HS.pick); setCfg(); hostRender(true); };
+  $('#odai').value=HS.odai; $('#odai').onchange=e=>{ HS.odai=e.target.value; sv('odai',HS.odai); hostRender(true); };
+  document.querySelectorAll('[data-ov]').forEach(s=>s.onchange=e=>{ HS.ov[+s.dataset.ov]=+e.target.value; sv('ov',JSON.stringify(HS.ov)); });
+  const nb=$('#newm'); if(nb) nb.onclick=newMatch;
+}
+function lobbyHtml(){
+  const acc=HOST.acc(), mem=REC.mem;
+  const cs=[...new Set(Object.values(acc).map(a=>a.c||''))].sort((a,b)=>a.localeCompare(b,'ja'));
+  // 表に出す人:ログインした人+(クラスを選んでいれば)そのクラスの名簿
+  const ids=new Set(Object.keys(mem).filter(s=>mem[s].j||mem[s].g>=0));
+  if(HS.cls) Object.keys(acc).filter(s=>(acc[s].c||'')===HS.cls).forEach(s=>ids.add(s));
+  const byG=[...Array(M.ng+1)].map(()=>[]);
+  [...ids].sort((a,b)=>a.localeCompare(b,'ja',{numeric:true})).forEach(s=>{ const g=mem[s]&&mem[s].g>=0&&mem[s].g<M.ng?mem[s].g:M.ng; byG[g].push(s); });
+  const row=s=>{ const m=mem[s], j=m&&m.j, on=j&&online(m.tk);
+    return `<div class="mrow ${j?'':'off'}"><span class="odot ${on?'on':j?'':'no'}" title="${on?'画面を開いています':j?'ログイン済み':'まだログインしていません'}"></span><span class="mn">${nm(s)}</span>
+      <select data-g="${esc(s)}"><option value="-1">未所属</option>${[...Array(M.ng).keys()].map(g=>`<option value="${g}" ${m&&m.g===g?'selected':''}>${GNAME(g)}</option>`).join('')}</select></div>`; };
+  const nj=Object.keys(mem).filter(s=>mem[s].j).length;
+  return `<div class="box"><div class="tool"><h2 style="margin:0">受付中 <small class="note">ログイン ${nj}人</small></h2><span class="sp"></span>
+      <select id="cls"><option value="">名簿を出さない</option>${cs.map(c=>`<option value="${esc(c)}" ${c===HS.cls?'selected':''}>${esc(c||'(クラスなし)')}の名簿を出す</option>`).join('')}</select>
+      <button class="btn sm" id="auto">自動で分ける</button><button class="btn sm" id="clr">全員を未所属に</button>
+      <button class="btn pri" id="start">スタート</button></div>
+    <p class="note">${M.pick==='self'?'学生は自分の画面で班を選びます。先生がここで変えることもできます。':'班はここで決めます(「自動で分ける」はログインした人をランダムに分けます)。名簿を出すと、ログイン前に決めておけます。'} ●緑=画面を開いている ○=ログイン済み ×=まだ</p>
+    <div class="ggrid">${byG.map((l,g)=>`<div class="gcol"><h3>${g<M.ng?`<i class="gdot" style="background:${GCOL[g]}"></i>${GNAME(g)}`:'未所属'} <small>${l.filter(s=>mem[s]&&mem[s].j).length}人</small></h3>${l.map(row).join('')||'<p class="note">なし</p>'}</div>`).join('')}</div></div>`;
+}
+function bindLobby(){
+  $('#cls').onchange=e=>{ HS.cls=e.target.value; localStorage.setItem('mg.typingteam.cls',HS.cls); hostRender(); };
+  $('#auto').onclick=autoSplit; $('#clr').onclick=()=>{ if(confirm('全員を未所属にしますか?')) clearSplit(); };
+  $('#start').onclick=startMatch;
+  document.querySelectorAll('[data-g]').forEach(s=>s.onchange=e=>setGroup(s.dataset.g,+e.target.value));
+}
+const LVC={};
+function liveRender(){
+  if(!M||M.st!=='play'||!$('#live')) return;
+  const t=Date.now(), tm=$('#lvTime'); if(tm) tm.textContent=t<M.t0?`まもなく開始 ${Math.ceil((M.t0-t)/1000)}`:`のこり ${mmss(M.end-t)}`;
+  const rows=[...Array(M.ng).keys()].map(g=>{ const x=liveOf(g), v=(M.gv||[])[g]||0, cur=TURN[g], sid=cur&&tkSid(cur.tk);
+    let sent='';
+    if(x.L){ const r=replay(LVC[g]=LVC[g]||{},v,x.L); sent=r.sent.toks.map(k=>`<span class="${k.y<=r.kd?'d':''}">${esc(k.d)}</span>`).join(''); }
+    else sent=esc(sentOf(v,0).toks.map(k=>k.d).join(''));
+    const cnt=members(g).filter(s=>REC.mem[s].j).length;
+    return `<div class="lcard" style="border-color:${GCOL[g]}"><div class="lh"><b style="color:${GCOL[g]}">${GNAME(g)}</b><span class="note">${cnt}人・お題${v+1}</span><span class="sp"></span><span class="lt">${cur?`⌨ ${sid?nm(sid):'?'}`:cnt?'まもなく':'(人がいません)'}</span></div>
+      <div class="ln"><span><small>文字数</small><b>${yen(x.n)}</b></span><span><small>ミス</small><b>${yen(x.ms)}</b></span></div><div class="ls">${sent}</div></div>`; });
+  $('#live').innerHTML=rows.join('');
+}
+function resultHtml(){
+  const res=REC.res||{g:[],sid:{}};
+  const gs=res.g.map((x,g)=>({g,...x})).filter(x=>members(x.g).some(s=>REC.mem[s].j)).sort((a,b)=>b.n-a.n);
+  return `<div class="box"><div class="tool"><h2 style="margin:0">結果 <small class="note">${fmtTime(REC.at)}の試合・${REC.dur/60}分</small></h2><span class="sp"></span><button class="btn sm" id="copy">記録をコピー(Excel用)</button></div>
+    <table><thead><tr><th class="r">順位</th><th>班</th><th class="r">グループの文字数</th><th class="r">グループのミス</th><th>メンバー(自分の番で打った文字数)</th></tr></thead><tbody>
+    ${gs.map((x,i)=>`<tr><td class="r">${i+1}</td><td><i class="gdot" style="background:${GCOL[x.g]}"></i>${GNAME(x.g)}</td><td class="n">${yen(x.n)}</td><td class="r">${yen(x.ms)}</td>
+      <td>${members(x.g).filter(s=>res.sid[s]).map(s=>`${nm(s)} <small class="note">${yen(res.sid[s].n)}</small>`).join('、')}</td></tr>`).join('')}</tbody></table></div>`;
+}
+// 今日の試合の一覧(コピーはここからも)
+function histRender(){
+  const h=$('#hist'); if(!h) return;
+  const ks=Object.keys(DAYREC).filter(k=>DAYREC[k]&&DAYREC[k].st==='done').sort().reverse();
+  h.innerHTML=`<h2>${fmtDay(DAY)}の試合</h2>${ks.length?ks.map(k=>`<div class="flex" style="margin:4px 0"><span>${fmtTime(DAYREC[k].at)}・${DAYREC[k].dur/60}分</span><span class="sp"></span><button class="btn sm" data-cp="${esc(k)}">コピー</button></div>`).join(''):'<p class="note">まだありません</p>'}`;
+  h.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>copyRec(DAYREC[b.dataset.cp]));
+  const c=$('#copy'); if(c) c.onclick=()=>copyRec(REC);
+}
+async function copyRec(rec){
+  if(!rec||!rec.res) return toast('記録がありません');
+  const res=rec.res, ids=Object.keys(res.sid).sort((a,b)=>(res.sid[a].g-res.sid[b].g)||a.localeCompare(b,'ja',{numeric:true}));
+  const tsv=['学籍番号\t名前\tクラス\t班\tグループの文字数\tグループのミス\t自分の文字数\t自分のミス\t番の回数'].concat(ids.map(s=>{ const x=res.sid[s], g=res.g[x.g]||{n:0,ms:0}, a=accOf(s);
+    return [s,a.n||'',a.c||'',GNAME(x.g),g.n,g.ms,x.n,x.ms,x.c].join('\t'); })).join('\n');
+  try{ await navigator.clipboard.writeText(tsv); toast('コピーしました。Excelに貼り付けできます'); }catch(e){ toast('コピーできませんでした'); }
+}
+
+/* =====================================================================
+   学生のPC
+   ===================================================================== */
+let PAD=null, AC=null;
+const P={view:undefined,scr:'wait',err:'',busy:false,step:'sid',sid:'',pin1:'',
+  off:0,mid:'',m:null,me:null,gm:{},team:[],res:null,
+  turn:null,lvg:{},typing:null,lastS:0,ime:false,caps:false,flash:0};
+const SPC={};   // 観戦用の再生キャッシュ
+async function padMain(){
+  document.body.className='pad';
+  app.innerHTML='<div class="pw"><div class="card">接続しています…</div></div>';
+  try{ PAD=await MG.startPad(); }catch(e){ app.innerHTML=`<div class="pw"><div class="card">つながりません:${esc(e.message)}</div></div>`; return; }
+  document.addEventListener('keydown',onKey);
+  const unlock=()=>{ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} };
+  document.addEventListener('keydown',unlock); document.addEventListener('pointerdown',unlock);
+  if(!PAD.vk()){ P.scr='login'; return padRender(); }
+  watchMe();
+}
+const TP=()=>PAD.P+'/tgm';
+const pnow=()=>Date.now()+P.off;
+let viewOff=null;
+function watchMe(){
+  if(viewOff) viewOff();
+  let first=true;
+  viewOff=PAD.onView(v=>{
+    if(!v){ if(first){ first=false; setTimeout(()=>{ if(P.view===undefined){ PAD.logout(); P.scr='login'; padRender(); } },3000); return; }
+      if(P.scr==='play') return;
+      PAD.logout(); P.view=undefined; P.scr='login'; padRender(); return; }
+    first=false; const firstView=P.view===undefined; P.view=v; if(firstView){ watchMatch(); } else padRender(); });
+}
+// 試合の様子を見張る
+let mOff=null;
+function watchMatch(){
+  if(mOff) return;
+  P.scr='wait'; padRender();
+  mOff=PAD.be.on(TP()+'/m',m=>{
+    const old=P.m; P.m=m||null;
+    if(!m||!m.mid){ P.mid=''; leaveMatch(); P.scr='none'; return padRender(); }
+    if(m.mid!==P.mid){ loadState(); return; }
+    if(old&&old.st!==m.st){ if(m.st==='play') enterPlay(); else if(m.st==='done') enterDone(); else loadState(); }
+    else if(m.st==='play'&&P.scr==='play') drawPlay(true);
+    else if(P.scr==='lobby') padRender();
+  });
+}
+let gmOff=null, prStop=null, turnOff=null, lvOff=null, resOff=null, teamT=null;
+function leaveMatch(){
+  [gmOff,turnOff,lvOff,resOff].forEach(f=>f&&f()); gmOff=turnOff=lvOff=resOff=null;
+  if(prStop){ try{prStop()}catch(e){} prStop=null; }
+  stopTyping(); clearInterval(P.tick);
+}
+async function loadState(){
+  P.scr='wait'; P.err=''; padRender();
+  const r=await PAD.req('g:state',{},GID);
+  if(!r.ok){ P.scr='nohost'; P.err=r.msg; return padRender(); }
+  P.off=r.d.sn-Date.now();
+  if(r.d.st==='none'){ P.scr='none'; return padRender(); }
+  leaveMatch();
+  P.mid=r.d.mid; P.me=r.d.me; P.team=[]; P.res=null; P.turn=null; P.lvg={}; P.lastS=0;
+  if(!P.me){ P.scr='notin'; return padRender(); }
+  prStop=PAD.be.presence(TP()+'/pr/'+P.me.tk,{t:Date.now()});
+  gmOff=PAD.be.on(TP()+'/gm',gm=>{ P.gm=gm||{}; const g=P.gm[P.me.tk]; if(g!=null&&g!==P.me.g&&P.m&&P.m.st==='lobby'){ P.me.g=g; } clearTimeout(teamT); teamT=setTimeout(loadTeam,300); if(P.scr==='lobby') padRender(); });
+  const st=P.m?P.m.st:r.d.st;
+  if(st==='play') enterPlay(); else if(st==='done') enterDone(); else { P.scr='lobby'; padRender(); }
+}
+async function loadTeam(){
+  const r=await PAD.req('g:team',{},GID);
+  if(!r.ok) return;
+  P.off=r.d.sn-Date.now(); P.me.g=r.d.g; P.team=r.d.mem||[];
+  if(P.scr==='lobby') padRender(); else if(P.scr==='play') drawPlay(true);
+}
+async function pickGroup(g){
+  if(P.busy) return; P.busy=true; padRender();
+  const r=await PAD.req('g:pick',{g},GID); P.busy=false;
+  if(!r.ok){ toast(r.msg); } else { P.me.g=r.d.g; loadTeam(); }
+  padRender();
+}
+function enterPlay(){
+  if(!P.me) return;
+  if(P.gm&&P.gm[P.me.tk]!=null) P.me.g=P.gm[P.me.tk];
+  if(P.me.g==null||P.me.g<0){ P.scr='notin'; return padRender(); }
+  P.scr='play'; P.lastS=0;
+  [turnOff,lvOff].forEach(f=>f&&f());
+  turnOff=PAD.be.on(TP()+'/turn/'+P.me.g,v=>onTurn(v));
+  lvOff=PAD.be.on(TP()+'/lv/'+P.me.g,v=>{ P.lvg=v||{}; drawPlay(); });
+  loadTeam();
+  drawPlay(true);
+  clearInterval(P.tick); P.tick=setInterval(tick,200);
+}
+function enterDone(){
+  stopTyping(true); clearInterval(P.tick);
+  [turnOff,lvOff].forEach(f=>f&&f()); turnOff=lvOff=null;
+  P.scr='done'; padRender();
+  if(resOff) resOff();
+  resOff=PAD.be.on(TP()+'/res',v=>{ P.res=v||null; if(P.scr==='done') padRender(); });
+}
+// ---- 交代 ----
+function onTurn(v){
+  P.turn=v||null;
+  if(!v||!P.me) return drawPlay(true);
+  if(v.tk===P.me.tk){ if(!P.typing||P.typing.s!==v.s) takeTurn(v.s); }
+  else if(P.typing){ stopTyping(true); P.flash=Date.now(); }
+  drawPlay(true);
+}
+// 自分の番になった:いちばん新しい記録の、打ち終わったかたまりの続きから
+function takeTurn(s){
+  const v=P.m.gv[P.me.g]||0, L=latestLv(P.lvg);
+  let si=0,k0=0,nb=0;
+  if(L){ const r=replay({},v,L), dc=doneChars(r.sent,r.kd);
+    si=toI(L.si); nb=toI(L.nb); k0=dc.p;
+    if(k0>=r.sent.yomi.length){ nb+=r.sent.len; si++; k0=0; } }
+  const sent=sentOf(v,si), n0=nb+doneChars(sent,k0).n;
+  P.typing={s,v,si,k0,nb,n0,ty:new Typer(sent.yomi.slice(k0)),ms:0,k:0,lastW:0,wT:null};
+  P.lastS=s; P.flash=Date.now(); beep();
+  writeLv(true);
+}
+function stopTyping(flush){ const T=P.typing; if(!T) return; if(flush) writeLv(true); clearTimeout(T.wT); P.typing=null; }
+function writeLv(now){
+  const T=P.typing; if(!T) return;
+  const go=()=>{ T.lastW=Date.now(); T.wT=null; const c=curState2(T);
+    PAD.be.set(TP()+'/lv/'+P.me.g+'/s'+T.s,{tk:P.me.tk,si:T.si,k0:T.k0,ty:T.ty.typed,nb:T.nb,n0:T.n0,n:c.n,ms:T.ms,k:T.k,t:pnow()}).catch(()=>{}); };
+  if(now){ clearTimeout(T.wT); go(); return; }
+  if(T.wT) return;
+  const wait=LV_GAP-(Date.now()-T.lastW);
+  if(wait<=0) go(); else T.wT=setTimeout(go,wait);
+}
+function curState2(T){ const sent=sentOf(T.v,T.si); const kd=T.k0+T.ty.kanaDone(); return {sent,kd,n:T.nb+doneChars(sent,kd).n}; }
+function beep(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const t=AC.currentTime;
+  [[880,0],[1320,.09]].forEach(([f,d])=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type='square'; o.frequency.value=f; g.gain.setValueAtTime(.0001,t+d); g.gain.exponentialRampToValueAtTime(.12,t+d+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d+.12); o.connect(g).connect(AC.destination); o.start(t+d); o.stop(t+d+.14); }); }catch(e){} }
+// ---- キー入力 ----
+function onKey(e){
+  if(P.scr!=='play') return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key==='Process'||e.isComposing||e.keyCode===229){ P.ime=true; drawWarn(); return; }
+  if(e.key.length!==1) return;
+  e.preventDefault();
+  P.caps=e.getModifierState&&e.getModifierState('CapsLock');
+  if(P.ime){ P.ime=false; drawWarn(); }
+  const T=P.typing; if(!T||!P.m||P.m.st!=='play'||pnow()<P.m.t0||pnow()>=P.m.end) return;
+  const r=T.ty.key(e.key);
+  if(r==='miss'){ T.ms++; const b=$('#tbox'); if(b){ b.classList.remove('miss'); void b.offsetWidth; b.classList.add('miss'); } drawWarn(); writeLv(); drawHud(); return; }
+  T.k++;
+  if(r==='done'){ const sent=sentOf(T.v,T.si); T.nb+=sent.len; T.si++; T.k0=0; T.ty=new Typer(sentOf(T.v,T.si).yomi); writeLv(true); drawPlay(true); return; }
+  writeLv(); drawPlay();
+}
+function tick(){
+  if(P.scr!=='play'||!P.m) return;
+  const t=pnow(), el=$('#tm');
+  if(el){ el.textContent=t<P.m.t0?'まもなく':mmss(P.m.end-t); el.parentNode.classList.toggle('low',P.m.end-t<30000); }
+  const cd=$('#cdn'); if(cd){ if(t<P.m.t0) cd.textContent=Math.ceil((P.m.t0-t)/1000); else cd.remove(); }
+  if(t>=P.m.end&&P.typing) stopTyping(true);
+  if(t>=P.m.end&&!$('#over')){ const b=$('#banner'); if(b){ b.className='banner over'; b.id='over'; b.textContent='そこまで! 結果を待っています…'; } }
+}
+// ---- 画面 ----
+function head(){
+  const v=P.view;
+  return `<div class="phead"><div class="plogo">⌨ 朝の<span>タイピング</span> <small class="gtag">グループ戦</small></div><span class="sp"></span>${v?`<span class="pwho">${esc(v.n)} さん</span>${P.scr!=='play'?'<button class="pbtn sm" id="lo">ログアウト</button>':''}`:''}</div>`;
+}
+const myG=()=>P.me&&P.me.g!=null&&P.me.g>=0?P.me.g:-1;
+function padRender(){
+  const s=P.scr;
+  if(s==='play') return drawPlay(true);
+  let body='';
+  if(s==='wait') body='<div class="card">読み込み中…</div>';
+  else if(s==='login') body=loginHtml();
+  else if(s==='nohost') body=`<div class="card"><h1>先生のPCで<em>グループ戦</em>が開いていません</h1><p>${esc(P.err)}</p><button class="pbtn go" id="again">もう一度</button></div>`;
+  else if(s==='none') body=`<div class="card"><h1>受付が<em>まだ</em>始まっていません</h1><p>先生が「受付を始める」を押すと、自動でこの画面が変わります。</p></div>`;
+  else if(s==='notin') body=`<div class="card"><h1>この試合には<em>入っていません</em></h1><p>${P.m&&P.m.st==='play'?'試合はもう始まっています。':'班が決まっていません。'}先生に言ってください。次の受付で入れます。</p><button class="pbtn" id="again">もう一度</button></div>`;
+  else if(s==='lobby'){ const g=myG(), ng=P.m?P.m.ng:4, self=P.m&&P.m.pick==='self';
+    const cnt=[...Array(ng)].map((_,i)=>Object.values(P.gm).filter(x=>x===i).length);
+    body=`<div class="card"><p class="mut" style="font-weight:800;margin:0">${P.m?`${P.m.dur/60}分間・4人で交代しながら打つ`:''}</p>
+      <h1>${g>=0?`あなたは <em style="color:${GCOL[g]}">${GNAME(g)}</em>`:self?'<em>班</em>を選んでください':'先生が<em>班</em>を決めています'}</h1>
+      ${self?`<div class="gpick">${[...Array(ng)].map((_,i)=>`<button class="gbtn ${i===g?'on':''}" data-pick="${i}" style="--c:${GCOL[i]}" ${P.busy?'disabled':''}><b>${GNAME(i)}</b><small>${cnt[i]}人</small></button>`).join('')}</div>`:''}
+      ${g>=0?`<p style="margin-bottom:4px"><b>${GNAME(g)}のメンバー</b></p><div class="mchips">${P.team.map(x=>`<span class="mchip ${x.me?'me':''}">${esc(x.n)}${x.me?'(あなた)':''}</span>`).join('')||'<span class="mut">読み込み中…</span>'}</div>`:''}
+      <div class="rules"><div><b>① 自分の番だけ打てる</b><span>「あなたの番!」と音が鳴ったら、すぐ打ちはじめよう。それ以外は仲間のタイピングを観戦。</span></div>
+        <div><b>② 交代はとつぜん</b><span>10〜20秒で、ランダムに交代。次が誰かは出ません。いつ回ってきてもいいように準備!</span></div>
+        <div><b>③ 半角英数で</b><span>キーボードの <span class="kbd">半角/全角</span> を押して、日本語入力をオフにしておいてね。</span></div></div>
+      <p class="center mut" style="font-weight:800">先生がスタートするまで、この画面のまま待ってね</p></div>`; }
+  else if(s==='done'){ const g=myG(), R=P.res, gr=R&&R.g&&R.g[g], mine=R&&R.tk&&R.tk[P.me.tk];
+    const rank=R&&gr?1+R.g.filter((x,i)=>i!==g&&x&&x.n>gr.n).length:0;
+    body=`<div class="card center"><p class="mut" style="font-weight:800">${g>=0?`${GNAME(g)}の記録`:'記録'}</p>
+      ${gr?`<div class="big">${yen(gr.n)}<small>文字</small></div><p>グループのミス ${yen(gr.ms)}回${rank?` ・ <b>${rank}位</b>`:''}</p>
+        ${mine?`<p class="mut">あなたが打った文字数 ${yen(mine.n)}(番 ${mine.c}回・ミス ${yen(mine.ms)}回)</p>`:''}
+        <p>帰りの掃除決めで、この記録をもとにメダルが配られます。おつかれさま!</p>`:'<p>結果を待っています…</p>'}</div>`; }
+  app.innerHTML=`<div class="pw">${head()}${body}</div>`;
+  const lo=$('#lo'); if(lo) lo.onclick=()=>{ if(confirm('ログアウトしますか?')){ leaveMatch(); if(mOff){ mOff(); mOff=null; } PAD.logout(); P.view=undefined; if(viewOff) viewOff(); P.scr='login'; P.step='sid'; padRender(); } };
+  const ag=$('#again'); if(ag) ag.onclick=loadState;
+  document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>pickGroup(+b.dataset.pick));
+  if(s==='login') bindLogin();
+}
+function drawWarn(){
+  const w=$('#warn'); if(!w) return;
+  const msg=P.ime?'日本語入力がオンになっています。キーボードの「半角/全角」を押して、英数入力にしてください':P.caps?'CapsLock がオンになっています。Shift+CapsLock(英数キー)で解除してください':'';
+  w.textContent=msg; w.hidden=!msg;
+}
+function liveView(){
+  const v=(P.m&&P.m.gv&&P.m.gv[myG()])||0;
+  if(P.typing){ const T=P.typing, c=curState2(T); return {v,sent:c.sent,kd:c.kd,typed:T.ty.typed,rest:T.ty.rest(),si:T.si,n:c.n}; }
+  const L=latestLv(P.lvg);
+  if(!L) return {v,sent:sentOf(v,0),kd:0,typed:'',rest:new Typer(sentOf(v,0).yomi).rest(),si:0,n:0};
+  const r=replay(SPC,v,L); return {v,sent:r.sent,kd:r.kd,typed:r.typer.typed,rest:r.typer.rest(),si:toI(L.si),n:toI(L.n)};
+}
+function groupMs(){ let ms=0; for(const k in P.lvg) ms+=toI(P.lvg[k]&&P.lvg[k].ms); if(P.typing){ const mine=P.lvg['s'+P.typing.s]; ms+=P.typing.ms-toI(mine&&mine.ms); } return ms; }
+function drawPlay(full){
+  if(P.scr!=='play'||!P.m) return;
+  const g=myG(), lv=liveView(), S=STS[lv.v].sents, s=lv.sent, nx=sentOf(lv.v,lv.si+1), cur=P.turn, typer=cur&&P.team.find(x=>x.tk===cur.tk);
+  const mine=!!P.typing, t=pnow(), started=t>=P.m.t0, over=t>=P.m.end;
+  const key=lv.v+'|'+lv.si+'|'+(mine?1:0), tb=$('#tbox');
+  if(full||!tb||tb.dataset.k!==key){
+    const ban=over?'<div class="banner over" id="over">そこまで! 結果を待っています…</div>'
+      :mine?`<div class="banner mine ${Date.now()-P.flash<1500?'pop':''}" id="banner">あなたの番! 打って!</div>`
+      :`<div class="banner watch ${Date.now()-P.flash<1500?'pop':''}" id="banner">${!started?'まもなくスタート':cur?`<b>${esc(typer?typer.n:'仲間')}</b> さんが打っています(観戦中)`:'まもなく1人目が決まります'}</div>`;
+    app.innerHTML=`<div class="pw">${head()}<div class="warnbar" id="warn" hidden></div>${ban}
+      <div class="hud"><div class="time"><small>のこり時間(全体)</small><b id="tm">${started?mmss(P.m.end-t):'まもなく'}</b></div><div class="cnt"><small>${GNAME(g)}の文字数</small><b id="cn"></b></div><div><small>${GNAME(g)}のミス</small><b id="ms"></b></div></div>
+      <div class="tbox ${mine?'':'watching'}" id="tbox" data-k="${key}"><div class="chap"><span>${esc(s.ch)}</span>${lv.si>=S.length?`<span class="lap">${Math.floor(lv.si/S.length)+1}周目</span>`:''}<span class="sp"></span><span>${lv.si%S.length+1} / ${S.length}</span></div>
+        <div class="sent" id="sent">${s.toks.map((k,i)=>`<span class="t" data-i="${i}">${k.d!==k.r&&/[一-鿿々]/.test(k.d)?`<ruby>${esc(k.d)}<rt>${esc(k.r)}</rt></ruby>`:esc(k.d)}</span>`).join('')}</div>
+        <div class="roma" id="roma"></div></div>
+      <div class="next"><small>つぎの文</small>${esc(nx.toks.map(k=>k.d).join(''))}</div>
+      <div class="mchips" style="margin-top:12px">${P.team.map(x=>`<span class="mchip ${cur&&x.tk===cur.tk?'cur':''} ${x.me?'me':''}">${cur&&x.tk===cur.tk?'⌨ ':''}${esc(x.n)}</span>`).join('')}</div>
+      ${!started?`<div class="cd" id="cdn">${Math.ceil((P.m.t0-t)/1000)}</div>`:''}</div>`;
+    drawWarn();
+  }
+  let curI=-1;
+  $('#sent').querySelectorAll('.t').forEach((el,i)=>{ const k=s.toks[i], done=k.y<=lv.kd; el.classList.toggle('done',done); if(!done&&curI<0) curI=i; el.classList.toggle('cur',i===curI); });
+  $('#roma').innerHTML=`<span class="ty">${esc(lv.typed)}</span><span class="nx">${esc(lv.rest.slice(0,1))}</span>${esc(lv.rest.slice(1))}`;
+  drawHud(lv);
+}
+function drawHud(lv){ lv=lv||liveView(); const cn=$('#cn'), ms=$('#ms'); if(cn) cn.textContent=yen(lv.n); if(ms) ms.textContent=yen(groupMs()); }
+/* ---- ログイン(PCのキーボードで。朝のタイピングと同じ) ---- */
+function loginHtml(){
+  const st=P.step;
+  const lead={sid:'学籍番号を入れて Enter',pin:'4桁の合言葉を入れて Enter',set1:'はじめてのログインです。自分で4桁の数字を決めてください',set2:'確認のため、同じ4桁をもう一度'}[st];
+  return `<div class="card login"><h1>ログイン</h1><p>${lead}</p>
+    ${st==='sid'?`<label for="sid">学籍番号</label><input id="sid" value="${esc(P.sid)}" autocomplete="off" spellcheck="false">`
+      :`<p class="mut">学籍番号 <b style="color:#fff">${esc(P.sid)}</b></p><label for="pin">合言葉(4桁の数字)</label><input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off">`}
+    <p class="perr">${esc(P.err)}</p>
+    <div class="flex" style="justify-content:space-between;margin-top:10px">${st!=='sid'?'<button class="pbtn" id="bk">もどる</button>':'<span></span>'}<button class="pbtn go" id="nx" ${P.busy?'disabled':''}>${P.busy?'確認中…':'次へ'}</button></div></div>`;
+}
+function bindLogin(){
+  const i=$('#sid')||$('#pin'); if(i){ i.focus(); i.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); loginNext(); } }; }
+  $('#nx').onclick=loginNext;
+  const bk=$('#bk'); if(bk) bk.onclick=()=>{ P.step='sid'; P.err=''; padRender(); };
+}
+async function loginNext(){
+  if(P.busy) return; P.err='';
+  if(P.step==='sid'){
+    P.sid=MG.normSid($('#sid').value); if(!P.sid){ P.err='学籍番号を入れてください'; return padRender(); }
+    P.busy=true; padRender(); const r=await PAD.req('check',{sid:P.sid}); P.busy=false;
+    if(!r.ok){ P.err=r.msg; return padRender(); }
+    P.step=r.d&&r.d.ps?'pin':'set1'; return padRender();
+  }
+  const pin=$('#pin').value.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  if(!/^\d{4}$/.test(pin)){ P.err='4桁の数字で入れてください'; return padRender(); }
+  if(P.step==='set1'){ P.pin1=pin; P.step='set2'; return padRender(); }
+  if(P.step==='set2'&&pin!==P.pin1){ P.err='1回目とちがいます。最初から決めなおしてください'; P.step='set1'; return padRender(); }
+  P.busy=true; padRender();
+  const r=await PAD.req('login',{sid:P.sid,pin,set:P.step==='set2'}); P.busy=false;
+  if(!r.ok){ P.err=r.msg; if(r.d&&r.d.needSet) P.step='set1'; return padRender(); }
+  PAD.setVk(r.d.vk); P.step='sid'; P.err=''; P.view=undefined; if(r.msg) toast(r.msg); watchMe();
+}
+</script>
+</body>
+</html>
