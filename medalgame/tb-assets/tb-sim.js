@@ -40,6 +40,39 @@ function mulberry32(a) {
   };
 }
 
+// ===================== territory (team mode) =====================
+// the map is split into big blocks (TERR.B px = 4x4 build cells). each team starts with the 3x3 blocks around its crystal
+// and the engineer buys blocks next to its land. enemy blocks cost more and half the price goes to the team that lost it.
+const TERR = { B: 160, base: 40, step: 5, enemyMul: 2, give: 0.5, rule: 'cand' };
+const SPOT_RULES = ['fixed', 'cand', 'free'];
+const SPOT_RULE_NAMES = { fixed: '決まった場所', cand: '候補地(4か所)から選ぶ', free: '自陣で自由' };
+// crystal spots for the top-left team (block coords). other teams are mirrored
+const SPOT_FIXED = [[1, 1]], SPOT_CAND = [[1, 1], [3, 1], [1, 2], [3, 2]], SPOT_FREE = [[1, 1], [2, 1], [3, 1], [4, 1], [1, 2], [2, 2], [3, 2], [4, 2]];
+function blockCenter(bx, by) { return { x: bx * TERR.B + TERR.B / 2, y: by * TERR.B + TERR.B / 2 }; }
+function spotsOf(team, rule, W, H) {
+  const BW = Math.round(W / TERR.B), BH = Math.round(H / TERR.B), base = rule === 'fixed' ? SPOT_FIXED : rule === 'free' ? SPOT_FREE : SPOT_CAND;
+  return base.map(([bx, by]) => [team & 1 ? BW - 1 - bx : bx, team & 2 ? BH - 1 - by : by]);
+}
+// a crystal needs the 5x5 build cells around it free of obstacles
+function spotClear(blocked, GW, GH, bx, by) {
+  const c = blockCenter(bx, by), cx = Math.floor(c.x / CELL), cy = Math.floor(c.y / CELL);
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH || blocked[ny * GW + nx]) return false;
+  }
+  return true;
+}
+// the spots a team may pick its crystal from (rule = fixed / cand / free) on a generated map
+function crystalSpots(mp, team, rule) {
+  const out = [];
+  for (const [bx, by] of spotsOf(team, rule, mp.W, mp.H)) {
+    if (!spotClear(mp.blocked, mp.GW, mp.GH, bx, by)) continue;
+    const c = blockCenter(bx, by);
+    if (!connected(mp.blocked, mp.GW, mp.GH, [c, { x: mp.W / 2 + 130, y: mp.H / 2 + 130 }])) continue;
+    out.push([bx, by]);
+  }
+  return out;
+}
+
 function layout(mk) {
   const M = MODES[mk], W = M.W, H = M.H;
   if (mk === '1v1') {
@@ -65,7 +98,8 @@ function layout(mk) {
     const z4 = [{ x0: 0, y0: 0, x1: zw, y1: zh }, { x0: W - zw, y0: 0, x1: W, y1: zh }, { x0: 0, y0: H - zh, x1: zw, y1: H }, { x0: W - zw, y0: H - zh, x1: W, y1: H }];
     const zones = [], top = [];
     for (let i = 0; i < 16; i++) { zones.push(z4[i >> 2]); top.push(i >> 2); }
-    return { zones, crystals: [{ x: 150, y: 150 }, { x: W - 150, y: 150 }, { x: 150, y: H - 150 }, { x: W - 150, y: H - 150 }], teamOfPlayer: top, lanes: null };
+    const crystals = [0, 1, 2, 3].map(t => { const [bx, by] = spotsOf(t, 'fixed', W, H)[0]; return blockCenter(bx, by); });
+    return { zones, crystals, teamOfPlayer: top, lanes: null, spots: [0, 1, 2, 3].map(t => spotsOf(t, 'cand', W, H)) };
   }
   return {
     zones: [
@@ -126,7 +160,8 @@ function genMap(mk, map, seed) {
   const M = MODES[mk], W = M.W, H = M.H, GW = W / CELL, GH = H / CELL, L = layout(mk);
   const D = MAPS[map] || MAPS.forest;
   const keeps = [];
-  L.crystals.forEach(c => keeps.push({ x: c.x, y: c.y, r: 190 }));
+  if (L.spots) L.spots.forEach(sp => sp.forEach(([bx, by]) => { const c = blockCenter(bx, by); keeps.push({ x: c.x, y: c.y, r: 150 }); }));
+  else L.crystals.forEach(c => keeps.push({ x: c.x, y: c.y, r: 190 }));
   if (L.lanes) for (const y of L.lanes) if (y != null) for (const fx of [0.28, 0.5, 0.72]) keeps.push({ x: W * fx, y, r: fx === 0.5 ? 100 : 75 });
   const inZone = (x, y) => L.zones.some(z => x >= z.x0 && x <= z.x1 && y >= z.y0 && y <= z.y1);
   let last = null;
@@ -181,12 +216,13 @@ function genMap(mk, map, seed) {
     }
     const blocked = blockedFromItems(items, GW, GH);
     const pts = L.crystals.slice();
+    if (L.spots) L.spots.forEach(sp => sp.forEach(([bx, by]) => pts.push(blockCenter(bx, by))));
     if (L.lanes) for (const y of L.lanes) if (y != null) pts.push({ x: W / 2, y });
     pts.push({ x: W / 2 + 130, y: H / 2 + 130 });
     pts.push({ x: W / 2 - 130, y: H / 2 - 130 });
     // spawn / crystal neighbourhoods must be free
     let freeOK = true;
-    for (const c of L.crystals) {
+    for (const c of L.spots ? [].concat(...L.spots).map(([bx, by]) => blockCenter(bx, by)) : L.crystals) {
       const cx = Math.floor(c.x / CELL), cy = Math.floor(c.y / CELL);
       for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
         const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
@@ -257,7 +293,7 @@ function bestNeighbor(dist, blocked, GW, GH, cx, cy, fx, fy) {
 const PREP = 20, TIME_LIMIT = 360, SPEEDK = 1.25, CRY_HP = 2500, CRY_R = 46;
 const START_GOLD = 250, BASE_INC = 5, INC_CAP = 45;
 // ---- gold mine: each one raises income. cost rises with each mine you own. attackers can destroy it
-const MINE = { name: '金鉱', sn: '金鉱', cost: 150, costStep: 50, hp: 420, inc: 4, max: 4, front: 200, h: 62, desc: '建てるほど収入アップ。自陣の前のほうにだけ置ける。壊されると収入が減る' };
+const MINE = { name: '金鉱', sn: '金鉱', cost: 150, costStep: 50, hp: 420, inc: 4, max: 6, front: 200, h: 62, desc: '建てるほど収入アップ。自陣の前のほうにだけ置ける。壊されると収入が減る' };
 // ---- map items: announced ITEM.warn s before they appear at a spot equally far from everyone; first unit to touch it takes it
 const ITEM = { first: 60, every: 45, warn: 5, life: 30, detour: 160, buff: 20, gold: 100, steal: 80, horn: 3, sand: 4, bolt: 0.4 };
 const ITEMS = {
@@ -308,7 +344,7 @@ const UT = {
   slime:    { name: 'スライム', cost: 20, hp: 70, spd: 62, dps: 14, range: 24, passive: true, aggro: 0, uagg: 30, sm: 1, inc: 1, h: 38, fly: false, nf: 0, desc: '最短でクリスタルへ' },
   goblin:   { name: 'ゴブリン', cost: 40, hp: 100, spd: 58, dps: 20, range: 26, aggro: 170, uagg: 110, sm: 1.8, inc: 2, h: 50, fly: false, nf: -1, desc: '建物をこわす' },
   gargoyle: { name: 'ガーゴイル', cost: 60, hp: 85, spd: 80, dps: 16, range: 28, aggro: 120, uagg: 240, sm: 1, inc: 3, h: 52, fly: true, nf: -1, intercept: true, desc: '【迎撃】空から敵ユニットを襲う・障害物を越える' },
-  dragon:   { name: 'ドラゴン', cost: 150, hp: 520, spd: 42, dps: 34, range: 80, aggro: 190, uagg: 140, sm: 1.2, splash: 55, inc: 8, h: 78, fly: false, ranged: true, nf: -1, desc: '建物や敵をまとめて燃やす' },
+  dragon:   { name: 'ドラゴン', cost: 200, hp: 520, spd: 42, dps: 34, range: 80, aggro: 190, uagg: 140, sm: 1.2, splash: 55, inc: 8, h: 78, fly: false, ranged: true, nf: -1, desc: '敵キャラをまとめて燃やす（建物は1つずつ）' },
   skeleton: { name: 'スケルトン', cost: 45, hp: 75, spd: 52, dps: 15, range: 125, aggro: 150, uagg: 260, sm: 1.2, inc: 2, h: 52, fly: false, ranged: true, nf: 1, intercept: true, desc: '【迎撃】遠くから矢で敵ユニットを撃つ（空もOK）' },
   orc:      { name: 'オーク', cost: 90, hp: 340, spd: 36, dps: 26, range: 30, aggro: 140, uagg: 110, sm: 2.2, inc: 5, h: 70, fly: false, nf: 1, desc: 'とても頑丈で建物にも強い' },
   ghost:    { name: 'ゴースト', cost: 70, hp: 120, spd: 56, dps: 15, range: 26, aggro: 130, uagg: 110, sm: 1.2, inc: 3, h: 50, fly: false, phase: true, nf: 0, desc: '障害物も罠もすり抜ける' },
@@ -344,8 +380,9 @@ function roleDeck(role, cards) {
   const c = role === 'cmd' ? [] : roleDeckOK(role, cards) ? cards.slice() : ROLE_DEFAULT[role].slice();
   return role === 'front' ? { def: [], atk: c, cards: c } : { def: c.concat(ROLE_FIXED[role]), atk: [], cards: c };
 }
-const TUNE = { spurt: 120, spurtInc: 1, spurtCry: 1, spurtTow: 0.5, towerCap: { '1v1': 0, '2v2': 0, '4p': 0, team: 0 }, sendCap: 12, baseInc: 8, cryHp: 1800, hpGrow: 140, towerDmg: 0.8, unitDps: 1.3, uuDps: 1.0, maxTMul: 1, sendMul: 1, startGold: 250, cryMul: { '1v1': 1, '2v2': 0.55, '4p': 1.0, team: 1.6 } };
-const hpMult = t => 1 + t / TUNE.hpGrow;
+const TUNE = { spurt: 120, spurtInc: 1, spurtCry: 1, spurtTow: 0.5, towerCap: { '1v1': 0, '2v2': 0, '4p': 0, team: 0 }, sendCap: 0, baseInc: 8, cryHp: 1800, hpGrow: 200, hpGrowTeam: 80, towerDmg: 0.8, unitDps: 1.3, uuDps: 1.0, maxTMul: 1, sendMul: 1, startGold: 250, cryMul: { '1v1': 1, '2v2': 0.55, '4p': 1.0, team: 1.6 } };
+// attackers sent later have more HP (team mode grows faster: four teams pile up more towers and traps)
+const hpMult = t => 1 + t / (G && G.mode === 'team' ? TUNE.hpGrowTeam : TUNE.hpGrow);
 const CPU_CFG = [
   { interval: 2.2, sendP: 0.30, maxT: 8, grow: 55, upP: 0.05, mineP: 0.04 },
   { interval: 1.5, sendP: 0.50, maxT: 14, grow: 38, upP: 0.12, mineP: 0.06 },
@@ -378,9 +415,21 @@ function newGame(opts) {
     elimCount: 0, item: null, nextItem: ITEM.first, noItems: opts.items === false, prep: opts.prep != null ? opts.prep : PREP, timeLimit: opts.timeLimit || TIME_LIMIT, paths: {}, human: -1
   };
   const nT = M.nTeams;
+  G.terr = null;
+  if (mk === 'team') {   // territory: pick each crystal spot (asked for in opts.spots, otherwise random among the allowed ones)
+    const rule = SPOT_RULES.indexOf(opts.spotRule) >= 0 ? opts.spotRule : TERR.rule, BW = Math.round(M.W / TERR.B), BH = Math.round(M.H / TERR.B);
+    const T = G.terr = { rule, BW, BH, own: new Int8Array(BW * BH).fill(-1), core: [], ver: 1 };
+    for (let i = 0; i < nT; i++) {
+      const ok = crystalSpots(mp, i, rule), want = opts.spots && opts.spots[i];
+      let sp = want && ok.find(q => q[0] === want[0] && q[1] === want[1]);
+      if (!sp) sp = rule === 'fixed' || !ok.length ? (ok[0] || spotsOf(i, 'fixed', M.W, M.H)[0]) : ok[(G.rng() * ok.length) | 0];
+      T.core[i] = sp.slice();
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) T.own[(sp[1] + dy) * BW + sp[0] + dx] = i;
+    }
+  }
   for (let i = 0; i < nT; i++) {
-    const c = L.crystals[i];
-    const cs = { id: G.nextId++, kind: 'crystal', type: 'crystal', team: i, owner: -1, x: c.x, y: c.y, r: CRY_R, hp: Math.round(TUNE.cryHp * TUNE.cryMul[mk]), max: Math.round(TUNE.cryHp * TUNE.cryMul[mk]), cx: cellOf(c.x), cy: cellOf(c.y), lvl: 1, spent: 0 };
+    const c = G.terr ? blockCenter(G.terr.core[i][0], G.terr.core[i][1]) : L.crystals[i];
+    const cs = { id: G.nextId++, kind: 'crystal', type: 'crystal', team: i, owner: -1, x: c.x, y: c.y, r: CRY_R, hp: Math.round(TUNE.cryHp * TUNE.cryMul[mk]), max: Math.round(TUNE.cryHp * TUNE.cryMul[mk]), cx: cellOf(c.x - (c.x > M.W / 2 ? 1 : 0)), cy: cellOf(c.y - (c.y > M.H / 2 ? 1 : 0)), lvl: 1, spent: 0 };   // mirror-symmetric cell (a crystal on a block centre sits on a cell corner)
     G.teams.push({ id: i, color: TEAM_COLORS[mk === '4p' ? i : i], name: TEAM_NAMES[i], crystal: cs, alive: true, elimAt: -1, elimOrder: 0, players: [], bank: 0, target: -1, tgtNext: 0, cmd: -1 });
     G.structs.push(cs);
   }
@@ -465,7 +514,49 @@ function spawnPos(team) {
 }
 
 // ---------- structures ----------
-function inZone(p, x, y) { const z = p.zone; return x >= z.x0 && x < z.x1 && y >= z.y0 && y < z.y1; }
+function inZone(p, x, y) {
+  if (G.terr) return G.terr.own[blockAt(x, y)] === p.team;
+  const z = p.zone; return x >= z.x0 && x < z.x1 && y >= z.y0 && y < z.y1;
+}
+// ---------- territory ----------
+function blockAt(x, y) { const T = G.terr, bx = Math.min(T.BW - 1, Math.max(0, Math.floor(x / TERR.B))), by = Math.min(T.BH - 1, Math.max(0, Math.floor(y / TERR.B))); return by * T.BW + bx; }
+function inCore(team, bx, by) { const c = G.terr.core[team]; return Math.abs(bx - c[0]) <= 1 && Math.abs(by - c[1]) <= 1; }
+function blockCount(team) { let n = 0; for (const o of G.terr.own) if (o === team) n++; return n; }
+function claimCost(team, bx, by) {
+  const T = G.terr, o = T.own[by * T.BW + bx], c = TERR.base + TERR.step * Math.max(0, blockCount(team) - 9);
+  return o >= 0 && o !== team ? c * TERR.enemyMul : c;
+}
+function claimReason(p, bx, by) {
+  const T = G.terr; if (!T) return 'x';
+  if (G.over) return 'over';
+  if (!G.teams[p.team].alive) return 'dead';
+  if (p.role && p.role !== 'eng') return 'role';
+  if (!(bx >= 0 && by >= 0 && bx < T.BW && by < T.BH)) return 'range';
+  const o = T.own[by * T.BW + bx];
+  if (o === p.team) return 'own';
+  if (o >= 0 && inCore(o, bx, by)) return 'core';
+  let adj = false;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = bx + dx, ny = by + dy; if (nx >= 0 && ny >= 0 && nx < T.BW && ny < T.BH && T.own[ny * T.BW + nx] === p.team) adj = true; }
+  if (!adj) return 'adj';
+  if (o >= 0) for (const s of G.structs) if (!s.dead && s.team === o && (s.kind === 'tower' || s.kind === 'mine') && Math.floor(s.x / TERR.B) === bx && Math.floor(s.y / TERR.B) === by) return 'bld';
+  if (p.gold < claimCost(p.team, bx, by)) return 'gold';
+  return null;
+}
+function claimBlock(p, bx, by) {
+  const r = claimReason(p, bx, by); if (r) return r;
+  const T = G.terr, i = by * T.BW + bx, o = T.own[i], cost = claimCost(p.team, bx, by);
+  p.gold -= cost; p.st.claimed = (p.st.claimed || 0) + 1;
+  if (o >= 0) {   // taken from another team: half the price goes to its safe, its traps on the block are removed (half back to the owner)
+    if (G.teams[o].alive) G.teams[o].bank += Math.floor(cost * TERR.give);
+    for (const s of G.structs) if (!s.dead && s.team === o && s.kind === 'trap' && Math.floor(s.x / TERR.B) === bx && Math.floor(s.y / TERR.B) === by) {
+      const q = G.players[s.owner]; if (q) q.gold += Math.floor(s.spent * 0.5); removeStruct(s);
+    }
+    msg(TEAM_NAMES[p.team] + 'チームが' + TEAM_NAMES[o] + 'チームの陣地をうばった！', TEAM_COLORS[p.team]);
+  }
+  T.own[i] = p.team; T.ver++;
+  const c = blockCenter(bx, by); fx({ k: 'ring', x: c.x, y: c.y, r: 80, dur: 0.5, col: TEAM_COLORS[p.team] });
+  return null;
+}
 function buildReason(p, type, cx, cy) {
   if (G.over) return 'over';
   if (!structInfo(type)) return 'type';
@@ -480,7 +571,8 @@ function buildReason(p, type, cx, cy) {
   if (TT[type] && towerCap() && towerCount(p) >= towerCap()) return 'tcap';
   if (type === 'mine') {
     if (mineCount(p) >= MINE.max) return 'mmax';
-    if (aheadOf(p.team, x, y) < MINE.front) return 'mfar';
+    if (G.terr) { if (!inCore(p.team, Math.floor(x / TERR.B), Math.floor(y / TERR.B))) return 'mcore'; }
+    else if (aheadOf(p.team, x, y) < MINE.front) return 'mfar';
   }
   if (p.gold < costFor(p, type)) return 'gold';
   return null;
@@ -546,6 +638,7 @@ function eliminateTeam(tid) {
     removeStruct(s); fx({ k: 'burst', x: s.x, y: s.y - 10, dur: 0.6 });
   }
   for (const u of G.units) if (u.team === tid) u.dead = true;
+  if (G.terr) { for (let i = 0; i < G.terr.own.length; i++) if (G.terr.own[i] === tid) G.terr.own[i] = -1; G.terr.ver++; }
   G.bver++;
 }
 
@@ -565,6 +658,14 @@ function itemSpots() {
   const L = G.L, W = G.W, H = G.H;
   if (G.mode === '1v1') return [{ x: W / 2, y: L.lanes[0], label: '上ルート', lane: 0 }, { x: W / 2, y: H / 2, label: '中央', lane: 1 }, { x: W / 2, y: L.lanes[2], label: '下ルート', lane: 2 }];
   if (G.mode === '2v2') return [{ x: W / 2, y: L.lanes[0], label: '上ルート', lane: 0 }, { x: W / 2, y: L.lanes[1], label: '下ルート', lane: 1 }];
+  if (G.terr) {   // territory mode: anywhere on the map that is not right next to a crystal
+    for (let k = 0; k < 200; k++) {
+      const cx = 2 + ((G.rng() * (G.GW - 4)) | 0), cy = 2 + ((G.rng() * (G.GH - 4)) | 0), x = cx * CELL + CELL / 2, y = cy * CELL + CELL / 2;
+      if (G.blocked[cy * G.GW + cx] || G.occ[cy * G.GW + cx]) continue;
+      if (G.teams.some(t => t.alive && hyp(t.crystal.x - x, t.crystal.y - y) < 320)) continue;
+      return [{ x, y, label: '光っている場所', lane: null }];
+    }
+  }
   return [{ x: W / 2, y: H / 2, label: 'マップの中央', lane: null }];
 }
 function itemGoals(it) {   // per team: free cell nearest the item (ties broken toward that team) + pickup radius that reaches it
@@ -688,7 +789,7 @@ function acquire(u, T) {
   const lim = T.passive ? 0 : Math.max(T.range, T.aggro);
   const free = u.fly || u.phase;
   for (const s of G.structs) {
-    if (s.dead || s.hp <= 0 || !hostileTeam(u.team, s.team)) continue;
+    if (s.dead || s.hp <= 0 || s.kind === 'trap' || !hostileTeam(u.team, s.team)) continue;   // traps are never attacked: they only wear out when stepped on
     const d = hyp(s.x - u.x, s.y - u.y) - s.r;
     if (T.passive) {
       if (!(s.kind === 'crystal' && d <= T.range)) continue;
@@ -712,7 +813,7 @@ function explode(u) {
   const T = UT[u.type], B = T.boom, p = G.players[u.owner];
   fx({ k: 'boom', x: u.x, y: u.y, r: B.r, dur: 0.4, col: '#ff7a1a' });
   fx({ k: 'burst', x: u.x, y: u.y - 8, dur: 0.5 });
-  for (const s of G.structs) if (!s.dead && s.hp > 0 && hostileTeam(u.team, s.team) && hyp(s.x - u.x, s.y - u.y) - s.r < B.r) damageStruct(s, B.ds, u);
+  for (const s of G.structs) if (!s.dead && s.hp > 0 && s.kind !== 'trap' && hostileTeam(u.team, s.team) && hyp(s.x - u.x, s.y - u.y) - s.r < B.r) damageStruct(s, B.ds, u);
   for (const o of G.units) if (!o.dead && o.team !== u.team && !o.fly && hyp(o.x - u.x, o.y - u.y) < B.r) dmgUnit(o, B.du, p);
   u.dead = true;
 }
@@ -778,8 +879,8 @@ function updateUnit(u, dt) {
       if (T.boom) { explode(u); return; }
       const dmg = T.dps * TUNE.unitDps * weak * (s.kind === 'crystal' ? 1 : T.sm) * dt;
       damageStruct(s, dmg, u);
-      if (T.splash) {
-        for (const o of G.structs) if (o !== s && !o.dead && o.hp > 0 && hostileTeam(u.team, o.team) && hyp(o.x - s.x, o.y - s.y) < T.splash) damageStruct(o, dmg * 0.5, u);
+      if (T.splash) {   // splash hits enemy units only (not buildings)
+        for (const v of G.units) if (!v.dead && v.team !== u.team && hostileTeam(u.team, v.team) && hyp(v.x - s.x, v.y - s.y) < T.splash) dmgUnit(v, T.dps * TUNE.uuDps * weak * dt * 0.5, pl);
         if (tick(7, dt)) fx({ k: 'flame', x: u.x, y: u.y - 20, x2: s.x, y2: s.y, dur: 0.18 });
       } else if (T.ranged && tick(2.5, dt)) fx({ k: 'arrow', x: u.x, y: u.y - 22, x2: s.x, y2: s.y - 12, dur: 0.14 });
       return;
@@ -997,9 +1098,13 @@ function pickCell(p, type) {
   const pts = enemyPathPts(p.team), z = p.zone, isTrap = !!TRAPS[type], isMine = type === 'mine', myC = G.teams[p.team].crystal;
   const mine = G.structs.filter(s => s.owner === p.id && !s.dead);
   let best = null, bs = -1e9;
+  let blocks = null;
+  if (G.terr) { blocks = []; const T = G.terr; for (let i = 0; i < T.own.length; i++) if (T.own[i] === p.team && (!isMine || inCore(p.team, i % T.BW, (i / T.BW) | 0))) blocks.push(i); if (!blocks.length) return null; }
   for (let k = 0; k < 90; k++) {
-    const cx = cellOf(z.x0 + G.rng() * (z.x1 - z.x0)), cy = cellOf(z.y0 + G.rng() * (z.y1 - z.y0));
-    if (buildReason({ zone: z, gold: 1e9, id: p.id, team: p.team }, type, cx, cy)) continue;
+    let cx, cy;
+    if (blocks) { const b = blocks[(G.rng() * blocks.length) | 0], n = TERR.B / CELL; cx = (b % G.terr.BW) * n + ((G.rng() * n) | 0); cy = ((b / G.terr.BW) | 0) * n + ((G.rng() * n) | 0); }
+    else { cx = cellOf(z.x0 + G.rng() * (z.x1 - z.x0)); cy = cellOf(z.y0 + G.rng() * (z.y1 - z.y0)); }
+    if (buildReason({ zone: z, gold: 1e9, id: p.id, team: p.team, st: p.st }, type, cx, cy)) continue;
     const x = cx * CELL + 20, y = cy * CELL + 20;
     let dmin = 1e9;
     for (let i = 0; i < pts.length; i += 2) { const d = hyp(pts[i][0] - x, pts[i][1] - y); if (d < dmin) dmin = d; }
@@ -1115,6 +1220,21 @@ function sendCourier(cp) {
   });
   return null;
 }
+// CPU engineer: buy the block that best pushes the land toward the middle (and sometimes take an enemy block)
+function cpuClaim(p, cfg) {
+  const T = G.terr; let best = null, bs = -1e9;
+  for (let by = 0; by < T.BH; by++) for (let bx = 0; bx < T.BW; bx++) {
+    if (claimReason(Object.assign({}, p, { gold: 1e9 }), bx, by)) continue;
+    const o = T.own[by * T.BW + bx], cost = claimCost(p.team, bx, by);
+    if (p.gold < cost + 20) continue;
+    if (o >= 0 && p.level === 0) continue;
+    const c = blockCenter(bx, by); let nb = 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = bx + dx, ny = by + dy; if (nx >= 0 && ny >= 0 && nx < T.BW && ny < T.BH && T.own[ny * T.BW + nx] === p.team) nb++; }
+    const sc = -hyp(c.x - G.W / 2, c.y - G.H / 2) * 0.01 + nb * 1.2 + (o >= 0 ? 1.5 : 0) - cost * 0.02 + G.rng() * 2;
+    if (sc > bs) { bs = sc; best = [bx, by]; }
+  }
+  return !!best && !claimBlock(p, best[0], best[1]);
+}
 // ---------- team mode: CPU for a role nobody plays (or whose iPad dropped out) ----------
 function cpuTeam(p, dt) {
   const tm = G.teams[p.team]; if (!tm.alive) return;
@@ -1145,6 +1265,7 @@ function cpuTeam(p, dt) {
     }
   } else if (p.role === 'eng') {
     const tr = mineOf(p, 'trap'), walls = mineOf(p, 'tower');
+    if (G.terr && tr.length >= 2 && G.rng() < 0.45 && cpuClaim(p, cfg)) return;
     if (tr.length < 3 + Math.floor(G.t / 35) && G.rng() < 0.6) {
       const type = wpickIn(TR_W, p.deck.def);
       if (type && p.gold >= structCost(type)) { const cell = pickCell(p, type); if (cell) buildStruct(p, type, cell[0], cell[1]); }
@@ -1176,7 +1297,7 @@ function cpuTeam(p, dt) {
       if (c.saveMine) return;
     }
     // hand out the safe: whoever is furthest below what they want
-    const want = { front: 220, back: 200, eng: 110 };
+    const want = { front: 220, back: 200, eng: G.terr ? 160 : 110 };
     for (let k = 0; k < 3 && tm.bank >= 10; k++) {
       let best = null, bs = -1e9;
       for (const r of ['front', 'back', 'eng']) { const q = roleP(p.team, r), sc = (want[r] - q.gold) / want[r] + G.rng() * 0.2; if (sc > bs) { bs = sc; best = r; } }
@@ -1236,7 +1357,7 @@ function runGame(opts, maxSec) {
   return G;
 }
 
-const SIM = { ROLES, ROLE_NAMES, TEAM_CFG, COURIER, ROLE_POOL, ROLE_FIXED, ROLE_DEFAULT, roleDeckOK, roleDeck, roleP, teamIncome, giveGold, setTarget, sendCourier, structInfo, costFor, firstEnemyTeam, inSpurt, towerRange, aheadOf, TEAM_COLORS, TEAM_NAMES, ITEMS, cellOf, towerCount, ITEM, ITEMS, ITEM_ORDER, DECK_PRESETS, airOK, deckOK, MINE, mineCount, mineCost, TUNE, newGame, stepGame, runGame, buildStruct, upgradeStruct, sellStruct, sendUnit, buildReason, getG: () => G, TT, TRAPS, UT, TOWER_ORDER, TRAP_ORDER, UNIT_ORDER, MAPS, MAP_ORDER, MODES, CELL, STEP, PREP, TIME_LIMIT, CRY_HP, hpMult, income, upgradeCost, sellValue, structCost, targetTeamOf, enemyPathPts, genMap, layout };
+const SIM = { ROLES, ROLE_NAMES, TEAM_CFG, COURIER, ROLE_POOL, ROLE_FIXED, ROLE_DEFAULT, roleDeckOK, roleDeck, roleP, teamIncome, giveGold, setTarget, sendCourier, structInfo, costFor, firstEnemyTeam, inSpurt, towerRange, aheadOf, TEAM_COLORS, TEAM_NAMES, ITEMS, cellOf, towerCount, ITEM, ITEMS, ITEM_ORDER, DECK_PRESETS, airOK, deckOK, MINE, mineCount, mineCost, TUNE, newGame, stepGame, runGame, buildStruct, upgradeStruct, sellStruct, sendUnit, buildReason, getG: () => G, TT, TRAPS, UT, TOWER_ORDER, TRAP_ORDER, UNIT_ORDER, MAPS, MAP_ORDER, MODES, CELL, STEP, PREP, TIME_LIMIT, CRY_HP, hpMult, income, TERR, SPOT_RULES, SPOT_RULE_NAMES, spotsOf, crystalSpots, blockCenter, claimReason, claimBlock, claimCost, blockCount, inCore, upgradeCost, sellValue, structCost, targetTeamOf, enemyPathPts, genMap, layout };
 
 root.TBSIM = SIM;
 if (typeof module !== 'undefined' && module.exports) module.exports = SIM;
